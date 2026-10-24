@@ -51,7 +51,7 @@ enregistrerAide({
   etape: ETAPE.nommage,
   description: aTraduire('Propose un nom parlant (Theme_Lieu_JJ.MM.AA) pour chaque dossier, avec sa confiance et sa justification.'),
   envoi: aTraduire('5 photos par dossier, position GPS, événements du calendrier, contexte du projet'),
-  web: true,
+  web: () => reglagesNommage.recherche,
   usage: 'standard',
   estimer: (s) => {
     const cibles = dossiersANommer(s.plan, reglagesNommage.tous);

@@ -9,6 +9,11 @@ export function nombre(n: number, decimales = 0): string {
   return nf(decimales).format(n);
 }
 
+/** Montant en CHF sans l'unité : « 50 », « 0,45 » (deux décimales seulement s'il en a). */
+export function montantChf(n: number): string {
+  return nombre(n, Number.isInteger(n) ? 0 : 2);
+}
+
 /**
  * « 3 photos », « 1 photo », « 0 photo » ; les deux formes sont traduites
  * (en anglais : « 0 photos »). Sans forme plurielle, c'est le singulier suivi

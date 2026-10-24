@@ -2543,7 +2543,8 @@ kbd {
 }
 
 input.tres-court {
-  width: 52px;
+  /* Trois chiffres et les flèches du champ (« 100 », pas « 10 »). */
+  width: 82px;
 }
 
 .jauge-cible {

@@ -292,7 +292,7 @@ export const TEXTES: Record<string, string> = {
   'CHF dépensés sur {0} CHF (détail dans le Journal).': 'CHF spent out of {0} CHF (details in the Log).',
   'Une réponse illisible ou refusée est gardée pour ne pas repayer ; l’oublier permet de la redemander.':
     'An unreadable or refused answer is kept so you do not pay twice; forgetting it lets you ask for it again.',
-  '{0} réponse(s) illisible(s) oubliée(s) : relancez les aides concernées.': '{0} unreadable answer(s) forgotten: run the helpers concerned again.',
+  '{0} : relancez les aides concernées.': '{0}: run the helpers concerned again.',
   'Ouvrez un projet pour voir le coût estimé de chaque aide.': 'Open a project to see the estimated cost of each helper.',
   'Étape': 'Step',
   'Ce qui est envoyé': 'What is sent',
@@ -357,12 +357,12 @@ export const TEXTES: Record<string, string> = {
   'Suppr met de côté (rien n’est supprimé : les éléments iront dans « {0} ») ; dans « Mis de côté », Suppr les remet.':
     'Delete sets aside (nothing is deleted: the items will go to “{0}”); in “Set aside”, Delete puts them back.',
   'Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.': 'Double-click or Enter: the photo shown large; ← → to go to the next one.',
-  'Ctrl+Z annule, Ctrl+Y rétablit.': 'Ctrl+Z undoes, Ctrl+Y redoes.',
+  'Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.': 'Ctrl+Z undoes, Ctrl+Y (or Ctrl+Shift+Z) redoes, at every step; “?” shows all the shortcuts.',
   'Créer la sortie (étape {0})': 'Creating the output (step {0})',
   'Le bouton écrit ce qui manque et déplace ce qui a changé de dossier ; relancé, il ne recopie jamais un fichier déjà en place. Le bilan dit si chaque fichier d’origine est dans la sortie. Seulement dans ce cas, vous pouvez copier la sortie sur le NAS, la vérifier, puis supprimer vous-même le dossier d’origine.':
     'The button writes what is missing and moves what has changed folder; run again, it never copies a file that is already in place. The summary says whether every original file is in the output. Only then can you copy the output to the NAS, check it, and delete the original folder yourself.',
-  'La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « {0} ».':
-    'The copy has today’s date: the browser cannot keep the modification date. Almost all photos have their date from the camera (EXIF); for the others, the original date is noted in “{0}”.',
+  'La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; « {0} » donne la date d’origine des autres, et celle de chaque fichier reste notée dans « .album/plan.json », dans le dossier de sortie.':
+    'The copy has today’s date: the browser cannot keep the modification date. Almost all photos have their date from the camera (EXIF); “{0}” gives the original date of the others, and the date of every file stays noted in “.album/plan.json”, in the output folder.',
   'Configuration et clé API': 'Configuration and API key',
   'Le dossier « config » contient les lieux connus (dont le domicile), les appareils et les calendriers : ne le publiez jamais. La clé API n’y est jamais écrite ; elle reste dans le navigateur, le temps de la session sauf si vous cochez « se souvenir ».':
     'The “config” folder contains the known places (including home), the cameras and the calendars: never publish it. The API key is never written there; it stays in the browser, for the session only unless you tick “remember”.',

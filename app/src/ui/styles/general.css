@@ -1,1 +1,128 @@
 /* Lot « general » de la campagne de tests du 24.10.2026 : règles ajoutées par ce lot. */
+
+/* --- Messages passagers : jamais sur un bouton --- */
+
+/* Hors étapes (pages du menu, accueil) : en bas à droite, où les pages étroites n'ont rien. */
+.messages {
+  bottom: 20px;
+}
+
+/*
+ * Pages d'étape : au milieu de la barre de validation, entre le résumé et les
+ * boutons « Revenir » / « Valider et continuer » (les boutons des pages sont
+ * sur les côtés). Plusieurs messages à la fois s'empilent au-dessus, au milieu.
+ */
+.app:has(.barre-validation) .messages {
+  left: 50%;
+  right: auto;
+  bottom: 9px;
+  transform: translateX(-50%);
+  align-items: center;
+  width: max-content;
+  max-width: max(300px, min(620px, calc(100vw - 720px)));
+}
+
+.app:has(.barre-validation) .message {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 13.5px;
+}
+
+/* --- Liste des étapes (en-tête) : l'état tient sur la ligne, la phrase entière est en infobulle --- */
+
+.liste-etapes {
+  width: 372px;
+}
+
+.liste-etapes .nom {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.liste-etapes .etat-etape {
+  flex: 0 0 auto;
+}
+
+/* Fonctions IA : « Étape 10 » sur une ligne. */
+.fonctions-ia td:last-child button {
+  white-space: nowrap;
+}
+
+/* --- Pages du menu : retour à la page d'avant --- */
+
+button.bouton-retour {
+  margin: -10px 0 6px -6px;
+  font-size: 14px;
+}
+
+/* --- Aide : l'essentiel pour commencer --- */
+
+.pour-commencer {
+  margin: 4px 0 26px;
+  padding: 16px 22px 10px;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--rayon-carte);
+  background: var(--surface);
+}
+
+.pour-commencer h2 {
+  margin-top: 0;
+}
+
+.pour-commencer li {
+  margin: 4px 0;
+}
+
+/* --- Aides IA : réponses illisibles, à redemander --- */
+
+.illisibles-aide {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--attention);
+}
+
+/* --- Raccourcis clavier (touche « ? ») --- */
+
+.dialogue.raccourcis {
+  width: min(640px, 94vw);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.dialogue.raccourcis h3 {
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+
+.liste-raccourcis {
+  margin: 0;
+}
+
+.liste-raccourcis div {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--bord);
+}
+
+.liste-raccourcis dt,
+.liste-raccourcis dd {
+  margin: 0;
+}
+
+.liste-raccourcis kbd {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border: 1px solid var(--bord-fort);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  white-space: nowrap;
+}

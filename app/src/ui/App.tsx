@@ -1,8 +1,10 @@
 // Composant racine : cadre de l'application et page affichée.
 
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import { BandeauSource } from './composants/BandeauSource';
 import { Entete, Messages } from './composants/Cadre';
 import { Dialogues } from './composants/Dialogues';
+import { Raccourcis } from './composants/Raccourcis';
 import { t } from '../lib/langue';
 import { allerEtape, page, session, versionProjet } from './etat';
 import { arborescenceValidee, CODES_ETAPES, ETAPE } from '../navigateur/projet';
@@ -67,6 +69,12 @@ function PageEtape({ numero }: { numero: number }) {
 export function App() {
   const p = page.value;
   const s = session.value;
+  const zone = useRef<HTMLElement>(null);
+  // Chaque page s'ouvre en haut (titre et explication visibles), même si la précédente était défilée.
+  const clePage = p.nom === 'etape' ? `etape-${p.numero}` : p.nom;
+  useLayoutEffect(() => {
+    zone.current?.scrollTo(0, 0);
+  }, [clePage]);
   let contenu;
   switch (p.nom) {
     case 'reprendre':
@@ -99,10 +107,11 @@ export function App() {
   return (
     <div class={`app page-${p.nom}${p.nom === 'etape' ? ` etape-${p.numero}` : ''}`}>
       <Entete />
-      <main>{contenu}</main>
+      <main ref={zone}>{contenu}</main>
       {p.nom === 'etape' && s && <BandeauSource />}
       <Messages />
       <Dialogues />
+      <Raccourcis />
     </div>
   );
 }

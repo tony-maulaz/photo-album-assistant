@@ -17,6 +17,8 @@ import { projetsRecents } from '../navigateur/projet';
 import { App } from './App';
 import { enregistrerMaintenant, langueInterface, notifier, page, reglages, texteErreur } from './etat';
 import { autorisations } from './pages/Accueil';
+import { installerRaccourcis } from './composants/Raccourcis';
+import { finDemarrage, installerNavigation } from './navigation';
 import { autorisationsEnAttente, chargerConfiguration, ouvrirProjet } from './projets';
 
 effect(() => {
@@ -40,6 +42,8 @@ function Racine() {
 }
 
 window.addEventListener('pagehide', () => void enregistrerMaintenant());
+installerNavigation();
+installerRaccourcis();
 
 async function demarrer() {
   const racine = document.getElementById('app')!;
@@ -64,6 +68,8 @@ async function demarrer() {
     }
   } catch (err) {
     notifier('erreur', texteErreur(err));
+  } finally {
+    finDemarrage();
   }
 }
 

@@ -4,6 +4,7 @@
 
 import type { ChangementsSource } from '../lib/source';
 import { t, type Langue } from '../lib/langue';
+import { lirePageVue, textePageVue } from '../lib/navigation';
 import { signal } from '@preact/signals';
 import type { ConfigAlbum } from '../lib/album';
 import type { EvenementCalendrier } from '../lib/ics';
@@ -18,6 +19,7 @@ import type { AccesDossier } from '../navigateur/dossiers';
 import type { EtatDoublons } from '../navigateur/doublons';
 import type { Geocodage } from '../navigateur/geocodage';
 import type { ServiceIA } from '../navigateur/ia';
+import { expliquerErreur } from '../navigateur/claude';
 import { Miniatures } from '../navigateur/miniatures';
 import { ETAPE, ETAPES, etapePrecedente, etapeSuivante, noterProjetRecent, type CodeEtape, type EtatProjet, type EtatEtape, type Projet } from '../navigateur/projet';
 import { enregistrerReglages, lireReglages, type Reglages } from '../navigateur/reglages';
@@ -35,6 +37,37 @@ export type Page =
   | { nom: 'aide' };
 
 export const page = signal<Page>({ nom: 'accueil' });
+
+// Page retrouvée après un rechargement de l'onglet : gardée pour l'onglet
+// seulement (sessionStorage), relue une fois au chargement.
+const CLE_PAGE_VUE = 'album:page_vue';
+
+function lirePageGardee(): string | null {
+  try {
+    return sessionStorage.getItem(CLE_PAGE_VUE);
+  } catch {
+    return null;
+  }
+}
+
+let pageAvantRechargement = lirePageGardee();
+
+/** Garde la page regardée dans le projet ouvert (`null` : projet fermé, on oublie). */
+export function garderPageVue(projet: string | null, p: Page) {
+  try {
+    if (projet) sessionStorage.setItem(CLE_PAGE_VUE, textePageVue(projet, p));
+    else sessionStorage.removeItem(CLE_PAGE_VUE);
+  } catch {
+    // Stockage indisponible : un rechargement rouvrira l'étape à reprendre.
+  }
+}
+
+/** Page regardée avant le rechargement de l'onglet, pour ce projet ; une seule fois (ensuite, l'étape à reprendre). */
+export function pageApresRechargement(projet: string): Page | null {
+  const p = lirePageVue(pageAvantRechargement, projet, ETAPES.length) as Page | null;
+  pageAvantRechargement = null;
+  return p;
+}
 
 export interface Session {
   projet: Projet;
@@ -103,15 +136,23 @@ export interface Message {
 export const messages = signal<Message[]>([]);
 let prochainMessage = 1;
 
-export function notifier(type: Message['type'], texte: string, action?: Message['action']) {
+/** Affiche un message passager ; renvoie son identifiant (pour le retirer plus tôt). */
+export function notifier(type: Message['type'], texte: string, action?: Message['action']): number {
   const id = prochainMessage++;
   messages.value = [...messages.value.slice(-2), { id, type, texte, action }];
-  setTimeout(() => (messages.value = messages.value.filter((m) => m.id !== id)), type === 'erreur' ? 9000 : 5000);
+  setTimeout(() => retirerMessage(id), type === 'erreur' ? 9000 : 5000);
+  return id;
 }
 
+/** Retire un message devenu faux (« Saisissez d'abord votre clé API » une fois la clé saisie). */
+export function retirerMessage(id: number) {
+  if (messages.value.some((m) => m.id === id)) messages.value = messages.value.filter((m) => m.id !== id);
+}
+
+/** Message compréhensible pour une erreur (celles de l'API Claude sont expliquées, sans leur JSON brut). */
 export function texteErreur(err: unknown): string {
   if (err instanceof DOMException && err.name === 'AbortError') return t`Action annulée.`;
-  return err instanceof Error ? err.message : String(err);
+  return expliquerErreur(err);
 }
 
 // ---------------------------------------------------------------------------
@@ -152,10 +193,21 @@ export function enregistrerMaintenant(): Promise<void> {
   enregistrement = enregistrement
     .then(async () => {
       s.projet.modifie_le = new Date().toISOString();
-      await s.etat.ecrire('plan.json', versJson(s.plan));
+      // Le projet d'abord : petit, il porte les dépenses IA et l'état des étapes (onglet fermé en pleine écriture).
       await s.etat.ecrire('projet.json', s.projet);
+      await s.etat.ecrire('plan.json', versJson(s.plan));
     })
-    .catch((err) => notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
+    .catch((err) => void notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
+  return enregistrement;
+}
+
+/**
+ * Écrit `.album/projet.json` tout de suite, à la suite des autres écritures :
+ * une dépense IA est enregistrée avant que sa réponse entre dans le cache, et
+ * un rechargement juste après ne la fait pas oublier (règle d'or 7).
+ */
+export function enregistrerProjet(etat: EtatProjet, projet: Projet): Promise<void> {
+  enregistrement = enregistrement.then(() => etat.ecrire('projet.json', projet)).catch((err) => void notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
   return enregistrement;
 }
 
@@ -254,7 +306,7 @@ export function changerAlbum(modif: Partial<ConfigAlbum>) {
   versionPlan.value++;
   if (s.projet.etapes[ETAPE.sortie - 1] === 'validee') changerEtape(ETAPE.sortie, 'a_revoir');
   const config = s.album;
-  ecritureAlbum = ecritureAlbum.then(() => s.etat.ecrire('album.json', config)).catch((err) => notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
+  ecritureAlbum = ecritureAlbum.then(() => s.etat.ecrire('album.json', config)).catch((err) => void notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
 }
 
 export function journal(type: string, texte: string, donnees?: unknown) {
