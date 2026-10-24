@@ -68,7 +68,7 @@ export const TEXTES: Record<string, string> = {
   'Décalage d’horloge à corriger, au format +HH:MM': 'Clock offset to correct, in the format +HH:MM',
   Décalage: 'Offset',
   Surnom: 'Nickname',
-  'téléphone d’Edith': 'Edith’s phone',
+  'téléphone d’Anna': 'Anna’s phone',
   'Ajouter un appareil': 'Add a device',
   Enregistrer: 'Save',
   'Annuler les changements': 'Undo the changes',

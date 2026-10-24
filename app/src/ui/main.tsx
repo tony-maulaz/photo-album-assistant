@@ -2,6 +2,13 @@
 // si des dossiers attendent une autorisation, sinon dernier projet ou accueil.
 
 import './style.css';
+import './styles/sortie.css';
+import './styles/album.css';
+import './styles/selection.css';
+import './styles/rangement.css';
+import './styles/doublons.css';
+import './styles/accueil.css';
+import './styles/general.css';
 import { effect } from '@preact/signals';
 import { render } from 'preact';
 import { definirLangue, langueDuNavigateur, t } from '../lib/langue';

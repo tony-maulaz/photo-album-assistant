@@ -30,10 +30,10 @@ const CAS: [string, string | null, string?][] = [
   // Renommés à la main (convention Theme_Lieu_JJ.MM.AA)
   ['jardin_21.04.25 (2).jpg', '2025-04-21', 'jj.mm.aa'],
   ['Annecy_27-28.06.25 (65).jpg', '2025-06-27', 'jj.mm.aa'],
-  ['400eme_tir_Champagne_29.05-01.06.25 (11).jpg', '2025-05-29', 'jj.mm.aa'],
-  ['Vicheres_18.01.25_Meister (3).jpg', '2025-01-18', 'jj.mm.aa'],
+  ['400eme_tir_Vallon_29.05-01.06.25 (11).jpg', '2025-05-29', 'jj.mm.aa'],
+  ['Montagne_18.01.25_Martin (3).jpg', '2025-01-18', 'jj.mm.aa'],
   ['25.04.25 (2).jpg', '2025-04-25', 'jj.mm.aa'],
-  ['Baignade_concise_11.03.2025 (1).mp4', '2025-03-11', 'jj.mm.aa'],
+  ['Baignade_lac_11.03.2025 (1).mp4', '2025-03-11', 'jj.mm.aa'],
   // Sans date exploitable
   ['DSCF6533.JPG', null],
   ['IMG_2043.jpg', null],

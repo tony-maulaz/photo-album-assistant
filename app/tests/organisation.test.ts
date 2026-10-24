@@ -117,8 +117,8 @@ describe('nommage (étape 6, script 04)', () => {
   });
 
   it('assemble la consigne : lieu, période, sous-dossier, calendrier, contexte, monuments', () => {
-    const [, sous, yvonand] = dossiersANommer(p);
-    const c = consigneNommageDossier(yvonand, { gps: { lat: 45.89234, lon: 6.12 }, contexte: 'Année 2025 en famille' });
+    const [, sous, village] = dossiersANommer(p);
+    const c = consigneNommageDossier(village, { gps: { lat: 45.89234, lon: 6.12 }, contexte: 'Année 2025 en famille' });
     expect(c).toContain('Lieu détecté par GPS : Vienne (45.8923, 6.1200)\nDate : 16.08.2025\nNombre total de photos : 2');
     expect(c).toContain('Contexte donné par la famille pour ce projet : Année 2025 en famille');
     const s = consigneNommageDossier(sous, { calendrier: '\n\nÉvénements du calendrier familial…', monuments: true });
@@ -136,17 +136,17 @@ describe('nommage (étape 6, script 04)', () => {
   });
 
   it('requête : photos annoncées, recherche web, clé indépendante des chemins', () => {
-    const [, , yvonand] = dossiersANommer(p);
-    const r = requeteNommage(yvonand, 'claude-sonnet-5-5', identite);
+    const [, , village] = dossiersANommer(p);
+    const r = requeteNommage(village, 'claude-sonnet-5-5', identite);
     expect(r.contenu.map((b) => b.type)).toEqual(['texte', 'photo', 'texte', 'photo', 'texte']);
     expect(r.contenu[0]).toEqual({ type: 'texte', texte: 'Photo 1 :' });
     expect(r.contenu[1]).toMatchObject({ type: 'photo', cote: 768 });
     expect(r.outils).toEqual([{ type: 'web_search_20260209', name: 'web_search', max_uses: 3 }]);
-    expect(requeteNommage(yvonand, 'claude-sonnet-5-5', identite, { recherche: false }).outils).toBeNull();
+    expect(requeteNommage(village, 'claude-sonnet-5-5', identite, { recherche: false }).outils).toBeNull();
     expect(outilRechercheWeb('claude-haiku-4-5', 2).type).toBe('web_search_20250305');
-    const deplace = { ...yvonand, photos: yvonand.photos.map((f) => ({ ...f, id: `ailleurs/${f.id}` })) };
+    const deplace = { ...village, photos: village.photos.map((f) => ({ ...f, id: `ailleurs/${f.id}` })) };
     expect(requeteNommage(deplace, 'claude-sonnet-5-5', identite).cle).toBe(r.cle);
-    expect(requeteNommage(yvonand, 'claude-sonnet-5-5', identite, { contexte: 'autre' }).cle).not.toBe(r.cle);
+    expect(requeteNommage(village, 'claude-sonnet-5-5', identite, { contexte: 'autre' }).cle).not.toBe(r.cle);
     expect(r.schema).toMatchObject({ required: ['nom', 'activite', 'confiance', 'justification'] });
   });
 

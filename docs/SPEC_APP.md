@@ -527,7 +527,7 @@ d'événements et la période, activer ou désactiver, inclure les récurrents
 
 ### 8.5 Appareils
 Modèles détectés, décalage d'horloge (`+HH:MM`), surnom (« téléphone
-d'Edith »).
+d'Anna »).
 
 ### 8.6 Préréglages
 « Année » et « Voyage » modifiables ; on peut en créer d'autres
