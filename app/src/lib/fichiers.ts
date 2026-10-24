@@ -88,8 +88,13 @@ function dimensionsDans(dims: { l: number; h: number }, liste: number[][]): bool
  * JPEG : téléphone en portrait seulement, un JPEG aux dimensions d'un écran
  * d'ordinateur pouvant être une image de vidéo ou un fond d'écran). En cas de doute, ce
  * n'est pas une capture : la photo reste dans le tri.
+ *
+ * Une position GPS, ou une marque d'appareil avec une date de prise de vue
+ * EXIF, signe une vraie photo, quels que soient son nom et ses dimensions :
+ * des photos de téléphone en 1080 × 1920 étaient prises pour des captures.
  */
-export function estCapture(f: { nom: string; marque?: string; appareil?: string; dims?: { l: number; h: number }; extension?: string }): boolean {
+export function estCapture(f: { nom: string; marque?: string; appareil?: string; dims?: { l: number; h: number }; extension?: string; gps?: boolean; dateExif?: boolean }): boolean {
+  if (f.gps || ((f.marque?.trim() || f.appareil?.trim()) && f.dateExif)) return false;
   const nom = f.nom.split('/').pop()!.toLowerCase();
   if (NOMS_CAPTURE.some((m) => m.test(nom))) return true;
   if (f.marque?.trim() || f.appareil?.trim() || !f.dims) return false;

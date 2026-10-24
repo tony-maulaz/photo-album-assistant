@@ -1,28 +1,24 @@
 // Page Configuration (SPEC § 8) : dossier config/ commun, lieux connus (saisie,
 // depuis une photo, recherche d'adresse, coordonnées collées, CSV des anciens
-// scripts), appareils, calendriers .ics et préréglages.
+// scripts), appareils et calendriers .ics. Les préréglages du tri ne s'y règlent
+// plus (D58) : ceux d'un config.json existant sont gardés tels quels.
 
 import { useEffect, useState } from 'preact/hooks';
-import { validerConfig, VERSION_CONFIG, type Config, type LieuConnu } from '../../lib/config';
+import { validerConfig, type Config, type LieuConnu } from '../../lib/config';
 import { lienCourt, lireCoordonnees } from '../../lib/coordonnees';
 import { lireIcs, resumeCalendrier, type EvenementCalendrier } from '../../lib/ics';
 import { nomAscii, nouvelIdLieu } from '../../lib/noms';
-import { DossierConfig, ModifieAilleurs } from '../../navigateur/configuration';
-import { choisirDossier, choisirFichier, memoriserDossier } from '../../navigateur/dossiers';
+import { ModifieAilleurs } from '../../navigateur/configuration';
+import { choisirFichier } from '../../navigateur/dossiers';
 import { lireExif } from '../../navigateur/exif';
 import { rechercher } from '../../navigateur/nominatim';
-import exemple from '../../../../config.exemple/config.json';
 import { TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { chargerEvenements, configuration, notifier, reglages, session, texteErreur } from '../etat';
-import { chargerConfiguration } from '../projets';
+import { chargerConfiguration, choisirDossierConfig, configVide, creerDossierConfig } from '../projets';
 import { langue, t } from '../../lib/langue';
 
-type Onglet = 'lieux' | 'appareils' | 'calendriers' | 'prereglages';
-
-function configVide(): Config {
-  return { version: VERSION_CONFIG, modifie_le: '', lieux_connus: [], appareils: [], calendriers: [], prereglages: structuredClone(exemple.prereglages) };
-}
+type Onglet = 'lieux' | 'appareils' | 'calendriers';
 
 /** `lieux_connus.csv` des anciens scripts : `nom;latitude;longitude;rayon_m`. */
 export function lireCsvLieux(texte: string): { nom: string; lat: number; lon: number; rayon_m: number }[] {
@@ -65,8 +61,7 @@ export function PageConfiguration() {
 
   const choisir = async () => {
     try {
-      const d = await choisirDossier('config', 'readwrite');
-      await chargerConfiguration(d);
+      await choisirDossierConfig();
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -74,13 +69,8 @@ export function PageConfiguration() {
 
   const creer = async () => {
     try {
-      const parent = await choisirDossier('config-parent', 'readwrite');
-      const d = await parent.getDirectoryHandle('config', { create: true });
-      await memoriserDossier('config', d);
-      const dc = new DossierConfig(d);
-      if (!(await dc.lire())) await dc.ecrire(configVide(), null);
-      await chargerConfiguration(d);
-      notifier('ok', t`Dossier « config » prêt dans « ${parent.name} ».`);
+      const parent = await creerDossierConfig();
+      notifier('ok', t`Dossier « config » prêt dans « ${parent} ».`);
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -263,7 +253,6 @@ export function PageConfiguration() {
                 ['lieux', t`Lieux connus (${brouillon.lieux_connus.length})`],
                 ['appareils', t`Appareils (${brouillon.appareils.length})`],
                 ['calendriers', t`Calendriers (${brouillon.calendriers.length})`],
-                ['prereglages', t`Préréglages`],
               ] as [Onglet, string][]
             ).map(([o, libelle]) => (
               <button key={o} type="button" role="tab" aria-selected={onglet === o} class={onglet === o ? 'actif' : ''} onClick={() => setOnglet(o)}>
@@ -425,12 +414,6 @@ export function PageConfiguration() {
           )}
 
           {onglet === 'calendriers' && <OngletCalendriers config={brouillon} modifier={modifier} ajouter={() => void ajouterCalendrier()} />}
-
-          {onglet === 'prereglages' && (
-            <>
-              <EditionPrereglages config={brouillon} modifier={modifier} />
-            </>
-          )}
 
           <div class="actions">
             <button type="button" class="principal" disabled={!modifie} onClick={() => void enregistrer()}>
@@ -618,71 +601,6 @@ function OngletCalendriers({ config, modifier, ajouter }: { config: Config; modi
           {filtres.length > 500 && <p class="discret">{t`… et ${filtres.length - 500} autres : filtrez par année ou par texte.`}</p>}
         </div>
       )}
-    </>
-  );
-}
-
-interface Prereglage {
-  rayon_km: number;
-  par_jour: boolean;
-  voyages: boolean;
-  lieux_connus: boolean;
-}
-
-/** Préréglages du tri par lieux (§ 8.6) : « Année », « Voyage » et ceux qu'on ajoute. */
-function EditionPrereglages({ config, modifier }: { config: Config; modifier: (f: (b: Config) => void) => void }) {
-  const liste = Object.entries(config.prereglages) as [string, Partial<Prereglage>][];
-  const changer = (nom: string, m: Partial<Prereglage>) => modifier((b) => (b.prereglages[nom] = { ...(b.prereglages[nom] as object), ...m }));
-  return (
-    <>
-      <table class="tableau edition">
-        <thead>
-          <tr>
-            <th>{t`Préréglage`}</th>
-            <th>{t`Rayon des lieux (km)`}</th>
-            <th>{t`Un dossier par jour`}</th>
-            <th>{t`Détecter les voyages`}</th>
-            <th>{t`Utiliser les lieux connus`}</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {liste.map(([nom, p]) => (
-            <tr key={nom}>
-              <td>{nom === 'annee' ? t`Année` : nom === 'voyage' ? t`Voyage` : nom}</td>
-              <td>
-                <input type="number" min="0.1" step="0.5" class="court" value={p.rayon_km ?? 2} onChange={(e) => changer(nom, { rayon_km: Math.max(0.1, Number(e.currentTarget.value) || 2) })} />
-              </td>
-              <td>
-                <input type="checkbox" checked={!!p.par_jour} onChange={(e) => changer(nom, { par_jour: e.currentTarget.checked })} />
-              </td>
-              <td>
-                <input type="checkbox" checked={p.voyages ?? true} onChange={(e) => changer(nom, { voyages: e.currentTarget.checked })} />
-              </td>
-              <td>
-                <input type="checkbox" checked={p.lieux_connus ?? true} onChange={(e) => changer(nom, { lieux_connus: e.currentTarget.checked })} />
-              </td>
-              <td>
-                {nom !== 'annee' && nom !== 'voyage' && (
-                  <button type="button" onClick={() => modifier((b) => delete b.prereglages[nom])}>
-                    {t`Retirer`}
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button
-        type="button"
-        onClick={() => {
-          const nom = window.prompt(t`Nom du nouveau préréglage (ex. « Week-end », « Camp de ski ») :`)?.trim();
-          if (nom && !(nom in config.prereglages)) modifier((b) => (b.prereglages[nom] = { rayon_km: 2, par_jour: true, voyages: false, lieux_connus: true }));
-        }}
-      >
-        {t`Ajouter un préréglage`}
-      </button>
-      <p class="discret">{t`« Année » : un dossier par sortie, voyages regroupés. « Voyage » (dossier de vacances déjà isolé) : un dossier par jour et par lieu.`}</p>
     </>
   );
 }

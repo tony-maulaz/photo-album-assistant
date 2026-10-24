@@ -93,4 +93,16 @@ describe('captures d’écran', () => {
     expect(estCapture({ nom: 'image.png' })).toBe(false);
     expect(estCapture({ nom: 'Capture du poisson.jpg', marque: 'samsung' })).toBe(false);
   });
+
+  it('une vraie photo de téléphone n’en est jamais une : position GPS, ou appareil et date EXIF', () => {
+    // Photos réelles en 1080 × 1920, sans marque mais avec GPS et date EXIF (campagne d'essais du 24.10.2026).
+    expect(estCapture({ nom: 'Q_permisL_05.2025 (1).jpg', dims: { l: 1080, h: 1920 }, gps: true, dateExif: true })).toBe(false);
+    expect(estCapture({ nom: 'image.png', dims: { l: 1080, h: 2340 }, gps: true })).toBe(false);
+    // Même un nom de capture ne l'emporte pas sur ces preuves.
+    expect(estCapture({ nom: 'Screenshot_20250704-123456.jpg', gps: true })).toBe(false);
+    expect(estCapture({ nom: 'Screenshot_20250704-123456.jpg', marque: 'samsung', appareil: 'Galaxy S25', dateExif: true })).toBe(false);
+    // Une date EXIF seule ne suffit pas (les captures d'iPhone en ont une), ni un appareil sans date.
+    expect(estCapture({ nom: 'IMG_0001.png', dims: { l: 1170, h: 2532 }, dateExif: true })).toBe(true);
+    expect(estCapture({ nom: 'Screenshot_20250704-123456.jpg', marque: 'samsung' })).toBe(true);
+  });
 });

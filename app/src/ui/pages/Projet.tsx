@@ -9,7 +9,9 @@ import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { RappelDossierDepart } from '../composants/DossierDepart';
 import { allerEtape, configuration, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
-import { creerProjet, sortieNonVide, verifierDossiers } from '../projets';
+import { pluriel } from '../format';
+import { creerProjet, lireProjet, sortieNonVide, verifierDossiers } from '../projets';
+import { ouvrirProjetExistant, sourcePreChoisie } from './Accueil';
 
 /** État de la configuration et de la clé (§ 6.1). */
 function EtatConfiguration() {
@@ -23,9 +25,9 @@ function EtatConfiguration() {
         {t` :`}{' '}
         {cfg ? (
           <>
-            {t`« ${c!.dossier.dossier.name} » — ${cfg.lieux_connus.length} lieu(x) connu(s)`}
+            {t`« ${c!.dossier.dossier.name} » — ${pluriel(cfg.lieux_connus.length, 'lieu connu', 'lieux connus')}`}
             {domicile ? t`, domicile « ${domicile.nom} »` : t`, pas de domicile (la détection des voyages en a besoin)`},{' '}
-            {t`${cfg.calendriers.filter((k) => k.actif).length} calendrier(s) actif(s), ${cfg.appareils.length} appareil(s).`}
+            {t`${pluriel(cfg.calendriers.filter((k) => k.actif).length, 'calendrier actif', 'calendriers actifs')}, ${pluriel(cfg.appareils.length, 'appareil')}.`}
           </>
         ) : (
           t`aucun dossier « config » choisi : les lieux connus, calendriers et appareils ne seront pas utilisés.`
@@ -46,9 +48,16 @@ function EtatConfiguration() {
 }
 
 export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
-  const [source, setSource] = useState<FileSystemDirectoryHandle | null>(null);
+  // Le dossier à trier a déjà été choisi d'un clic sur la carte de l'accueil.
+  const [source, setSource] = useState<FileSystemDirectoryHandle | null>(() => {
+    const d = sourcePreChoisie.value;
+    sourcePreChoisie.value = null;
+    return d;
+  });
   const [sortie, setSortie] = useState<FileSystemDirectoryHandle | null>(null);
-  const [nom, setNom] = useState('');
+  // Dossier de sortie qui contient déjà un projet : on propose de l'ouvrir plutôt que d'en créer un second.
+  const [existant, setExistant] = useState<Projet | null>(null);
+  const [nom, setNom] = useState(source?.name ?? '');
   const [contexte, setContexte] = useState('');
   // Le préréglage du tri se choisit à l'étape « Tri automatique » ; « Année » par défaut pour un dossier en vrac.
   const prereglage = mode === 'vrac' ? 'annee' : '';
@@ -77,6 +86,7 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
     try {
       const d = await choisirDossier('sortie', 'readwrite');
       setSortie(d);
+      setExistant((await lireProjet(d).catch(() => undefined)) ?? null);
       await verifier(source, d);
     } catch (err) {
       notifier('erreur', texteErreur(err));
@@ -104,6 +114,15 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
     }
   };
 
+  const ouvrirExistant = async () => {
+    if (!sortie || !existant) return;
+    try {
+      await ouvrirProjetExistant(sortie, existant, source);
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) notifier('erreur', texteErreur(err));
+    }
+  };
+
   return (
     <div class="page etroite avec-barre">
       <TeteEtape numero={ETAPE.projet} titre={mode === 'deja_trie' ? t`Ouvrir un dossier déjà trié` : t`Trier un nouveau dossier`}>
@@ -128,6 +147,16 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         </div>
         <RappelDossierDepart />
         {erreur && <p class="erreur">{erreur}</p>}
+        {existant && sortie && (
+          <div class="encart champ-plein projet-existant">
+            <p>
+              {t`« ${sortie.name} » contient déjà le projet « ${existant.nom} » (créé le ${new Date(existant.cree_le).toLocaleDateString('fr-CH')}). Ouvrez-le pour le continuer ou y ajouter des photos, ou choisissez un autre dossier de sortie.`}
+            </p>
+            <button type="button" class="principal" onClick={() => void ouvrirExistant()}>
+              {t`Ouvrir ce projet`}
+            </button>
+          </div>
+        )}
 
         <label for="nom-projet">{t`Nom du projet`}</label>
         <input id="nom-projet" class="large" value={nom} placeholder={t`par exemple : Photos 2025`} onInput={(e) => setNom(e.currentTarget.value)} />
@@ -163,7 +192,7 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         </details>
 
         <p class="discret">
-          {t`Configuration : ${configuration.value?.lecture?.config ? t`« ${configuration.value.dossier.dossier.name} »` : t`aucune (facultative pour l’instant)`} — clé API : ${cleApi() ? t`saisie` : t`aucune (facultative pour l’instant)`}.`}
+          {t`Facultatif, réglable plus tard : configuration (lieux connus, appareils) ${configuration.value?.lecture?.config ? t`« ${configuration.value.dossier.dossier.name} »` : t`pas encore choisie`}, clé API pour les aides IA ${cleApi() ? t`saisie` : t`pas encore saisie`}. Tout le reste fonctionne sans.`}
         </p>
       </div>
 
@@ -172,7 +201,7 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         revenir={() => (page.value = { nom: 'accueil' })}
         valider={() => void creer()}
         libelleValider={encours ? t`Création…` : t`Créer le projet`}
-        validerActif={!!source && !!sortie && !erreur && !encours}
+        validerActif={!!source && !!sortie && !erreur && !existant && !encours}
       />
     </div>
   );

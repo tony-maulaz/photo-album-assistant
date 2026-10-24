@@ -4,7 +4,7 @@ import { signal } from '@preact/signals';
 import { useEffect, useState } from 'preact/hooks';
 import { choisirDossier, demanderAutorisation, etatAutorisation } from '../../navigateur/dossiers';
 import { cleApi } from '../../navigateur/cle';
-import { nomCourtEtape, oublierProjetRecent, projetsRecents, type ProjetRecent } from '../../navigateur/projet';
+import { nomCourtEtape, oublierProjetRecent, projetsRecents, type Projet, type ProjetRecent } from '../../navigateur/projet';
 import { t } from '../../lib/langue';
 import { ChoixLangue } from '../composants/ChoixLangue';
 import { confirmer } from '../composants/Dialogues';
@@ -15,6 +15,9 @@ import { chargerConfiguration, lireProjet, ouvrirProjet, type Autorisation } fro
 
 /** Autorisations à redemander au lancement, remplies par `main.tsx`. */
 export const autorisations = signal<Autorisation[]>([]);
+
+/** Dossier à trier choisi depuis une carte de l'accueil : le formulaire du nouveau projet le reprend. */
+export const sourcePreChoisie = signal<FileSystemDirectoryHandle | null>(null);
 
 async function continuerApresReprise() {
   const config = autorisations.value.find((a) => a.libelle.startsWith('Configuration'));
@@ -103,8 +106,17 @@ async function reprendreProjet() {
     notifier('erreur', t`« ${sortie.name} » ne contient pas de projet (pas de dossier .album). Choisissez le dossier de sortie d’un projet.`);
     return;
   }
+  await ouvrirProjetExistant(sortie, projet);
+}
+
+/**
+ * Ouvre le projet enregistré dans `sortie` : sa source est celle notée sur cet
+ * ordinateur, sinon `proposee` (le dossier à trier déjà choisi) si elle porte
+ * le même nom, sinon on la demande.
+ */
+export async function ouvrirProjetExistant(sortie: FileSystemDirectoryHandle, projet: Projet, proposee?: FileSystemDirectoryHandle | null) {
   const connu = (await projetsRecents()).find((r) => r.id === projet.id);
-  let source = connu?.source;
+  let source = connu?.source ?? (proposee?.name === projet.source.nom ? proposee : undefined);
   if (source && !(await demanderAutorisation(source, 'read'))) source = undefined;
   if (!source) {
     notifier('info', t`Choisissez maintenant le dossier à trier de ce projet (« ${projet.source.nom} »).`);
@@ -153,6 +165,7 @@ function CarteProjet({ p, retirer }: { p: ProjetRecent; retirer: () => void }) {
       <div class="corps">
         <strong class="nom-projet">{p.nom}</strong>
         <span class="discret">{texte}</span>
+        {part === 1 && <span class="discret">{t`Des photos arrivées depuis ? Rouvrez-le : seules les nouvelles seront à trier.`}</span>}
         <div class="avancement" title={t`${Math.round(part * 100)} % des étapes validées`}>
           <div style={{ width: `${part * 100}%` }} />
         </div>
@@ -182,6 +195,15 @@ export function PageAccueil() {
   const lecture = config?.lecture?.config;
 
   const essayer = (f: () => Promise<void>) => () => void f().catch((err) => notifier('erreur', texteErreur(err)));
+  // Le dossier à trier se choisit dès le clic sur la carte ; le formulaire s'ouvre ensuite, ce dossier déjà rempli.
+  const commencer = (mode: Projet['mode']) => async () => {
+    try {
+      sourcePreChoisie.value = await choisirDossier('source', 'read');
+      page.value = { nom: 'nouveau', mode };
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === 'AbortError')) notifier('erreur', texteErreur(err));
+    }
+  };
 
   return (
     <div class="page accueil">
@@ -200,7 +222,7 @@ export function PageAccueil() {
       </section>
 
       <section class="cartes-entree">
-        <button type="button" class="carte-entree" onClick={() => (page.value = { nom: 'nouveau', mode: 'vrac' })}>
+        <button type="button" class="carte-entree" onClick={() => void commencer('vrac')()}>
           <span class="icone-carte">
             <Icone nom="dossierPlus" taille={26} epaisseur={1.8} />
           </span>
@@ -210,7 +232,7 @@ export function PageAccueil() {
           </span>
           <span class="faux-bouton principal">{t`Choisir le dossier à trier`}</span>
         </button>
-        <button type="button" class="carte-entree" onClick={() => (page.value = { nom: 'nouveau', mode: 'deja_trie' })}>
+        <button type="button" class="carte-entree" onClick={() => void commencer('deja_trie')()}>
           <span class="icone-carte chaude">
             <Icone nom="dossierCoche" taille={26} epaisseur={1.8} />
           </span>
@@ -255,15 +277,15 @@ export function PageAccueil() {
             {t`Configuration « ${config!.dossier.dossier.name} »`} · {pluriel(lecture.lieux_connus.length, 'lieu connu', 'lieux connus')} · {pluriel(lecture.appareils.length, 'appareil')}
           </span>
         ) : (
-          <span class="puce-etat" title={t`Lieux connus, calendriers, appareils : facultatif, mais utile pour nommer les sorties`}>
-            {t`Pas encore de configuration`}
+          <span class="puce-etat facultatif" title={t`Lieux connus, calendriers, appareils : facultatif, mais utile pour nommer les sorties`}>
+            {t`Configuration : facultative`}
           </span>
         )}
         {cle ? (
           <span class="puce-etat ok">{t`Clé API saisie pour cette session`}</span>
         ) : (
-          <span class="puce-etat" title={t`Seules les aides IA en ont besoin : tout le reste fonctionne sans`}>
-            {t`Clé API : à saisir pour les aides IA`}
+          <span class="puce-etat facultatif" title={t`Seules les aides IA en ont besoin : tout le reste fonctionne sans`}>
+            {t`Clé API : facultative (aides IA)`}
           </span>
         )}
         <span class="espace" />

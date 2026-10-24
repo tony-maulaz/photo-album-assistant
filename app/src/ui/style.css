@@ -3771,13 +3771,11 @@ button.bouton-ia:disabled {
   max-width: 100%;
 }
 
-/* « Le dossier à trier a changé » (D63) : en haut, sous l'en-tête, sans déplacer la page. */
+/* « Le dossier à trier a changé » (D63) : sous l'en-tête, dans le flux ; il pousse la page vers le bas au lieu de cacher son titre. */
 .bandeau-source {
-  position: fixed;
-  top: 66px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 40;
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 10px 16px 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -3787,6 +3785,6 @@ button.bouton-ia:disabled {
   border-radius: 14px;
   background: var(--surface);
   border: 1.5px solid var(--accent);
-  box-shadow: var(--ombre);
+  box-shadow: var(--ombre-douce);
 }
 

@@ -5,7 +5,7 @@
 import { nomsSortie } from '../../lib/sortie';
 import { useState } from 'preact/hooks';
 import { ordreAlbum, paginer, photosAlbum, sections, type Page, type Section } from '../../lib/album';
-import { changerLegende, combiner, noterAlbum, tourner, type FichierPlan } from '../../lib/plan';
+import { changerLegende, combiner, noterAlbum, periodeDe, tourner, type FichierPlan } from '../../lib/plan';
 import { titreDossier } from '../../navigateur/album';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { demander } from '../composants/Dialogues';
@@ -52,6 +52,8 @@ function EnteteSection({ sec, index }: { sec: Section; index: number }) {
   const coupure = config.coupures[premiere.id] !== undefined;
   const rattachable = index > 0;
   const titre = sec.titre;
+  // Dates sûres seulement : une photo sans date (placée en fin de section) n'étire pas la période.
+  const { du, au } = periodeDe(ordreCourant.slice(sec.debut, sec.fin + 1));
   const changerTitre = (v: string) => {
     const t = v.trim();
     if (coupure) changerAlbum({ coupures: { ...config.coupures, [premiere.id]: t || 'Section' } });
@@ -69,7 +71,7 @@ function EnteteSection({ sec, index }: { sec: Section; index: number }) {
         <input class="titre-section" value={titre} onChange={(e) => changerTitre(e.currentTarget.value)} aria-label={t`Titre de la section`} disabled={sec.suite && !coupure} />
         {sec.suite && <span class="discret">{t`(suite)`}</span>}
         <span class="discret">
-          {periode(ordreCourant[sec.debut].date?.slice(0, 10), ordreCourant[sec.fin].date?.slice(0, 10))} · {pluriel(sec.fin - sec.debut + 1, 'photo')}
+          {periode(du, au)} · {pluriel(sec.fin - sec.debut + 1, 'photo')}
         </span>
         <span class="espace" />
         {coupure ? (

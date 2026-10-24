@@ -37,7 +37,6 @@ export const TEXTES: Record<string, string> = {
   'Lieux connus ({0})': 'Known places ({0})',
   'Appareils ({0})': 'Devices ({0})',
   'Calendriers ({0})': 'Calendars ({0})',
-  Préréglages: 'Presets',
   Nom: 'Name',
   Latitude: 'Latitude',
   Longitude: 'Longitude',
@@ -97,15 +96,6 @@ export const TEXTES: Record<string, string> = {
   '{0} événement(s)': '{0} event(s)',
   ' (récurrent)': ' (recurring)',
   '… et {0} autres : filtrez par année ou par texte.': '… and {0} more: filter by year or by text.',
-  Préréglage: 'Preset',
-  'Rayon des lieux (km)': 'Place radius (km)',
-  'Détecter les voyages': 'Detect trips',
-  'Utiliser les lieux connus': 'Use known places',
-  Voyage: 'Trip',
-  'Nom du nouveau préréglage (ex. « Week-end », « Camp de ski ») :': 'Name of the new preset (e.g. “Weekend”, “Ski camp”):',
-  'Ajouter un préréglage': 'Add a preset',
-  '« Année » : un dossier par sortie, voyages regroupés. « Voyage » (dossier de vacances déjà isolé) : un dossier par jour et par lieu.':
-    '“Year”: one folder per outing, trips grouped. “Trip” (holiday folder already set apart): one folder per day and per place.',
 
   // Selection.tsx
   'Appréciation indicative de l’IA : {0}/10': 'The AI’s rough rating: {0}/10',

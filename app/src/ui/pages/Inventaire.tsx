@@ -2,7 +2,8 @@
 
 import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { RACINE, resumes } from '../../lib/plan';
+import { resumeSource } from '../../lib/inventaire';
+import { RACINE } from '../../lib/plan';
 import { heureLocale } from '../../lib/source';
 import type { Progression } from '../../navigateur/inventaire';
 import { ETAPE, nomEtape, type CodeEtape } from '../../navigateur/projet';
@@ -103,7 +104,7 @@ export function PageInventaire() {
     if (
       !(await confirmer(
         t`Refaire l’inventaire ?`,
-        t`Le dossier à trier sera relu entièrement et les photos analysées de nouveau (les résultats des photos inchangées sont réutilisés, sans frais). Les changements faits dans l’arborescence seront perdus et les étapes suivantes seront à refaire.`,
+        t`Le dossier à trier sera relu entièrement et les photos analysées de nouveau (les résultats des photos inchangées sont réutilisés, sans frais). Tout ce qui a été décidé depuis l’inventaire sera perdu : l’arborescence, les noms des dossiers, la sélection et l’album ; les étapes suivantes seront à refaire. Pour ajouter des photos arrivées depuis, utilisez plutôt « Mettre à jour l’inventaire ».`,
         t`Refaire l’inventaire`,
         true,
       ))
@@ -186,27 +187,21 @@ export function PageInventaire() {
 
   const plan = s.plan;
   const fichiers = [...plan.fichiers.values()];
-  const archive = fichiers.filter((f) => f.statut === 'archive' && f.categorie !== 'autre');
-  const photos = archive.filter((f) => f.categorie === 'photo');
-  const videos = archive.filter((f) => f.categorie === 'video');
-  const autres = fichiers.filter((f) => f.categorie === 'autre');
+  // Ce que contient la source, mis de côté compris : les chiffres ne bougent pas quand les étapes suivantes
+  // rangent ou écartent des photos (seule une mise à jour de l'inventaire les change).
+  const source = resumeSource(plan);
+  const medias = fichiers.filter((f) => f.categorie !== 'autre');
+  const photos = medias.filter((f) => f.categorie === 'photo');
   const misDeCote = fichiers.filter((f) => f.statut === 'mis_de_cote');
   // La date du fichier (photo sans date) est souvent celle d'une copie : ni dans la période, ni dans l'histogramme.
-  const datees = archive.filter((f) => f.origineDate !== 'fichier');
+  const datees = medias.filter((f) => f.origineDate !== 'fichier');
   const dates = datees.map((f) => f.date).filter((d): d is string => !!d).sort();
   const origines = { exif: 0, nom: 0, video: 0, fichier: 0 };
-  for (const f of archive) origines[f.origineDate ?? 'fichier']++;
+  for (const f of medias) origines[f.origineDate ?? 'fichier']++;
   const parMois = new Map<string, number>();
   for (const f of datees) if (f.categorie === 'photo' && f.date) parMois.set(f.date.slice(0, 7), (parMois.get(f.date.slice(0, 7)) ?? 0) + 1);
   const mois = [...parMois].sort((a, b) => a[0].localeCompare(b[0]));
   const maxMois = Math.max(1, ...mois.map(([, n]) => n));
-  const r = resumes(plan);
-  const dossiers = [...plan.dossiers.values()].filter((d) => d.parent !== null);
-  const petits = dossiers.filter((d) => {
-    const x = r.get(d.id)!;
-    return x.photos + x.videos > 0 && x.photos + x.videos < 3;
-  });
-  const racine = r.get(RACINE)!;
   const inv = s.projet.inventaire;
 
   return (
@@ -226,16 +221,16 @@ export function PageInventaire() {
 
       <div class="tableau-bord">
         <div class="tuile-chiffre">
-          <strong>{nombre(photos.length)}</strong> {t`photos`}
+          <strong>{nombre(source.photos)}</strong> {t`photos`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{nombre(videos.length)}</strong> {t`vidéos`}
+          <strong>{nombre(source.videos)}</strong> {t`vidéos`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{nombre(autres.length)}</strong> {t`autres fichiers`}
+          <strong>{nombre(source.autres)}</strong> {t`autres fichiers`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{nombre(dossiers.length)}</strong> {t`dossiers`}
+          <strong>{nombre(source.dossiers)}</strong> {t`dossiers`}
         </div>
         <div class="tuile-chiffre">
           <strong>{taille(inv.octets)}</strong> {t`au total`}
@@ -260,8 +255,8 @@ export function PageInventaire() {
       <h2>{t`Dates de prise de vue`}</h2>
       <ul>
         <li>{t`${pluriel(origines.exif, 'photo datée', 'photos datées')} par l’appareil (EXIF) ;`}</li>
-        <li>{t`${nombre(origines.nom)} datées par leur nom de fichier ;`}</li>
-        <li>{t`${nombre(origines.video)} vidéos datées par leurs données internes ;`}</li>
+        <li>{t`${pluriel(origines.nom, 'datée', 'datées')} par le nom du fichier ;`}</li>
+        <li>{t`${pluriel(origines.video, 'vidéo datée', 'vidéos datées')} par les données internes ;`}</li>
         <li class={origines.fichier ? 'attention' : ''}>{t`${nombre(origines.fichier)} sans date (ni l’appareil, ni le nom du fichier ne la donnent).`}</li>
       </ul>
 
@@ -328,9 +323,11 @@ export function PageInventaire() {
 
       <h2>{t`À savoir`}</h2>
       <ul>
-        {racine.photos + racine.videos > 0 && <li>{t`${pluriel(racine.photos + racine.videos, 'élément')} directement à la racine du dossier (pas dans un sous-dossier).`}</li>}
-        {petits.length > 0 && <li>{t`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.`}</li>}
-        {misDeCote.length > 0 && <li>{t`${nombre(misDeCote.length)} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « ${nomsSortie().misDeCote} ».`}</li>}
+        {source.aLaRacine > 0 && <li>{t`${pluriel(source.aLaRacine, 'élément')} directement à la racine du dossier (pas dans un sous-dossier).`}</li>}
+        {source.petitsDossiers > 0 && <li>{t`${pluriel(source.petitsDossiers, 'petit dossier', 'petits dossiers')} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.`}</li>}
+        {misDeCote.length > 0 && (
+          <li>{t`${pluriel(misDeCote.length, 'élément mis de côté', 'éléments mis de côté')} (floues, doublons…) : comptés ci-dessus, ils iront dans « ${nomsSortie().misDeCote} ».`}</li>
+        )}
         {inv.ignores.length > 0 && <li>{t`${pluriel(inv.ignores.length, 'fichier ignoré', 'fichiers ignorés')} : l’état d’un ancien projet (dossier « .album »).`}</li>}
         <li>{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont pas vus : Windows les recrée.`}</li>
       </ul>

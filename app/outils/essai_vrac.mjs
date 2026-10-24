@@ -206,7 +206,7 @@ try {
 
   // Étape 6 : tri automatique ; les captures d'écran parmi les photos à trier se rangent d'abord.
   await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
-  await page.getByRole('button', { name: /Ranger les 1 captures/ }).click();
+  await page.getByRole('button', { name: /Ranger 1 capture dans/ }).click();
   await page.getByText('1 capture rangée').waitFor();
   verifier(true, `capture d’écran rangée dans ${N.captures}, depuis le tri automatique`);
   await page.getByRole('button', { name: 'Calculer l’arborescence' }).click();
