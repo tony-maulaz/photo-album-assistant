@@ -10,7 +10,8 @@ import { listerSortie, NOM_RAPPORT, synchroniser, type ProgressionSynchro, type 
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
-import { ETAPE } from '../../navigateur/projet';
+import { ETAPE, nomEtape } from '../../navigateur/projet';
+import { t } from '../../lib/langue';
 import { duree, nombre, pluriel, taille } from '../format';
 
 interface Apercu {
@@ -58,7 +59,7 @@ export function PageSortie() {
         conflits: actions.filter((a) => a.type === 'conflit'),
       });
     } catch (err) {
-      notifier('erreur', `Lecture du dossier de sortie impossible : ${texteErreur(err)}`);
+      notifier('erreur', t`Lecture du dossier de sortie impossible : ${texteErreur(err)}`);
     }
   };
 
@@ -71,9 +72,9 @@ export function PageSortie() {
     if (
       travail + travailAlbum &&
       !(await confirmer(
-        'Écrire dans le dossier de sortie ?',
-        `${pluriel(apercu.aCopier + apercu.album.aCopier, 'fichier')} à copier (${taille(apercu.octets + apercu.album.octets)}) et ${pluriel(apercu.aDeplacer + apercu.album.aRenommer, 'fichier')} à déplacer ou renommer dans « ${s.sortie.racine.name} ». Le dossier à trier n’est pas modifié.`,
-        'Écrire',
+        t`Écrire dans le dossier de sortie ?`,
+        t`${pluriel(apercu.aCopier + apercu.album.aCopier, 'fichier')} à copier (${taille(apercu.octets + apercu.album.octets)}) et ${pluriel(apercu.aDeplacer + apercu.album.aRenommer, 'fichier')} à déplacer ou renommer dans « ${s.sortie.racine.name} ». Le dossier à trier n’est pas modifié.`,
+        t`Écrire`,
       ))
     )
       return;
@@ -117,7 +118,7 @@ export function PageSortie() {
       setResultat(r);
       const complet = r.bilan.manquants.length === 0;
       changerEtape(ETAPE.sortie, complet ? 'validee' : 'en_cours');
-      journal('sortie', `Sortie : ${r.copies} copiés, ${r.deplaces} déplacés, ${r.gardes} à jour ; ${phraseBilan(r.bilan)} Album : ${ra.copies} copiées, ${ra.renommes} renommées, ${ra.retires} retirées.`, {
+      journal('sortie', t`Sortie : ${r.copies} copiés, ${r.deplaces} déplacés, ${r.gardes} à jour ; ${phraseBilan(r.bilan)} Album : ${ra.copies} copiées, ${ra.renommes} renommées, ${ra.retires} retirées.`, {
         copies: r.copies,
         deplaces: r.deplaces,
         erreurs: r.erreurs,
@@ -126,7 +127,7 @@ export function PageSortie() {
       });
       await enregistrerMaintenant();
     } catch (err) {
-      notifier('erreur', `Écriture interrompue : ${texteErreur(err)}`);
+      notifier('erreur', t`Écriture interrompue : ${texteErreur(err)}`);
     } finally {
       setProgres(null);
       void analyser();
@@ -164,18 +165,17 @@ export function PageSortie() {
 
   return (
     <div class="page etroite avec-barre">
-      <TeteEtape numero={ETAPE.sortie} titre="Création de la sortie">
-        L’application écrit le résultat dans le dossier de sortie, puis vérifie que chaque fichier du dossier à trier s’y retrouve. Vous pouvez la relancer à
-        tout moment : seul ce qui a changé est copié ou déplacé.
+      <TeteEtape numero={ETAPE.sortie} titre={nomEtape(ETAPE.sortie)}>
+        {t`L’application écrit le résultat dans le dossier de sortie, puis vérifie que chaque fichier du dossier à trier s’y retrouve. Vous pouvez la relancer à tout moment : seul ce qui a changé est copié ou déplacé.`}
       </TeteEtape>
 
-      <h2>Ce qui sera dans « {s.sortie.racine.name} »</h2>
+      <h2>{t`Ce qui sera dans « ${s.sortie.racine.name} »`}</h2>
       <table class="tableau">
         <thead>
           <tr>
-            <th>Dossier</th>
-            <th>Contenu</th>
-            <th class="n">Taille</th>
+            <th>{t`Dossier`}</th>
+            <th>{t`Contenu`}</th>
+            <th class="n">{t`Taille`}</th>
           </tr>
         </thead>
         <tbody>
@@ -190,72 +190,72 @@ export function PageSortie() {
             <td>Album/</td>
             <td>
               {albumPhotos
-                ? `${pluriel(albumPhotos, 'photo')} de l’album, numérotées dans l’ordre pour ifolor, et les textes (textes_album.md)`
-                : `rien : aucune photo retenue à l’étape ${ETAPE.selection}`}
+                ? t`${pluriel(albumPhotos, 'photo')} de l’album, numérotées dans l’ordre pour ifolor, et les textes (textes_album.md)`
+                : t`rien : aucune photo retenue à l’étape ${ETAPE.selection}`}
             </td>
             <td class="n">{albumPhotos ? taille(albumOctets) : ''}</td>
           </tr>
           <tr>
             <td>_mis_de_cote/</td>
-            <td>{pluriel(deCote.n, 'élément')} écartés (rien n’est supprimé)</td>
+            <td>{t`${pluriel(deCote.n, 'élément')} écartés (rien n’est supprimé)`}</td>
             <td class="n">{taille(deCote.octets)}</td>
           </tr>
           <tr>
             <td>_autres_fichiers/</td>
             <td>
-              {pluriel(autres.n, 'fichier')} ni photo ni vidéo, avec {autres.n > 1 ? 'leur' : 'son'} chemin d’origine
+              {autres.n > 1
+                ? t`${pluriel(autres.n, 'fichier')} ni photo ni vidéo, avec leur chemin d’origine`
+                : t`${pluriel(autres.n, 'fichier')} ni photo ni vidéo, avec son chemin d’origine`}
             </td>
             <td class="n">{taille(autres.octets)}</td>
           </tr>
           <tr>
             <td>Rapport.html</td>
-            <td>le bilan, lisible dans un navigateur</td>
+            <td>{t`le bilan, lisible dans un navigateur`}</td>
             <td class="n" />
           </tr>
           <tr class="total">
-            <td>Total</td>
+            <td>{t`Total`}</td>
             <td>{pluriel(ensemble.n, 'fichier')}</td>
             <td class="n">{taille(ensemble.octets)}</td>
           </tr>
         </tbody>
       </table>
 
-      {!apercu && !progres && <p class="discret">Lecture du dossier de sortie…</p>}
+      {!apercu && !progres && <p class="discret">{t`Lecture du dossier de sortie…`}</p>}
       {apercu && !progres && (
         <div class="encart">
           {apercu.aCopier + apercu.aDeplacer === 0 ? (
             <p>
-              <strong>La sortie est à jour</strong> : {pluriel(apercu.aJour, 'fichier')} déjà en place.
+              <strong>{t`La sortie est à jour`}</strong>
+              {t` : ${pluriel(apercu.aJour, 'fichier')} déjà en place.`}
             </p>
           ) : (
             <p>
-              À écrire : <strong>{pluriel(apercu.aCopier, 'fichier')}</strong> à copier ({taille(apercu.octets)}), {pluriel(apercu.aDeplacer, 'fichier')} à déplacer
-              (instantané), {pluriel(apercu.aJour, 'fichier')} déjà à jour.
+              {t`À écrire :`} <strong>{pluriel(apercu.aCopier, 'fichier')}</strong>
+              {t` à copier (${taille(apercu.octets)}), ${pluriel(apercu.aDeplacer, 'fichier')} à déplacer (instantané), ${pluriel(apercu.aJour, 'fichier')} déjà à jour.`}
             </p>
           )}
           {apercu.album.aCopier + apercu.album.aRenommer + apercu.album.aRetirer > 0 && (
             <p>
-              Album : {pluriel(apercu.album.aCopier, 'copie')} à faire ({taille(apercu.album.octets)})
-              {apercu.album.aRenommer ? `, ${pluriel(apercu.album.aRenommer, 'copie')} à renuméroter` : ''}
-              {apercu.album.aRetirer ? `, ${pluriel(apercu.album.aRetirer, 'ancienne copie', 'anciennes copies')} à retirer (plus dans l’album)` : ''}.
+              {t`Album : ${pluriel(apercu.album.aCopier, 'copie')} à faire (${taille(apercu.album.octets)})`}
+              {apercu.album.aRenommer ? t`, ${pluriel(apercu.album.aRenommer, 'copie')} à renuméroter` : ''}
+              {apercu.album.aRetirer ? t`, ${pluriel(apercu.album.aRetirer, 'ancienne copie', 'anciennes copies')} à retirer (plus dans l’album)` : ''}.
             </p>
           )}
           {apercu.album.conflits > 0 && (
             <p class="attention">
-              {pluriel(apercu.album.conflits, 'fichier')} de « Album » n’a pas été écrit par l’application et occupe une place prévue : il n’est pas touché. Déplacez-le
-              pour que l’album soit complet.
+              {t`${pluriel(apercu.album.conflits, 'fichier')} de « Album » n’a pas été écrit par l’application et occupe une place prévue : il n’est pas touché. Déplacez-le pour que l’album soit complet.`}
             </p>
           )}
           {apercu.octets > 0 && (
             <p class="discret">
-              Il faut environ {taille(apercu.octets)} de place libre sur le disque de « {s.sortie.racine.name} » : le navigateur ne peut pas vérifier la place
-              disponible.
+              {t`Il faut environ ${taille(apercu.octets)} de place libre sur le disque de « ${s.sortie.racine.name} » : le navigateur ne peut pas vérifier la place disponible.`}
             </p>
           )}
           {apercu.conflits.length > 0 && (
             <p class="attention">
-              {pluriel(apercu.conflits.length, 'fichier')} ne peut pas être écrit : un autre fichier occupe déjà sa place dans la sortie (il n’est jamais écrasé).
-              Exemple : {apercu.conflits[0].cible}
+              {t`${pluriel(apercu.conflits.length, 'fichier')} ne peut pas être écrit : un autre fichier occupe déjà sa place dans la sortie (il n’est jamais écrasé). Exemple : ${apercu.conflits[0].cible}`}
             </p>
           )}
         </div>
@@ -266,63 +266,64 @@ export function PageSortie() {
           <BarreProgression
             faits={progres.octetsTotal ? progres.octets : progres.faits}
             total={progres.octetsTotal || progres.total}
-            texte={`${nombre(progres.faits)} / ${nombre(progres.total)} fichiers · ${taille(progres.octets)} / ${taille(progres.octetsTotal)}${debit ? ` · ${taille(debit)}/s · encore ${duree(restant)}` : ''}`}
+            texte={t`${nombre(progres.faits)} / ${nombre(progres.total)} fichiers · ${taille(progres.octets)} / ${taille(progres.octetsTotal)}${debit ? t` · ${taille(debit)}/s · encore ${duree(restant)}` : ''}`}
           />
           {progres.enCours && <p class="discret">{progres.enCours}</p>}
           <button type="button" onClick={() => (arreter.current = true)}>
-            Arrêter (reprendra là où il s’est arrêté)
+            {t`Arrêter (reprendra là où il s’est arrêté)`}
           </button>
         </div>
       )}
 
       {b && (
         <div class={`encart bilan ${b.manquants.length ? 'incomplet' : 'complet'}`}>
-          <h2>Bilan</h2>
+          <h2>{t`Bilan`}</h2>
           <p>{phraseBilan(b)}</p>
           {b.manquants.length === 0 ? (
             <p>
-              <strong>Tout est dans le dossier de sortie.</strong> Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le
-              dossier d’origine vous-même.
+              <strong>{t`Tout est dans le dossier de sortie.`}</strong>{' '}
+              {t`Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.`}
             </p>
           ) : (
             <>
               <p class="attention">
-                <strong>{pluriel(b.manquants.length, 'fichier manque', 'fichiers manquent')}</strong> dans la sortie : ne supprimez pas le dossier d’origine.
+                <strong>{pluriel(b.manquants.length, 'fichier manque', 'fichiers manquent')}</strong>
+                {t` dans la sortie : ne supprimez pas le dossier d’origine.`}
               </p>
               <ul class="liste-courte">
                 {b.manquants.slice(0, 20).map((m) => (
                   <li key={m.id}>{m.id}</li>
                 ))}
-                {b.manquants.length > 20 && <li>… et {nombre(b.manquants.length - 20)} autres (voir le rapport)</li>}
+                {b.manquants.length > 20 && <li>{t`… et ${nombre(b.manquants.length - 20)} autres (voir le rapport)`}</li>}
               </ul>
-              {resultat!.erreurs.length > 0 && <p class="discret">Erreur rencontrée : {resultat!.erreurs[0].message}</p>}
+              {resultat!.erreurs.length > 0 && <p class="discret">{t`Erreur rencontrée : ${resultat!.erreurs[0].message}`}</p>}
             </>
           )}
           {resultatAlbum && (resultatAlbum.copies + resultatAlbum.renommes + resultatAlbum.retires > 0 || resultatAlbum.erreurs.length > 0) && (
             <p>
-              Album : {pluriel(resultatAlbum.copies, 'copie écrite', 'copies écrites')}, {pluriel(resultatAlbum.renommes, 'renumérotée', 'renumérotées')},{' '}
-              {pluriel(resultatAlbum.retires, 'ancienne copie retirée', 'anciennes copies retirées')}
-              {resultatAlbum.erreurs.length ? ` ; ${pluriel(resultatAlbum.erreurs.length, 'erreur')} (relancez)` : ''}.
+              {t`Album : ${pluriel(resultatAlbum.copies, 'copie écrite', 'copies écrites')}, ${pluriel(resultatAlbum.renommes, 'renumérotée', 'renumérotées')}, ${pluriel(resultatAlbum.retires, 'ancienne copie retirée', 'anciennes copies retirées')}`}
+              {resultatAlbum.erreurs.length ? t` ; ${pluriel(resultatAlbum.erreurs.length, 'erreur')} (relancez)` : ''}.
             </p>
           )}
           {resultatAlbum && resultatAlbum.sansRotation.length > 0 && (
             <p class="discret">
-              {pluriel(resultatAlbum.sansRotation.length, 'photo tournée n’a', 'photos tournées n’ont')} pas pu être tournée{resultatAlbum.sansRotation.length > 1 ? 's' : ''} sans
-              recompression (pas de balise d’orientation) : tournez-la dans ifolor.
+              {resultatAlbum.sansRotation.length > 1
+                ? t`${nombre(resultatAlbum.sansRotation.length)} photos tournées n’ont pas pu être tournées sans recompression (pas de balise d’orientation) : tournez-les dans ifolor.`
+                : t`${nombre(resultatAlbum.sansRotation.length)} photo tournée n’a pas pu être tournée sans recompression (pas de balise d’orientation) : tournez-la dans ifolor.`}
             </p>
           )}
-          {b.enTrop.length > 0 && <p class="discret">{pluriel(b.enTrop.length, 'fichier')} de la sortie hors du plan (laissés tels quels, listés dans le rapport).</p>}
+          {b.enTrop.length > 0 && <p class="discret">{t`${pluriel(b.enTrop.length, 'fichier')} de la sortie hors du plan (laissés tels quels, listés dans le rapport).`}</p>}
           {b.datesFichierSeulement.length > 0 && (
-            <p class="discret">{pluriel(b.datesFichierSeulement.length, 'photo ou vidéo', 'photos ou vidéos')} sans autre date que celle du fichier : leur date d’origine est dans le rapport.</p>
+            <p class="discret">{t`${pluriel(b.datesFichierSeulement.length, 'photo ou vidéo', 'photos ou vidéos')} sans autre date que celle du fichier : leur date d’origine est dans le rapport.`}</p>
           )}
-          <p class="discret">Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont ni comptés ni copiés : Windows les recrée.</p>
+          <p class="discret">{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont ni comptés ni copiés : Windows les recrée.`}</p>
           <div class="actions">
             <button type="button" onClick={ouvrirRapport}>
-              Ouvrir le rapport
+              {t`Ouvrir le rapport`}
             </button>
             {b.manquants.length > 0 && (
               <button type="button" class="principal" onClick={() => void lancer()}>
-                Réessayer
+                {t`Réessayer`}
               </button>
             )}
           </div>
@@ -330,15 +331,15 @@ export function PageSortie() {
       )}
 
       <BarreValidation
-        resume={`Dossier de sortie : « ${s.sortie.racine.name} »`}
+        resume={t`Dossier de sortie : « ${s.sortie.racine.name} »`}
         revenir={() => revenirDe('sortie')}
         valider={() => void lancer()}
         libelleValider={
           progres
-            ? 'Écriture…'
+            ? t`Écriture…`
             : apercu && apercu.aCopier + apercu.aDeplacer + apercu.album.aCopier + apercu.album.aRenommer + apercu.album.aRetirer === 0
-              ? 'Vérifier à nouveau'
-              : 'Créer / mettre à jour la sortie'
+              ? t`Vérifier à nouveau`
+              : t`Créer / mettre à jour la sortie`
         }
         validerActif={!progres && !!apercu}
       />

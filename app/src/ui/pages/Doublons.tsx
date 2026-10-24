@@ -10,7 +10,7 @@ import { cheminDossier, combiner, garderAussi, type FichierPlan } from '../../li
 import { MODELES } from '../../lib/tarifs';
 import { cleApi } from '../../navigateur/cle';
 import { analyserDoublons, estimerDoublons, lotsDoublons, photosLot } from '../../navigateur/doublons';
-import { ETAPE } from '../../navigateur/projet';
+import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { BudgetAtteint } from '../../navigateur/ia';
 import { cleMiniature } from '../../navigateur/miniatures';
 import { EncartAnalyse } from '../composants/Analyse';
@@ -21,6 +21,7 @@ import { Comparateur } from '../composants/Comparateur';
 import { confirmer } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { allerEtape, annuler, appliquer, changerEtape, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
+import { aTraduire, t } from '../../lib/langue';
 import { nombre, pluriel } from '../format';
 
 type Filtre = 'a_relire' | 'priorite' | 'tous' | 'acceptes';
@@ -32,27 +33,27 @@ function lots(s: Session) {
 
 /** « dossier » ou « journée », selon les lots. */
 function unite(s: Session): [string, string] {
-  return s.projet.mode === 'vrac' ? ['journée', 'journées'] : ['dossier', 'dossiers'];
+  return s.projet.mode === 'vrac' ? [aTraduire('journée'), aTraduire('journées')] : [aTraduire('dossier'), aTraduire('dossiers')];
 }
 
 // IA7 au catalogue : l'estimation pour le projet ; le lancement se fait depuis l'étape « Doublons » (réglages Prudent / Strict).
 enregistrerAide({
   id: 'IA7',
-  nom: 'Doublons (IA)',
+  nom: aTraduire('Doublons (IA)'),
   etape: ETAPE.doublons,
-  description: 'Vue d’ensemble de chaque dossier (ou de chaque journée pour un dossier en vrac), puis vérification en grand des scènes répétées, avec garde-fous (script 06).',
-  envoi: 'planches de miniatures de chaque dossier ou journée, puis 6 photos au plus en grand par vérification',
+  description: aTraduire('Vue d’ensemble de chaque dossier (ou de chaque journée pour un dossier en vrac), puis vérification en grand des scènes répétées, avec garde-fous (script 06).'),
+  envoi: aTraduire('planches de miniatures de chaque dossier ou journée, puis 6 photos au plus en grand par vérification'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
     const ids = lots(s).map((l) => l.id);
     if (!ids.length) return null;
     const e = estimerDoublons(s.plan, s.analyses, ids, reglages.value.modeles.standard, s.ia);
-    return { usd: e.usd, appels: e.appels, detail: `${pluriel(e.dossiers, ...unite(s))} (analyse locale des photos nécessaire)` };
+    return { usd: e.usd, appels: e.appels, detail: t`${pluriel(e.dossiers, ...unite(s))} (analyse locale des photos nécessaire)` };
   },
   lancer: async () => {
     allerEtape('doublons');
-    return `Lancez l’analyse depuis l’étape ${ETAPE.doublons}.`;
+    return t`Lancez l’analyse depuis l’étape ${ETAPE.doublons}.`;
   },
 });
 
@@ -80,9 +81,9 @@ function Vignette({ f, taille, legende, gardee, etat }: { f: FichierPlan; taille
     <figure class={`vignette-doublon${gardee ? ' gardee' : ''}${etat ? ` ${etat}` : ''}`}>
       <div class="cadre-miniature" style={{ width: `${taille}px`, height: `${taille}px` }}>
         <Miniature f={f} taille={taille} />
-        {gardee && <span class="badge gardee">gardée</span>}
-        {etat === 'accepte' && <span class="badge ecartee">écartée</span>}
-        {etat === 'garde' && !gardee && <span class="badge gardee">gardée aussi</span>}
+        {gardee && <span class="badge gardee">{t`gardée`}</span>}
+        {etat === 'accepte' && <span class="badge ecartee">{t`écartée`}</span>}
+        {etat === 'garde' && !gardee && <span class="badge gardee">{t`gardée aussi`}</span>}
       </div>
       <figcaption>
         <strong>{f.date?.slice(11, 16) ?? ''}</strong> {legende && <span>{legende}</span>}
@@ -106,36 +107,36 @@ function CarteGroupe({ g, comparer }: { g: Groupe; comparer: (g: Groupe) => void
   return (
     <article class={`carte-groupe ${etat}`}>
       <header>
-        <span class={`source ${g.p.source}`}>{g.p.source === 'rafale' ? 'Rafale' : 'IA'}</span>
-        <span>{g.p.scene || (g.p.source === 'rafale' ? 'photos quasi identiques prises à quelques secondes' : '')}</span>
-        <span class="discret">{cheminDossier(s.plan, garde.dossier) || 'Photos (racine)'}</span>
+        <span class={`source ${g.p.source}`}>{g.p.source === 'rafale' ? t`Rafale` : t`IA`}</span>
+        <span>{g.p.scene || (g.p.source === 'rafale' ? t`photos quasi identiques prises à quelques secondes` : '')}</span>
+        <span class="discret">{cheminDossier(s.plan, garde.dossier) || t`Photos (racine)`}</span>
       </header>
       <div class="photos-groupe">
-        <div onDblClick={() => comparer(g)} title="Double-clic : comparer le groupe">
+        <div onDblClick={() => comparer(g)} title={t`Double-clic : comparer le groupe`}>
           <Vignette f={garde} taille={220} gardee legende={description(gardeId)} />
-          {gardeId !== g.p.garde && <p class="raison">choisie à la place de la photo proposée</p>}
+          {gardeId !== g.p.garde && <p class="raison">{t`choisie à la place de la photo proposée`}</p>}
         </div>
         {autres.map((id) => {
           const f = fichier(id);
           if (!f) return null;
           const e = etatDoublon(f);
           return (
-            <div key={id} class="doublon" onDblClick={() => comparer(g)} title="Double-clic : comparer le groupe">
+            <div key={id} class="doublon" onDblClick={() => comparer(g)} title={t`Double-clic : comparer le groupe`}>
               <Vignette f={f} taille={160} legende={description(id)} etat={e} />
-              <p class="raison">{id === g.p.garde ? 'la photo que l’analyse proposait de garder' : infos.get(id)?.raison}</p>
+              <p class="raison">{id === g.p.garde ? t`la photo que l’analyse proposait de garder` : infos.get(id)?.raison}</p>
               {/* Chaque photo garde de quoi changer d'avis, quel que soit son état. */}
               <div class="actions-doublon">
                 {e === 'garde' ? (
-                  <button type="button" onClick={() => appliquer(ecarterDuGroupe(s.plan, g.p, id))} title="Finalement, l’écarter avec les autres doublons (rien n’est supprimé)">
-                    Écarter
+                  <button type="button" onClick={() => appliquer(ecarterDuGroupe(s.plan, g.p, id))} title={t`Finalement, l’écarter avec les autres doublons (rien n’est supprimé)`}>
+                    {t`Écarter`}
                   </button>
                 ) : (
-                  <button type="button" onClick={() => appliquer(garderAussi(s.plan, [id]))} title="Cette photo reste dans l’archive et ne sera plus proposée">
-                    Garder aussi
+                  <button type="button" onClick={() => appliquer(garderAussi(s.plan, [id]))} title={t`Cette photo reste dans l’archive et ne sera plus proposée`}>
+                    {t`Garder aussi`}
                   </button>
                 )}
-                <button type="button" onClick={() => appliquer(garderALaPlace(s.plan, g.p, id))} title="Garder celle-ci et écarter la photo gardée jusqu’ici">
-                  Garder celle-ci à la place
+                <button type="button" onClick={() => appliquer(garderALaPlace(s.plan, g.p, id))} title={t`Garder celle-ci et écarter la photo gardée jusqu’ici`}>
+                  {t`Garder celle-ci à la place`}
                 </button>
               </div>
             </div>
@@ -144,21 +145,21 @@ function CarteGroupe({ g, comparer }: { g: Groupe; comparer: (g: Groupe) => void
       </div>
       {g.p.refus && g.p.refus.length > 0 && (
         <p class="garde-fou">
-          Le garde-fou a gardé {pluriel(g.p.refus.length, 'photo')} que l’IA proposait d’écarter : les descriptions ne parlaient pas de la même scène.
+          {t`Le garde-fou a gardé ${pluriel(g.p.refus.length, 'photo')} que l’IA proposait d’écarter : les descriptions ne parlaient pas de la même scène.`}
         </p>
       )}
       <footer>
         <button type="button" onClick={() => comparer(g)}>
-          Comparer
+          {t`Comparer`}
         </button>
         <span class="espace" />
         {proposes.length > 0 && (
           <>
             <button type="button" onClick={() => appliquer(garderAussi(s.plan, proposes))}>
-              Tout garder
+              {t`Tout garder`}
             </button>
             <button type="button" class="principal" onClick={() => appliquer(accepterProposition(s.plan, g.p, gardeId))}>
-              Écarter {proposes.length > 1 ? `les ${proposes.length} doublons` : 'le doublon'}
+              {proposes.length > 1 ? t`Écarter les ${proposes.length} doublons` : t`Écarter le doublon`}
             </button>
           </>
         )}
@@ -221,20 +222,22 @@ export function PageDoublons() {
 
   const lancer = async (avecIA: boolean) => {
     if (avecIA && !cleApi()) {
-      notifier('erreur', 'Saisissez d’abord votre clé API dans Réglages.', { libelle: 'Réglages', faire: () => (page.value = { nom: 'reglages' }) });
+      notifier('erreur', t`Saisissez d’abord votre clé API dans Réglages.`, { libelle: t`Réglages`, faire: () => (page.value = { nom: 'reglages' }) });
       return;
     }
     if (avecIA && chf > s.ia.resteUSD() * reglages.value.tauxUsdChf) {
-      notifier('erreur', `Le budget restant du projet ne suffit pas (environ ${nombre(chf, 2)} CHF nécessaires) : augmentez-le à l’étape 1.`);
+      notifier('erreur', t`Le budget restant du projet ne suffit pas (environ ${nombre(chf, 2)} CHF nécessaires) : augmentez-le à l’étape 1.`);
       return;
     }
     if (
       avecIA &&
       chf >= reglages.value.seuilConfirmationChf &&
       !(await confirmer(
-        'Lancer l’analyse IA des doublons ?',
-        `Environ ${nombre(chf, 2)} CHF (au plus) pour ${pluriel(estimation.dossiers, un, plusieurs)}${estimation.enCache ? ` ; ${pluriel(estimation.enCache, un, plusieurs)} déjà analysé${un === 'journée' ? 'e' : ''}${estimation.enCache > 1 ? 's' : ''}, gratuit${un === 'journée' ? 'e' : ''}${estimation.enCache > 1 ? 's' : ''}` : ''}. Des planches de miniatures sont envoyées à l’IA (api.anthropic.com).`,
-        'Lancer',
+        t`Lancer l’analyse IA des doublons ?`,
+        estimation.enCache
+          ? t`Environ ${nombre(chf, 2)} CHF (au plus) pour ${pluriel(estimation.dossiers, un, plusieurs)} ; ${un === 'journée' ? pluriel(estimation.enCache, 'journée déjà analysée, gratuite', 'journées déjà analysées, gratuites') : pluriel(estimation.enCache, 'dossier déjà analysé, gratuit', 'dossiers déjà analysés, gratuits')}. Des planches de miniatures sont envoyées à l’IA (api.anthropic.com).`
+          : t`Environ ${nombre(chf, 2)} CHF (au plus) pour ${pluriel(estimation.dossiers, un, plusieurs)}. Des planches de miniatures sont envoyées à l’IA (api.anthropic.com).`,
+        t`Lancer`,
       ))
     )
       return;
@@ -261,13 +264,14 @@ export function PageDoublons() {
       );
       s.doublons = res.etat;
       const n = Object.values(res.etat.dossiers).reduce((a, d) => a + d.propositions.reduce((b, p) => b + p.doublons.length, 0), 0);
-      journal('doublons', `Doublons (${avecIA ? `IA, ${modele}` : 'rafales'}, ${strict ? 'strict' : 'prudent'}) : ${n} proposés en ${Math.round((performance.now() - debut) / 1000)} s`);
+      journal('doublons', t`Doublons (${avecIA ? t`IA, ${modele}` : t`rafales`}, ${strict ? t`strict` : t`prudent`}) : ${n} proposés en ${Math.round((performance.now() - debut) / 1000)} s`);
       if (res.budgetAtteint) notifier('erreur', new BudgetAtteint().message);
-      else if (res.erreurs.length) notifier('erreur', `${pluriel(res.erreurs.length, un, plusieurs)} non analysé${un === 'journée' ? 'e' : ''}${res.erreurs.length > 1 ? 's' : ''} : ${res.erreurs[0]}`);
-      else notifier('ok', `${pluriel(n, 'doublon proposé', 'doublons proposés')} : relisez-les ci-dessous.`);
+      else if (res.erreurs.length)
+        notifier('erreur', t`${un === 'journée' ? pluriel(res.erreurs.length, 'journée non analysée', 'journées non analysées') : pluriel(res.erreurs.length, 'dossier non analysé', 'dossiers non analysés')} : ${res.erreurs[0]}`);
+      else notifier('ok', t`${pluriel(n, 'doublon proposé', 'doublons proposés')} : relisez-les ci-dessous.`);
       changerEtape(ETAPE.doublons, 'en_cours');
     } catch (err) {
-      notifier('erreur', `Analyse interrompue : ${texteErreur(err)}`);
+      notifier('erreur', t`Analyse interrompue : ${texteErreur(err)}`);
     } finally {
       setProgres(null);
       versionIA.value++;
@@ -282,52 +286,49 @@ export function PageDoublons() {
   const toutAccepter = async () => {
     const aAccepter = visibles.filter((g) => g.p.doublons.some((d) => etatDoublon(fichier(d.id)) === 'propose'));
     const n = aAccepter.reduce((a, g) => a + g.p.doublons.filter((d) => etatDoublon(fichier(d.id)) === 'propose').length, 0);
-    if (!n || !(await confirmer('Écarter tous les doublons affichés ?', `${pluriel(n, 'photo')} iront dans « _mis_de_cote/doublons » (rien n’est supprimé, Ctrl+Z annule).`, 'Écarter'))) return;
-    appliquer(combiner(`Écarter ${n} doublons`, ...aAccepter.map((g) => accepterProposition(plan, g.p, gardeeActuelle(g.p, fichier)))));
-    notifier('ok', `${pluriel(n, 'doublon écarté', 'doublons écartés')}.`, { libelle: 'Annuler', faire: annuler });
+    if (!n || !(await confirmer(t`Écarter tous les doublons affichés ?`, t`${pluriel(n, 'photo')} iront dans « _mis_de_cote/doublons » (rien n’est supprimé, Ctrl+Z annule).`, t`Écarter`))) return;
+    appliquer(combiner(t`Écarter ${n} doublons`, ...aAccepter.map((g) => accepterProposition(plan, g.p, gardeeActuelle(g.p, fichier)))));
+    notifier('ok', `${pluriel(n, 'doublon écarté', 'doublons écartés')}.`, { libelle: t`Annuler`, faire: annuler });
   };
 
   const modeleInfo = MODELES.find((m) => m.id === modele);
+  const cout = estimation.dossiers ? t`environ ${chf < 0.01 ? `< ${nombre(0.01, 2)}` : nombre(chf, 2)} CHF` : t`gratuit (déjà fait)`;
 
   return (
     <div class="page large avec-barre page-doublons">
-      <TeteEtape numero={ETAPE.doublons} titre="Doublons" cle="doublons">
-        L’application repère les photos en double : rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois
-        (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote/doublons », rien n’est supprimé.
-        {s.projet.mode === 'vrac' && ' Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.'}
+      <TeteEtape numero={ETAPE.doublons} titre={nomEtape(ETAPE.doublons)} cle="doublons">
+        {t`L’application repère les photos en double : rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote/doublons », rien n’est supprimé.`}
+        {s.projet.mode === 'vrac' && t` Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.`}
       </TeteEtape>
 
-      <EncartAnalyse photos={toutes} pourquoi="la ressemblance et la netteté de chaque photo servent à repérer les doublons et à garder la plus nette." />
+      <EncartAnalyse photos={toutes} pourquoi={t`la ressemblance et la netteté de chaque photo servent à repérer les doublons et à garder la plus nette.`} />
 
       {/* L'analyse IA est facultative : elle vient en complément des rafales, repérées toutes seules. */}
       <details class="avances encart-ia">
         <summary>
-          Aller plus loin avec l’IA (facultatif) : la même scène photographiée plusieurs fois —{' '}
-          {estimation.dossiers ? `environ ${chf < 0.01 ? '< 0,01' : nombre(chf, 2)} CHF` : 'gratuit (déjà fait)'}
+          {t`Aller plus loin avec l’IA (facultatif) : la même scène photographiée plusieurs fois —`} {cout}
         </summary>
         <fieldset class="choix-mode">
-          <legend>Que considérer comme doublon ?</legend>
+          <legend>{t`Que considérer comme doublon ?`}</legend>
           <label>
-            <input type="radio" name="mode" checked={!strict} onChange={() => setStrict(false)} /> <strong>Prudent</strong> (conseillé) : des expressions ou des poses
-            différentes sont gardées
+            <input type="radio" name="mode" checked={!strict} onChange={() => setStrict(false)} /> <strong>{t`Prudent`}</strong>
+            {t` (conseillé) : des expressions ou des poses différentes sont gardées`}
           </label>
           <label>
-            <input type="radio" name="mode" checked={strict} onChange={() => setStrict(true)} /> <strong>Strict</strong> : une seule photo par scène, même si les
-            expressions changent
+            <input type="radio" name="mode" checked={strict} onChange={() => setStrict(true)} /> <strong>{t`Strict`}</strong>
+            {t` : une seule photo par scène, même si les expressions changent`}
           </label>
         </fieldset>
         <div class="actions-etape">
           <button type="button" class="principal" disabled={!!progres || analysesManquantes > 0 || !modeleInfo} onClick={() => void lancer(true)}>
-            Analyser avec l’IA — {estimation.dossiers ? `environ ${chf < 0.01 ? '< 0,01' : nombre(chf, 2)} CHF` : 'gratuit (déjà fait)'}
+            {t`Analyser avec l’IA — ${cout}`}
           </button>
-          <span class="discret">
-            {pluriel(dossiers.length, un, plusieurs)} · dépensé : {nombre(s.ia.depenseCHF(), 2)} / {s.projet.budget_chf} CHF
-          </span>
+          <span class="discret">{t`${pluriel(dossiers.length, un, plusieurs)} · dépensé : ${nombre(s.ia.depenseCHF(), 2)} / ${s.projet.budget_chf} CHF`}</span>
         </div>
         <details class="avances">
-          <summary>Réglages avancés</summary>
+          <summary>{t`Réglages avancés`}</summary>
           <label>
-            Modèle IA{' '}
+            {t`Modèle IA`}{' '}
             <select value={modele} onChange={(e) => setModele(e.currentTarget.value)}>
               {MODELES.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -337,25 +338,24 @@ export function PageDoublons() {
             </select>
           </label>
           <p class="discret">
-            Les consignes viennent du script 06, réglé avec Claude Sonnet 4.6 ; les réponses sont mises en cache par modèle. Réglages du script : rafales à moins de
-            10 min et distance ≤ 12 ; scènes locales à distance ≤ 20 ; vérification par 6 photos au plus.
+            {t`Les consignes viennent du script 06, réglé avec Claude Sonnet 4.6 ; les réponses sont mises en cache par modèle. Réglages du script : rafales à moins de 10 min et distance ≤ 12 ; scènes locales à distance ≤ 20 ; vérification par 6 photos au plus.`}
           </p>
           <button
             type="button"
             onClick={() =>
-              void s.ia.oublierInexploitables().then((n) => notifier('info', n ? `${pluriel(n, 'réponse illisible oubliée', 'réponses illisibles oubliées')} : relancez l’analyse.` : 'Aucune réponse illisible.'))
+              void s.ia.oublierInexploitables().then((n) => notifier('info', n ? t`${pluriel(n, 'réponse illisible oubliée', 'réponses illisibles oubliées')} : relancez l’analyse.` : t`Aucune réponse illisible.`))
             }
           >
-            Redemander les réponses illisibles
+            {t`Redemander les réponses illisibles`}
           </button>
         </details>
       </details>
 
       {progres && (
         <div class="encart">
-          <BarreProgression faits={progres.faits} total={progres.total} texte={`${progres.faits} / ${progres.total} ${plusieurs}${progres.texte ? ` · ${progres.texte}` : ''}`} />
+          <BarreProgression faits={progres.faits} total={progres.total} texte={`${progres.faits} / ${progres.total} ${t(plusieurs)}${progres.texte ? ` · ${progres.texte}` : ''}`} />
           <button type="button" onClick={() => (arreter.current = true)}>
-            Arrêter (les réponses déjà reçues sont gardées)
+            {t`Arrêter (les réponses déjà reçues sont gardées)`}
           </button>
         </div>
       )}
@@ -364,16 +364,18 @@ export function PageDoublons() {
         <>
           <details class="avances apercu-lots">
             <summary>
-              Aperçu par {un} : {pluriel(totalProposes, 'doublon à relire', 'doublons à relire')}, {pluriel(totalEcartes, 'écarté', 'écartés')}
+              {un === 'journée'
+                ? t`Aperçu par journée : ${pluriel(totalProposes, 'doublon à relire', 'doublons à relire')}, ${pluriel(totalEcartes, 'écarté', 'écartés')}`
+                : t`Aperçu par dossier : ${pluriel(totalProposes, 'doublon à relire', 'doublons à relire')}, ${pluriel(totalEcartes, 'écarté', 'écartés')}`}
             </summary>
           <table class="tableau apercu-doublons">
             <thead>
               <tr>
-                <th>{un === 'journée' ? 'Journée' : 'Dossier'}</th>
-                <th class="n">Photos avant</th>
-                <th class="n">Doublons à relire</th>
-                <th class="n">Écartés</th>
-                <th class="n">Photos après</th>
+                <th>{un === 'journée' ? t`Journée` : t`Dossier`}</th>
+                <th class="n">{t`Photos avant`}</th>
+                <th class="n">{t`Doublons à relire`}</th>
+                <th class="n">{t`Écartés`}</th>
+                <th class="n">{t`Photos après`}</th>
               </tr>
             </thead>
             <tbody>
@@ -382,7 +384,7 @@ export function PageDoublons() {
                 .map(([d, x]) => {
                   const apres = photosLot(plan, d, s.analyses).length;
                   return (
-                    <tr key={d} class={dossierVu === d ? 'actif' : ''} onClick={() => setDossierVu(dossierVu === d ? '' : d)} title={`Cliquer pour ne voir que cette ${un === 'journée' ? 'journée' : 'sortie'}`}>
+                    <tr key={d} class={dossierVu === d ? 'actif' : ''} onClick={() => setDossierVu(dossierVu === d ? '' : d)} title={un === 'journée' ? t`Cliquer pour ne voir que cette journée` : t`Cliquer pour ne voir que cette sortie`}>
                       <td>{listeLots.find((l) => l.id === d)?.nom ?? d}</td>
                       <td class="n">{nombre(apres + x.ecartes)}</td>
                       <td class="n">{x.proposes ? nombre(x.proposes) : ''}</td>
@@ -394,24 +396,24 @@ export function PageDoublons() {
             </tbody>
           </table>
           </details>
-          {parDossier.size === 0 && <p>Aucun doublon trouvé.</p>}
+          {parDossier.size === 0 && <p>{t`Aucun doublon trouvé.`}</p>}
 
           <div class="barre-outils filtres-doublons">
-            <select value={filtre} onChange={(e) => setFiltre(e.currentTarget.value as Filtre)} aria-label="Groupes affichés">
-              <option value="a_relire">À relire</option>
-              <option value="priorite">À vérifier en priorité</option>
-              <option value="acceptes">Doublons écartés</option>
-              <option value="tous">Tous les groupes</option>
+            <select value={filtre} onChange={(e) => setFiltre(e.currentTarget.value as Filtre)} aria-label={t`Groupes affichés`}>
+              <option value="a_relire">{t`À relire`}</option>
+              <option value="priorite">{t`À vérifier en priorité`}</option>
+              <option value="acceptes">{t`Doublons écartés`}</option>
+              <option value="tous">{t`Tous les groupes`}</option>
             </select>
             {dossierVu && (
               <button type="button" class="lien" onClick={() => setDossierVu('')}>
-                Tous les {plusieurs}
+                {un === 'journée' ? t`Toutes les journées` : t`Tous les dossiers`}
               </button>
             )}
             <span class="discret">{pluriel(visibles.length, 'groupe')}</span>
             <span class="espace" />
             <button type="button" class="principal" disabled={!visibles.length || filtre === 'acceptes'} onClick={() => void toutAccepter()}>
-              Écarter tous les doublons affichés
+              {t`Écarter tous les doublons affichés`}
             </button>
           </div>
           <div class="groupes">
@@ -420,7 +422,7 @@ export function PageDoublons() {
             ))}
             {visibles.length > limite && (
               <button type="button" onClick={() => setLimite(limite + 30)}>
-                Afficher 30 groupes de plus ({nombre(visibles.length - limite)} restants)
+                {t`Afficher 30 groupes de plus (${nombre(visibles.length - limite)} restants)`}
               </button>
             )}
           </div>
@@ -431,25 +433,25 @@ export function PageDoublons() {
         resume={
           <>
             {pluriel(totalEcartes, 'doublon écarté', 'doublons écartés')}
-            {totalProposes ? ` · ${nombre(totalProposes)} à relire` : ''}
+            {totalProposes ? t` · ${nombre(totalProposes)} à relire` : ''}
           </>
         }
-        alertes={totalProposes ? [`${pluriel(totalProposes, 'doublon proposé', 'doublons proposés')} pas encore relus (ils restent dans l’archive)`] : []}
+        alertes={totalProposes ? [t`${pluriel(totalProposes, 'doublon proposé', 'doublons proposés')} pas encore relus (ils restent dans l’archive)`] : []}
         revenir={() => revenirDe('doublons')}
         valider={() => validerEtape('doublons')}
       />
       {comparees && (
         <Comparateur
-          titre="Comparer le groupe"
+          titre={t`Comparer le groupe`}
           photos={[comparees.p.garde, ...comparees.p.doublons.map((d) => d.id)].map(fichier).filter((f): f is FichierPlan => !!f)}
           fermer={() => setComparees(null)}
           entete={(f) =>
             f.id === gardeeActuelle(comparees.p, fichier) ? (
-              <span class="badge gardee">gardée</span>
+              <span class="badge gardee">{t`gardée`}</span>
             ) : etatDoublon(f) === 'accepte' ? (
-              <span class="badge ecartee">écartée</span>
+              <span class="badge ecartee">{t`écartée`}</span>
             ) : etatDoublon(f) === 'garde' ? (
-              <span class="badge gardee">gardée aussi</span>
+              <span class="badge gardee">{t`gardée aussi`}</span>
             ) : null
           }
           actions={(f) =>
@@ -457,15 +459,15 @@ export function PageDoublons() {
               <>
                 {etatDoublon(f) === 'garde' ? (
                   <button type="button" onClick={() => appliquer(ecarterDuGroupe(plan, comparees.p, f.id))}>
-                    Écarter
+                    {t`Écarter`}
                   </button>
                 ) : (
                   <button type="button" onClick={() => appliquer(garderAussi(plan, [f.id]))}>
-                    Garder aussi
+                    {t`Garder aussi`}
                   </button>
                 )}
                 <button type="button" onClick={() => appliquer(garderALaPlace(plan, comparees.p, f.id))}>
-                  Garder celle-ci à la place
+                  {t`Garder celle-ci à la place`}
                 </button>
               </>
             ) : null
