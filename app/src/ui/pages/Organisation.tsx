@@ -3,11 +3,39 @@
 // raison ; rien n'est fusionné sans « Rattacher » ou « Fusionner ».
 
 import { estNomDeSortie } from '../../lib/sortie';
-import { useMemo } from 'preact/hooks';
-import { estimationConsolidation, groupesDeFreres, lireConsolidation, rapprochementsLocaux, requeteConsolidation, type Consolidation, type DossierInfo, type FusionProposee, type GroupeFreres } from '../../lib/consolidation';
-import { estimationFragments, fragments, lireFragment, requeteFragment, type DecisionFragment, type Fragment } from '../../lib/fragments';
+import { useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import {
+  clePaire,
+  estimationConsolidation,
+  groupesDeFreres,
+  lireConsolidation,
+  rapprochementsLocaux,
+  requeteConsolidation,
+  type Consolidation,
+  type DossierInfo,
+  type FusionProposee,
+  type GroupeFreres,
+} from '../../lib/consolidation';
+import {
+  candidatsRattachement,
+  estimationFragments,
+  fragments,
+  lireFragment,
+  niveauRessemblance,
+  noterRattachement,
+  petitsDuMemeJour,
+  receveur,
+  requeteFragment,
+  ressortirFragment,
+  SEUIL_PETIT_DOSSIER,
+  type DecisionFragment,
+  type Fragment,
+  type FragmentRattache,
+  type Voisin,
+} from '../../lib/fragments';
 import { estDossierMois } from '../../lib/tri';
-import { creerDossier, enchainer, fusionnerDossiers, gardeSaPlace, renommerDossier, type Modification, type Plan } from '../../lib/plan';
+import { creerDossier, enchainer, fusionnerDossiers, gardeSaPlace, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
+import { simplifier } from '../organiser';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { enParallele } from '../../navigateur/workers';
@@ -15,8 +43,9 @@ import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Miniature } from '../composants/GrillePhotos';
 import { annuler, appliquer, contexteExecution, notifier, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
-import { aTraduire, t } from '../../lib/langue';
-import { jourCourt, nombre, pluriel } from '../format';
+import { aTraduire, t, tc } from '../../lib/langue';
+import { Icone } from '../composants/Icones';
+import { jourCourt, nombre, periode as periodeJours, pluriel } from '../format';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs } from './AidesIA';
 
 /** Au-delà de cette durée, un dossier n'est pas une sortie (une année, « Maison ») : pas de consolidation. */
@@ -177,17 +206,17 @@ enregistrerAide({
   },
 });
 
-function Vignettes({ d, n = 6 }: { d: DossierInfo; n?: number }) {
+function Vignettes({ d, n = 6, taille = 84 }: { d: Pick<DossierInfo, 'photos'>; n?: number; taille?: number }) {
   return (
     <div class="bande-miniatures">
       {d.photos.slice(0, n).map((f) => (
-        <Miniature key={f.id} f={f} taille={84} />
+        <Miniature key={f.id} f={f} taille={taille} />
       ))}
     </div>
   );
 }
 
-function periode(d: DossierInfo): string {
+function periode(d: Pick<DossierInfo, 'du' | 'au'>): string {
   if (!d.du) return t`date inconnue`;
   return d.du.slice(0, 10) === d.au?.slice(0, 10) ? jourCourt(d.du) : `${jourCourt(d.du)} – ${jourCourt(d.au)}`;
 }
@@ -205,21 +234,189 @@ function essayer(m: () => Modification | null, ok: string) {
 // Étape « Petits dossiers »
 // ---------------------------------------------------------------------------
 
+/** Petits dossiers rattachés depuis cette étape, par identifiant (`.album/aides.json`) : affichés avec leur décision, et ressortables. */
+function rattachesDe(s: Session): Record<string, FragmentRattache> {
+  return s.aides.get<Record<string, FragmentRattache>>('fragments_rattaches') ?? {};
+}
+
+/**
+ * Rattache des petits dossiers (une seule opération, annulable par Ctrl+Z)
+ * et note chacun : il reste affiché avec sa décision, et « Annuler » le ressort.
+ */
+function rattacher(s: Session, paires: { f: Fragment; cible: string }[], libelle: string, ok: string) {
+  const notes = paires.map(({ f, cible }) => noterRattachement(s.plan, f.dossier, cible, f.voisins.length > 0)).filter((r): r is FragmentRattache => !!r);
+  try {
+    appliquer(enchainer(s.plan, libelle, paires.map(({ f, cible }) => () => fusionnerDossiers(s.plan, f.dossier.id, cible))));
+  } catch (err) {
+    notifier('erreur', texteErreur(err));
+    return;
+  }
+  void s.aides.fusionner('fragments_rattaches', Object.fromEntries(notes.map((r) => [r.dossier.id, r]))).then(() => versionIA.value++);
+  notifier('ok', ok, { libelle: t`Annuler`, faire: annuler });
+}
+
+/** Défait un rattachement fait ici, même après d'autres changements (le dossier revient avec ses photos). */
+function ressortir(s: Session, r: FragmentRattache) {
+  const m = ressortirFragment(s.plan, r);
+  if (!m) {
+    notifier('erreur', t`Impossible de ressortir « ${r.dossier.nom} » : ses photos ont été déplacées depuis.`);
+    return;
+  }
+  appliquer(m);
+  notifier('ok', t`« ${r.dossier.nom} » est ressorti de « ${r.cibleNom} ».`, { libelle: t`Annuler`, faire: annuler });
+}
+
+/** Choix du dossier où rattacher un petit dossier : recherche par nom, les plus proches dans le temps d'abord. */
+function ChoixRattachement({ f, fermer }: { f: Fragment; fermer: () => void }) {
+  const s = session.value!;
+  const [requete, setRequete] = useState('');
+  const [index, setIndex] = useState(0);
+  const champ = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => champ.current?.focus(), []);
+  const candidats = useMemo(() => candidatsRattachement(s.plan, f.dossier), [f.dossier.id, versionPlan.value]);
+  const q = simplifier(requete.trim());
+  const proposes = (q ? candidats.filter((c) => simplifier(c.chemin).includes(q)) : candidats).slice(0, 200);
+  const choix = Math.min(index, proposes.length - 1);
+  const valider = (c = proposes[choix]) => {
+    if (!c) return;
+    fermer();
+    rattacher(s, [{ f, cible: c.id }], t`Rattacher « ${f.dossier.nom} » à « ${c.nom} »`, t`« ${f.dossier.nom} » rattaché à « ${c.nom} ».`);
+  };
+  return (
+    <div class="voile" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
+      <div class="dialogue deplacer" role="dialog" aria-modal="true" aria-label={t`Rattacher « ${f.dossier.nom} » à…`}>
+        <h2>{t`Rattacher « ${f.dossier.nom} » à…`}</h2>
+        <p class="discret">{t`Ses photos rejoignent le dossier choisi, puis « ${f.dossier.nom} » disparaît. Les dossiers les plus proches dans le temps sont en tête.`}</p>
+        <input
+          ref={champ}
+          class="large"
+          placeholder={t`Tapez une partie du nom du dossier`}
+          value={requete}
+          onInput={(e) => {
+            setRequete(e.currentTarget.value);
+            setIndex(0);
+          }}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === 'Escape') fermer();
+            else if (e.key === 'ArrowDown') setIndex(Math.min(proposes.length - 1, choix + 1));
+            else if (e.key === 'ArrowUp') setIndex(Math.max(0, choix - 1));
+            else if (e.key === 'Enter') valider();
+            else return;
+            e.preventDefault();
+          }}
+        />
+        <ul class="choix-dossiers">
+          {proposes.map((c, i) => (
+            <li key={c.id} class={i === choix ? 'actif' : ''} onMouseEnter={() => setIndex(i)} onClick={() => valider(c)}>
+              {c.chemin}{' '}
+              <span class="discret">
+                {c.du ? periodeJours(c.du, c.au) : t`vide`}
+                {c.jours === 0 ? t` · même période` : c.jours !== null ? t` · à ${pluriel(c.jours, 'jour')}` : ''}
+              </span>
+            </li>
+          ))}
+          {!proposes.length && <li class="discret">{t`Aucun dossier ne correspond.`}</li>}
+        </ul>
+        <div class="actions droite">
+          <button type="button" onClick={fermer}>
+            {tc('dialogue', 'Annuler')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Un petit dossier dont le sort est décidé : il reste visible, avec sa décision et de quoi l'annuler. */
+function LigneDecidee({ photos, nom, du, au, decision, defaire }: { photos: FichierPlan[]; nom: string; du?: string; au?: string; decision: string; defaire: () => void }) {
+  return (
+    <div class="petit-decide">
+      <Vignettes d={{ photos }} n={3} taille={56} />
+      <span class="nom-petit">
+        <strong>{nom}</strong>{' '}
+        <span class="discret">
+          {pluriel(photos.length, 'photo')} · {periode({ du, au })}
+        </span>
+      </span>
+      <span class="decision-petit">
+        <Icone nom="coche" taille={16} /> {decision}
+      </span>
+      <span class="espace" />
+      <button type="button" class="doux" onClick={defaire}>
+        {t`Annuler`}
+      </button>
+    </div>
+  );
+}
+
+/** Écart dans le temps avec une sortie voisine. */
+function texteEcart(v: Voisin): string {
+  if (v.ecart === 0) return t`pendant cette sortie`;
+  return v.ecart < 60 ? t`à ${v.ecart} min` : t`à ${nombre(v.ecart / 60, 1)} h`;
+}
+
+/** Ressemblance des photos en mots (la distance de hachage, 0 = identiques, reste dans la bulle). */
+function texteRessemblance(v: Voisin): string | null {
+  const n = niveauRessemblance(v.ressemblance);
+  return n === 'tres' ? t`photos très semblables` : n === 'oui' ? t`photos semblables` : n === 'peu' ? t`photos peu semblables` : null;
+}
+
+type ElementPetit = { cle: string; nom: string; du?: string; f?: Fragment; r?: FragmentRattache };
+
 export function PagePetitsDossiers() {
   const s = session.value!;
   versionPlan.value;
   versionIA.value;
   const liste = useMemo(() => tousFragments(s), [versionPlan.value, versionIA.value]);
+  const [aRattacher, setARattacher] = useState<Fragment | null>(null);
   const decisions = s.aides.get<Record<string, DecisionIA3>>('IA3') ?? {};
   const gardes = new Set(s.aides.get<string[]>('fragments_gardes') ?? []);
-  // Sans aucune sortie voisine (et sans proposition de l'IA), il n'y a rien à choisir : le dossier reste à part, sans carte.
-  const seuls = liste.filter((f) => !gardes.has(f.dossier.id) && f.voisins.length === 0 && !decisions[f.dossier.id]);
-  const visibles = liste.filter((f) => !gardes.has(f.dossier.id) && !seuls.includes(f));
-  const surs = visibles.filter(
-    (f) => decisions[f.dossier.id]?.absorber && decisions[f.dossier.id].cible && s.plan.dossiers.has(decisions[f.dossier.id].cible!) && (decisions[f.dossier.id].confiance ?? 0) >= 8,
-  );
+  // Rattachés depuis cette étape : affichés avec leur décision tant que leurs photos sont dans la cible (Ctrl+Z les fait revenir).
+  const rattaches = Object.values(rattachesDe(s)).filter((r) => !s.plan.dossiers.has(r.dossier.id) && r.fichiers.some((x) => s.plan.fichiers.get(x.id)?.dossier === r.cible));
+  const aExaminer = liste.filter((f) => !gardes.has(f.dossier.id));
+  const surs = aExaminer.filter((f) => {
+    const d = decisions[f.dossier.id];
+    return d?.absorber && d.cible && s.plan.dossiers.has(d.cible) && (d.confiance ?? 0) >= 8;
+  });
+  // Une carte avec les sorties voisines, ou une ligne quand il n'y en a aucune à moins de 12 h.
+  const avecVoisins = (f: Fragment) => f.voisins.length > 0 || !!decisions[f.dossier.id];
+  const elements = (voisins: boolean): ElementPetit[] =>
+    [
+      ...liste.filter((f) => avecVoisins(f) === voisins).map((f) => ({ cle: f.dossier.id, nom: f.dossier.nom, du: f.dossier.du, f })),
+      ...rattaches.filter((r) => r.avecVoisins === voisins).map((r) => ({ cle: r.dossier.id, nom: r.dossier.nom, du: r.du, r })),
+    ].sort((a, b) => (a.du ?? '9').localeCompare(b.du ?? '9') || a.nom.localeCompare(b.nom, 'fr', { numeric: true }));
+  const cartes = elements(true);
+  const lignes = elements(false);
+  // Petits dossiers d'une même journée, sans sortie voisine : on propose de les réunir.
+  const memeJour = new Map(petitsDuMemeJour(aExaminer.filter((f) => !avecVoisins(f))).flatMap((g) => g.map((f) => [f.dossier.id, g] as const)));
 
-  const garder = (id: string) => void s.aides.set('fragments_gardes', [...gardes, id]).then(() => (versionIA.value++));
+  const garder = (id: string, oui: boolean) => void s.aides.set('fragments_gardes', oui ? [...gardes, id] : [...gardes].filter((x) => x !== id)).then(() => versionIA.value++);
+  const photosDe = (r: FragmentRattache) =>
+    r.fichiers.map((x) => s.plan.fichiers.get(x.id)).filter((f): f is FichierPlan => !!f && f.categorie === 'photo' && f.statut === 'archive');
+  const reunir = (g: Fragment[]) => {
+    const dest = receveur(g);
+    const autres = g.filter((f) => f !== dest);
+    rattacher(
+      s,
+      autres.map((f) => ({ f, cible: dest.dossier.id })),
+      t`Réunir les petits dossiers du ${jourCourt(dest.dossier.du)}`,
+      t`${pluriel(autres.length, 'petit dossier réuni', 'petits dossiers réunis')} dans « ${dest.dossier.nom} ».`,
+    );
+  };
+
+  /** Ligne d'un petit dossier déjà décidé (gardé à part ou rattaché), ou `null`. */
+  const decide = (e: ElementPetit) => {
+    if (e.r) {
+      const r = e.r;
+      return <LigneDecidee photos={photosDe(r)} nom={r.dossier.nom} du={r.du} au={r.au} decision={t`rattaché à « ${r.cibleNom} »`} defaire={() => ressortir(s, r)} />;
+    }
+    if (e.f && gardes.has(e.f.dossier.id)) {
+      const f = e.f;
+      return <LigneDecidee photos={f.dossier.photos} nom={f.dossier.nom} du={f.dossier.du} au={f.dossier.au} decision={t`gardé à part`} defaire={() => garder(f.dossier.id, false)} />;
+    }
+    return null;
+  };
 
   return (
     <div class="page large avec-barre page-fragments">
@@ -233,46 +430,32 @@ export function PagePetitsDossiers() {
             type="button"
             class="principal"
             onClick={() =>
-              essayer(
-                () => enchainer(s.plan, t`Rattacher ${surs.length} petits dossiers`, surs.map((f) => () => fusionnerDossiers(s.plan, f.dossier.id, decisions[f.dossier.id].cible!))),
+              rattacher(
+                s,
+                surs.map((f) => ({ f, cible: decisions[f.dossier.id].cible! })),
+                t`Rattacher ${pluriel(surs.length, 'petit dossier', 'petits dossiers')}`,
                 `${pluriel(surs.length, 'petit dossier rattaché', 'petits dossiers rattachés')}.`,
               )
             }
           >
-            {t`Tout accepter : rattacher les ${nombre(surs.length)} propositions sûres (confiance 8 ou plus)`}
+            {surs.length > 1
+              ? t`Tout accepter : rattacher les ${nombre(surs.length)} propositions sûres (confiance 8 ou plus)`
+              : t`Accepter la proposition sûre (confiance 8 ou plus)`}
           </button>
         </p>
       )}
-      {visibles.length === 0 && <p class="encart">{t`Aucun petit dossier (moins de 5 photos) à rattacher.`}</p>}
-      {seuls.length > 0 && (
-        <details class="avances petits-seuls">
-          <summary>
-            {seuls.length > 1
-              ? t`${pluriel(seuls.length, 'petit dossier sans sortie voisine', 'petits dossiers sans sortie voisine')} (à moins de 12 h) : ils restent à part`
-              : t`${pluriel(seuls.length, 'petit dossier sans sortie voisine', 'petits dossiers sans sortie voisine')} (à moins de 12 h) : il reste à part`}
-          </summary>
-          <ul class="liste-seuls">
-            {seuls.map((f) => (
-              <li key={f.dossier.id}>
-                <Vignettes d={f.dossier} n={3} />
-                <span>
-                  <strong>{f.dossier.nom}</strong>{' '}
-                  <span class="discret">
-                    {pluriel(f.dossier.photos.length, 'photo')} · {periode(f.dossier)}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p class="discret">{t`Pour en rattacher un quand même, glissez-le sur un autre dossier à l’étape ${ETAPE.lieux}.`}</p>
-        </details>
-      )}
+      {liste.length === 0 && rattaches.length === 0 && <p class="encart">{t`Aucun petit dossier (moins de ${SEUIL_PETIT_DOSSIER} photos) à rattacher.`}</p>}
+      {aExaminer.length === 0 && (liste.length > 0 || rattaches.length > 0) && <p class="encart">{t`Chaque petit dossier a sa décision : vous pouvez continuer.`}</p>}
+      {cartes.length > 0 && <h2 class="titre-petits">{t`Près d’autres sorties`}</h2>}
       <div class="groupes">
-        {visibles.map((f) => {
+        {cartes.map((e) => {
+          const ligne = decide(e);
+          if (ligne || !e.f) return <div key={e.cle}>{ligne}</div>;
+          const f = e.f;
           const d = decisions[f.dossier.id];
           const cible = d?.cible ? f.voisins.find((v) => v.dossier.id === d.cible)?.dossier : undefined;
           return (
-            <article key={f.dossier.id} class="carte-groupe">
+            <article key={e.cle} class="carte-groupe">
               <header>
                 <strong>{f.dossier.nom}</strong>
                 <span class="discret">
@@ -287,21 +470,27 @@ export function PagePetitsDossiers() {
                 </p>
               )}
               <div class="voisins">
-                {f.voisins.slice(0, 3).map((v) => (
-                  <div key={v.dossier.id} class={`voisin${cible?.id === v.dossier.id ? ' propose' : ''}`}>
-                    <div>
-                      <strong>{v.dossier.nom}</strong>{' '}
-                      <span class="discret">
-                        {pluriel(v.dossier.photos.length, 'photo')} · {periode(v.dossier)} · {t`à ${nombre(Math.abs(v.ecart) / 60, 1)} h`}
-                        {v.ressemblance < 99 ? t` · ressemblance ${v.ressemblance}` : ''}
-                      </span>
+                {f.voisins.slice(0, 3).map((v) => {
+                  const semblable = texteRessemblance(v);
+                  return (
+                    <div key={v.dossier.id} class={`voisin${cible?.id === v.dossier.id ? ' propose' : ''}`}>
+                      <div>
+                        <strong>{v.dossier.nom}</strong>{' '}
+                        <span class="discret">
+                          {pluriel(v.dossier.photos.length, 'photo')} · {periode(v.dossier)} · {texteEcart(v)}
+                          {semblable && <span title={t`Différence entre les photos : ${v.ressemblance} (0 = identiques)`}> · {semblable}</span>}
+                        </span>
+                      </div>
+                      <Vignettes d={v.dossier} n={4} />
+                      <button
+                        type="button"
+                        onClick={() => rattacher(s, [{ f, cible: v.dossier.id }], t`Rattacher « ${f.dossier.nom} » à « ${v.dossier.nom} »`, t`« ${f.dossier.nom} » rattaché à « ${v.dossier.nom} ».`)}
+                      >
+                        {t`Rattacher ici`}
+                      </button>
                     </div>
-                    <Vignettes d={v.dossier} n={4} />
-                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, f.dossier.id, v.dossier.id), t`« ${f.dossier.nom} » rattaché à « ${v.dossier.nom} ».`)}>
-                      {t`Rattacher ici`}
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {f.voisins.length === 0 && <p class="discret">{t`Aucune sortie voisine à moins de 12 h.`}</p>}
               </div>
               <footer>
@@ -311,7 +500,10 @@ export function PagePetitsDossiers() {
                   </button>
                 )}
                 <span class="espace" />
-                <button type="button" onClick={() => garder(f.dossier.id)}>
+                <button type="button" onClick={() => setARattacher(f)} title={t`Choisir n’importe quel dossier`}>
+                  {t`Rattacher à…`}
+                </button>
+                <button type="button" onClick={() => garder(f.dossier.id, true)}>
                   {t`Garder à part`}
                 </button>
               </footer>
@@ -319,8 +511,50 @@ export function PagePetitsDossiers() {
           );
         })}
       </div>
+      {lignes.length > 0 && (
+        <section class="petits-seuls">
+          <h2 class="titre-petits">{t`Sans sortie voisine à moins de 12 h`}</h2>
+          <p class="discret">{t`Rattachez-les au dossier de votre choix (les plus proches dans le temps sont proposés d’abord), réunissez ceux d’une même journée, ou gardez-les à part.`}</p>
+          <ul class="liste-seuls">
+            {lignes.map((e) => {
+              const ligne = decide(e);
+              if (ligne || !e.f) return <li key={e.cle}>{ligne}</li>;
+              const f = e.f;
+              const groupe = memeJour.get(f.dossier.id);
+              // Le premier d'une même journée est précédé de la proposition de les réunir.
+              return [
+                groupe?.[0] === f && (
+                  <li key={`jour:${e.cle}`} class="groupe-jour">
+                    <span>{t`Le ${jourCourt(f.dossier.du)} : ${pluriel(groupe.length, 'petit dossier', 'petits dossiers')} le même jour`}</span>
+                    <button type="button" onClick={() => reunir(groupe)}>
+                      {t`Les réunir dans « ${receveur(groupe).dossier.nom} »`}
+                    </button>
+                  </li>
+                ),
+                <li key={e.cle} class={`ligne-petit${groupe ? ' dans-groupe' : ''}`}>
+                  <Vignettes d={f.dossier} n={3} taille={56} />
+                  <span class="nom-petit">
+                    <strong>{f.dossier.nom}</strong>{' '}
+                    <span class="discret">
+                      {pluriel(f.dossier.photos.length, 'photo')} · {periode(f.dossier)}
+                    </span>
+                  </span>
+                  <span class="espace" />
+                  <button type="button" onClick={() => setARattacher(f)}>
+                    {t`Rattacher à…`}
+                  </button>
+                  <button type="button" onClick={() => garder(f.dossier.id, true)}>
+                    {t`Garder à part`}
+                  </button>
+                </li>,
+              ];
+            })}
+          </ul>
+        </section>
+      )}
+      {aRattacher && <ChoixRattachement f={aRattacher} fermer={() => setARattacher(null)} />}
       <BarreValidation
-        resume={t`${pluriel(visibles.length, 'petit dossier', 'petits dossiers')} à examiner`}
+        resume={t`${pluriel(aExaminer.length, 'petit dossier', 'petits dossiers')} à examiner`}
         revenir={() => revenirDe('petits')}
         valider={() => validerEtape('petits')}
       />
@@ -350,11 +584,30 @@ function fusion(plan: Plan, parent: string, f: FusionProposee): Modification | n
   ]);
 }
 
+/** Paires « Même activité ? » que l'utilisateur a écartées : plus jamais proposées (`.album/aides.json`). */
+function pairesIgnorees(s: Session): Set<string> {
+  return new Set(s.aides.get<string[]>('consolidation_paires_ignorees') ?? []);
+}
+
+function changerPairesIgnorees(s: Session, cles: Set<string>) {
+  void s.aides.set('consolidation_paires_ignorees', [...cles]).then(() => versionIA.value++);
+}
+
+function ignorerPaire(s: Session, a: DossierInfo, b: DossierInfo) {
+  const cle = clePaire(a.id, b.id);
+  changerPairesIgnorees(s, new Set([...pairesIgnorees(s), cle]));
+  notifier('ok', t`« ${a.nom} » et « ${b.nom} » ne seront plus proposés ensemble.`, {
+    libelle: t`Annuler`,
+    faire: () => changerPairesIgnorees(s, new Set([...pairesIgnorees(s)].filter((x) => x !== cle))),
+  });
+}
+
 export function PageConsolidation() {
   const s = session.value!;
   versionPlan.value;
   versionIA.value;
   const groupes = useMemo(() => groupesUtiles(s.plan, exclusDe(s)), [versionPlan.value, versionIA.value]);
+  const ignorees = pairesIgnorees(s);
   const resultats = s.aides.get<Record<string, ResultatIA6>>('IA6') ?? {};
   const nomDe = (id: string) => s.plan.dossiers.get(id)?.nom ?? '';
   const total = groupes.reduce((a, g) => {
@@ -369,12 +622,20 @@ export function PageConsolidation() {
       </TeteEtape>
       <AideIA fonction="IA6" />
       <DossiersExclus />
-      {groupes.length === 0 && <p class="encart">{t`Aucun répertoire ne contient plusieurs dossiers à comparer.`}</p>}
+      {ignorees.size > 0 && (
+        <p class="discret">
+          {t`${pluriel(ignorees.size, 'paire ignorée', 'paires ignorées')} : elles ne sont plus proposées.`}{' '}
+          <button type="button" class="lien" onClick={() => changerPairesIgnorees(s, new Set())}>
+            {t`les proposer à nouveau`}
+          </button>
+        </p>
+      )}
+      {groupes.length === 0 &&<p class="encart">{t`Aucun répertoire ne contient plusieurs dossiers à comparer.`}</p>}
       {groupes.map((g) => {
         const r = resultats[g.parent];
         const fusions = (r?.fusions ?? []).filter((f) => f.sources.every((x) => s.plan.dossiers.has(x)) && (!f.cibleId || s.plan.dossiers.has(f.cibleId)));
         const renommages = (r?.renommages ?? []).filter((x) => s.plan.dossiers.has(x.dossier) && nomDe(x.dossier) !== x.nom);
-        const locaux = rapprochementsLocaux(g);
+        const locaux = rapprochementsLocaux(g, ignorees);
         const parId = new Map(g.dossiers.map((d) => [d.id, d]));
         if (!fusions.length && !renommages.length && !locaux.length) return null;
         return (
@@ -436,6 +697,9 @@ export function PageConsolidation() {
                     ))}
                   </div>
                   <footer>
+                    <button type="button" class="doux" onClick={() => ignorerPaire(s, a, b)} title={t`Ce ne sont pas les mêmes sorties : ne plus proposer ces deux dossiers ensemble`}>
+                      {t`Ignorer cette paire`}
+                    </button>
                     <span class="espace" />
                     <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, b.id, a.id), t`« ${b.nom} » fusionné dans « ${a.nom} ».`)}>
                       {t`Fusionner dans « ${a.nom} »`}

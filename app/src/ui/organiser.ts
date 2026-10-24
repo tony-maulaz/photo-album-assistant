@@ -16,6 +16,7 @@ import {
 } from '../lib/plan';
 import { t } from '../lib/langue';
 import { verifierNomDossier } from '../lib/noms';
+import { fichiersSousDossiers } from '../lib/rangement';
 import { demander } from './composants/Dialogues';
 import { annuler, appliquer, notifier, session, texteErreur } from './etat';
 import { pluriel } from './format';
@@ -59,19 +60,39 @@ export const glisse = {
 
 const comparer = new Intl.Collator('fr', { numeric: true }).compare;
 
-/** Éléments affichés dans la grille pour une vue. */
+/**
+ * Éléments affichés dans la grille pour une vue : ceux du dossier ; s'il n'a
+ * que des sous-dossiers (« Maison », la racine après le tri), ceux de ses
+ * sous-dossiers, plutôt qu'une grille vide (voir `sousDossiersSeulement`).
+ */
 export function elementsVue(plan: Plan, v: string): FichierPlan[] {
   if (v === VUE_MIS_DE_COTE) {
     return [...plan.fichiers.values()].filter((f) => f.statut === 'mis_de_cote').sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || comparer(a.id, b.id));
   }
   if (v === VUE_AUTRES) return [...plan.fichiers.values()].filter((f) => f.categorie === 'autre').sort((a, b) => comparer(a.id, b.id));
-  return contenu(plan, v);
+  const directs = contenu(plan, v);
+  return directs.length || !plan.dossiers.has(v) ? directs : fichiersSousDossiers(plan, v);
+}
+
+/** Le dossier affiché n'a rien en propre : la grille montre les photos de ses sous-dossiers. */
+export function sousDossiersSeulement(plan: Plan, v: string): boolean {
+  return plan.dossiers.has(v) && contenu(plan, v).length === 0 && fichiersSousDossiers(plan, v).length > 0;
 }
 
 export function choisirVue(v: string) {
   vue.value = v;
   selection.value = new Set();
   ancre.value = null;
+}
+
+/** Ouvre un dossier et déplie ses parents dans le panneau, pour qu'on l'y voie. */
+export function ouvrirDossier(id: string) {
+  const plan = session.value?.plan;
+  if (!plan) return;
+  const ouverts = new Set(deplies.value);
+  for (let d = plan.dossiers.get(id); d && d.parent !== null; d = plan.dossiers.get(d.parent)) ouverts.add(d.parent);
+  deplies.value = ouverts;
+  choisirVue(id);
 }
 
 function noterRecent(id: string) {
@@ -140,14 +161,18 @@ export async function nouveauDossierAvec(ids: string[], parent = RACINE) {
   }
 }
 
-/** Parent d'un nouveau dossier : à côté du dossier affiché (à la racine depuis la racine ou une vue spéciale). */
 /**
- * Où créer un dossier avec des photos sélectionnées : au même niveau que le
- * dossier affiché (on sort ces photos pour en faire une sortie voisine).
+ * Où créer un dossier avec des photos sélectionnées : au même niveau que
+ * leur dossier (on sort ces photos pour en faire une sortie voisine) ; à la
+ * racine depuis la racine ou une vue spéciale. Quand la grille montre les
+ * photos des sous-dossiers, leur dossier est un sous-dossier de la vue : le
+ * nouveau dossier se crée donc dans la vue.
  */
 export function parentPourNouveau(): string {
-  const d = session.value?.plan.dossiers.get(vue.value);
-  return d?.parent ?? RACINE;
+  const plan = session.value?.plan;
+  if (!plan) return RACINE;
+  if (sousDossiersSeulement(plan, vue.value)) return vue.value;
+  return plan.dossiers.get(vue.value)?.parent ?? RACINE;
 }
 
 /** Où créer un dossier vide (« + Nouveau dossier ») : dans le dossier affiché, comme dans l'Explorateur. */

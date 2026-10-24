@@ -194,7 +194,7 @@ export const TEXTES: Record<string, string> = {
   Nommage: 'Naming',
   'Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). L’IA peut proposer des noms en regardant quelques photos, le lieu, le calendrier et le contexte du projet ; vous gardez le dernier mot.':
     'Give each folder a meaningful name, following the pattern “Theme_Place_DD.MM.YY” (Birthday_Lea_26.01.25). The AI can suggest names by looking at a few photos, the place, the calendar and the project context; you have the final say.',
-  'Tous les dossiers (pas seulement les noms automatiques comme « Ko_Samui_2026-07-18 »)': 'All folders (not only automatic names such as “Ko_Samui_2026-07-18”)',
+  'Tous les dossiers (pas seulement les noms automatiques comme « Ko_Samui_18.07.26 »)': 'All folders (not only automatic names such as “Ko_Samui_18.07.26”)',
   'Événements locaux, lieux touristiques, résultats de course… (environ 0,09 CHF de plus par dossier)':
     'Local events, tourist sights, race results… (about 0.09 CHF more per folder)',
   'Recherche web': 'Web search',

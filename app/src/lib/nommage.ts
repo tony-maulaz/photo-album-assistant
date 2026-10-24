@@ -170,15 +170,40 @@ export function periodeHeures(du?: string, au?: string): string {
 // Dossiers à nommer
 // ---------------------------------------------------------------------------
 
-/** Dossiers produits automatiquement (script 01) : Lieu_AAAA-MM-JJ, Lieu_AAAA-MM, suffixes _b/_c, ou Lieu_00 (Place_00 en anglais). */
-export const MOTIF_AUTO = /_(\d{4}-\d{2}(-\d{2})?)(_[b-z])?$|^(Lieu|Place)_\d+$/;
-/** Sous-dossiers nommés uniquement par une date (dans Maison/, Voyage_.../...). */
-export const MOTIF_DATE_SEULE = /^\d{4}-\d{2}(-\d{2})?(_[b-z])?$/;
+/** Date à l'ancienne des noms du tri (script 01) : AAAA-MM-JJ ou AAAA-MM. */
+const DATE_ISO = String.raw`\d{4}-\d{2}(?:-\d{2})?`;
+/**
+ * Date à la manière de la famille, donnée par le tri depuis le 24.10.2026 :
+ * JJ.MM.AA, JJ-JJ.MM.AA, JJ.MM-JJ.MM.AA, JJ.MM.AA-JJ.MM.AA ou MM.AA (par mois).
+ */
+const DATE_JJMMAA = String.raw`\d{2}(?:-\d{2})?\.\d{2}\.\d{2}|\d{2}\.\d{2}(?:\.\d{2})?-\d{2}\.\d{2}\.\d{2}|\d{2}\.\d{2}`;
+/** Suffixe d'un nom déjà pris : _b, _c… (tri) ou _2, _3… */
+const SUFFIXE = String.raw`(?:_[b-z]|_\d+)?`;
+/** Anciens noms du tri : Lieu_AAAA-MM-JJ, Lieu_AAAA-MM, suffixes _b/_c, ou Lieu_00 (Place_00 en anglais). Toujours automatiques. */
+const MOTIF_AUTO_ISO = new RegExp(String.raw`_(?:${DATE_ISO})(?:_[b-z])?$|^(?:Lieu|Place)_\d+$`);
+const MOTIF_DATE_SEULE_ISO = new RegExp(String.raw`^(?:${DATE_ISO})(?:_[b-z])?$`);
+/** Noms produits par le tri, à l'ancienne (Lieu_AAAA-MM-JJ) ou au format de la famille (Lieu_JJ.MM.AA), ou Lieu_00. */
+export const MOTIF_AUTO = new RegExp(String.raw`_(?:${DATE_ISO}|${DATE_JJMMAA})${SUFFIXE}$|^(?:Lieu|Place)_\d+$`);
+/** Sous-dossiers nommés uniquement par une date (dans Maison/, Voyage_.../...), dans l'un ou l'autre format. */
+export const MOTIF_DATE_SEULE = new RegExp(String.raw`^(?:${DATE_ISO}|${DATE_JJMMAA})${SUFFIXE}$`);
 /** Dossiers jamais nommés (script 04). */
 export const IGNORES_NOMMAGE = new Set(['_a_supprimer', '_autres', 'Sans_lieu', 'No_place']);
 
-export function estNomAutomatique(nom: string): boolean {
-  return MOTIF_AUTO.test(nom) || MOTIF_DATE_SEULE.test(nom);
+/**
+ * Nom donné automatiquement par le tri, à remplacer par un nom parlant.
+ * Une date à l'ancienne (AAAA-MM-JJ) ne vient que du tri. Une date au format
+ * de la famille (JJ.MM.AA) est aussi celle des dossiers nommés à la main : le
+ * nom n'est automatique que si c'est encore celui que le tri a donné
+ * (`nomDuTri`, noté dans `DossierPlan.tri.nom`).
+ */
+export function estNomAutomatique(nom: string, nomDuTri?: string): boolean {
+  if (MOTIF_AUTO_ISO.test(nom) || MOTIF_DATE_SEULE_ISO.test(nom)) return true;
+  return nom === nomDuTri && (MOTIF_AUTO.test(nom) || MOTIF_DATE_SEULE.test(nom));
+}
+
+/** Nom sans sa date finale (l'un ou l'autre format) ni son suffixe : « Ko_Samui_18-24.07.26 » → « Ko_Samui ». */
+export function sansDateFinale(nom: string): string {
+  return nom.replace(new RegExp(String.raw`_(?:${DATE_ISO}|${DATE_JJMMAA})${SUFFIXE}$`), '');
 }
 
 export interface CibleNommage {
@@ -221,7 +246,7 @@ export function dossiersANommer(plan: Plan, tous = false): CibleNommage[] {
     if (d.parent === null || ignore(d.nom)) continue;
     const parent = plan.dossiers.get(d.parent);
     if (parent && parent.parent !== null && ignore(parent.nom)) continue;
-    if (!tous && !estNomAutomatique(d.nom)) continue;
+    if (!tous && !estNomAutomatique(d.nom, d.tri?.nom)) continue;
     const photos = photosDuDossier(plan, d.id);
     if (!photos.length) continue;
     cibles.push({ dossier: d.id, nom: d.nom, parent: d.parent === RACINE ? null : (parent?.nom ?? null), photos });
@@ -245,11 +270,11 @@ export function echantillon<T>(photos: T[], n = 5): T[] {
 
 /**
  * Lieu donné au modèle (script 04) : le nom du dossier sans sa date, ou le
- * nom du parent pour un sous-dossier daté (Maison/2025-01-05 → « Maison »).
+ * nom du parent pour un sous-dossier daté (Maison/05.01.25 → « Maison »).
  */
 export function lieuDuDossier(nom: string, parent: string | null): string {
   if (MOTIF_DATE_SEULE.test(nom) && parent) return parent.replace(/_/g, ' ');
-  return nom.replace(/_\d{4}-\d{2}(-\d{2})?(_[b-z])?$/, '').replace(/_/g, ' ');
+  return sansDateFinale(nom).replace(/_/g, ' ');
 }
 
 // ---------------------------------------------------------------------------

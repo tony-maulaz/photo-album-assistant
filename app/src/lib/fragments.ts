@@ -6,17 +6,26 @@
 
 import consigneFragment from '../ia/consignes/fragments_consigne.txt?raw';
 import consigneSysteme from '../ia/consignes/fragments_systeme.txt?raw';
-import { plancheDossier, PLANCHE_05, type DossierInfo, type GroupeFreres } from './consolidation';
+import { joursEntre, plancheDossier, PLANCHE_05, type DossierInfo, type GroupeFreres } from './consolidation';
+import { t } from './langue';
 import { cleNom } from './noms';
 import { booleen, cleRequete, confiance, coutEstime, jetonsPlanche, normaliserNom, periodeHeures, premierObjet, texteCourt, type BlocContenu, type Estimation, type RequeteIA } from './nommage';
 import { distanceHamming } from './phash';
-import type { FichierPlan } from './plan';
+import { cheminDossier, enfants, estDescendant, RACINE, resumes, Transaction, type DossierPlan, type FichierPlan, type Modification, type Plan } from './plan';
 import { minutes } from './selection';
 import { modele as infoModele } from './tarifs';
+import { nomDossierLibre } from './tri';
+
+/**
+ * Un dossier de moins de N photos est « petit » (`--seuil-fragment` du
+ * script 05) : le même seuil pour le badge du panneau des dossiers, l'alerte
+ * de « Lieux et sorties » et l'étape « Petits dossiers ».
+ */
+export const SEUIL_PETIT_DOSSIER = 5;
 
 export const OPTIONS_FRAGMENTS = {
   /** Un dossier de moins de N photos est un fragment candidat (`--seuil-fragment`). */
-  seuilFragment: 5,
+  seuilFragment: SEUIL_PETIT_DOSSIER,
   /** Un dossier est voisin s'il est à moins de N heures du fragment (`--fenetre-heures`). */
   fenetreHeures: 12,
   /** Voisins envoyés au modèle. */
@@ -27,10 +36,22 @@ export const OPTIONS_FRAGMENTS = {
 
 export interface Voisin {
   dossier: DossierInfo;
-  /** Plus petite distance de hachage entre les deux jeux d'empreintes (99 sans empreinte). */
+  /** Plus petite distance de hachage entre les deux jeux d'empreintes (99 sans empreinte) : 0 = identiques. */
   ressemblance: number;
-  /** Écart en minutes entre les premières photos. */
+  /**
+   * Minutes entre les deux périodes (fin de l'une, début de l'autre) ; 0 si
+   * elles se recouvrent (le petit dossier tombe pendant la sortie voisine).
+   */
   ecart: number;
+}
+
+/**
+ * Ressemblance en mots, d'après les calibrations (DECISIONS § 2) : ≤ 12 même
+ * prise ou presque, ≤ 20 même scène, au-delà des scènes différentes.
+ */
+export function niveauRessemblance(distance: number): 'tres' | 'oui' | 'peu' | null {
+  if (distance >= 99) return null;
+  return distance <= 12 ? 'tres' : distance <= 20 ? 'oui' : 'peu';
 }
 
 export interface Fragment {
@@ -75,7 +96,8 @@ export function fragments(g: GroupeFreres, empreinte: (f: FichierPlan) => string
         if (v === it || v.photos.length < o.seuilFragment) continue;
         const [v1, v2] = [minutes(v.du), minutes(v.au)];
         if (v1 === null || v2 === null || !(v1 - marge <= d2 && v2 + marge >= d1)) continue;
-        voisins.push({ dossier: v, ressemblance: ressemblance(empreintesDe(it), empreintesDe(v)), ecart: Math.abs(v1 - d1) });
+        // Écart entre les périodes, et non entre les premières photos : un arrêt le 21.07 pendant une sortie du 18 au 24.07 est à 0 h.
+        voisins.push({ dossier: v, ressemblance: ressemblance(empreintesDe(it), empreintesDe(v)), ecart: Math.max(0, v1 - d2, d1 - v2) });
       }
     }
     voisins.sort((a, b) => a.ressemblance - b.ressemblance || a.ecart - b.ecart);
@@ -209,4 +231,98 @@ export function estimationFragments(liste: Fragment[], idModele: string, voisins
     entree += 700 + planche(f.dossier.photos.length) + voisins.reduce((t, v) => t + planche(v.dossier.photos.length), 0);
   }
   return { appels, images, recherches: 0, usd: coutEstime(idModele, entree, appels, 0) };
+}
+
+// ---------------------------------------------------------------------------
+// Décisions de l'étape « Petits dossiers » (sans IA)
+// ---------------------------------------------------------------------------
+
+/** Petits dossiers d'une même journée (au moins deux), à réunir en un seul : par date. */
+export function petitsDuMemeJour(liste: Fragment[]): Fragment[][] {
+  const parJour = new Map<string, Fragment[]>();
+  for (const f of liste) {
+    const jour = f.dossier.du?.slice(0, 10);
+    if (!jour || f.dossier.au?.slice(0, 10) !== jour) continue;
+    parJour.set(jour, [...(parJour.get(jour) ?? []), f]);
+  }
+  return [...parJour]
+    .filter(([, l]) => l.length >= 2)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, l]) => l);
+}
+
+/** Dossier qui reçoit un groupe de petits dossiers réunis : celui qui a le plus de photos (le premier à égalité). */
+export function receveur(groupe: Fragment[]): Fragment {
+  return groupe.reduce((a, b) => (b.dossier.photos.length > a.dossier.photos.length ? b : a));
+}
+
+export interface Candidat {
+  id: string;
+  nom: string;
+  chemin: string;
+  du?: string;
+  au?: string;
+  /** Jours entre ce dossier et le petit dossier (0 s'ils se touchent), `null` sans date. */
+  jours: number | null;
+}
+
+/**
+ * Dossiers où rattacher un petit dossier (« Rattacher à… ») : tous, sauf la
+ * racine, lui-même et ses sous-dossiers ; les plus proches dans le temps d'abord.
+ */
+export function candidatsRattachement(plan: Plan, petit: DossierInfo): Candidat[] {
+  const r = resumes(plan);
+  const liste: Candidat[] = [];
+  for (const d of plan.dossiers.values()) {
+    if (d.parent === null || d.id === petit.id || estDescendant(plan, d.id, petit.id)) continue;
+    const x = r.get(d.id)!;
+    const jours = joursEntre(petit, { id: d.id, nom: d.nom, photos: [], du: x.duTotal, au: x.auTotal });
+    liste.push({ id: d.id, nom: d.nom, chemin: cheminDossier(plan, d.id), du: x.duTotal, au: x.auTotal, jours });
+  }
+  return liste.sort((a, b) => (a.jours ?? Infinity) - (b.jours ?? Infinity) || a.chemin.localeCompare(b.chemin, 'fr', { numeric: true }));
+}
+
+/** Un petit dossier rattaché à un autre depuis l'étape « Petits dossiers » : de quoi l'afficher, et le ressortir. */
+export interface FragmentRattache {
+  /** Le petit dossier tel qu'il était. */
+  dossier: DossierPlan;
+  /** Ses fichiers (mis de côté compris), avec leur nom d'alors. */
+  fichiers: { id: string; nom: string }[];
+  /** Ses sous-dossiers directs. */
+  sousDossiers: string[];
+  cible: string;
+  cibleNom: string;
+  du?: string;
+  au?: string;
+  /** Il avait des sorties voisines (il reste affiché parmi elles). */
+  avecVoisins: boolean;
+}
+
+/** Note un petit dossier avant de le rattacher à `cible` (`null` si l'un des deux n'existe plus). */
+export function noterRattachement(plan: Plan, petit: DossierInfo, cible: string, avecVoisins: boolean): FragmentRattache | null {
+  const d = plan.dossiers.get(petit.id);
+  const c = plan.dossiers.get(cible);
+  if (!d || !c) return null;
+  const fichiers = [...plan.fichiers.values()].filter((f) => f.dossier === d.id).map((f) => ({ id: f.id, nom: f.nom }));
+  return { dossier: d, fichiers, sousDossiers: enfants(plan, d.id).map((e) => e.id), cible, cibleNom: c.nom, du: petit.du, au: petit.au, avecVoisins };
+}
+
+/**
+ * Défait un rattachement, même après d'autres changements : le petit dossier
+ * revient (même identifiant, même place si son parent existe encore) avec ses
+ * fichiers et sous-dossiers restés dans la cible. `null` s'il n'y a rien à
+ * ressortir (dossier déjà revenu, ou photos déplacées depuis).
+ */
+export function ressortirFragment(plan: Plan, r: FragmentRattache): Modification | null {
+  if (plan.dossiers.has(r.dossier.id)) return null;
+  const fichiers = r.fichiers.filter((x) => plan.fichiers.get(x.id)?.dossier === r.cible);
+  const sous = r.sousDossiers.filter((id) => plan.dossiers.get(id)?.parent === r.cible);
+  if (!fichiers.length && !sous.length) return null;
+  const parent = r.dossier.parent !== null && plan.dossiers.has(r.dossier.parent) ? r.dossier.parent : RACINE;
+  const pris = new Set([...plan.dossiers.values()].filter((d) => d.parent === parent).map((d) => cleNom(d.nom)));
+  const tx = new Transaction(plan);
+  tx.dossier({ ...r.dossier, parent, nom: nomDossierLibre(r.dossier.nom, pris) });
+  for (const { id, nom } of fichiers) tx.fichier({ ...plan.fichiers.get(id)!, dossier: r.dossier.id, nom });
+  for (const id of sous) tx.dossier({ ...plan.dossiers.get(id)!, parent: r.dossier.id });
+  return tx.terminer(t`Ressortir « ${r.dossier.nom} » de « ${r.cibleNom} »`);
 }

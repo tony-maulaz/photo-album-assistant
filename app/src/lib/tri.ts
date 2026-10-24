@@ -6,7 +6,7 @@
 
 import type { LieuConnu } from './config';
 import { t } from './langue';
-import { cleNom, nomAscii, nomLibre } from './noms';
+import { cleNom, nomAscii } from './noms';
 import { combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type InfoTri, type Modification, type Plan } from './plan';
 import { nomsSortie } from './sortie';
 
@@ -16,7 +16,7 @@ export interface OptionsTri {
   rayonKm: number;
   /** Coupe aussi les événements à chaque changement de journée (`--par-jour`). */
   parJour: boolean;
-  /** Dossiers `Lieu_AAAA-MM` selon le mois de chaque photo (`--par-mois`). */
+  /** Dossiers `Lieu_MM.AA` selon le mois de chaque photo (`--par-mois`). */
   parMois: boolean;
   /** Un seul dossier par lieu, sans date (`--sans-evenement`). */
   sansEvenement: boolean;
@@ -385,11 +385,41 @@ function evenements(datees: PhotoTri[], o: OptionsTri): PhotoTri[][] {
   return evs;
 }
 
-/** Sortie sur une seule journée : date complète ; sinon le mois. */
+/**
+ * Date d'un nom de dossier, comme les dossiers nommés par la famille
+ * (Theme_Lieu_JJ.MM.AA) : « 22.11.25 » pour une journée, « 27-29.06.25 »
+ * dans un même mois, « 28.06-02.07.25 », ou « 28.12.25-02.01.26 » d'une année
+ * à l'autre. `du` et `au` : « AAAA-MM-JJ ».
+ */
+export function dateDeNom(du: string, au = du): string {
+  const j = (d: string) => d.slice(8, 10);
+  const m = (d: string) => d.slice(5, 7);
+  const a = (d: string) => d.slice(2, 4);
+  if (du === au) return `${j(du)}.${m(du)}.${a(du)}`;
+  if (du.slice(0, 7) === au.slice(0, 7)) return `${j(du)}-${j(au)}.${m(du)}.${a(du)}`;
+  if (du.slice(0, 4) === au.slice(0, 4)) return `${j(du)}.${m(du)}-${j(au)}.${m(au)}.${a(au)}`;
+  return `${j(du)}.${m(du)}.${a(du)}-${j(au)}.${m(au)}.${a(au)}`;
+}
+
+/** Mois d'un nom de dossier (option « un dossier par mois ») : « 2025-11 » → « 11.25 ». */
+export function moisDeNom(mois: string): string {
+  return `${mois.slice(5, 7)}.${mois.slice(2, 4)}`;
+}
+
+/** Date d'un événement pour son nom : sa journée, ou du premier au dernier jour. */
 function suffixeDate(ev: PhotoTri[]): string {
-  const d1 = jourDe(ev[0].date)!;
-  const d2 = jourDe(ev.at(-1)!.date)!;
-  return d1 === d2 ? d1 : d1.slice(0, 7);
+  return dateDeNom(jourDe(ev[0].date)!, jourDe(ev.at(-1)!.date)!);
+}
+
+/**
+ * Nom de dossier libre parmi `pris` (clés `cleNom`) : `nom`, sinon `nom_2`,
+ * `nom_3`… Contrairement à `nomLibre` (noms de fichiers), le point d'une date
+ * (« Lausanne_12.01.26 ») n'y est pas pris pour une extension.
+ */
+export function nomDossierLibre(nom: string, pris: Set<string>): string {
+  let candidat = nom;
+  for (let n = 2; pris.has(cleNom(candidat)); n++) candidat = `${nom}_${n}`;
+  return candidat;
 }
 
 /** `base`, sinon `base_b`, `base_c`… (registre `utilises`). */
@@ -411,7 +441,7 @@ function triParDate(liste: PhotoTri[]): { datees: PhotoTri[]; sansDate: PhotoTri
 /**
  * Arborescence proposée (script 01) : un dossier par lieu connu (avec un
  * sous-dossier par événement, ou à plat), un dossier par événement de chaque
- * groupe GPS (`Lieu_AAAA-MM-JJ` ou `Lieu_AAAA-MM`), regroupés en
+ * groupe GPS (`Lieu_JJ.MM.AA`, ou `Lieu_JJ-JJ.MM.AA` sur plusieurs jours), regroupés en
  * `Voyage_<Lieu>_<date>/` quand des étapes lointaines s'enchaînent, et
  * `Sans_lieu/` pour le reste. `noms` : nom géocodé de chaque groupe (ou `null`).
  */
@@ -474,7 +504,7 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
     if (!parEvenement) {
       for (const p of membres) {
         const mois = jourDe(p.date)?.slice(0, 7);
-        destination.set(p.id, { chemin: [o.parMois && mois ? `${lieuNom}_${mois}` : lieuNom], info: infoGroupe(index) });
+        destination.set(p.id, { chemin: [o.parMois && mois ? `${lieuNom}_${moisDeNom(mois)}` : lieuNom], info: infoGroupe(index) });
       }
       continue;
     }
@@ -578,17 +608,19 @@ export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: 
   const creation = new Transaction(plan);
   // Dossier enfant de `parent` pour un nom : un dossier du tri est repris ;
   // un dossier homonyme d'une autre origine n'est jamais mélangé (nom libre).
+  // Le nom donné est noté (`tri.nom`) : tant que le dossier le porte, il est « automatique » (Nommage).
   const assurer = (parent: string, nom: string, info: InfoTri): string => {
     const freres = [...plan.dossiers.values()].filter((d) => d.parent === parent);
     const autres = new Set(freres.filter((d) => d.origine !== 'tri').map((d) => cleNom(d.nom)));
-    const libre = nomLibre(nom, autres);
+    const libre = nomDossierLibre(nom, autres);
+    const voulu: InfoTri = { ...info, nom: libre };
     const repris = freres.find((d) => d.origine === 'tri' && cleNom(d.nom) === cleNom(libre));
     if (repris) {
-      if (!memeInfo(repris.tri, info)) creation.dossier({ ...repris, tri: info });
+      if (!memeInfo(repris.tri, voulu)) creation.dossier({ ...repris, tri: voulu });
       return repris.id;
     }
     const id = `n${plan.prochainId++}`;
-    creation.dossier({ id, nom: libre, parent, origine: 'tri', tri: info } satisfies DossierPlan);
+    creation.dossier({ id, nom: libre, parent, origine: 'tri', tri: voulu } satisfies DossierPlan);
     return id;
   };
 

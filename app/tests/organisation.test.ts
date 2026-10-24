@@ -17,6 +17,7 @@ import {
   type PhotoLieu,
 } from '../src/lib/aidesTri';
 import {
+  clePaire,
   consigneConsolidationGroupe,
   dossiersAPlanche,
   estimationConsolidation,
@@ -24,17 +25,35 @@ import {
   lireConsolidation,
   listeDossiers,
   nomsProches,
+  racineNom,
   rapprochementsLocaux,
   requeteConsolidation,
   type GroupeFreres,
 } from '../src/lib/consolidation';
-import { consigneFragmentDossier, fragments, lireFragment, photosVoisin, requeteFragment } from '../src/lib/fragments';
+import {
+  candidatsRattachement,
+  consigneFragmentDossier,
+  fragments,
+  lireFragment,
+  niveauRessemblance,
+  noterRattachement,
+  OPTIONS_FRAGMENTS,
+  petitsDuMemeJour,
+  photosVoisin,
+  receveur,
+  requeteFragment,
+  ressortirFragment,
+  SEUIL_PETIT_DOSSIER,
+} from '../src/lib/fragments';
 import {
   consigneNommageDossier,
   dossiersANommer,
   echantillon,
   estimationNommage,
+  estNomAutomatique,
   lieuDuDossier,
+  MOTIF_AUTO,
+  MOTIF_DATE_SEULE,
   lireNommage,
   normaliserNom,
   outilRechercheWeb,
@@ -42,7 +61,7 @@ import {
   respecteConvention,
   schemaNommage,
 } from '../src/lib/nommage';
-import { planVide, RACINE, type FichierPlan, type Plan } from '../src/lib/plan';
+import { fusionnerDossiers, Historique, planVide, RACINE, renommerDossier, type FichierPlan, type Plan } from '../src/lib/plan';
 
 /** Petit plan de test : dossiers (chemin → dates des photos). */
 function plan(dossiers: Record<string, string[]>): Plan {
@@ -108,12 +127,38 @@ describe('nommage (étape 6, script 04)', () => {
     expect(dossiersANommer(p, true).map((c) => c.nom)).not.toContain('Sans_lieu');
   });
 
+  it('noms automatiques : l’ancien format du tri toujours, JJ.MM.AA seulement s’il est encore celui du tri', () => {
+    // Anciens noms (AAAA-MM-JJ) : seul le tri les donnait.
+    expect(estNomAutomatique('Ko_Samui_2026-07-18')).toBe(true);
+    expect(estNomAutomatique('Ko_Samui_2026-07_b')).toBe(true);
+    expect(estNomAutomatique('2025-01-05')).toBe(true);
+    expect(estNomAutomatique('Lieu_03')).toBe(true);
+    // Format de la famille : le même que les dossiers nommés à la main.
+    for (const nom of ['Vallon_22.11.25', 'Ko_Samui_18-24.07.26', 'Ko_Samui_28.06-02.07.26', 'Nouvel_An_28.12.25-02.01.26', 'Lausanne_11.25', 'Vallon_22.11.25_b', '22.11.25']) {
+      expect(MOTIF_AUTO.test(nom) || MOTIF_DATE_SEULE.test(nom)).toBe(true);
+      expect(estNomAutomatique(nom, nom)).toBe(true);
+      expect(estNomAutomatique(nom)).toBe(false);
+    }
+    // Renommé par l'utilisateur (le nom du tri reste noté) : plus automatique.
+    expect(estNomAutomatique('Concert_Vallon_22.11.25', 'Vallon_22.11.25')).toBe(false);
+    // Un lieu connu sans date n'est pas un nom à remplacer.
+    expect(estNomAutomatique('Maison', 'Maison')).toBe(false);
+    const q = plan({ 'Vallon_22.11.25': ['2025-11-22T10:00:00'], 'Baignade_Lac_11.03.25': ['2025-03-11T10:00:00'] });
+    const tri = [...q.dossiers.values()].find((d) => d.nom === 'Vallon_22.11.25')!;
+    q.dossiers.set(tri.id, { ...tri, tri: { origine: 'gps', lieu: 'Vallon', nom: 'Vallon_22.11.25' } });
+    expect(dossiersANommer(q).map((c) => c.nom)).toEqual(['Vallon_22.11.25']);
+  });
+
   it('échantillon réparti et lieu tiré du nom', () => {
     expect(echantillon([...Array(12).keys()], 5)).toEqual([0, 2, 4, 7, 9]);
     expect(echantillon([1, 2], 5)).toEqual([1, 2]);
     expect(lieuDuDossier('Vienne_2025-08-16', null)).toBe('Vienne');
     expect(lieuDuDossier('Koh_Samui_2026-07_b', null)).toBe('Koh Samui');
     expect(lieuDuDossier('2025-01-05', 'Chez_Papi')).toBe('Chez Papi');
+    expect(lieuDuDossier('Vallon_22.11.25', null)).toBe('Vallon');
+    expect(lieuDuDossier('Ko_Samui_18-24.07.26_b', null)).toBe('Ko Samui');
+    expect(lieuDuDossier('Ko_Samui_28.06-02.07.26', null)).toBe('Ko Samui');
+    expect(lieuDuDossier('05.01.25', 'Chez_Papi')).toBe('Chez Papi');
   });
 
   it('assemble la consigne : lieu, période, sous-dossier, calendrier, contexte, monuments', () => {
@@ -253,6 +298,27 @@ describe('consolidation (étape 7, script 05)', () => {
     expect(paires).toContainEqual(['Plage_Chaweng_18-20.07.26', 'Vol_Koh_Samui_18.07.26', ['chevauchement']]);
     expect(paires).toContainEqual(['Vol_Koh_Samui_18.07.26', 'Vol_KohSamui_18.07.26', ['noms_proches']]);
   });
+
+  it('noms proches : seulement à quelques jours d’écart ; une paire ignorée n’est plus proposée', () => {
+    expect(racineNom('Vallon_22.11.25')).toBe('vallon');
+    expect(racineNom('Ko_Samui_28.06-02.07.26')).toBe('kosamui');
+    expect(racineNom('Vallon_22.11.25_b')).toBe('vallon');
+    expect(racineNom('Lausanne_11.25')).toBe('lausanne');
+    const q = plan({
+      'Vallon_2025-11-22': ['2025-11-22T10:00:00'],
+      'Vallon_2025-12-13': ['2025-12-13T10:00:00'],
+      'Foot_Vallon_12.04.25': ['2025-04-12T10:00:00'],
+      'Riviere_Vallon_23.11.25': ['2025-11-23T10:00:00'],
+      'Lausanne_12.01.25': ['2025-01-12T10:00:00'],
+      'Lausanne_10.07.25': ['2025-07-10T10:00:00'],
+    });
+    const g = groupesDeFreres(q)[0];
+    const nom = (id: string) => q.dossiers.get(id)!.nom;
+    const paires = rapprochementsLocaux(g);
+    // Un nom de village courant ne rapproche plus toutes les sorties de l'année : seulement celles qui se suivent.
+    expect(paires.map((p) => [nom(p.a), nom(p.b)])).toEqual([['Riviere_Vallon_23.11.25', 'Vallon_2025-11-22']]);
+    expect(rapprochementsLocaux(g, new Set([clePaire(paires[0].b, paires[0].a)]))).toEqual([]);
+  });
 });
 
 describe('petits dossiers (étape 5, script 05 --fragments)', () => {
@@ -312,6 +378,60 @@ describe('petits dossiers (étape 5, script 05 --fragments)', () => {
       confiance: null,
     });
     expect(lireFragment('n’importe quoi', bateau)).toBeNull();
+  });
+
+  it('écart entre les périodes (0 pendant la sortie voisine) et ressemblance en mots', () => {
+    expect(bateau.voisins.map((v) => [v.dossier.nom, v.ecart])).toEqual([
+      ['Plage', 75],
+      ['Temple', 55],
+    ]);
+    // Un arrêt le 21.07 pendant une sortie du 18 au 24.07 : « pendant cette sortie », pas « à 72 h ».
+    const q = plan({ Ko_Samui: ['2026-07-18T10:00:00', '2026-07-20T10:00:00', '2026-07-22T10:00:00', '2026-07-23T10:00:00', '2026-07-24T10:00:00'], Arret: ['2026-07-21T12:00:00'] });
+    expect(fragments(groupesDeFreres(q)[0], () => undefined)[0].voisins.map((v) => [v.dossier.nom, v.ecart])).toEqual([['Ko_Samui', 0]]);
+    expect([2, 12, 16, 26, 99].map(niveauRessemblance)).toEqual(['tres', 'tres', 'oui', 'peu', null]);
+    expect(SEUIL_PETIT_DOSSIER).toBe(OPTIONS_FRAGMENTS.seuilFragment);
+  });
+
+  it('petits dossiers d’une même journée, et dossiers où rattacher, les plus proches d’abord', () => {
+    const groupes = petitsDuMemeJour(liste);
+    expect(groupes.map((g) => g.map((f) => f.dossier.nom))).toEqual([['Bateau', 'Petit']]);
+    expect(receveur(groupes[0]).dossier.nom).toBe('Petit');
+    expect(candidatsRattachement(p, bateau.dossier).map((c) => [c.nom, c.jours])).toEqual([
+      ['Petit', 0],
+      ['Plage', 0],
+      ['Temple', 0],
+      ['Lendemain', 1],
+    ]);
+  });
+
+  it('un petit dossier rattaché se ressort, même après d’autres changements', () => {
+    const q = plan({
+      Bateau: ['2026-07-24T12:00:00', '2026-07-24T12:05:00'],
+      Plage: Array.from({ length: 6 }, (_, i) => `2026-07-24T10:0${i}:00`),
+      Temple: Array.from({ length: 6 }, (_, i) => `2026-07-24T15:0${i}:00`),
+    });
+    const etat = () => JSON.stringify([[...q.dossiers.values()].sort((a, b) => a.id.localeCompare(b.id)), [...q.fichiers.values()].sort((a, b) => a.id.localeCompare(b.id))]);
+    const avant = etat();
+    const g = groupesDeFreres(q)[0];
+    const bateauQ = g.dossiers.find((d) => d.nom === 'Bateau')!;
+    const plage = g.dossiers.find((d) => d.nom === 'Plage')!.id;
+    const temple = g.dossiers.find((d) => d.nom === 'Temple')!.id;
+    const note = noterRattachement(q, bateauQ, plage, true)!;
+    expect(note).toMatchObject({ cibleNom: 'Plage', avecVoisins: true, fichiers: [{ id: 'Bateau/IMG_0.jpg', nom: 'IMG_0.jpg' }, { id: 'Bateau/IMG_1.jpg', nom: 'IMG_1.jpg' }] });
+    fusionnerDossiers(q, bateauQ.id, plage);
+    // Les noms se heurtent dans Plage (IMG_0.jpg) : ils reprennent le leur en revenant.
+    expect(q.fichiers.get('Bateau/IMG_0.jpg')!.nom).not.toBe('IMG_0.jpg');
+    // Un autre changement entre-temps : le ressortir reste possible.
+    renommerDossier(q, temple, 'Temple_Wat');
+    const h = new Historique();
+    h.enregistrer(ressortirFragment(q, note));
+    expect(etat()).toBe(avant.replace('"nom":"Temple"', '"nom":"Temple_Wat"'));
+    expect(ressortirFragment(q, note)).toBeNull();
+    h.annuler(q);
+    expect(q.dossiers.has(bateauQ.id)).toBe(false);
+    // Photos déplacées ailleurs depuis : rien à ressortir.
+    fusionnerDossiers(q, plage, temple);
+    expect(ressortirFragment(q, note)).toBeNull();
   });
 });
 
