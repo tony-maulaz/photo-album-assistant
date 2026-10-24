@@ -16,6 +16,7 @@ import { TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { chargerEvenements, configuration, notifier, reglages, session, texteErreur } from '../etat';
 import { chargerConfiguration } from '../projets';
+import { t } from '../../lib/langue';
 
 type Onglet = 'lieux' | 'appareils' | 'calendriers' | 'prereglages';
 
@@ -79,7 +80,7 @@ export function PageConfiguration() {
       const dc = new DossierConfig(d);
       if (!(await dc.lire())) await dc.ecrire(configVide(), null);
       await chargerConfiguration(d);
-      notifier('ok', `Dossier « config » prêt dans « ${parent.name} ».`);
+      notifier('ok', t`Dossier « config » prêt dans « ${parent.name} ».`);
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -96,9 +97,9 @@ export function PageConfiguration() {
       const lecture = await c.dossier.ecrire(brouillon, c.lecture);
       configuration.value = { dossier: c.dossier, lecture };
       void chargerEvenements();
-      notifier('ok', 'Configuration enregistrée (la version précédente est sauvegardée).');
+      notifier('ok', t`Configuration enregistrée (la version précédente est sauvegardée).`);
     } catch (err) {
-      if (err instanceof ModifieAilleurs && (await confirmer('Modifiée ailleurs', `${err.message} Vos changements seront perdus.`, 'Recharger'))) await chargerConfiguration(c.dossier.dossier);
+      if (err instanceof ModifieAilleurs && (await confirmer(t`Modifiée ailleurs`, t`${err.message} Vos changements seront perdus.`, t`Recharger`))) await chargerConfiguration(c.dossier.dossier);
       else notifier('erreur', texteErreur(err));
     }
   };
@@ -114,15 +115,15 @@ export function PageConfiguration() {
         try {
           const v = JSON.parse(texte);
           if (validerConfig(v).length) continue;
-          if (!(await confirmer('Restaurer une sauvegarde ?', `La sauvegarde « ${nom} » est valide. Elle remplacera le config.json illisible (qui sera lui-même sauvegardé).`, 'Restaurer'))) return;
+          if (!(await confirmer(t`Restaurer une sauvegarde ?`, t`La sauvegarde « ${nom} » est valide. Elle remplacera le config.json illisible (qui sera lui-même sauvegardé).`, t`Restaurer`))) return;
           configuration.value = { dossier: c.dossier, lecture: await c.dossier.ecrire(v as Config, await c.dossier.lire()) };
-          notifier('ok', `Sauvegarde « ${nom} » restaurée.`);
+          notifier('ok', t`Sauvegarde « ${nom} » restaurée.`);
           return;
         } catch {
           // Sauvegarde illisible : on essaie la précédente.
         }
       }
-      notifier('erreur', 'Aucune sauvegarde valide trouvée.');
+      notifier('erreur', t`Aucune sauvegarde valide trouvée.`);
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -145,15 +146,15 @@ export function PageConfiguration() {
     });
 
   const depuisPhoto = async () => {
-    const f = await choisirFichier({ 'image/*': ['.jpg', '.jpeg', '.heic', '.png'] }, 'Photos');
+    const f = await choisirFichier({ 'image/*': ['.jpg', '.jpeg', '.heic', '.png'] }, t`Photos`);
     if (!f) return;
     const e = await lireExif(f).catch(() => null);
     if (e?.lat === undefined || e.lon === undefined) {
-      notifier('erreur', `« ${f.name} » ne contient pas de position GPS.`);
+      notifier('erreur', t`« ${f.name} » ne contient pas de position GPS.`);
       return;
     }
     ajouterLieu(f.name.replace(/\.[^.]+$/, ''), Number(e.lat.toFixed(6)), Number(e.lon.toFixed(6)));
-    notifier('ok', 'Lieu ajouté depuis la photo : donnez-lui un nom, réglez le rayon, puis enregistrez.');
+    notifier('ok', t`Lieu ajouté depuis la photo : donnez-lui un nom, réglez le rayon, puis enregistrez.`);
   };
 
   const chercherAdresse = async () => {
@@ -161,16 +162,16 @@ export function PageConfiguration() {
     try {
       setResultats((await rechercher(adresse.trim(), 'fr', reglages.value.emailNominatim || undefined)).donnees);
     } catch (err) {
-      notifier('erreur', `Recherche impossible : ${texteErreur(err)}`);
+      notifier('erreur', t`Recherche impossible : ${texteErreur(err)}`);
     }
   };
 
   const importerCsv = async () => {
-    const f = await choisirFichier({ 'text/csv': ['.csv'] }, 'Lieux connus (CSV)');
+    const f = await choisirFichier({ 'text/csv': ['.csv'] }, t`Lieux connus (CSV)`);
     if (!f) return;
     const lieux = lireCsvLieux(await f.text());
     if (!lieux.length) {
-      notifier('erreur', 'Aucun lieu lisible : il faut les colonnes nom;latitude;longitude;rayon_m.');
+      notifier('erreur', t`Aucun lieu lisible : il faut les colonnes nom;latitude;longitude;rayon_m.`);
       return;
     }
     modifier((b) => {
@@ -179,12 +180,12 @@ export function PageConfiguration() {
         b.lieux_connus.push({ id: nouvelIdLieu(l.nom, b.lieux_connus.map((x) => x.id)), ...l, domicile: false, un_seul_dossier: false, notes: '' });
       }
     });
-    notifier('ok', `${lieux.length} lieu(x) lus dans « ${f.name} » : vérifiez le domicile, puis enregistrez.`);
+    notifier('ok', t`${lieux.length} lieu(x) lus dans « ${f.name} » : vérifiez le domicile, puis enregistrez.`);
   };
 
   const ajouterCalendrier = async () => {
     if (!c) return;
-    const f = await choisirFichier({ 'text/calendar': ['.ics'] }, 'Calendrier (.ics)');
+    const f = await choisirFichier({ 'text/calendar': ['.ics'] }, t`Calendrier (.ics)`);
     if (!f) return;
     try {
       const dossier = await c.dossier.dossier.getDirectoryHandle('calendriers', { create: true });
@@ -195,7 +196,7 @@ export function PageConfiguration() {
       modifier((b) => {
         if (!b.calendriers.some((k) => k.fichier === `calendriers/${nom}.ics`)) b.calendriers.push({ fichier: `calendriers/${nom}.ics`, nom, actif: true, inclure_recurrents: false });
       });
-      notifier('ok', `Calendrier copié dans « config/calendriers/${nom}.ics » : enregistrez la configuration.`);
+      notifier('ok', t`Calendrier copié dans « config/calendriers/${nom}.ics » : enregistrez la configuration.`);
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -206,29 +207,28 @@ export function PageConfiguration() {
 
   return (
     <div class="page">
-      <TeteEtape titre="Configuration">
-        Les lieux connus, appareils et calendriers, communs à tous les projets de la famille. Ils sont gardés dans un dossier « config » à côté de
-        l’application : copiez ce dossier pour utiliser l’application sur un autre ordinateur. Il contient l’adresse du domicile : ne le publiez jamais.
+      <TeteEtape titre={t`Configuration`}>
+        {t`Les lieux connus, appareils et calendriers, communs à tous les projets de la famille. Ils sont gardés dans un dossier « config » à côté de l’application : copiez ce dossier pour utiliser l’application sur un autre ordinateur. Il contient l’adresse du domicile : ne le publiez jamais.`}
       </TeteEtape>
 
       <div class="actions">
-        {c ? <span>Dossier : « {c.dossier.dossier.name} »</span> : <span class="discret">Aucun dossier de configuration choisi.</span>}
+        {c ? <span>{t`Dossier : « ${c.dossier.dossier.name} »`}</span> : <span class="discret">{t`Aucun dossier de configuration choisi.`}</span>}
         <button type="button" onClick={() => void choisir()}>
-          Choisir le dossier config…
+          {t`Choisir le dossier config…`}
         </button>
         <button type="button" onClick={() => void creer()}>
-          Créer « config » dans un dossier…
+          {t`Créer « config » dans un dossier…`}
         </button>
         {c && (
           <button type="button" onClick={() => void chargerConfiguration(c.dossier.dossier)}>
-            Recharger
+            {t`Recharger`}
           </button>
         )}
       </div>
 
       {c && !c.lecture && (
         <div class="encart">
-          <p>Ce dossier ne contient pas encore de config.json.</p>
+          <p>{t`Ce dossier ne contient pas encore de config.json.`}</p>
           <button
             type="button"
             class="principal"
@@ -241,16 +241,16 @@ export function PageConfiguration() {
               }
             }}
           >
-            Créer config.json
+            {t`Créer config.json`}
           </button>
         </div>
       )}
 
       {c?.lecture && !c.lecture.config && (
         <div class="encart attention">
-          <p>config.json est illisible : {c.lecture.erreurs.join(' ')}</p>
+          <p>{t`config.json est illisible : ${c.lecture.erreurs.join(' ')}`}</p>
           <button type="button" onClick={() => void restaurer()}>
-            Restaurer la dernière sauvegarde valide
+            {t`Restaurer la dernière sauvegarde valide`}
           </button>
         </div>
       )}
@@ -260,14 +260,14 @@ export function PageConfiguration() {
           <div class="onglets" role="tablist">
             {(
               [
-                ['lieux', `Lieux connus (${brouillon.lieux_connus.length})`],
-                ['appareils', `Appareils (${brouillon.appareils.length})`],
-                ['calendriers', `Calendriers (${brouillon.calendriers.length})`],
-                ['prereglages', 'Préréglages'],
+                ['lieux', t`Lieux connus (${brouillon.lieux_connus.length})`],
+                ['appareils', t`Appareils (${brouillon.appareils.length})`],
+                ['calendriers', t`Calendriers (${brouillon.calendriers.length})`],
+                ['prereglages', t`Préréglages`],
               ] as [Onglet, string][]
-            ).map(([o, t]) => (
+            ).map(([o, libelle]) => (
               <button key={o} type="button" role="tab" aria-selected={onglet === o} class={onglet === o ? 'actif' : ''} onClick={() => setOnglet(o)}>
-                {t}
+                {libelle}
               </button>
             ))}
           </div>
@@ -277,14 +277,14 @@ export function PageConfiguration() {
               <table class="tableau edition">
                 <thead>
                   <tr>
-                    <th>Nom</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                    <th>Rayon (m)</th>
-                    <th title="Le lieu du domicile (un seul)">Domicile</th>
-                    <th title="Toutes les photos de ce lieu dans un seul dossier">Un seul dossier</th>
-                    <th>Notes</th>
-                    {session.value && <th title="Photos du projet ouvert dans le rayon">Photos</th>}
+                    <th>{t`Nom`}</th>
+                    <th>{t`Latitude`}</th>
+                    <th>{t`Longitude`}</th>
+                    <th>{t`Rayon (m)`}</th>
+                    <th title={t`Le lieu du domicile (un seul)`}>{t`Domicile`}</th>
+                    <th title={t`Toutes les photos de ce lieu dans un seul dossier`}>{t`Un seul dossier`}</th>
+                    <th>{t`Notes`}</th>
+                    {session.value && <th title={t`Photos du projet ouvert dans le rayon`}>{t`Photos`}</th>}
                     <th />
                   </tr>
                 </thead>
@@ -315,7 +315,7 @@ export function PageConfiguration() {
                       {session.value && <td class="n">{photosDansRayon(l)}</td>}
                       <td>
                         <button type="button" onClick={() => modifier((b) => b.lieux_connus.splice(i, 1))}>
-                          Retirer
+                          {t`Retirer`}
                         </button>
                       </td>
                     </tr>
@@ -323,7 +323,7 @@ export function PageConfiguration() {
                 </tbody>
               </table>
               <div class="actions">
-                <input class="large" placeholder="Collez des coordonnées (48.86, 2.29) ou un lien Google Maps complet" value={colle} onInput={(e) => setColle(e.currentTarget.value)} />
+                <input class="large" placeholder={t`Collez des coordonnées (48.86, 2.29) ou un lien Google Maps complet`} value={colle} onInput={(e) => setColle(e.currentTarget.value)} />
                 <button
                   type="button"
                   disabled={!coordonnees}
@@ -335,40 +335,36 @@ export function PageConfiguration() {
                     })
                   }
                 >
-                  Ajouter ce lieu
+                  {t`Ajouter ce lieu`}
                 </button>
               </div>
               {colle.trim() && !coordonnees && (
                 <p class="attention">
                   {lienCourt(colle) ? (
-                    <>
-                      Ce lien court ne contient pas la position (l’application n’a pas le droit de l’ouvrir sur internet). Ouvrez-le dans le navigateur, puis copiez
-                      l’adresse complète de la barre d’adresse (elle contient « @46.8,6.6 ») ; ou, dans Google Maps, faites un clic droit sur le lieu et cliquez sur
-                      les coordonnées pour les copier.
-                    </>
+                    t`Ce lien court ne contient pas la position (l’application n’a pas le droit de l’ouvrir sur internet). Ouvrez-le dans le navigateur, puis copiez l’adresse complète de la barre d’adresse (elle contient « @46.8,6.6 ») ; ou, dans Google Maps, faites un clic droit sur le lieu et cliquez sur les coordonnées pour les copier.`
                   ) : (
-                    <>Pas de coordonnées reconnues : collez par exemple « 48.8584, 2.2945 », ou l’adresse complète d’une page Google Maps.</>
+                    t`Pas de coordonnées reconnues : collez par exemple « 48.8584, 2.2945 », ou l’adresse complète d’une page Google Maps.`
                   )}
                 </p>
               )}
               <div class="actions">
-                <button type="button" onClick={() => void depuisPhoto()} title="Une photo prise à cet endroit, avec sa position GPS">
-                  Ajouter depuis une photo…
+                <button type="button" onClick={() => void depuisPhoto()} title={t`Une photo prise à cet endroit, avec sa position GPS`}>
+                  {t`Ajouter depuis une photo…`}
                 </button>
-                <input placeholder="Rechercher une adresse (rue, ville)" value={adresse} onInput={(e) => setAdresse(e.currentTarget.value)} onKeyDown={(e) => e.key === 'Enter' && void chercherAdresse()} />
-                <button type="button" disabled={!adresse.trim()} onClick={() => void chercherAdresse()} title="Recherche sur OpenStreetMap (Nominatim)">
-                  Rechercher
+                <input placeholder={t`Rechercher une adresse (rue, ville)`} value={adresse} onInput={(e) => setAdresse(e.currentTarget.value)} onKeyDown={(e) => e.key === 'Enter' && void chercherAdresse()} />
+                <button type="button" disabled={!adresse.trim()} onClick={() => void chercherAdresse()} title={t`Recherche sur OpenStreetMap (Nominatim)`}>
+                  {t`Rechercher`}
                 </button>
                 <button type="button" onClick={() => void importerCsv()}>
-                  Importer lieux_connus.csv…
+                  {t`Importer lieux_connus.csv…`}
                 </button>
                 <button type="button" disabled={!brouillon.lieux_connus.length} onClick={() => telecharger('lieux_connus.csv', ecrireCsvLieux(brouillon.lieux_connus))}>
-                  Exporter en CSV
+                  {t`Exporter en CSV`}
                 </button>
               </div>
               {resultats && (
                 <ul class="liste-courte resultats-adresse">
-                  {resultats.length === 0 && <li class="discret">Aucun résultat.</li>}
+                  {resultats.length === 0 && <li class="discret">{t`Aucun résultat.`}</li>}
                   {resultats.map((r) => (
                     <li key={r.display_name}>
                       {r.display_name}{' '}
@@ -380,7 +376,7 @@ export function PageConfiguration() {
                           setResultats(null);
                         }}
                       >
-                        ajouter
+                        {t`ajouter`}
                       </button>
                     </li>
                   ))}
@@ -395,9 +391,9 @@ export function PageConfiguration() {
               <table class="tableau edition">
                 <thead>
                   <tr>
-                    <th>Modèle (EXIF)</th>
-                    <th title="Décalage d’horloge à corriger, au format +HH:MM">Décalage</th>
-                    <th>Surnom</th>
+                    <th>{t`Modèle (EXIF)`}</th>
+                    <th title={t`Décalage d’horloge à corriger, au format +HH:MM`}>{t`Décalage`}</th>
+                    <th>{t`Surnom`}</th>
                     <th />
                   </tr>
                 </thead>
@@ -411,11 +407,11 @@ export function PageConfiguration() {
                         <input class="court" value={a.decalage} onChange={(e) => modifier((b) => (b.appareils[i].decalage = e.currentTarget.value))} />
                       </td>
                       <td>
-                        <input value={a.surnom} placeholder="téléphone d’Edith" onChange={(e) => modifier((b) => (b.appareils[i].surnom = e.currentTarget.value))} />
+                        <input value={a.surnom} placeholder={t`téléphone d’Edith`} onChange={(e) => modifier((b) => (b.appareils[i].surnom = e.currentTarget.value))} />
                       </td>
                       <td>
                         <button type="button" onClick={() => modifier((b) => b.appareils.splice(i, 1))}>
-                          Retirer
+                          {t`Retirer`}
                         </button>
                       </td>
                     </tr>
@@ -423,7 +419,7 @@ export function PageConfiguration() {
                 </tbody>
               </table>
               <button type="button" onClick={() => modifier((b) => b.appareils.push({ modele: '', decalage: '+00:00', surnom: '' }))}>
-                Ajouter un appareil
+                {t`Ajouter un appareil`}
               </button>
             </>
           )}
@@ -438,11 +434,11 @@ export function PageConfiguration() {
 
           <div class="actions">
             <button type="button" class="principal" disabled={!modifie} onClick={() => void enregistrer()}>
-              Enregistrer
+              {t`Enregistrer`}
             </button>
             {modifie && (
               <button type="button" onClick={() => setBrouillon(structuredClone(c!.lecture!.config!))}>
-                Annuler les changements
+                {t`Annuler les changements`}
               </button>
             )}
           </div>
@@ -473,14 +469,14 @@ function ChevauchementsLieux({ lieux }: { lieux: LieuConnu[] }) {
   const paires: string[] = [];
   lieux.forEach((a, i) =>
     lieux.slice(i + 1).forEach((b) => {
-      if (distance(a, b) < a.rayon_m + b.rayon_m) paires.push(`« ${a.nom} » et « ${b.nom} »`);
+      if (distance(a, b) < a.rayon_m + b.rayon_m) paires.push(t`« ${a.nom} » et « ${b.nom} »`);
     }),
   );
   const domicile = lieux.some((l) => l.domicile);
   return (
     <>
-      {paires.length > 0 && <p class="attention">Les cercles de {paires.join(', ')} se chevauchent : une photo va au lieu le plus proche.</p>}
-      {lieux.length > 0 && !domicile && <p class="attention">Aucun lieu n’est le domicile : la détection des voyages (tri automatique) en a besoin.</p>}
+      {paires.length > 0 && <p class="attention">{t`Les cercles de ${paires.join(', ')} se chevauchent : une photo va au lieu le plus proche.`}</p>}
+      {lieux.length > 0 && !domicile && <p class="attention">{t`Aucun lieu n’est le domicile : la détection des voyages (tri automatique) en a besoin.`}</p>}
     </>
   );
 }
@@ -503,7 +499,7 @@ function useCalendriers(config: Config): Record<string, { evenements?: Evenement
           r[k.fichier] = { evenements: lireIcs(texte, { inclureRecurrents: k.inclure_recurrents }) };
         } catch (err) {
           r[k.fichier] = {
-            erreur: err instanceof DOMException && err.name === 'NotFoundError' ? `fichier introuvable : config/${k.fichier}` : `lecture impossible (${err instanceof Error ? err.message : String(err)})`,
+            erreur: err instanceof DOMException && err.name === 'NotFoundError' ? t`fichier introuvable : config/${k.fichier}` : t`lecture impossible (${err instanceof Error ? err.message : String(err)})`,
           };
         }
       }
@@ -533,11 +529,11 @@ function OngletCalendriers({ config, modifier, ajouter }: { config: Config; modi
       <table class="tableau edition">
         <thead>
           <tr>
-            <th>Nom</th>
-            <th>Fichier</th>
-            <th>Actif</th>
-            <th title="Anniversaires, cours… (une occurrence par date)">Événements récurrents</th>
-            <th>Événements</th>
+            <th>{t`Nom`}</th>
+            <th>{t`Fichier`}</th>
+            <th>{t`Actif`}</th>
+            <th title={t`Anniversaires, cours… (une occurrence par date)`}>{t`Événements récurrents`}</th>
+            <th>{t`Événements`}</th>
             <th />
           </tr>
         </thead>
@@ -558,16 +554,24 @@ function OngletCalendriers({ config, modifier, ajouter }: { config: Config; modi
                   <input type="checkbox" checked={k.inclure_recurrents} onChange={(e) => modifier((b) => (b.calendriers[i].inclure_recurrents = e.currentTarget.checked))} />
                 </td>
                 <td>
-                  {!info ? '…' : info.erreur ? <span class="attention">{info.erreur}</span> : r && r.nombre ? `${r.nombre} événement${r.nombre > 1 ? 's' : ''}, du ${jourCalendrier(r.du)} au ${jourCalendrier(r.au)}` : 'aucun événement'}
+                  {!info
+                    ? '…'
+                    : info.erreur
+                      ? <span class="attention">{info.erreur}</span>
+                      : !r?.nombre
+                        ? t`aucun événement`
+                        : r.nombre > 1
+                          ? t`${r.nombre} événements, du ${jourCalendrier(r.du)} au ${jourCalendrier(r.au)}`
+                          : t`${r.nombre} événement, du ${jourCalendrier(r.du)} au ${jourCalendrier(r.au)}`}
                 </td>
                 <td>
                   {r && r.nombre > 0 && (
                     <button type="button" class="lien" onClick={() => setVu(vu === k.fichier ? null : k.fichier)}>
-                      {vu === k.fichier ? 'Masquer' : 'Voir les événements'}
+                      {vu === k.fichier ? t`Masquer` : t`Voir les événements`}
                     </button>
                   )}{' '}
-                  <button type="button" class="lien" onClick={() => modifier((b) => b.calendriers.splice(i, 1))} title="Le fichier reste dans config/calendriers">
-                    Retirer
+                  <button type="button" class="lien" onClick={() => modifier((b) => b.calendriers.splice(i, 1))} title={t`Le fichier reste dans config/calendriers`}>
+                    {t`Retirer`}
                   </button>
                 </td>
               </tr>
@@ -575,23 +579,23 @@ function OngletCalendriers({ config, modifier, ajouter }: { config: Config; modi
           })}
         </tbody>
       </table>
-      {config.calendriers.length === 0 && <p class="discret">Aucun calendrier. Exportez le calendrier familial au format .ics (Google Agenda : Paramètres → Importer et exporter → Exporter, puis décompressez), puis ajoutez-le ici.</p>}
+      {config.calendriers.length === 0 && <p class="discret">{t`Aucun calendrier. Exportez le calendrier familial au format .ics (Google Agenda : Paramètres → Importer et exporter → Exporter, puis décompressez), puis ajoutez-le ici.`}</p>}
       <button type="button" onClick={ajouter}>
-        Ajouter un calendrier .ics…
+        {t`Ajouter un calendrier .ics…`}
       </button>
       {vu && (
         <div class="liste-evenements">
           <div class="actions">
-            <select value={annee} onChange={(e) => setAnnee(e.currentTarget.value)} aria-label="Année">
-              <option value="">Toutes les années</option>
+            <select value={annee} onChange={(e) => setAnnee(e.currentTarget.value)} aria-label={t`Année`}>
+              <option value="">{t`Toutes les années`}</option>
               {annees.map((a) => (
                 <option key={a} value={a}>
                   {a}
                 </option>
               ))}
             </select>
-            <input type="search" placeholder="Chercher un événement" value={texte} onInput={(e) => setTexte(e.currentTarget.value)} />
-            <span class="discret">{filtres.length} événement(s)</span>
+            <input type="search" placeholder={t`Chercher un événement`} value={texte} onInput={(e) => setTexte(e.currentTarget.value)} />
+            <span class="discret">{t`${filtres.length} événement(s)`}</span>
           </div>
           <table class="tableau">
             <tbody>
@@ -604,14 +608,14 @@ function OngletCalendriers({ config, modifier, ajouter }: { config: Config; modi
                   </td>
                   <td>
                     {e.titre}
-                    {e.recurrent && <span class="discret"> (récurrent)</span>}
+                    {e.recurrent && <span class="discret">{t` (récurrent)`}</span>}
                   </td>
                   <td class="discret">{e.lieu}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {filtres.length > 500 && <p class="discret">… et {filtres.length - 500} autres : filtrez par année ou par texte.</p>}
+          {filtres.length > 500 && <p class="discret">{t`… et ${filtres.length - 500} autres : filtrez par année ou par texte.`}</p>}
         </div>
       )}
     </>
@@ -634,18 +638,18 @@ function EditionPrereglages({ config, modifier }: { config: Config; modifier: (f
       <table class="tableau edition">
         <thead>
           <tr>
-            <th>Préréglage</th>
-            <th>Rayon des lieux (km)</th>
-            <th>Un dossier par jour</th>
-            <th>Détecter les voyages</th>
-            <th>Utiliser les lieux connus</th>
+            <th>{t`Préréglage`}</th>
+            <th>{t`Rayon des lieux (km)`}</th>
+            <th>{t`Un dossier par jour`}</th>
+            <th>{t`Détecter les voyages`}</th>
+            <th>{t`Utiliser les lieux connus`}</th>
             <th />
           </tr>
         </thead>
         <tbody>
           {liste.map(([nom, p]) => (
             <tr key={nom}>
-              <td>{nom === 'annee' ? 'Année' : nom === 'voyage' ? 'Voyage' : nom}</td>
+              <td>{nom === 'annee' ? t`Année` : nom === 'voyage' ? t`Voyage` : nom}</td>
               <td>
                 <input type="number" min="0.1" step="0.5" class="court" value={p.rayon_km ?? 2} onChange={(e) => changer(nom, { rayon_km: Math.max(0.1, Number(e.currentTarget.value) || 2) })} />
               </td>
@@ -661,7 +665,7 @@ function EditionPrereglages({ config, modifier }: { config: Config; modifier: (f
               <td>
                 {nom !== 'annee' && nom !== 'voyage' && (
                   <button type="button" onClick={() => modifier((b) => delete b.prereglages[nom])}>
-                    Retirer
+                    {t`Retirer`}
                   </button>
                 )}
               </td>
@@ -672,13 +676,13 @@ function EditionPrereglages({ config, modifier }: { config: Config; modifier: (f
       <button
         type="button"
         onClick={() => {
-          const nom = window.prompt('Nom du nouveau préréglage (ex. « Week-end », « Camp de ski ») :')?.trim();
+          const nom = window.prompt(t`Nom du nouveau préréglage (ex. « Week-end », « Camp de ski ») :`)?.trim();
           if (nom && !(nom in config.prereglages)) modifier((b) => (b.prereglages[nom] = { rayon_km: 2, par_jour: true, voyages: false, lieux_connus: true }));
         }}
       >
-        Ajouter un préréglage
+        {t`Ajouter un préréglage`}
       </button>
-      <p class="discret">« Année » : un dossier par sortie, voyages regroupés. « Voyage » (dossier de vacances déjà isolé) : un dossier par jour et par lieu.</p>
+      <p class="discret">{t`« Année » : un dossier par sortie, voyages regroupés. « Voyage » (dossier de vacances déjà isolé) : un dossier par jour et par lieu.`}</p>
     </>
   );
 }
