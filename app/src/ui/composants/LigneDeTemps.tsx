@@ -4,6 +4,7 @@
 // choisi dans le panneau (et ses sous-dossiers) est mis en évidence.
 
 import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { t } from '../../lib/langue';
 import { cheminDossier, estDescendant, RACINE, resumes, type Plan } from '../../lib/plan';
 import { evenements, session, versionPlan } from '../etat';
 import { jourCourt, pluriel } from '../format';
@@ -49,13 +50,13 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
   useEffect(() => {
     conteneur.current?.querySelector('.ldt-barre.actif')?.scrollIntoView({ block: 'nearest', inline: 'center' });
   }, [choisi, liste]);
-  if (!liste.length) return <p class="vide-grille">Aucun dossier daté.</p>;
+  if (!liste.length) return <p class="vide-grille">{t`Aucun dossier daté.`}</p>;
   // Une colonne par jour où il y a des photos : un voyage comme une année tiennent à l'écran ;
   // une double ligne marque les jours sans photo.
   const parJour = new Map<string, number>();
   for (const f of s.plan.fichiers.values()) if (f.statut === 'archive' && f.categorie !== 'autre' && f.date) parJour.set(f.date.slice(0, 10), (parJour.get(f.date.slice(0, 10)) ?? 0) + 1);
   const colonnes = [...parJour.keys()].sort().slice(0, MAX_JOURS);
-  if (!colonnes.length) return <p class="vide-grille">Aucun dossier daté.</p>;
+  if (!colonnes.length) return <p class="vide-grille">{t`Aucun dossier daté.`}</p>;
   const du = colonnes[0];
   const au = colonnes.at(-1)!;
   const max = Math.max(1, ...parJour.values());
@@ -64,7 +65,7 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
 
   return (
     <div class="ligne-de-temps" ref={conteneur}>
-      {colonnes.length >= MAX_JOURS && <p class="discret">Période très longue : seuls les {MAX_JOURS} premiers jours avec photos sont montrés.</p>}
+      {colonnes.length >= MAX_JOURS && <p class="discret">{t`Période très longue : seuls les ${MAX_JOURS} premiers jours avec photos sont montrés.`}</p>}
       <div class="ldt-grille" style={{ width: `${largeur + 260}px` }}>
         <div class="ldt-ligne ldt-entete">
           <div class="ldt-nom" />
@@ -73,7 +74,7 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
               const saut = i > 0 && lendemain(colonnes[i - 1]) !== j;
               const nouveauMois = i === 0 || colonnes[i - 1].slice(0, 7) !== j.slice(0, 7);
               return (
-                <div key={j} class={`ldt-jour${saut ? ' saut' : ''}`} style={{ left: `${i * LARGEUR_JOUR}px` }} title={`${jourCourt(j)} : ${pluriel(parJour.get(j) ?? 0, 'photo')}`}>
+                <div key={j} class={`ldt-jour${saut ? ' saut' : ''}`} style={{ left: `${i * LARGEUR_JOUR}px` }} title={t`${jourCourt(j)} : ${pluriel(parJour.get(j) ?? 0, 'photo')}`}>
                   <span class="ldt-histo" style={{ height: `${((parJour.get(j) ?? 0) / max) * 100}%` }} />
                   {(nouveauMois || i % 7 === 0) && <span class="ldt-date">{j.slice(8, 10)}.{j.slice(5, 7)}</span>}
                 </div>
@@ -83,7 +84,7 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
         </div>
         {evts.length > 0 && (
           <div class="ldt-ligne ldt-evenements">
-            <div class="ldt-nom discret">Calendrier</div>
+            <div class="ldt-nom discret">{t`Calendrier`}</div>
             <div class="ldt-piste" style={{ width: `${largeur}px` }}>
               {evts.map((e, k) => {
                 const a = colonneDepuis(colonnes, e.debut.slice(0, 10));
@@ -111,7 +112,7 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
                   type="button"
                   class={`ldt-barre${actif ? ' actif' : ''}`}
                   style={{ left: `${a * LARGEUR_JOUR}px`, width: `${(b - a + 1) * LARGEUR_JOUR - 2}px` }}
-                  title={`${l.chemin} : ${jourCourt(l.du)} – ${jourCourt(l.au)}, ${pluriel(l.n, 'élément')}`}
+                  title={t`${l.chemin} : ${jourCourt(l.du)} – ${jourCourt(l.au)}, ${pluriel(l.n, 'élément')}`}
                   onClick={() => {
                     choisirVue(l.id);
                     ouvrir();

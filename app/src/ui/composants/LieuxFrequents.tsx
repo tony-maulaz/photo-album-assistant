@@ -3,6 +3,7 @@
 // comme lieu connu sans quitter la page.
 
 import { useEffect, useMemo, useState } from 'preact/hooks';
+import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { nomAscii, nouvelIdLieu } from '../../lib/noms';
 import { lieuxFrequents } from '../../lib/tri';
@@ -50,11 +51,11 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
     const estDomicile = sansDomicile && domicile === cle;
     const nom = nomAscii(noms[cle] || (estDomicile ? 'Maison' : '')).replace(/^_+|_+$/g, '');
     if (!nom) {
-      notifier('erreur', 'Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).');
+      notifier('erreur', t`Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).`);
       return;
     }
     if (!c?.lecture?.config) {
-      notifier('erreur', 'Choisissez d’abord le dossier de configuration (page Configuration).');
+      notifier('erreur', t`Choisissez d’abord le dossier de configuration (page Configuration).`);
       return;
     }
     try {
@@ -73,8 +74,8 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
       notifier(
         'ok',
         estDomicile
-          ? `Domicile « ${nom} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.`
-          : `Lieu « ${nom} » enregistré : recalculez l’arborescence pour en tenir compte.`,
+          ? t`Domicile « ${nom} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.`
+          : t`Lieu « ${nom} » enregistré : recalculez l’arborescence pour en tenir compte.`,
       );
     } catch (err) {
       notifier('erreur', texteErreur(err));
@@ -84,12 +85,10 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
   return (
     <details class="tri-auto" open={ouvert}>
       <summary>
-        <strong>{pluriel(visibles.length, 'lieu qui revient souvent', 'lieux qui reviennent souvent')}</strong> — à enregistrer comme lieu connu (maison,
-        grands-parents, école…)
+        <strong>{pluriel(visibles.length, 'lieu qui revient souvent', 'lieux qui reviennent souvent')}</strong> {t`— à enregistrer comme lieu connu (maison, grands-parents, école…)`}
       </summary>
       <p class="discret">
-        Un lieu enregistré reçoit son propre dossier (« Maison », « Chez_Grands_Parents »…), rangé par sortie. L’adresse vient d’OpenStreetMap (seules les
-        coordonnées sont envoyées).
+        {t`Un lieu enregistré reçoit son propre dossier (« Maison », « Chez_Grands_Parents »…), rangé par sortie. L’adresse vient d’OpenStreetMap (seules les coordonnées sont envoyées).`}
       </p>
       <ul class="lieux-frequents">
         {visibles.map((l) => {
@@ -100,9 +99,9 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
             <li key={cle} class="lieu-frequent">
               <div class="tete-lieu">
                 <strong>{pluriel(photos.length, 'photo')}</strong>
-                <span class="discret">sur {nombre(l.jours)} jours ·</span>
-                <span class="adresse-lieu" title={`Coordonnées : ${l.lat.toFixed(4)}, ${l.lon.toFixed(4)}`}>
-                  {adresses[cle] ?? 'Recherche de l’adresse…'}
+                <span class="discret">{t`sur ${nombre(l.jours)} jours ·`}</span>
+                <span class="adresse-lieu" title={t`Coordonnées : ${l.lat.toFixed(4)}, ${l.lon.toFixed(4)}`}>
+                  {adresses[cle] ?? t`Recherche de l’adresse…`}
                 </span>
               </div>
               {/* Une photo par jour, pour reconnaître l'endroit d'un coup d'œil ; toutes sur demande. */}
@@ -115,20 +114,20 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
               </div>
               <div class="actions-lieu">
                 <button type="button" class="lien" onClick={() => setDeplies(new Set(toutes ? [...deplies].filter((x) => x !== cle) : [...deplies, cle]))}>
-                  {toutes ? 'Moins de photos' : `Voir les ${nombre(photos.length)} photos`}
+                  {toutes ? t`Moins de photos` : t`Voir les ${nombre(photos.length)} photos`}
                 </button>
                 <span class="espace" />
-                <input placeholder="Nom du lieu (ex. Maison)" value={noms[cle] ?? ''} onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })} />
+                <input placeholder={t`Nom du lieu (ex. Maison)`} value={noms[cle] ?? ''} onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })} />
                 {sansDomicile && (
-                  <label class="case" title="Le domicile sert à repérer les voyages (sorties loin de la maison qui s’enchaînent).">
-                    <input type="checkbox" checked={domicile === cle} onChange={(e) => setDomicile(e.currentTarget.checked ? cle : null)} /> C’est notre domicile
+                  <label class="case" title={t`Le domicile sert à repérer les voyages (sorties loin de la maison qui s’enchaînent).`}>
+                    <input type="checkbox" checked={domicile === cle} onChange={(e) => setDomicile(e.currentTarget.checked ? cle : null)} /> {t`C’est notre domicile`}
                   </label>
                 )}
                 <button type="button" onClick={() => void enregistrer(l.lat, l.lon, cle)}>
-                  Enregistrer comme lieu connu
+                  {t`Enregistrer comme lieu connu`}
                 </button>
                 <button type="button" class="lien" onClick={() => setIgnores(new Set([...ignores, cle]))}>
-                  ignorer
+                  {t`ignorer`}
                 </button>
               </div>
             </li>

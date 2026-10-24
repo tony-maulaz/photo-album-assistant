@@ -6,6 +6,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { appareilsDetectes, mesurerDecalage, type MesureDecalage } from '../../lib/appareils';
 import { groupesDoublonsExacts, type GroupeExact } from '../../lib/doublonsExacts';
 import { estCapture, extension } from '../../lib/fichiers';
+import { t } from '../../lib/langue';
 import { appliquerDecalages, ecarterDoublonsExacts, rangerCaptures } from '../../lib/inventaire';
 import { cheminDossier, traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
 import { analyseAFaire, analyseEnCours } from '../analyseDossier';
@@ -30,12 +31,11 @@ function Captures() {
   if (!candidates.length && !rangees) return null;
   return (
     <section id="captures">
-      <h2>Captures d’écran</h2>
+      <h2>{t`Captures d’écran`}</h2>
       {candidates.length > 0 ? (
         <>
           <p>
-            {pluriel(candidates.length, 'capture d’écran trouvée', 'captures d’écran trouvées')} (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition :
-            les ranger dans « Captures_ecran », hors de l’album.
+            {t`${pluriel(candidates.length, 'capture d’écran trouvée', 'captures d’écran trouvées')} (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « Captures_ecran », hors de l’album.`}
           </p>
           <div class="bande-miniatures">
             {candidates.slice(0, 12).map((f) => (
@@ -43,11 +43,11 @@ function Captures() {
             ))}
           </div>
           <button type="button" onClick={() => appliquer(rangerCaptures(s.plan, candidates.map((f) => f.id)))}>
-            Ranger les {nombre(candidates.length)} captures dans « Captures_ecran »
+            {t`Ranger les ${nombre(candidates.length)} captures dans « Captures_ecran »`}
           </button>
         </>
       ) : (
-        <p class="discret">{pluriel(rangees, 'capture rangée', 'captures rangées')} dans « Captures_ecran ».</p>
+        <p class="discret">{t`${pluriel(rangees, 'capture rangée', 'captures rangées')} dans « Captures_ecran ».`}</p>
       )}
     </section>
   );
@@ -89,23 +89,22 @@ function DoublonsExacts() {
   const copies = useCopiesExactes();
   const actifs = copies?.groupes ?? [];
   const nbCopies = copies?.nbCopies ?? 0;
-  const chemin = (f: FichierPlan) => cheminDossier(s.plan, f.dossier) || 'racine';
+  const chemin = (f: FichierPlan) => cheminDossier(s.plan, f.dossier) || t`racine`;
 
   return (
     <section id="copies">
-      <h2>Copies en double</h2>
+      <h2>{t`Copies en double`}</h2>
       <p class="discret">
-        La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. L’original le plus complet est gardé ; les
-        copies vont dans « _mis_de_cote/doublons_exacts ». Rien n’est jamais retiré d’un dossier gardé tel quel.
+        {t`La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. L’original le plus complet est gardé ; les copies vont dans « _mis_de_cote/doublons_exacts ». Rien n’est jamais retiré d’un dossier gardé tel quel.`}
       </p>
-      {!copies && <p class="discret">Recherche en cours, pendant l’analyse des photos…</p>}
-      {copies && !actifs.length && <p>Aucune copie à écarter.</p>}
+      {!copies && <p class="discret">{t`Recherche en cours, pendant l’analyse des photos…`}</p>}
+      {copies && !actifs.length && <p>{t`Aucune copie à écarter.`}</p>}
       {actifs.length > 0 && (
         <>
           <p>
-            <strong>{pluriel(nbCopies, 'copie', 'copies')}</strong> dans {pluriel(actifs.length, 'groupe')}.{' '}
-            <button type="button" class="principal" onClick={() => (appliquer(ecarterDoublonsExacts(s.plan, actifs)), notifier('ok', `${pluriel(nbCopies, 'copie écartée', 'copies écartées')}.`, { libelle: 'Annuler', faire: annuler }))}>
-              Écarter les {nombre(nbCopies)} copies
+            <strong>{pluriel(nbCopies, 'copie', 'copies')}</strong> {t`dans ${pluriel(actifs.length, 'groupe')}.`}{' '}
+            <button type="button" class="principal" onClick={() => (appliquer(ecarterDoublonsExacts(s.plan, actifs)), notifier('ok', `${pluriel(nbCopies, 'copie écartée', 'copies écartées')}.`, { libelle: t`Annuler`, faire: annuler }))}>
+              {t`Écarter les ${nombre(nbCopies)} copies`}
             </button>
           </p>
           <div class="groupes-exacts">
@@ -116,7 +115,7 @@ function DoublonsExacts() {
                   <figure>
                     <Miniature f={o} taille={110} />
                     <figcaption>
-                      <strong>gardée</strong> {o.nom}
+                      <strong>{t`gardée`}</strong> {o.nom}
                       <br />
                       <span class="discret">{chemin(o)}</span>
                     </figcaption>
@@ -127,7 +126,7 @@ function DoublonsExacts() {
                       <figure key={c.id}>
                         <Miniature f={f} taille={110} />
                         <figcaption>
-                          {c.type === 'reduite' ? 'copie réduite' : 'copie identique'} {f.nom}
+                          {c.type === 'reduite' ? t`copie réduite` : t`copie identique`} {f.nom}
                           <br />
                           <span class="discret">{chemin(f)}</span>
                         </figcaption>
@@ -135,12 +134,12 @@ function DoublonsExacts() {
                     );
                   })}
                   <button type="button" onClick={() => appliquer(ecarterDoublonsExacts(s.plan, [g]))}>
-                    Écarter
+                    {t`Écarter`}
                   </button>
                 </div>
               );
             })}
-            {actifs.length > 40 && <p class="discret">… et {actifs.length - 40} autres groupes.</p>}
+            {actifs.length > 40 && <p class="discret">{t`… et ${actifs.length - 40} autres groupes.`}</p>}
           </div>
         </>
       )}
@@ -163,7 +162,7 @@ function Appareils() {
   const enregistrer = async (modele: string, decalage = '+00:00') => {
     const c = configuration.value;
     if (!c?.lecture?.config) {
-      notifier('erreur', 'Choisissez d’abord le dossier de configuration (page Configuration).');
+      notifier('erreur', t`Choisissez d’abord le dossier de configuration (page Configuration).`);
       return;
     }
     try {
@@ -172,7 +171,7 @@ function Appareils() {
       if (existant) existant.decalage = decalage;
       else cfg.appareils.push({ modele, decalage, surnom: '' });
       configuration.value = { dossier: c.dossier, lecture: await c.dossier.ecrire(cfg, c.lecture) };
-      notifier('ok', `Appareil « ${modele} » enregistré dans la configuration${decalage !== '+00:00' ? ` avec le décalage ${decalage}` : ''}.`);
+      notifier('ok', decalage !== '+00:00' ? t`Appareil « ${modele} » enregistré dans la configuration avec le décalage ${decalage}.` : t`Appareil « ${modele} » enregistré dans la configuration.`);
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -185,14 +184,14 @@ function Appareils() {
 
   return (
     <section>
-      <h2>Appareils</h2>
+      <h2>{t`Appareils`}</h2>
       <table class="tableau">
         <thead>
           <tr>
-            <th>Modèle</th>
-            <th class="n">Photos</th>
-            <th>Période</th>
-            <th>Décalage d’horloge</th>
+            <th>{t`Modèle`}</th>
+            <th class="n">{t`Photos`}</th>
+            <th>{t`Période`}</th>
+            <th>{t`Décalage d’horloge`}</th>
             <th />
           </tr>
         </thead>
@@ -209,16 +208,16 @@ function Appareils() {
                 <td>
                   {jourCourt(a.du)} – {jourCourt(a.au)}
                 </td>
-                <td>{c ? c.decalage : <span class="discret">non enregistré</span>}</td>
+                <td>{c ? c.decalage : <span class="discret">{t`non enregistré`}</span>}</td>
                 <td>
                   {!c && (
                     <button type="button" class="lien" onClick={() => void enregistrer(a.modele)}>
-                      Enregistrer
+                      {t`Enregistrer`}
                     </button>
                   )}
                   {liste.length > 1 && (
-                    <button type="button" class="lien" onClick={() => mesurer(liste.find((x) => x.modele !== a.modele)!.modele, a.modele)} title="Compare les photos d’une même scène prises par deux appareils">
-                      Mesurer le décalage
+                    <button type="button" class="lien" onClick={() => mesurer(liste.find((x) => x.modele !== a.modele)!.modele, a.modele)} title={t`Compare les photos d’une même scène prises par deux appareils`}>
+                      {t`Mesurer le décalage`}
                     </button>
                   )}
                 </td>
@@ -231,22 +230,22 @@ function Appareils() {
         <p class="encart">
           {mesure.r ? (
             <>
-              « {mesure.b} » a {mesure.r.paires} photo(s) de la même scène que « {mesure.a} » : son horloge est décalée de <strong>{mesure.r.decalage}</strong>.{' '}
+              {t`« ${mesure.b} » a ${mesure.r.paires} photo(s) de la même scène que « ${mesure.a} » : son horloge est décalée de`} <strong>{mesure.r.decalage}</strong>.{' '}
               {mesure.r.minutes !== 0 && (
                 <button type="button" onClick={() => void enregistrer(mesure.b, mesure.r!.decalage)}>
-                  Enregistrer ce décalage
+                  {t`Enregistrer ce décalage`}
                 </button>
               )}
             </>
           ) : (
-            <>Pas assez de photos de la même scène prises par les deux appareils pour mesurer un décalage.</>
+            <>{t`Pas assez de photos de la même scène prises par les deux appareils pour mesurer un décalage.`}</>
           )}
         </p>
       )}
       {aCorriger && (
         <p>
           <button type="button" onClick={() => appliquer(appliquerDecalages(s.plan, appareilsConfig))}>
-            Corriger l’heure des photos selon les décalages enregistrés
+            {t`Corriger l’heure des photos selon les décalages enregistrés`}
           </button>
         </p>
       )}

@@ -1,15 +1,16 @@
 // Visionneuse plein écran (SPEC § 5.4) et dialogue « Déplacer vers… » (touche M).
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { aTraduire, t } from '../../lib/langue';
 import { cheminDossier, creerDossier, combiner, deplacerFichiers, type FichierPlan } from '../../lib/plan';
 import { verifierNomDossier } from '../../lib/noms';
 import { appliquer, notifier, session, texteErreur, versionPlan } from '../etat';
-import { dateHeure, taille as tailleTexte } from '../format';
+import { dateHeure, pluriel, taille as tailleTexte } from '../format';
 import { deplacerOuvert, deplacerVers, recents, recentsValides, selection, simplifier, visionneuse } from '../organiser';
 import { lignesIA } from '../pages/AidesPhotos';
 import { useZoom } from './Zoom';
 
-const ORIGINES: Record<string, string> = { exif: 'appareil (EXIF)', nom: 'nom du fichier', video: 'données de la vidéo', fichier: 'date du fichier (incertaine)' };
+const ORIGINES: Record<string, string> = { exif: aTraduire('appareil (EXIF)'), nom: aTraduire('nom du fichier'), video: aTraduire('données de la vidéo'), fichier: aTraduire('date du fichier (incertaine)') };
 
 export function Visionneuse({ elements }: { elements: FichierPlan[] }) {
   const s = session.value!;
@@ -53,8 +54,9 @@ export function Visionneuse({ elements }: { elements: FichierPlan[] }) {
   }, [index, elements.length]);
 
   if (!f || index === null) return null;
+  const origine = ORIGINES[f.origineDate ?? 'fichier'];
   return (
-    <div class="visionneuse" role="dialog" aria-label="Visionneuse">
+    <div class="visionneuse" role="dialog" aria-label={t`Visionneuse`}>
       <div class="image-visionneuse" ref={z.zone} onClick={() => z.zoom === 1 && (visionneuse.value = null)}>
         {url && f.categorie === 'video' ? (
           <video src={url} controls autoplay onClick={(e) => e.stopPropagation()} />
@@ -66,10 +68,10 @@ export function Visionneuse({ elements }: { elements: FichierPlan[] }) {
             style={{ transform: z.transformation(f.rotation ?? 0) }}
             onClick={(e) => e.stopPropagation()}
             {...z.proprietes}
-            title="Molette : zoom · glisser : déplacer · double-clic ou 0 : taille de l’écran"
+            title={t`Molette : zoom · glisser : déplacer · double-clic ou 0 : taille de l’écran`}
           />
         ) : (
-          <p>Chargement…</p>
+          <p>{t`Chargement…`}</p>
         )}
       </div>
       <div class="infos-visionneuse">
@@ -78,24 +80,24 @@ export function Visionneuse({ elements }: { elements: FichierPlan[] }) {
         </span>
         <strong>{f.nom}</strong>
         <span>{dateHeure(f.date)}</span>
-        <span class="discret">date : {ORIGINES[f.origineDate ?? 'fichier']}</span>
+        <span class="discret">{t`date : ${origine ? t(origine) : ''}`}</span>
         {f.appareil && <span class="discret">{f.appareil}</span>}
         {f.gps && (
           <span class="discret">
             GPS {f.gps.lat.toFixed(4)}, {f.gps.lon.toFixed(4)}
           </span>
         )}
-        {s.analyses.get(f) && <span class="discret">netteté {Math.round(s.analyses.get(f)!.nettete)}</span>}
+        {s.analyses.get(f) && <span class="discret">{t`netteté ${Math.round(s.analyses.get(f)!.nettete)}`}</span>}
         {lignesIA(s, f.id).map((l) => (
           <span key={l} class="texte-ia">
             {l}
           </span>
         ))}
         <span class="discret">{tailleTexte(f.taille)}</span>
-        <span class="discret">source : {f.id}</span>
-        <span class="aide-touches">← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer</span>
+        <span class="discret">{t`source : ${f.id}`}</span>
+        <span class="aide-touches">{t`← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer`}</span>
       </div>
-      <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} aria-label="Fermer">
+      <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} aria-label={t`Fermer`}>
         ×
       </button>
     </div>
@@ -115,7 +117,7 @@ export function DialogueDeplacer() {
 
   const dossiers = useMemo(
     () =>
-      [...s.plan.dossiers.values()].map((d) => ({ id: d.id, chemin: d.parent === null ? 'Photos (racine)' : cheminDossier(s.plan, d.id) })).sort((a, b) => a.chemin.localeCompare(b.chemin, 'fr', { numeric: true })),
+      [...s.plan.dossiers.values()].map((d) => ({ id: d.id, chemin: d.parent === null ? t`Photos (racine)` : cheminDossier(s.plan, d.id) })).sort((a, b) => a.chemin.localeCompare(b.chemin, 'fr', { numeric: true })),
     [versionPlan.value],
   );
   const q = simplifier(requete.trim());
@@ -134,10 +136,10 @@ export function DialogueDeplacer() {
     else {
       try {
         const { id, modification } = creerDossier(s.plan, o.chemin);
-        appliquer(combiner(`Nouveau dossier « ${o.chemin} »`, modification, deplacerFichiers(s.plan, ids, id)));
+        appliquer(combiner(t`Nouveau dossier « ${o.chemin} »`, modification, deplacerFichiers(s.plan, ids, id)));
         recents.value = [id, ...recents.value].slice(0, 9);
         selection.value = new Set();
-        notifier('ok', `Dossier « ${o.chemin} » créé avec ${ids.length} élément(s).`);
+        notifier('ok', t`Dossier « ${o.chemin} » créé avec ${ids.length} élément(s).`);
       } catch (err) {
         notifier('erreur', texteErreur(err));
       }
@@ -146,14 +148,12 @@ export function DialogueDeplacer() {
 
   return (
     <div class="voile" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
-      <div class="dialogue deplacer" role="dialog" aria-label="Déplacer vers un dossier">
-        <h2>
-          Déplacer {ids.length} élément{ids.length > 1 ? 's' : ''} vers…
-        </h2>
+      <div class="dialogue deplacer" role="dialog" aria-label={t`Déplacer vers un dossier`}>
+        <h2>{t`Déplacer ${pluriel(ids.length, 'élément')} vers…`}</h2>
         <input
           ref={champ}
           class="large"
-          placeholder="Tapez une partie du nom du dossier"
+          placeholder={t`Tapez une partie du nom du dossier`}
           value={requete}
           onInput={(e) => {
             setRequete(e.currentTarget.value);
@@ -174,7 +174,9 @@ export function DialogueDeplacer() {
             <li key={`${o.type}${o.id}`} class={i === choix ? 'actif' : ''} onMouseEnter={() => setIndex(i)} onClick={() => valider(o)}>
               {o.type === 'creer' ? (
                 <>
-                  + Créer le dossier « <strong>{o.chemin}</strong> »
+                  {t`+ Créer le dossier « `}
+                  <strong>{o.chemin}</strong>
+                  {t` »`}
                 </>
               ) : (
                 <>
@@ -185,7 +187,7 @@ export function DialogueDeplacer() {
             </li>
           ))}
         </ul>
-        <p class="discret">↑ ↓ pour choisir, Entrée pour déplacer, Échap pour fermer.</p>
+        <p class="discret">{t`↑ ↓ pour choisir, Entrée pour déplacer, Échap pour fermer.`}</p>
       </div>
     </div>
   );

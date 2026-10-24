@@ -3,6 +3,7 @@
 import type { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCourtEtape, nomEtape } from '../../navigateur/projet';
+import { aTraduire, t } from '../../lib/langue';
 import { messages, page, reglages, session, versionIA, versionProjet, type Page } from '../etat';
 import { nombre } from '../format';
 import { fermerProjet } from '../projets';
@@ -32,7 +33,7 @@ function useDeroulant(): [boolean, (v?: boolean) => void, RefObject<HTMLDivEleme
 }
 
 const SYMBOLES = { validee: '✓', en_cours: '', a_faire: '', a_revoir: '!' } as const;
-const LIBELLES = { validee: 'validée', en_cours: 'en cours', a_faire: 'à faire', a_revoir: 'à revoir' } as const;
+const LIBELLES = { validee: aTraduire('validée'), en_cours: aTraduire('en cours'), a_faire: aTraduire('à faire'), a_revoir: aTraduire('à revoir') } as const;
 
 /**
  * Avancement du projet, sur la ligne de l'en-tête : un rectangle par étape
@@ -53,7 +54,7 @@ function Avancement() {
     const verrouillee = code === 'sortie' && !arborescenceValidee(s.projet);
     const inutile = etapeInutile(s.projet.mode, code);
     const etat = etats[i];
-    const detail = inutile ? 'inutile pour un dossier déjà trié' : verrouillee ? `validez d’abord l’étape ${ETAPE.lieux} (Lieux et sorties)` : LIBELLES[etat];
+    const detail = inutile ? t`inutile pour un dossier déjà trié` : verrouillee ? t`validez d’abord l’étape ${ETAPE.lieux} (${nomEtape(ETAPE.lieux)})` : t(LIBELLES[etat]);
     const symbole = inutile ? '–' : verrouillee ? '' : SYMBOLES[etat];
     const classe = `etape ${etat}${n === courante ? ' courante' : ''}${inutile ? ' inutile' : ''}${verrouillee ? ' verrouillee' : ''}`;
     return { n, nom, court: nomCourtEtape(n), etat, detail, symbole, classe };
@@ -64,10 +65,10 @@ function Avancement() {
   };
   return (
     <div class="avancement-etapes" ref={zone}>
-      <ol class="bandeau" aria-label="Étapes">
+      <ol class="bandeau" aria-label={t`Étapes`}>
         {etapes.map((e) => (
           <li key={e.n}>
-            <button type="button" class={e.classe} title={`${e.n}. ${e.nom} : ${e.detail}`} aria-current={e.n === courante ? 'step' : undefined} onClick={() => aller(e.n)}>
+            <button type="button" class={e.classe} title={t`${e.n}. ${e.nom} : ${e.detail}`} aria-current={e.n === courante ? 'step' : undefined} onClick={() => aller(e.n)}>
               {/* Le texte reste lisible par les lecteurs d'écran ; à l'écran, la couleur suffit. */}
               <span class="texte-masque">
                 {e.symbole && <span class="symbole">{e.symbole}</span>}
@@ -78,18 +79,18 @@ function Avancement() {
           </li>
         ))}
       </ol>
-      <button type="button" class="etape-courante" aria-expanded={ouvert} aria-haspopup="menu" onClick={() => basculer()} title="Toutes les étapes">
+      <button type="button" class="etape-courante" aria-expanded={ouvert} aria-haspopup="menu" onClick={() => basculer()} title={t`Toutes les étapes`}>
         {courante ? (
           <>
-            Étape {courante} sur {ETAPES.length} · <strong>{nomCourtEtape(courante)}</strong>
+            {t`Étape ${courante} sur ${ETAPES.length}`} · <strong>{nomCourtEtape(courante)}</strong>
           </>
         ) : (
-          'Étapes'
+          t`Étapes`
         )}{' '}
         ▾
       </button>
       {ouvert && (
-        <ul class="liste-etapes" role="menu" aria-label="Étapes">
+        <ul class="liste-etapes" role="menu" aria-label={t`Étapes`}>
           {etapes.map((e) => (
             <li key={e.n}>
               <button type="button" role="menuitem" class={`choix-${e.classe}`} onClick={() => aller(e.n)}>
@@ -115,19 +116,19 @@ function MenuPrincipal() {
     basculer(false);
   };
   const entrees: [Page, string][] = [
-    [{ nom: 'ia' }, 'Fonctions IA'],
-    [{ nom: 'configuration' }, 'Configuration'],
-    [{ nom: 'reglages' }, 'Réglages'],
-    ...(s ? ([[{ nom: 'journal' }, 'Journal']] as [Page, string][]) : []),
-    [{ nom: 'aide' }, 'Aide'],
+    [{ nom: 'ia' }, t`Fonctions IA`],
+    [{ nom: 'configuration' }, t`Configuration`],
+    [{ nom: 'reglages' }, t`Réglages`],
+    ...(s ? ([[{ nom: 'journal' }, t`Journal`]] as [Page, string][]) : []),
+    [{ nom: 'aide' }, t`Aide`],
   ];
   return (
     <div class="menu-principal" ref={zone}>
-      <button type="button" class="bouton-icone bouton-menu" aria-label="Menu" aria-haspopup="menu" aria-expanded={ouvert} onClick={() => basculer()} title="Menu">
+      <button type="button" class="bouton-icone bouton-menu" aria-label={t`Menu`} aria-haspopup="menu" aria-expanded={ouvert} onClick={() => basculer()} title={t`Menu`}>
         <Icone nom="menu" taille={20} />
       </button>
       {ouvert && (
-        <div class="menu-deroulant" role="menu" aria-label="Menu">
+        <div class="menu-deroulant" role="menu" aria-label={t`Menu`}>
           {entrees.map(([vers, libelle]) => (
             <button key={libelle} type="button" role="menuitem" class={p.nom === vers.nom ? 'actif' : ''} onClick={() => aller(vers)}>
               {libelle}
@@ -139,13 +140,13 @@ function MenuPrincipal() {
               <button
                 type="button"
                 role="menuitem"
-                title="Tout est déjà enregistré"
+                title={t`Tout est déjà enregistré`}
                 onClick={() => {
                   basculer(false);
                   fermerProjet();
                 }}
               >
-                Fermer le projet
+                {t`Fermer le projet`}
               </button>
             </>
           )}
@@ -164,14 +165,14 @@ export function Entete() {
   const part = s && s.projet.budget_chf > 0 ? depense / s.projet.budget_chf : 0;
   return (
     <header class="entete">
-      <button type="button" class="marque" onClick={() => (page.value = { nom: 'accueil' })} title="Accueil">
+      <button type="button" class="marque" onClick={() => (page.value = { nom: 'accueil' })} title={t`Accueil`}>
         <span class="logo">
           <Icone nom="photo" taille={20} />
         </span>
-        {!s && 'Album photos'}
+        {!s && t`Album photos`}
       </button>
       {s && (
-        <span class="projet" title={`Projet « ${s.projet.nom} » — source : ${s.source.racine.name}, sortie : ${s.sortie.racine.name}`}>
+        <span class="projet" title={t`Projet « ${s.projet.nom} » — source : ${s.source.racine.name}, sortie : ${s.sortie.racine.name}`}>
           {s.projet.nom}
         </span>
       )}
@@ -179,10 +180,10 @@ export function Entete() {
       {s && (
         <span
           class={`budget${part >= 0.8 ? ' alerte' : part >= 0.5 ? ' moitie' : ''}`}
-          title={`Dépenses IA du projet : ${nombre(depense, 2)} CHF sur un budget de ${s.projet.budget_chf} CHF (taux ${reglages.value.tauxUsdChf} CHF par USD). Détail dans le Journal.`}
+          title={t`Dépenses IA du projet : ${nombre(depense, 2)} CHF sur un budget de ${s.projet.budget_chf} CHF (taux ${reglages.value.tauxUsdChf} CHF par USD). Détail dans le Journal.`}
         >
           <span class="anneau" style={{ '--part': `${Math.min(100, part * 100).toFixed(1)}%` }} aria-hidden="true" />
-          IA {nombre(depense, 2)} / {s.projet.budget_chf} CHF
+          {t`IA ${nombre(depense, 2)} / ${s.projet.budget_chf} CHF`}
         </span>
       )}
       <MenuPrincipal />
@@ -218,12 +219,12 @@ export function TeteEtape({ numero, titre, cle, children }: { numero?: number; t
   return (
     <div class="tete-etape">
       <h1>
-        {numero !== undefined && <span class="numero-etape">Étape {numero}</span>}
+        {numero !== undefined && <span class="numero-etape">{t`Étape ${numero}`}</span>}
         {titre}
         {cle && (
-          <button type="button" class="bouton-aide" aria-expanded={ouverte} onClick={() => ouvrirExplication(cle, !ouverte)} title={ouverte ? 'Replier l’explication' : 'Afficher l’explication de l’étape'}>
+          <button type="button" class="bouton-aide" aria-expanded={ouverte} onClick={() => ouvrirExplication(cle, !ouverte)} title={ouverte ? t`Replier l’explication` : t`Afficher l’explication de l’étape`}>
             <Icone nom="aide" taille={16} />
-            {ouverte ? 'Replier' : 'Aide'}
+            {ouverte ? t`Replier` : t`Aide`}
           </button>
         )}
       </h1>
@@ -238,7 +239,7 @@ export function BarreValidation({
   alertes = [],
   revenir,
   valider,
-  libelleValider = 'Valider et continuer',
+  libelleValider = t`Valider et continuer`,
   validerActif = true,
 }: {
   resume: ComponentChildren;
@@ -261,7 +262,7 @@ export function BarreValidation({
       <div class="actions">
         {revenir && (
           <button type="button" onClick={revenir}>
-            Revenir
+            {t`Revenir`}
           </button>
         )}
         {valider && (

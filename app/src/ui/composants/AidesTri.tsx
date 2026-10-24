@@ -4,6 +4,7 @@
 
 import { casLimites, estimationCasLimites, estimationSituer, groupesSansGps, lireCasLimites, lireSituation, lotsCasLimites, requeteCasLimites, requeteSituer, voisinesDuGroupe, type PhotoLieu, type VerdictNettete } from '../../lib/aidesTri';
 import { photosConcernees } from '../../lib/floues';
+import { aTraduire, t } from '../../lib/langue';
 import { deplacerFichiers, enchainer, traitementDe, type Modification } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { ETAPE } from '../../navigateur/projet';
@@ -36,10 +37,11 @@ const identite = (s: Session) => (id: string) => {
 
 enregistrerAide({
   id: 'IA1',
-  nom: 'Faire juger les cas limites par l’IA',
+  // Catalogue rempli au chargement du module : textes traduits là où ils sont affichés (AidesIA.tsx).
+  nom: aTraduire('Faire juger les cas limites par l’IA'),
   etape: ETAPE.floues,
-  description: 'Les photos juste autour du seuil de netteté : flou artistique, mouvement voulu, ou ratée ? L’IA donne son avis, vous décidez.',
-  envoi: 'planches des photos à la limite (6 par appel, 520 px)',
+  description: aTraduire('Les photos juste autour du seuil de netteté : flou artistique, mouvement voulu, ou ratée ? L’IA donne son avis, vous décidez.'),
+  envoi: aTraduire('planches des photos à la limite (6 par appel, 520 px)'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -66,7 +68,8 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA1', ajouts);
     }
-    return `${pluriel(Object.keys(ajouts).length, 'avis', 'avis')} sur les cas limites : voir les badges « IA ».${texteEchecs(bilan)}`;
+    // « avis » est invariable : le nombre reste dans la phrase, traduite d'un bloc.
+    return t`${nombre(Object.keys(ajouts).length)} avis sur les cas limites : voir les badges « IA ».` + texteEchecs(bilan);
   },
 });
 
@@ -111,10 +114,10 @@ function requetesIA2(s: Session, modele: string) {
 
 enregistrerAide({
   id: 'IA2',
-  nom: 'Situer les photos sans GPS avec l’IA',
+  nom: aTraduire('Situer les photos sans GPS avec l’IA'),
   etape: ETAPE.tri,
-  description: 'Pour les photos sans position, l’IA compare leur contenu aux photos prises juste avant et après, et propose un dossier.',
-  envoi: 'les photos sans GPS et leurs voisines dans le temps, avec le nom de leur dossier',
+  description: aTraduire('Pour les photos sans position, l’IA compare leur contenu aux photos prises juste avant et après, et propose un dossier.'),
+  envoi: aTraduire('les photos sans GPS et leurs voisines dans le temps, avec le nom de leur dossier'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -142,7 +145,7 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA2', ajouts);
     }
-    return `${pluriel(Object.values(ajouts).filter((x) => x.dossier).length, 'proposition')} pour les photos sans GPS.${texteEchecs(bilan)}`;
+    return t`${pluriel(Object.values(ajouts).filter((x) => x.dossier).length, 'proposition')} pour les photos sans GPS.` + texteEchecs(bilan);
   },
 });
 
@@ -166,27 +169,27 @@ export function SansGps() {
   return (
     <details class="tri-auto">
       <summary>
-        <strong>{pluriel(sans, 'photo sans GPS', 'photos sans GPS')}</strong> — rangées avec les photos du même jour ; l’IA peut proposer un meilleur dossier
+        <strong>{pluriel(sans, 'photo sans GPS', 'photos sans GPS')}</strong> {t`— rangées avec les photos du même jour ; l’IA peut proposer un meilleur dossier`}
       </summary>
       <AideIA fonction="IA2" />
       {surs.length > 0 && (
         <button
           type="button"
           onClick={() => {
-            appliquer(enchainer(s.plan, `Ranger ${surs.length} groupes de photos sans GPS`, surs.map((p) => () => deplacer(p))));
-            notifier('ok', `${pluriel(surs.length, 'groupe rangé', 'groupes rangés')}.`, { libelle: 'Annuler', faire: annuler });
+            appliquer(enchainer(s.plan, t`Ranger ${surs.length} groupes de photos sans GPS`, surs.map((p) => () => deplacer(p))));
+            notifier('ok', `${pluriel(surs.length, 'groupe rangé', 'groupes rangés')}.`, { libelle: t`Annuler`, faire: annuler });
           }}
         >
-          Accepter les {nombre(surs.length)} propositions sûres (confiance 8 ou plus)
+          {t`Accepter les ${nombre(surs.length)} propositions sûres (confiance 8 ou plus)`}
         </button>
       )}
       <ul class="liste-courte">
         {propositions.map((p) => (
           <li key={p.ids[0]}>
-            {pluriel(p.ids.length, 'photo')} ({s.plan.fichiers.get(p.ids[0])?.nom}…) → « {s.plan.dossiers.get(p.dossier!)?.nom} »{p.confiance !== null ? ` (confiance ${p.confiance}/10)` : ''} —{' '}
+            {pluriel(p.ids.length, 'photo')} ({s.plan.fichiers.get(p.ids[0])?.nom}…) → {t`« ${s.plan.dossiers.get(p.dossier!)?.nom} »`}{p.confiance !== null ? t` (confiance ${p.confiance}/10)` : ''} —{' '}
             <span class="discret">{p.raison}</span>{' '}
             <button type="button" class="lien" onClick={() => appliquer(deplacer(p))}>
-              déplacer
+              {t`déplacer`}
             </button>
           </li>
         ))}

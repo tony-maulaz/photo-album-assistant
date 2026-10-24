@@ -4,6 +4,7 @@
 import { signal } from '@preact/signals';
 import { Fragment } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
+import { aTraduire, t } from '../../lib/langue';
 import { cleNom } from '../../lib/noms';
 import { cheminDossier, estDescendant, fusionnerDossiers, renommerDossier, resumes, RACINE, scinderParJour, supprimerDossierVide, type DossierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
 import { appliquer, changerReglages, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
@@ -81,7 +82,7 @@ export function TitreVue({ titre, id }: { titre: string; id?: string }) {
         <div class="chemin-vue">
           {parents.map((p) => (
             <Fragment key={p.id}>
-              <button type="button" class="lien" onClick={() => choisirVue(p.id)} title={`Ouvrir « ${p.nom} »`}>
+              <button type="button" class="lien" onClick={() => choisirVue(p.id)} title={t`Ouvrir « ${p.nom} »`}>
                 {p.nom}
               </button>
               <span aria-hidden="true">›</span>
@@ -98,11 +99,11 @@ interface Arbre {
   enfants: Map<string, DossierPlan[]>;
   resumes: Map<string, ResumeDossier>;
   visibles: Set<string> | null;
-  /** Alertes de chaque dossier (§ 6.4) : libellé court et explication. */
+  /** Alertes de chaque dossier (§ 6.4) : libellé court (en français, traduit à l'affichage) et explication. */
   alertes: Map<string, [string, string][]>;
 }
 
-/** Badges d'alerte de l'arborescence prévue (§ 6.4). */
+/** Badges d'alerte de l'arborescence prévue (§ 6.4) : le libellé court sert aussi de code (« gardé », « hors album »), traduit à l'affichage. */
 export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<string, [string, string][]> {
   const alertes = new Map<string, [string, string][]>();
   const ajouter = (id: string, a: [string, string]) => alertes.set(id, [...(alertes.get(id) ?? []), a]);
@@ -116,12 +117,12 @@ export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<
     if (d.parent === null) continue;
     const x = r.get(d.id)!;
     const direct = x.photos + x.videos;
-    if (direct > SEUIL_GRAND) ajouter(d.id, ['grand', `Très grand dossier : plus de ${SEUIL_GRAND} photos, peut-être plusieurs sorties`]);
-    if (d.nom === 'Sans_lieu' || /^Lieu_\d+/.test(d.nom)) ajouter(d.id, ['lieu ?', 'Lieu inconnu : photos sans GPS ou lieu sans nom']);
-    if (sansDate.get(d.id)) ajouter(d.id, ['sans date', `${sansDate.get(d.id)} photo(s) sans autre date que celle du fichier`]);
-    if ((parNom.get(cleNom(d.nom))?.length ?? 0) > 1) ajouter(d.id, ['nom en double', 'Un autre dossier porte le même nom']);
-    if (d.traitement === 'garder') ajouter(d.id, ['gardé', 'Sous-dossier de la source gardé tel quel']);
-    if (d.traitement === 'ignorer') ajouter(d.id, ['hors album', 'Gardé tel quel, hors de l’album']);
+    if (direct > SEUIL_GRAND) ajouter(d.id, [aTraduire('grand'), t`Très grand dossier : plus de ${SEUIL_GRAND} photos, peut-être plusieurs sorties`]);
+    if (d.nom === 'Sans_lieu' || /^Lieu_\d+/.test(d.nom)) ajouter(d.id, [aTraduire('lieu ?'), t`Lieu inconnu : photos sans GPS ou lieu sans nom`]);
+    if (sansDate.get(d.id)) ajouter(d.id, [aTraduire('sans date'), t`${sansDate.get(d.id)} photo(s) sans autre date que celle du fichier`]);
+    if ((parNom.get(cleNom(d.nom))?.length ?? 0) > 1) ajouter(d.id, [aTraduire('nom en double'), t`Un autre dossier porte le même nom`]);
+    if (d.traitement === 'garder') ajouter(d.id, [aTraduire('gardé'), t`Sous-dossier de la source gardé tel quel`]);
+    if (d.traitement === 'ignorer') ajouter(d.id, [aTraduire('hors album'), t`Gardé tel quel, hors de l’album`]);
   }
   // Chevauchement : deux dossiers voisins dont les photos s'entremêlent dans le temps (A, puis B, puis
   // de nouveau A) : sans doute la même sortie coupée en deux. Deux sorties le même jour, l'une après
@@ -147,7 +148,7 @@ export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<
     const sorties = liste.filter((d) => d.tri?.origine !== 'lieu_connu' && !d.traitement && !d.nom.startsWith('_') && (instants.get(d.id)?.length ?? 0) > 0);
     for (const a of sorties) {
       const autre = sorties.find((b) => b !== a && entremeles(instants.get(a.id)!, instants.get(b.id)!));
-      if (autre) ajouter(a.id, ['chevauche', `Photos entremêlées avec « ${autre.nom} » : la même sortie ?`]);
+      if (autre) ajouter(a.id, [aTraduire('chevauche'), t`Photos entremêlées avec « ${autre.nom} » : la même sortie ?`]);
     }
   }
   return alertes;
@@ -232,9 +233,12 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
         onClick={() => choisirVue(d.id)}
         onDblClick={() => d.parent !== null && (renommage.value = d.id)}
         {...cible.props}
-        title={`${d.parent === null ? 'Photos (racine)' : cheminDossier(s.plan, d.id)} — ${nombre(r.photosTotal)} photos, ${nombre(r.videosTotal)} vidéos${enfants.length ? ` (dont ${nombre(direct)} directement)` : ''}`}
+        title={
+          t`${d.parent === null ? t`Photos (racine)` : cheminDossier(s.plan, d.id)} — ${nombre(r.photosTotal)} photos, ${nombre(r.videosTotal)} vidéos` +
+          (enfants.length ? t` (dont ${nombre(direct)} directement)` : '')
+        }
       >
-        <button type="button" class="deplier" onClick={basculer} aria-label={deplie ? 'Replier' : 'Déplier'} disabled={!enfants.length}>
+        <button type="button" class="deplier" onClick={basculer} aria-label={deplie ? t`Replier` : t`Déplier`} disabled={!enfants.length}>
           {enfants.length ? (deplie ? '▾' : '▸') : ''}
         </button>
         <div class="texte-dossier">
@@ -254,21 +258,21 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
               onBlur={(e) => terminerRenommage(e.currentTarget.value)}
             />
           ) : (
-            <span class="nom-dossier">{d.parent === null ? 'Photos (racine)' : d.nom}</span>
+            <span class="nom-dossier">{d.parent === null ? t`Photos (racine)` : d.nom}</span>
           )}
           {/* Deuxième ligne : où il se trouve (à plat), dates et alertes ; le nom garde toute la largeur. */}
           <span class="infos-dossier">
             {plat && d.parent !== null && d.parent !== RACINE && <span class="chemin-dossier">{cheminDossier(s.plan, d.parent)} ›</span>}
             <span class="dates-dossier">{periode(r.duTotal, r.auTotal)}</span>
             {direct > 0 && direct < SEUIL_PETIT && (
-              <span class="badge petit" title={`Petit dossier : moins de ${SEUIL_PETIT} photos`}>
-                petit
+              <span class="badge petit" title={t`Petit dossier : moins de ${SEUIL_PETIT} photos`}>
+                {t`petit`}
               </span>
             )}
-            {total === 0 && d.parent !== null && <span class="badge vide">vide</span>}
+            {total === 0 && d.parent !== null && <span class="badge vide">{t`vide`}</span>}
             {(arbre.alertes.get(d.id) ?? []).map(([texte, aide]) => (
               <span key={texte} class={`badge alerte-dossier ${texte === 'gardé' || texte === 'hors album' ? 'info' : ''}`} title={aide}>
-                {texte}
+                {t(texte)}
               </span>
             ))}
           </span>
@@ -293,15 +297,15 @@ async function fusionner(source: string, cible: string) {
   if (!a || !b) return;
   const r = resumes(s.plan).get(source)!;
   const ok = await confirmer(
-    'Fusionner les dossiers ?',
-    `Les ${nombre(r.photosTotal + r.videosTotal)} photos et vidéos de « ${a.nom} » (avec ses sous-dossiers) passent dans « ${b.nom === 'Photos' && b.parent === null ? 'Photos (racine)' : b.nom} », puis « ${a.nom} » disparaît. Ctrl+Z annule.`,
-    'Fusionner',
+    t`Fusionner les dossiers ?`,
+    t`Les ${nombre(r.photosTotal + r.videosTotal)} photos et vidéos de « ${a.nom} » (avec ses sous-dossiers) passent dans « ${b.nom === 'Photos' && b.parent === null ? t`Photos (racine)` : b.nom} », puis « ${a.nom} » disparaît. Ctrl+Z annule.`,
+    t`Fusionner`,
   );
   if (!ok) return;
   try {
     appliquer(fusionnerDossiers(s.plan, source, cible));
     if (vue.value === source) choisirVue(cible);
-    notifier('ok', `« ${a.nom} » fusionné dans « ${b.nom} ».`);
+    notifier('ok', t`« ${a.nom} » fusionné dans « ${b.nom} ».`);
   } catch (err) {
     notifier('erreur', texteErreur(err));
   }
@@ -340,7 +344,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
     if (seulementAlertes) {
       const avec = new Set([RACINE]);
       for (const d of s.plan.dossiers.values()) {
-        const a = alertes.get(d.id)?.filter(([t]) => t !== 'gardé' && t !== 'hors album') ?? [];
+        const a = alertes.get(d.id)?.filter(([code]) => code !== 'gardé' && code !== 'hors album') ?? [];
         const x = r.get(d.id)!;
         const petit = d.parent !== null && x.photos + x.videos > 0 && x.photos + x.videos < SEUIL_PETIT;
         if (!a.length && !petit) continue;
@@ -379,15 +383,15 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
           class={`ligne-dossier speciale${vue.value === VUE_MIS_DE_COTE ? ' actif' : ''}${deCote.survol ? ' cible' : ''}`}
           {...deCote.props}
           onClick={() => choisirVue(VUE_MIS_DE_COTE)}
-          title="Ce qui est écarté va dans « _mis_de_cote » : rien n’est supprimé"
+          title={t`Ce qui est écarté va dans « _mis_de_cote » : rien n’est supprimé`}
         >
-          <span class="nom-dossier">Mis de côté</span>
+          <span class="nom-dossier">{t`Mis de côté`}</span>
           <span class="nombre-dossier">{nombre(nbMisDeCote)}</span>
         </div>
       </li>
       <li>
-        <div class={`ligne-dossier speciale${vue.value === VUE_AUTRES ? ' actif' : ''}`} onClick={() => choisirVue(VUE_AUTRES)} title="Ni photo ni vidéo : copiés dans « _autres_fichiers » avec leur chemin d’origine">
-          <span class="nom-dossier">Autres fichiers</span>
+        <div class={`ligne-dossier speciale${vue.value === VUE_AUTRES ? ' actif' : ''}`} onClick={() => choisirVue(VUE_AUTRES)} title={t`Ni photo ni vidéo : copiés dans « _autres_fichiers » avec leur chemin d’origine`}>
+          <span class="nom-dossier">{t`Autres fichiers`}</span>
           <span class="nombre-dossier">{nombre(nbAutres)}</span>
         </div>
       </li>
@@ -395,29 +399,29 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
   );
 
   return (
-    <aside class="panneau-dossiers" aria-label="Dossiers">
+    <aside class="panneau-dossiers" aria-label={t`Dossiers`}>
       <div
         class="poignee-panneau"
         role="separator"
         aria-orientation="vertical"
-        title="Tirer pour élargir le panneau (double-clic : largeur d’origine)"
+        title={t`Tirer pour élargir le panneau (double-clic : largeur d’origine)`}
         onPointerDown={redimensionner}
         onDblClick={() => changerReglages({ ...reglages.value, largeurPanneau: REGLAGES_DEFAUT.largeurPanneau })}
       />
       <div class="recherche-dossiers">
-        <input type="search" placeholder="Chercher…" aria-label="Chercher un dossier" value={filtre} onInput={(e) => setFiltre(e.currentTarget.value)} />
+        <input type="search" placeholder={t`Chercher…`} aria-label={t`Chercher un dossier`} value={filtre} onInput={(e) => setFiltre(e.currentTarget.value)} />
         <div class="options-panneau">
-          <select value={ordrePanneau.value} onChange={(e) => (ordrePanneau.value = e.currentTarget.value as 'arbre' | 'periode')} aria-label="Présentation des dossiers">
-            <option value="arbre">Par dossier</option>
-            <option value="periode">Par période</option>
+          <select value={ordrePanneau.value} onChange={(e) => (ordrePanneau.value = e.currentTarget.value as 'arbre' | 'periode')} aria-label={t`Présentation des dossiers`}>
+            <option value="arbre">{t`Par dossier`}</option>
+            <option value="periode">{t`Par période`}</option>
           </select>
           <button
             type="button"
             class={`bouton-icone${seulementAlertes ? ' actif' : ''}`}
             aria-pressed={seulementAlertes}
             onClick={() => setSeulementAlertes(!seulementAlertes)}
-            title="Seulement les dossiers avec une alerte (petit, sans date, nom en double…)"
-            aria-label="Seulement les alertes"
+            title={t`Seulement les dossiers avec une alerte (petit, sans date, nom en double…)`}
+            aria-label={t`Seulement les alertes`}
           >
             <Icone nom="alerte" taille={16} />
           </button>
@@ -427,8 +431,8 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
               class={`bouton-icone bouton-nouveau${nouveau.survol ? ' cible' : ''}`}
               {...nouveau.props}
               onClick={() => void nouveauDossierAvec([], dossierPourNouveauVide())}
-              title="Nouveau dossier, dans le dossier affiché (des photos déposées ici partent dans un dossier voisin)"
-              aria-label="Nouveau dossier"
+              title={t`Nouveau dossier, dans le dossier affiché (des photos déposées ici partent dans un dossier voisin)`}
+              aria-label={t`Nouveau dossier`}
             >
               <Icone nom="plus" taille={18} />
             </button>
@@ -477,17 +481,17 @@ export function ActionsDossier() {
   };
   return (
     <span class="actions-dossier">
-      <button type="button" class="bouton-icone" onClick={() => (renommage.value = d.id)} title="Renommer (F2 ou double-clic sur le dossier)" aria-label="Renommer">
+      <button type="button" class="bouton-icone" onClick={() => (renommage.value = d.id)} title={t`Renommer (F2 ou double-clic sur le dossier)`} aria-label={t`Renommer`}>
         <Icone nom="crayon" taille={16} />
       </button>
       {plusieursJours && (
-        <button type="button" class="doux" title="Un dossier voisin par journée" onClick={() => faire(() => scinderParJour(s.plan, d.id))}>
-          Scinder par jour
+        <button type="button" class="doux" title={t`Un dossier voisin par journée`} onClick={() => faire(() => scinderParJour(s.plan, d.id))}>
+          {t`Scinder par jour`}
         </button>
       )}
       {vide && (
         <button type="button" class="doux" onClick={() => faire(() => supprimerDossierVide(s.plan, d.id))}>
-          Supprimer (vide)
+          {t`Supprimer (vide)`}
         </button>
       )}
     </span>
