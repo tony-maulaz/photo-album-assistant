@@ -2,6 +2,7 @@
 
 import { Entete, Messages } from './composants/Cadre';
 import { Dialogues } from './composants/Dialogues';
+import { t } from '../lib/langue';
 import { allerEtape, page, session, versionProjet } from './etat';
 import { arborescenceValidee, CODES_ETAPES, ETAPE } from '../navigateur/projet';
 import { PageAccueil, PageReprendre } from './pages/Accueil';
@@ -48,10 +49,10 @@ function PageEtape({ numero }: { numero: number }) {
   if (!arborescenceValidee(s.projet)) {
     return (
       <div class="page etroite">
-        <h1>Création de la sortie</h1>
-        <p class="encart">Validez d’abord les lieux et sorties (étape {ETAPE.lieux}) : la sortie est écrite à partir de cette arborescence.</p>
+        <h1>{t`Création de la sortie`}</h1>
+        <p class="encart">{t`Validez d’abord les lieux et sorties (étape ${ETAPE.lieux}) : la sortie est écrite à partir de cette arborescence.`}</p>
         <button type="button" class="principal" onClick={() => allerEtape('lieux')}>
-          Aller à l’étape {ETAPE.lieux}
+          {t`Aller à l’étape ${ETAPE.lieux}`}
         </button>
       </div>
     );

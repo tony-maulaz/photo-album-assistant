@@ -13,9 +13,11 @@ import {
   type FichierPlan,
   type Plan,
 } from '../lib/plan';
+import { t } from '../lib/langue';
 import { verifierNomDossier } from '../lib/noms';
 import { demander } from './composants/Dialogues';
 import { annuler, appliquer, notifier, session, texteErreur } from './etat';
+import { pluriel } from './format';
 
 /** Vues spéciales du panneau, à côté des dossiers. */
 export const VUE_MIS_DE_COTE = '§mis_de_cote';
@@ -76,11 +78,11 @@ function noterRecent(id: string) {
 }
 
 function texteNombre(n: number) {
-  return `${n} élément${n > 1 ? 's' : ''}`;
+  return pluriel(n, 'élément');
 }
 
 function retourAnnuler() {
-  return { libelle: 'Annuler', faire: annuler };
+  return { libelle: t`Annuler`, faire: annuler };
 }
 
 /** Déplace la sélection (ou `ids`) vers un dossier. */
@@ -91,7 +93,7 @@ export function deplacerVers(cible: string, ids: string[] = [...selection.value]
     appliquer(deplacerFichiers(s.plan, ids, cible));
     noterRecent(cible);
     selection.value = new Set([...selection.value].filter((id) => !ids.includes(id)));
-    notifier('ok', `${texteNombre(ids.length)} déplacé${ids.length > 1 ? 's' : ''} vers « ${s.plan.dossiers.get(cible)?.nom} ».`, retourAnnuler());
+    notifier('ok', t`${pluriel(ids.length, 'élément déplacé', 'éléments déplacés')} vers « ${s.plan.dossiers.get(cible)?.nom} ».`, retourAnnuler());
   } catch (err) {
     notifier('erreur', texteErreur(err));
   }
@@ -102,7 +104,7 @@ export function mettreSelectionDeCote(ids: string[] = [...selection.value]) {
   if (!s || !ids.length) return;
   appliquer(mettreDeCote(s.plan, ids, 'autres'));
   selection.value = new Set();
-  notifier('ok', `${texteNombre(ids.length)} mis de côté (rien n’est supprimé : ils iront dans « _mis_de_cote »).`, retourAnnuler());
+  notifier('ok', t`${texteNombre(ids.length)} mis de côté (rien n’est supprimé : ils iront dans « _mis_de_cote »).`, retourAnnuler());
 }
 
 export function remettreSelection(ids: string[] = [...selection.value]) {
@@ -110,7 +112,7 @@ export function remettreSelection(ids: string[] = [...selection.value]) {
   if (!s || !ids.length) return;
   appliquer(remettre(s.plan, ids));
   selection.value = new Set();
-  notifier('ok', `${texteNombre(ids.length)} remis dans leur dossier.`, retourAnnuler());
+  notifier('ok', t`${texteNombre(ids.length)} remis dans leur dossier.`, retourAnnuler());
 }
 
 /** Demande un nom, crée le dossier et y range `ids` : un seul Ctrl+Z annule le tout. */
@@ -118,20 +120,20 @@ export async function nouveauDossierAvec(ids: string[], parent = RACINE) {
   const s = session.value;
   if (!s) return;
   const nom = await demander(
-    'Nouveau dossier',
-    ids.length ? `Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} » et recevra ${texteNombre(ids.length)}.` : `Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} ».`,
+    t`Nouveau dossier`,
+    ids.length ? t`Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} » et recevra ${texteNombre(ids.length)}.` : t`Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} ».`,
     '',
     verifierNomDossier,
-    'Créer',
+    t`Créer`,
   );
   if (!nom) return;
   try {
     const { id, modification } = creerDossier(s.plan, nom, parent);
-    appliquer(combiner(`Nouveau dossier « ${nom} »`, modification, ids.length ? deplacerFichiers(s.plan, ids, id) : null));
+    appliquer(combiner(t`Nouveau dossier « ${nom} »`, modification, ids.length ? deplacerFichiers(s.plan, ids, id) : null));
     noterRecent(id);
     selection.value = new Set();
     deplies.value = new Set([...deplies.value, parent]);
-    notifier('ok', `Dossier « ${nom} » créé${ids.length ? ` avec ${texteNombre(ids.length)}` : ''}.`, retourAnnuler());
+    notifier('ok', ids.length ? t`Dossier « ${nom} » créé avec ${texteNombre(ids.length)}.` : t`Dossier « ${nom} » créé.`, retourAnnuler());
   } catch (err) {
     notifier('erreur', texteErreur(err));
   }

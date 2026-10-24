@@ -13,6 +13,7 @@ import { nombreSansGps } from '../composants/AidesTri';
 import { LigneDeTemps } from '../composants/LigneDeTemps';
 import { DialogueDeplacer, Visionneuse } from '../composants/Visionneuse';
 import { evenementsAutour } from '../../lib/ics';
+import { t } from '../../lib/langue';
 import { allerEtape, annuler, changerReglages, evenements, reglages, retablir, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
 import { nombre, periode, pluriel } from '../format';
@@ -87,7 +88,7 @@ export function PageOrganiser() {
 
   const dossier = plan.dossiers.get(v);
   const resumeVue = dossier ? r.get(dossier.id)! : undefined;
-  const titreVue = enMisDeCote ? 'Mis de côté' : enAutres ? 'Autres fichiers' : dossier?.parent === null ? 'Photos (racine)' : (dossier?.nom ?? '');
+  const titreVue = enMisDeCote ? t`Mis de côté` : enAutres ? t`Autres fichiers` : dossier?.parent === null ? t`Photos (racine)` : (dossier?.nom ?? '');
   // L'en-tête se replie une fois l'arborescence en place : la place va au panneau et aux photos.
   const arborescencePrete = s.projet.mode !== 'vrac' || [...plan.dossiers.values()].some((d) => d.origine === 'tri');
   const sansGps = nombreSansGps(s);
@@ -101,9 +102,9 @@ export function PageOrganiser() {
   const racine = r.get(RACINE)!;
   const misDeCote = elementsVue(plan, VUE_MIS_DE_COTE).length;
   const alertes = [
-    ...(petits.length ? [`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (moins de ${SEUIL_PETIT} photos)`] : []),
-    ...(vides.length ? [`${pluriel(vides.length, 'dossier vide', 'dossiers vides')} (ne sera pas créé)`] : []),
-    ...(sansGps && s.projet.mode === 'vrac' ? [`${pluriel(sansGps, 'photo sans GPS', 'photos sans GPS')} (l’IA peut les situer : étape ${ETAPE.tri})`] : []),
+    ...(petits.length ? [t`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (moins de ${SEUIL_PETIT} photos)`] : []),
+    ...(vides.length ? [t`${pluriel(vides.length, 'dossier vide', 'dossiers vides')} (ne sera pas créé)`] : []),
+    ...(sansGps && s.projet.mode === 'vrac' ? [t`${pluriel(sansGps, 'photo sans GPS', 'photos sans GPS')} (l’IA peut les situer : étape ${ETAPE.tri})`] : []),
   ];
 
   return (
@@ -111,20 +112,19 @@ export function PageOrganiser() {
       <EnteteEtape
         cle="lieux"
         numero={ETAPE.lieux}
-        titre="Lieux et sorties"
+        titre={t`Lieux et sorties`}
         ouverte={!arborescencePrete}
         explication={
           <>
-            Voici l’arborescence prévue : réorganisez-la en sélectionnant des photos et en les glissant sur un dossier du panneau (ou touche M, ou 1 à 9 pour les
-            derniers dossiers utilisés). Rien n’est copié avant l’étape {ETAPE.sortie}, et Ctrl+Z annule.
+            {t`Voici l’arborescence prévue : réorganisez-la en sélectionnant des photos et en les glissant sur un dossier du panneau (ou touche M, ou 1 à 9 pour les derniers dossiers utilisés). Rien n’est copié avant l’étape ${ETAPE.sortie}, et Ctrl+Z annule.`}
           </>
         }
       >
         {!arborescencePrete && (
           <p class="encart attention">
-            L’arborescence n’est pas encore calculée : les photos sont encore en vrac.{' '}
+            {t`L’arborescence n’est pas encore calculée : les photos sont encore en vrac.`}{' '}
             <button type="button" class="principal" onClick={() => allerEtape('tri')}>
-              Aller au tri automatique
+              {t`Aller au tri automatique`}
             </button>
           </p>
         )}
@@ -134,10 +134,10 @@ export function PageOrganiser() {
         <div class="tete-vue">
           <div class="bascule-vue" role="tablist">
             <button type="button" class={temps ? '' : 'actif'} onClick={() => setTemps(false)}>
-              Photos
+              {t`Photos`}
             </button>
-            <button type="button" class={temps ? 'actif' : ''} onClick={() => setTemps(true)} title="Les dossiers sur une ligne de temps, avec le calendrier">
-              Ligne de temps
+            <button type="button" class={temps ? 'actif' : ''} onClick={() => setTemps(true)} title={t`Les dossiers sur une ligne de temps, avec le calendrier`}>
+              {t`Ligne de temps`}
             </button>
           </div>
           <TitreVue titre={titreVue} id={dossier && dossier.parent !== null ? dossier.id : undefined} />
@@ -149,7 +149,7 @@ export function PageOrganiser() {
             </span>
           )}
           {dossier && dossier.parent !== null && resumeVue?.du && resumeVue.au && (
-            <span class="evenements-vue" title="Événements du calendrier familial à ces dates (± 1 jour)">
+            <span class="evenements-vue" title={t`Événements du calendrier familial à ces dates (± 1 jour)`}>
               {evenementsAutour(evenements.value, resumeVue.du.slice(0, 10), resumeVue.au.slice(0, 10))
                 .slice(0, 3)
                 .map((e) => `📅 ${e.titre}`)
@@ -158,14 +158,14 @@ export function PageOrganiser() {
           )}
           <span class="espace" />
           <div class="barre-outils">
-            <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? `Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
-              Annuler
+            <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
+              {t`Annuler`}
             </button>
-            <button type="button" class="bouton-icone" disabled={!s.historique.peutRetablir} onClick={retablir} title="Rétablir (Ctrl+Y)" aria-label="Rétablir">
+            <button type="button" class="bouton-icone" disabled={!s.historique.peutRetablir} onClick={retablir} title={t`Rétablir (Ctrl+Y)`} aria-label={t`Rétablir`}>
               <Icone nom="retablir" taille={17} />
             </button>
             {!temps && !enAutres && (
-              <label class="curseur" title="Taille des miniatures">
+              <label class="curseur" title={t`Taille des miniatures`}>
                 <Icone nom="loupe" taille={16} />
                 <input
                   type="range"
@@ -178,40 +178,40 @@ export function PageOrganiser() {
               </label>
             )}
           </div>
-          <BoutonAide cle="lieux" ouverte={!arborescencePrete} libelle="Aide" />
+          <BoutonAide cle="lieux" ouverte={!arborescencePrete} libelle={t`Aide`} />
         </div>
         {choisis.size > 0 && !enAutres && !temps && (
-          <div class="barre-action" role="toolbar" aria-label="Photos sélectionnées">
+          <div class="barre-action" role="toolbar" aria-label={t`Photos sélectionnées`}>
             <span class="compte-selection">{pluriel(choisis.size, 'sélectionnée', 'sélectionnées')}</span>
-            <button type="button" onClick={() => (deplacerOuvert.value = true)} title="Touche M">
-              Déplacer…
+            <button type="button" onClick={() => (deplacerOuvert.value = true)} title={t`Touche M`}>
+              {t`Déplacer…`}
             </button>
-            <button type="button" onClick={() => void nouveauDossierAvec([...choisis], parentPourNouveau())} title="Un nouveau dossier, à côté de celui-ci, avec ces photos">
-              Nouveau dossier
+            <button type="button" onClick={() => void nouveauDossierAvec([...choisis], parentPourNouveau())} title={t`Un nouveau dossier, à côté de celui-ci, avec ces photos`}>
+              {t`Nouveau dossier`}
             </button>
             {enMisDeCote ? (
-              <button type="button" onClick={() => remettreSelection()} title="Touche Suppr">
-                Remettre
+              <button type="button" onClick={() => remettreSelection()} title={t`Touche Suppr`}>
+                {t`Remettre`}
               </button>
             ) : (
-              <button type="button" onClick={() => mettreSelectionDeCote()} title="Touche Suppr : rien n’est supprimé">
-                Mettre de côté
+              <button type="button" onClick={() => mettreSelectionDeCote()} title={t`Touche Suppr : rien n’est supprimé`}>
+                {t`Mettre de côté`}
               </button>
             )}
-            <button type="button" disabled={!ancre.value} onClick={() => memePeriode(10)} title="Sélectionner toute la journée de la dernière photo cliquée">
-              Journée
+            <button type="button" disabled={!ancre.value} onClick={() => memePeriode(10)} title={t`Sélectionner toute la journée de la dernière photo cliquée`}>
+              {t`Journée`}
             </button>
-            <button type="button" disabled={!ancre.value} onClick={() => memePeriode(13)} title="Sélectionner toute l’heure de la dernière photo cliquée">
-              Heure
+            <button type="button" disabled={!ancre.value} onClick={() => memePeriode(13)} title={t`Sélectionner toute l’heure de la dernière photo cliquée`}>
+              {t`Heure`}
             </button>
             {recentsValides()
               .slice(0, 2)
               .map((id, i) => (
-                <button key={id} type="button" class="puce" onClick={() => deplacerVers(id)} title={`Vers « ${plan.dossiers.get(id)!.nom} » (touche ${i + 1})`}>
+                <button key={id} type="button" class="puce" onClick={() => deplacerVers(id)} title={t`Vers « ${plan.dossiers.get(id)!.nom} » (touche ${i + 1})`}>
                   <span class="touche">{i + 1}</span> {plan.dossiers.get(id)!.parent === null ? 'Photos' : plan.dossiers.get(id)!.nom}
                 </button>
               ))}
-            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title="Tout désélectionner (Échap)" aria-label="Tout désélectionner">
+            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Tout désélectionner (Échap)`} aria-label={t`Tout désélectionner`}>
               <Icone nom="croix" taille={16} />
             </button>
           </div>
@@ -220,7 +220,7 @@ export function PageOrganiser() {
           <LigneDeTemps ouvrir={() => setTemps(false)} />
         ) : enAutres ? (
           <div class="liste-autres">
-            <p class="discret">Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « _autres_fichiers », avec leur chemin d’origine.</p>
+            <p class="discret">{t`Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « _autres_fichiers », avec leur chemin d’origine.`}</p>
             <ul>
               {elements.map((f) => (
                 <li key={f.id}>{f.id}</li>
@@ -235,7 +235,7 @@ export function PageOrganiser() {
         resume={
           <>
             {pluriel(dossiers.length, 'dossier')} · {pluriel(racine.photosTotal, 'photo')} · {pluriel(racine.videosTotal, 'vidéo')}
-            {misDeCote ? ` · ${nombre(misDeCote)} mis de côté` : ''}
+            {misDeCote ? t` · ${nombre(misDeCote)} mis de côté` : ''}
           </>
         }
         alertes={alertes}
