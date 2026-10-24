@@ -129,6 +129,13 @@ try {
     await page.getByRole('heading', { name: /Doublons/ }).waitFor();
     await page.getByRole('button', { name: 'Valider et continuer' }).click();
     await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
+    if (CAPTURES) {
+      // Lieux fréquents : on laisse arriver les miniatures et les noms proches (OpenStreetMap simulé).
+      await page.getByText(/près de « /).first().waitFor({ timeout: 20_000 }).catch(() => undefined);
+      await page.waitForTimeout(2000);
+      await page.screenshot({ path: join(CAPTURES, 'echelle_lieux_frequents.png') });
+      await page.locator('.tri-auto').last().screenshot({ path: join(CAPTURES, 'echelle_tri_reglages.png') });
+    }
     debut = performance.now();
     await page.getByRole('button', { name: 'Calculer l’arborescence' }).click();
     await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 1_800_000 });

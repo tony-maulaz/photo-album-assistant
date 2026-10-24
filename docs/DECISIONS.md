@@ -392,6 +392,15 @@ main ; les doublons les comparent entre elles (lot « Sans date ») ; dans
 l'album, une photo sans date rangée dans une sortie se place à la fin de
 cette sortie. Pour un dossier déjà trié, elles restent dans leurs dossiers.
 
+**D58 — Tri automatique sans choix de préréglage, options expliquées.** Le
+menu « Préréglage » de l'étape Tri n'était pas compris (« Année » ou
+« Voyage » de quoi ?) et doublait le choix fait à la création du projet. Il
+est retiré : les réglages du projet (« Année » par défaut) servent de départ,
+et chaque option a une phrase visible qui dit ce qu'elle change (au lieu
+d'une bulle au survol). Les lieux fréquents montrent une photo par jour, la
+liste complète sur demande et le nom de la ville proche (OpenStreetMap,
+déjà utilisé par le tri), pour qu'on sache ce qu'on nomme.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

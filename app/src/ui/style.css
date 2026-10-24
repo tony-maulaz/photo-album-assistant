@@ -3065,6 +3065,32 @@ button.bouton-ia:disabled {
   margin-bottom: 10px;
 }
 
+/* Réglages du tri : chaque option avec son explication dessous. */
+.options-tri {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 12px 0;
+}
+
+.option-tri label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-tri input[type='range'] {
+  width: 220px;
+}
+
+.aide-option {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--discret);
+}
+
 .tri-auto > summary {
   cursor: pointer;
   font-weight: 600;
@@ -3279,6 +3305,17 @@ button.bouton-ia:disabled {
 
 .lieux-frequents li {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.tete-lieu,
+.actions-lieu {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
