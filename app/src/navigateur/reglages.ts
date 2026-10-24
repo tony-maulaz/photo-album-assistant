@@ -1,5 +1,6 @@
 // Réglages propres à cet ordinateur (SPEC § 9), gardés dans le navigateur.
 
+import type { Langue } from '../lib/langue';
 import { ecrireLocal, lireLocal } from './stockage';
 
 export interface Reglages {
@@ -10,6 +11,8 @@ export interface Reglages {
   emailNominatim: string;
   tailleMiniatures: number;
   theme: 'auto' | 'clair' | 'sombre';
+  /** Langue de l'interface ; « auto » : celle du navigateur. */
+  langue: 'auto' | Langue;
   /** Largeur du panneau des dossiers (px), réglée en tirant son bord droit. */
   largeurPanneau: number;
 }
@@ -22,6 +25,7 @@ export const REGLAGES_DEFAUT: Reglages = {
   emailNominatim: '',
   tailleMiniatures: 160,
   theme: 'auto',
+  langue: 'auto',
   largeurPanneau: 340,
 };
 

@@ -7,6 +7,8 @@ import { cleApi, cleMasquee, cleMemorisee, enregistrerCleApi, oublierCleApi } fr
 import type { Reglages } from '../../navigateur/reglages';
 import { ETAPE } from '../../navigateur/projet';
 import { TeteEtape } from '../composants/Cadre';
+import { t } from '../../lib/langue';
+import { ChoixLangue } from '../composants/ChoixLangue';
 import { ReglageDossierDepart } from '../composants/DossierDepart';
 import { changerReglages, notifier, page, reglages, session, versionIA } from '../etat';
 import { aides, modeleDe, texteCout } from './AidesIA';
@@ -105,6 +107,8 @@ export function PageReglages() {
 
       <h2>Affichage</h2>
       <div class="formulaire">
+        <label for="langue">{t`Langue (language)`}</label>
+        <ChoixLangue />
         <label for="miniatures">Taille des miniatures</label>
         <input id="miniatures" type="range" min="100" max="600" step="20" value={r.tailleMiniatures} onInput={(e) => changer({ tailleMiniatures: Number(e.currentTarget.value) })} />
         <label for="theme">Thème</label>

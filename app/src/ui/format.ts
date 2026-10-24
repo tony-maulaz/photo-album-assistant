@@ -1,18 +1,26 @@
-// Mise en forme des nombres, tailles, durées et dates pour l'affichage.
+// Mise en forme des nombres, tailles, durées et dates pour l'affichage, dans la
+// langue de l'interface.
 
-const nf = (d: number) => new Intl.NumberFormat('fr-CH', { maximumFractionDigits: d, minimumFractionDigits: d });
+import { langue, t } from '../lib/langue';
+
+const nf = (d: number) => new Intl.NumberFormat(langue() === 'en' ? 'en-GB' : 'fr-CH', { maximumFractionDigits: d, minimumFractionDigits: d });
 
 export function nombre(n: number, decimales = 0): string {
   return nf(decimales).format(n);
 }
 
-/** « 3 photos », « 1 photo », « 0 photo ». */
+/**
+ * « 3 photos », « 1 photo », « 0 photo » ; les deux formes sont traduites
+ * (en anglais : « 0 photos »). Sans forme plurielle, c'est le singulier suivi
+ * de « s », à traduire lui aussi.
+ */
 export function pluriel(n: number, singulier: string, plurielTexte = `${singulier}s`): string {
-  return `${nombre(n)} ${n > 1 ? plurielTexte : singulier}`;
+  const un = langue() === 'en' ? n === 1 : n <= 1;
+  return `${nombre(n)} ${t(un ? singulier : plurielTexte)}`;
 }
 
 export function taille(octets: number): string {
-  const unites = ['o', 'Ko', 'Mo', 'Go', 'To'];
+  const unites = langue() === 'en' ? ['B', 'KB', 'MB', 'GB', 'TB'] : ['o', 'Ko', 'Mo', 'Go', 'To'];
   let v = octets;
   let i = 0;
   while (v >= 1024 && i < unites.length - 1) {
@@ -46,7 +54,7 @@ export function periode(du?: string, au?: string): string {
 
 /** « 27.06.2025 à 10:10 » depuis « 2025-06-27T10:10:10 ». */
 export function dateHeure(d?: string): string {
-  if (!d) return 'date inconnue';
+  if (!d) return t`date inconnue`;
   const jour = `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
-  return d.length > 10 ? `${jour} à ${d.slice(11, 16)}` : jour;
+  return d.length > 10 ? t`${jour} à ${d.slice(11, 16)}` : jour;
 }

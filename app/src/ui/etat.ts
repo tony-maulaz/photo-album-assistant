@@ -2,6 +2,7 @@
 // annulation, réglages, messages. Le plan est enregistré au fil de l'eau
 // dans `.album/` (règle d'or 7).
 
+import type { Langue } from '../lib/langue';
 import { signal } from '@preact/signals';
 import type { ConfigAlbum } from '../lib/album';
 import type { EvenementCalendrier } from '../lib/ics';
@@ -64,6 +65,8 @@ export const versionProjet = signal(0);
 export const versionIA = signal(0);
 
 export const reglages = signal<Reglages>(lireReglages());
+/** Langue affichée (celle choisie dans les réglages, ou celle du navigateur) ; mise à jour par main.tsx. */
+export const langueInterface = signal<Langue>('fr');
 export function changerReglages(r: Reglages) {
   reglages.value = r;
   enregistrerReglages(r);

@@ -3528,3 +3528,14 @@ button.bouton-ia:disabled {
 .tri-image.zoomee {
   cursor: grab;
 }
+
+/* Choix de la langue sur la page d'accueil, discret, en haut à droite. */
+.langue-accueil {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--discret);
+}

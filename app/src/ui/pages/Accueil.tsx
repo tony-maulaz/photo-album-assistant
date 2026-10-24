@@ -5,6 +5,8 @@ import { useEffect, useState } from 'preact/hooks';
 import { choisirDossier, demanderAutorisation, etatAutorisation } from '../../navigateur/dossiers';
 import { cleApi } from '../../navigateur/cle';
 import { ETAPES_COURTES, oublierProjetRecent, projetsRecents, type ProjetRecent } from '../../navigateur/projet';
+import { t } from '../../lib/langue';
+import { ChoixLangue } from '../composants/ChoixLangue';
 import { confirmer } from '../composants/Dialogues';
 import { Icone } from '../composants/Icones';
 import { configuration, notifier, page, texteErreur } from '../etat';
@@ -183,6 +185,9 @@ export function PageAccueil() {
 
   return (
     <div class="page accueil">
+      <p class="langue-accueil">
+        <label for="langue-accueil">{t`Langue (language)`}</label> <ChoixLangue id="langue-accueil" />
+      </p>
       <section class="accroche">
         <h1>
           Vos photos triées,

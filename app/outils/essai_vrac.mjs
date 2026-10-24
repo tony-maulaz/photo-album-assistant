@@ -48,7 +48,7 @@ const navigateur = await chromium.launch({ env });
 const erreurs = [];
 const requetesNominatim = [];
 try {
-  const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 } });
+  const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
   // OpenStreetMap simulé : un nom selon la latitude.
   await contexte.route('https://nominatim.openstreetmap.org/**', async (route) => {
     const url = new URL(route.request().url());

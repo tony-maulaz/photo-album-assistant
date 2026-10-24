@@ -42,7 +42,7 @@ for (let i = 0; ; i++) {
 
 // Profil persistant : un contexte éphémère a un quota de stockage trop petit pour quelques Go.
 const profil = mkdtempSync(join(tmpdir(), 'album-echelle-'));
-const navigateur = await chromium.launchPersistentContext(profil, { env, viewport: { width: 1440, height: 900 } });
+const navigateur = await chromium.launchPersistentContext(profil, { env, viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
 const erreurs = [];
 try {
   const page = navigateur.pages()[0] ?? (await navigateur.newPage());

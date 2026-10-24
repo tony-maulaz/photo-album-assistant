@@ -58,7 +58,7 @@ for (let i = 0; ; i++) {
 const navigateur = await chromium.launch({ env });
 const erreurs = [];
 try {
-  const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 } });
+  const contexte = await navigateur.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-CH' });
   const page = await contexte.newPage();
   page.on('pageerror', (e) => erreurs.push(e.message));
   page.on('console', (m) => m.type() === 'error' && erreurs.push(m.text()));

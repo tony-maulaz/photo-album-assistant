@@ -4,10 +4,11 @@
 import './style.css';
 import { effect } from '@preact/signals';
 import { render } from 'preact';
+import { definirLangue, langueDuNavigateur, t } from '../lib/langue';
 import { accesDossiersDisponible, dossierMemorise, etatAutorisation } from '../navigateur/dossiers';
 import { projetsRecents } from '../navigateur/projet';
 import { App } from './App';
-import { enregistrerMaintenant, notifier, page, reglages, texteErreur } from './etat';
+import { enregistrerMaintenant, langueInterface, notifier, page, reglages, texteErreur } from './etat';
 import { autorisations } from './pages/Accueil';
 import { autorisationsEnAttente, chargerConfiguration, ouvrirProjet } from './projets';
 
@@ -17,16 +18,29 @@ effect(() => {
   else document.documentElement.dataset.theme = t === 'clair' ? 'light' : 'dark';
 });
 
+// Langue : choisie dans les réglages, sinon celle du navigateur. Toute l'interface est redessinée quand elle change.
+effect(() => {
+  const choisie = reglages.value.langue;
+  const l = choisie === 'auto' ? langueDuNavigateur(navigator.languages) : choisie;
+  definirLangue(l);
+  document.documentElement.lang = l;
+  document.title = t`Album photos`;
+  langueInterface.value = l;
+});
+
+function Racine() {
+  return <App key={langueInterface.value} />;
+}
+
 window.addEventListener('pagehide', () => void enregistrerMaintenant());
 
 async function demarrer() {
   const racine = document.getElementById('app')!;
   if (!accesDossiersDisponible()) {
-    racine.innerHTML =
-      '<div class="page etroite"><h1>Navigateur non pris en charge</h1><p>Cette application a besoin d’accéder à vos dossiers de photos : ouvrez-la avec Google Chrome ou Microsoft Edge, sur un ordinateur.</p></div>';
+    racine.innerHTML = `<div class="page etroite"><h1>${t`Navigateur non pris en charge`}</h1><p>${t`Cette application a besoin d’accéder à vos dossiers de photos : ouvrez-la avec Google Chrome ou Microsoft Edge, sur un ordinateur.`}</p></div>`;
     return;
   }
-  render(<App />, racine);
+  render(<Racine />, racine);
   try {
     const attente = await autorisationsEnAttente();
     if (attente.length) {
@@ -36,7 +50,7 @@ async function demarrer() {
     }
     // Accès déjà accordés (rechargement de la page) : on reprend où on en était.
     const config = await dossierMemorise('config');
-    if (config) await chargerConfiguration(config).catch((err) => notifier('erreur', `Configuration illisible : ${texteErreur(err)}`));
+    if (config) await chargerConfiguration(config).catch((err) => notifier('erreur', t`Configuration illisible : ${texteErreur(err)}`));
     const [dernier] = await projetsRecents();
     if (dernier && (await etatAutorisation(dernier.source, 'read')) === 'granted' && (await etatAutorisation(dernier.sortie, 'readwrite')) === 'granted') {
       await ouvrirProjet(dernier.source, dernier.sortie);
