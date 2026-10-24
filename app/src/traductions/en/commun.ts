@@ -15,4 +15,5 @@ export const TEXTES: Record<string, string> = {
 
   // Choix de la langue (Réglages, accueil)
   'Langue (language)': 'Language (langue)',
+  'moins d’une seconde': 'less than a second',
 };

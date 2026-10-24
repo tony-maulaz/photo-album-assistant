@@ -798,6 +798,11 @@ button.bouton-aide:hover:not(:disabled) {
   margin: 12px 0;
 }
 
+/* Chiffres de même largeur : le compteur et le temps restant défilent sans faire bouger le texte. */
+.progression .texte {
+  font-variant-numeric: tabular-nums;
+}
+
 .jauge {
   height: 8px;
   border-radius: 4px;

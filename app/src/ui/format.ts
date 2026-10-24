@@ -35,11 +35,13 @@ export function taille(octets: number): string {
   return `${nombre(v, i === 0 ? 0 : 1)} ${unites[i]}`;
 }
 
+/** « 12 s », « 3 min 05 s », « 1 h 20 min » : des secondes entières, pour qu'un temps qui défile ne saute pas aux dixièmes. */
 export function duree(ms: number): string {
-  if (ms < 1000) return `${nombre(ms)} ms`;
-  if (ms < 60_000) return `${nombre(ms / 1000, 1)} s`;
-  const min = Math.floor(ms / 60_000);
-  if (min < 60) return `${min} min ${String(Math.round((ms % 60_000) / 1000)).padStart(2, '0')} s`;
+  const s = Math.round(ms / 1000);
+  if (s < 1) return t`moins d’une seconde`;
+  if (s < 60) return `${s} s`;
+  const min = Math.floor(s / 60);
+  if (min < 60) return `${min} min ${String(s % 60).padStart(2, '0')} s`;
   return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
 }
 
