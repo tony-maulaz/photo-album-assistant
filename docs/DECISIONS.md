@@ -700,6 +700,22 @@ que la réponse entre dans le cache (règle d'or 7). Chaque page s'ouvre en haut
 ; un rechargement rouvre la page regardée. Les messages passagers s'affichent
 au centre de la barre de validation, jamais sur ses boutons.
 
+**D81 — Les rafales se cherchent avec l'analyse.** La recherche des rafales
+(locale, gratuite) ne partait qu'en arrivant sur l'étape « Doublons » : il
+fallait l'attendre, alors que les copies exactes, elles, étaient déjà
+cherchées pendant l'analyse. Elle devient la dernière phase de l'analyse
+automatique, juste après les copies exactes. Elle dépend pourtant des choix de
+l'étape « Dossiers », faite ensuite (un dossier « Garder, nettoyer » forme son
+propre lot, un dossier « Ne pas toucher » n'est pas comparé), et des photos
+floues écartées. Chaque lot (journée ou dossier) garde donc l'empreinte de ses
+photos : après « Dossiers » et « Photos floues », l'analyse ne cherche de
+nouveau, en arrière-plan, que les lots dont les photos ont changé, et retire
+ceux qui n'existent plus. Avant, un choix changé à l'étape « Dossiers » après
+la recherche laissait des journées jamais cherchées. Les décisions, dans le
+plan, ne se perdent pas ; les scènes de l'IA d'un lot sont gardées. L'arrivée
+sur la page complète encore ce qui manquerait (recherche arrêtée en route,
+nouvelles photos).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

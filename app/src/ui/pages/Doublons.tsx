@@ -32,11 +32,11 @@ import { cheminDossier, ecarterDoublons, garderAussi, RACINE, traitementDe, type
 import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { MODELES } from '../../lib/tarifs';
 import { cleApi } from '../../navigateur/cle';
-import { analyserDoublons, estimerDoublons, lotsANouveau, lotsDoublons, type EtatDoublons } from '../../navigateur/doublons';
+import { analyserDoublons, estimerDoublons, lotsDoublons, type EtatDoublons } from '../../navigateur/doublons';
 import { BudgetAtteint } from '../../navigateur/ia';
 import { cleMiniature } from '../../navigateur/miniatures';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
-import { analyseEnCours } from '../analyseDossier';
+import { analyseEnCours, lancerAnalyseDossier, rafalesAChercher } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Comparateur } from '../composants/Comparateur';
@@ -777,6 +777,7 @@ export function PageDoublons() {
           etat: s.etat,
           analyses: s.analyses,
           dossiers: lots,
+          actuels: dossiers,
           strict,
           ia: avecIA ? { service: s.ia, modele } : null,
           miniature: async (f) => {
@@ -806,18 +807,10 @@ export function PageDoublons() {
     }
   };
 
-  // Les rafales se repèrent toutes seules (gratuit, local) dès que l'analyse des photos est prête (D56) ;
-  // ensuite, seulement les lots jamais cherchés (recherche arrêtée en route) ou qui ont reçu des photos (D63).
+  // Les rafales se cherchent avec l'analyse du dossier, dès l'inventaire (D81). Au cas où des journées
+  // auraient changé depuis (recherche arrêtée en route, nouvelles photos), l'arrivée sur la page les complète.
   useEffect(() => {
-    if (progres || analyseEnCours.value || analysesManquantes > 0) return;
-    if (!s.doublons) {
-      void lancer(false);
-      return;
-    }
-    const manquants = dossiers.filter((d) => !s.doublons!.dossiers[d]);
-    const nouveaux = lotsANouveau(plan, s.doublons, dossiers, s.analyses);
-    const aChercher = [...new Set([...manquants, ...nouveaux])];
-    if (aChercher.length) void lancer(false, aChercher);
+    if (!progres && !analyseEnCours.value && rafalesAChercher(s)) void lancerAnalyseDossier();
   }, [analysesManquantes === 0, !!analyseEnCours.value]);
 
   const modeleInfo = MODELES.find((m) => m.id === modele);

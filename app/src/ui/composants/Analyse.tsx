@@ -10,7 +10,11 @@ import { session, versionIA, versionPlan } from '../etat';
 import { duree, nombre } from '../format';
 import { BarreProgression } from './Cadre';
 
-const PHASES = { photos: aTraduire('Analyse des photos (netteté, ressemblance)'), copies: aTraduire('Recherche des copies exactes') } as const;
+const PHASES = {
+  photos: aTraduire('Analyse des photos (netteté, ressemblance)'),
+  copies: aTraduire('Recherche des copies exactes'),
+  rafales: aTraduire('Recherche des rafales (photos quasi identiques)'),
+} as const;
 
 /** Barre de progression de l'analyse du dossier, avec le temps restant estimé. */
 export function ProgressionAnalyse() {

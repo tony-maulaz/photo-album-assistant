@@ -24,9 +24,10 @@ export interface EtatDoublons {
   quand: string;
   /**
    * Résultat de chaque lot analysé, par identifiant de lot (dossier, ou
-   * « jour:AAAA-MM-JJ ») ; `modele` : le lot a été vu par l'IA (absent : rafales seules).
+   * « jour:AAAA-MM-JJ ») ; `modele` : le lot a été vu par l'IA (absent : rafales seules) ;
+   * `signature` : ses photos à ce moment-là (un lot qui change est cherché de nouveau).
    */
-  dossiers: Record<string, ResultatDossier & { photos: number; modele?: string }>;
+  dossiers: Record<string, ResultatDossier & { photos: number; modele?: string; signature?: string }>;
 }
 
 /** Un lot de photos comparées entre elles : un dossier, ou une journée (dossier en vrac). */
@@ -77,13 +78,35 @@ export function lotsDoublons(plan: Plan, parJour: boolean): LotDoublons[] {
     .sort((a, b) => Number(b.id.startsWith(PREFIXE_JOUR)) - Number(a.id.startsWith(PREFIXE_JOUR)) || a.id.localeCompare(b.id));
 }
 
+/** Empreinte courte des photos d'un lot (FNV-1a) : elle change si une photo entre ou sort du lot. */
+export function signatureLot(photos: { id: string }[]): string {
+  let h = 0x811c9dc5;
+  for (const c of photos.map((p) => p.id).sort().join('\n')) {
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${photos.length}:${h.toString(16)}`;
+}
+
 /**
- * Lots à rechercher de nouveau après une mise à jour de l'inventaire (D63) :
- * ceux qui ont reçu des photos ajoutées depuis la dernière recherche. Les
- * autres gardent leurs propositions (celles de l'IA comprises).
+ * Lots où chercher les rafales : jamais cherchés, ou dont les photos ont
+ * changé (photos arrivées par une mise à jour de l'inventaire, D63 ; choix
+ * changé à l'étape « Dossiers » ; photos floues écartées). Les autres gardent
+ * leurs propositions, celles de l'IA comprises ; les décisions sont dans le plan.
  */
-export function lotsANouveau(plan: Plan, etat: EtatDoublons, lots: string[], analyses: Analyses): string[] {
-  return lots.filter((id) => photosLot(plan, id, analyses).some((p) => (plan.fichiers.get(p.id)?.ajout ?? '') > etat.quand));
+export function lotsAChercher(plan: Plan, etat: EtatDoublons | undefined, lots: string[], analyses: Analyses): string[] {
+  return lots.filter((id) => {
+    const avant = etat?.dossiers[id];
+    if (!avant) return true;
+    const photos = photosLot(plan, id, analyses);
+    return avant.signature ? avant.signature !== signatureLot(photos) : avant.photos !== photos.length;
+  });
+}
+
+/** Lots enregistrés qui n'existent plus (un dossier passé à « Ne pas toucher »…) : leurs groupes ne s'affichent plus. */
+export function lotsDisparus(etat: EtatDoublons | undefined, lots: string[]): string[] {
+  const actuels = new Set(lots);
+  return Object.keys(etat?.dossiers ?? {}).filter((id) => !actuels.has(id));
 }
 
 export async function lireDoublons(etat: EtatProjet): Promise<EtatDoublons | undefined> {
@@ -133,6 +156,8 @@ export interface OptionsDoublons {
   etat: EtatProjet;
   analyses: Analyses;
   dossiers: string[];
+  /** Tous les lots actuels : ceux qui n'y sont plus sont retirés. */
+  actuels?: string[];
   strict: boolean;
   ia: { service: ServiceIA; modele: string } | null;
   miniature: (f: FichierPlan) => Promise<Blob>;
@@ -158,8 +183,8 @@ export async function analyserDoublons(
     // Dernier modèle IA utilisé : une recherche de rafales seules ne l'efface pas.
     modele: o.ia?.modele ?? precedent?.modele ?? null,
     quand: new Date().toISOString(),
-    // Les dossiers non relancés gardent leurs propositions.
-    dossiers: { ...(precedent?.dossiers ?? {}) },
+    // Les dossiers non relancés gardent leurs propositions ; ceux qui n'existent plus sont retirés.
+    dossiers: Object.fromEntries(Object.entries(precedent?.dossiers ?? {}).filter(([id]) => !o.actuels || o.actuels.includes(id))),
   };
   const erreurs: string[] = [];
   let budgetAtteint = false;
@@ -200,7 +225,7 @@ export async function analyserDoublons(
       const avant = precedent?.dossiers[d];
       const scenesIA = !o.ia && avant?.modele ? avant.propositions.filter((p) => p.source === 'ia') : [];
       const modele = o.ia?.modele ?? (scenesIA.length ? avant?.modele : undefined);
-      resultat.dossiers[d] = { ...r, propositions: [...r.propositions, ...scenesIA], photos: photos.length, ...(modele && { modele }) };
+      resultat.dossiers[d] = { ...r, propositions: [...r.propositions, ...scenesIA], photos: photos.length, signature: signatureLot(photos), ...(modele && { modele }) };
     } catch (err) {
       if (err instanceof BudgetAtteint) budgetAtteint = true;
       else erreurs.push(t`${nom} : ${err instanceof Error ? err.message : String(err)}`);
@@ -210,5 +235,7 @@ export async function analyserDoublons(
     ecriture = ecriture.then(() => o.etat.ecrire(FICHIER, resultat)).catch(() => undefined);
     await ecriture;
   });
+  // Rien à chercher, mais des lots retirés : l'état allégé est enregistré quand même.
+  if (!o.dossiers.length) await o.etat.ecrire(FICHIER, resultat).catch(() => undefined);
   return { etat: resultat, budgetAtteint, erreurs, faits, arrete: faits < o.dossiers.length && o.arreter() };
 }

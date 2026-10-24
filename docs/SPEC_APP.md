@@ -212,8 +212,11 @@ autre fichier.
 - **Fichiers sans autre date que celle du fichier** : signalés, car la copie
   ne conserve pas la date de modification (limite du navigateur, § 12).
 - **Analyse locale**, toute seule après la lecture (D56) : netteté,
-  ressemblance, empreinte des photos de même taille (copies exactes, traitées
-  à l'étape Doublons, § 6.8). « Valider et continuer » attend sa fin.
+  ressemblance, empreinte des photos de même taille (copies exactes), puis
+  recherche des rafales (D81), traitées à l'étape Doublons (§ 6.8).
+  « Valider et continuer » attend sa fin. Après les étapes Dossiers et
+  Photos floues, seules les journées dont les photos ont changé sont
+  cherchées de nouveau.
 
 **Aperçu (tableau de bord)** :
 - nombre de photos, vidéos, captures, autres fichiers ; période ;
@@ -341,8 +344,8 @@ IA : noms proches et chevauchements présentés côte à côte.
 - Réglage simple de l'IA : **Prudent** (défaut, les expressions différentes
   sont gardées) ou **Strict**. Son coût est affiché dans l'onglet « Même
   scène (IA) », où elle se lance.
-- Algorithme du script 06 (§ 11) : rafales (local, toutes seules à
-  l'ouverture), vue d'ensemble de tout le dossier, scènes locales,
+- Algorithme du script 06 (§ 11) : rafales (local, cherchées avec l'analyse
+  automatique, D81), vue d'ensemble de tout le dossier, scènes locales,
   vérification en grand format, garde-fous (une photo refusée par le
   garde-fou est montrée, gardée, et peut être écartée). Juste après les
   floues, un dossier en vrac n'est pas encore rangé : ses photos sont

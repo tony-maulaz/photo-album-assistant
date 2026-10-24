@@ -6,6 +6,7 @@
 import { aTraduire, t } from '../../lib/langue';
 import { changerTraitement, estDescendant, RACINE, resumes, traitementDe, type FichierPlan, type Plan, type TraitementDossier } from '../../lib/plan';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
+import { lancerAnalyseDossier } from '../analyseDossier';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Miniature } from '../composants/GrillePhotos';
 import { appliquer, revenirDe, session, validerEtape, versionPlan } from '../etat';
@@ -123,7 +124,11 @@ export function PageDossiers() {
             : t`Aucun sous-dossier`
         }
         revenir={() => revenirDe('dossiers')}
-        valider={() => validerEtape('dossiers')}
+        valider={() => {
+          validerEtape('dossiers');
+          // Un dossier qui change de choix change de lot : les rafales y sont cherchées de nouveau, en arrière-plan.
+          void lancerAnalyseDossier();
+        }}
       />
     </div>
   );

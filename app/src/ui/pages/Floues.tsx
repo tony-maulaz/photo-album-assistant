@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { appliquerFloues, compterFloues, deciderFlou, estFloue, photosConcernees, SEUIL_FLOU } from '../../lib/floues';
 import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
+import { lancerAnalyseDossier } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { GrillePhotos } from '../composants/GrillePhotos';
@@ -82,6 +83,8 @@ export function PageFloues() {
     planifierEnregistrement();
     if (ecartees) notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : elles iront dans « ${dossierMisDeCote('floues')} » (rien n’est supprimé).`, { libelle: t`Annuler`, faire: annuler });
     validerEtape('floues');
+    // Les photos écartées quittent leurs journées : les rafales y sont cherchées de nouveau, en arrière-plan.
+    void lancerAnalyseDossier();
   };
 
   return (

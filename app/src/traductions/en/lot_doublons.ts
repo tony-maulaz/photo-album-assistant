@@ -117,6 +117,10 @@ export const TEXTES: Record<string, string> = {
   'Groupe suivant ›': 'Next group ›',
   'Accepter et groupe suivant': 'Accept and next group',
 
+  // analyseDossier.ts, Analyse.tsx : les rafales cherchées avec l'analyse (D81)
+  'Rafales cherchées en {0} s : {1}': 'Bursts looked for in {0} s: {1}',
+  'Recherche des rafales (photos quasi identiques)': 'Looking for bursts (nearly identical photos)',
+
   // Raccourcis.tsx
   'J et K (ou ↓ ↑)': 'J and K (or ↓ ↑)',
   'Groupe suivant, groupe précédent': 'Next group, previous group',

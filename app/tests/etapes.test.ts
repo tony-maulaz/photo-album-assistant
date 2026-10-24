@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { planVide, type FichierPlan, type Plan } from '../src/lib/plan';
-import { analyserDoublons, lotsDoublons, photosLot } from '../src/navigateur/doublons';
+import { changerTraitement, mettreDeCote, planVide, type FichierPlan, type Plan } from '../src/lib/plan';
+import { analyserDoublons, lotsAChercher, lotsDisparus, lotsDoublons, photosLot } from '../src/navigateur/doublons';
 import type { Analyses } from '../src/navigateur/analyses';
 import type { EtatProjet } from '../src/navigateur/projet';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, etapeInutile, etapePrecedente, etapeSuivante, migrerEtapes, nouveauProjet, parcours } from '../src/navigateur/projet';
@@ -142,6 +142,36 @@ describe('lots des doublons', () => {
     faits = 0;
     const complete = await analyserDoublons({ ...options, arreter: () => false });
     expect(complete).toMatchObject({ faits: 3, arrete: false });
+  });
+
+  it('rafales cherchées avec l’analyse (D81) : seuls les lots dont les photos ont changé sont cherchés de nouveau', async () => {
+    const p = plan();
+    const lots = () => lotsDoublons(p, true).map((l) => l.id);
+    const options = {
+      plan: p,
+      etat: { ecrire: async () => undefined } as unknown as EtatProjet,
+      analyses,
+      strict: false,
+      ia: null,
+      miniature: async () => new Blob(),
+      original: async () => new Blob(),
+      progres: () => undefined,
+      arreter: () => false,
+    };
+    const { etat } = await analyserDoublons({ ...options, dossiers: lots(), actuels: lots() });
+    expect(lotsAChercher(p, etat, lots(), analyses)).toEqual([]);
+    // Une photo floue écartée quitte sa journée ; une photo écartée comme doublon par l'étape y reste.
+    mettreDeCote(p, ['a'], 'floues');
+    expect(lotsAChercher(p, etat, lots(), analyses)).toEqual(['jour:2026-07-18']);
+    p.fichiers.set('a', { ...p.fichiers.get('a')!, statut: 'archive', raison: undefined });
+    p.fichiers.set('b', { ...p.fichiers.get('b')!, statut: 'mis_de_cote', raison: 'doublons', doublon: { garde: 'a', source: 'rafale' } });
+    expect(lotsAChercher(p, etat, lots(), analyses)).toEqual([]);
+    // « Anniversaire » passe à « Trier » : ses photos rejoignent les journées, son lot disparaît.
+    changerTraitement(p, ['g'], 'trier');
+    expect(lotsAChercher(p, etat, lots(), analyses)).toEqual(['jour:2026-07-18', 'jour:2026-07-19']);
+    expect(lotsDisparus(etat, lots())).toEqual(['g']);
+    const suite = await analyserDoublons({ ...options, dossiers: lotsAChercher(p, etat, lots(), analyses), actuels: lots() }, etat);
+    expect(Object.keys(suite.etat.dossiers).sort()).toEqual(['jour:2026-07-18', 'jour:2026-07-19', 'jour:sans']);
   });
 
   it('dossier déjà trié : par dossier, comme avant', () => {
