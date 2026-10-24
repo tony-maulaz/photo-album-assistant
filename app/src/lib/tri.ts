@@ -5,6 +5,7 @@
 // ici déjà trouvés, ce qui rend tout testable sans réseau.
 
 import type { LieuConnu } from './config';
+import { t } from './langue';
 import { cleNom, nomAscii, nomLibre } from './noms';
 import { combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type InfoTri, type Modification, type Plan } from './plan';
 
@@ -628,7 +629,7 @@ export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: 
     }
   }
   modifications.push(nettoyage.terminer('Supprimer les dossiers vides'));
-  return combiner('Trier par lieux et sorties', ...modifications);
+  return combiner(t`Trier par lieux et sorties`, ...modifications);
 }
 
 /**

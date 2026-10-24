@@ -1,6 +1,8 @@
 // Lecture et validation de config/config.json (SPEC § 8.2).
 // Version minimale pour la phase 0 : structure et valeurs essentielles.
 
+import { t } from './langue';
+
 export interface LieuConnu {
   id: string;
   nom: string;
@@ -28,33 +30,33 @@ const estObjet = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
 /** Liste des problèmes trouvés (vide si la configuration est valide). */
 export function validerConfig(v: unknown): string[] {
   const erreurs: string[] = [];
-  if (!estObjet(v)) return ['Le fichier ne contient pas un objet JSON.'];
-  if (v.version !== VERSION_CONFIG) erreurs.push(`Version ${String(v.version)} inconnue (attendue : ${VERSION_CONFIG}).`);
-  if (typeof v.modifie_le !== 'string') erreurs.push('Date de modification absente.');
+  if (!estObjet(v)) return [t`Le fichier ne contient pas un objet JSON.`];
+  if (v.version !== VERSION_CONFIG) erreurs.push(t`Version ${String(v.version)} inconnue (attendue : ${VERSION_CONFIG}).`);
+  if (typeof v.modifie_le !== 'string') erreurs.push(t`Date de modification absente.`);
   for (const cle of ['lieux_connus', 'appareils', 'calendriers']) {
-    if (!Array.isArray(v[cle])) erreurs.push(`« ${cle} » doit être une liste.`);
+    if (!Array.isArray(v[cle])) erreurs.push(t`« ${cle} » doit être une liste.`);
   }
-  if (!estObjet(v.prereglages)) erreurs.push('« prereglages » doit être un objet.');
+  if (!estObjet(v.prereglages)) erreurs.push(t`« prereglages » doit être un objet.`);
   if (Array.isArray(v.lieux_connus)) {
     let domiciles = 0;
     v.lieux_connus.forEach((l, i) => {
-      const ou = `Lieu ${i + 1}`;
+      const n = i + 1;
       if (!estObjet(l)) {
-        erreurs.push(`${ou} : objet attendu.`);
+        erreurs.push(t`Lieu ${n} : objet attendu.`);
         return;
       }
-      if (typeof l.nom !== 'string' || !l.nom) erreurs.push(`${ou} : nom manquant.`);
-      if (typeof l.lat !== 'number' || Math.abs(l.lat) > 90) erreurs.push(`${ou} : latitude invalide.`);
-      if (typeof l.lon !== 'number' || Math.abs(l.lon) > 180) erreurs.push(`${ou} : longitude invalide.`);
-      if (typeof l.rayon_m !== 'number' || l.rayon_m <= 0) erreurs.push(`${ou} : rayon invalide.`);
+      if (typeof l.nom !== 'string' || !l.nom) erreurs.push(t`Lieu ${n} : nom manquant.`);
+      if (typeof l.lat !== 'number' || Math.abs(l.lat) > 90) erreurs.push(t`Lieu ${n} : latitude invalide.`);
+      if (typeof l.lon !== 'number' || Math.abs(l.lon) > 180) erreurs.push(t`Lieu ${n} : longitude invalide.`);
+      if (typeof l.rayon_m !== 'number' || l.rayon_m <= 0) erreurs.push(t`Lieu ${n} : rayon invalide.`);
       if (l.domicile === true) domiciles++;
     });
-    if (domiciles > 1) erreurs.push('Un seul lieu peut être le domicile.');
+    if (domiciles > 1) erreurs.push(t`Un seul lieu peut être le domicile.`);
   }
   if (Array.isArray(v.appareils)) {
     v.appareils.forEach((a, i) => {
       if (!estObjet(a) || typeof a.decalage !== 'string' || !/^[+-]\d{2}:\d{2}$/.test(a.decalage)) {
-        erreurs.push(`Appareil ${i + 1} : décalage attendu au format +HH:MM.`);
+        erreurs.push(t`Appareil ${i + 1} : décalage attendu au format +HH:MM.`);
       }
     });
   }

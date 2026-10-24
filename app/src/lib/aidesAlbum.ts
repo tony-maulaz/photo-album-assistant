@@ -14,6 +14,7 @@ import tonHumoristique from '../ia/consignes/album_ton_humoristique.txt?raw';
 import tonSobre from '../ia/consignes/album_ton_sobre.txt?raw';
 import consigneTextes from '../ia/consignes/textes_titres_commentaires.txt?raw';
 import type { Page, Section } from './album';
+import { aTraduire } from './langue';
 import {
   cleDemande,
   entier,
@@ -39,7 +40,13 @@ import {
 
 export type Ton = 'sobre' | 'chaleureux' | 'humoristique' | 'enfants';
 
-export const LIBELLES_TONS: Record<Ton, string> = { sobre: 'sobre', chaleureux: 'chaleureux', humoristique: 'humoristique', enfants: 'pour les enfants' };
+/** Libellés affichés (à passer à `t` là où ils sont montrés). */
+export const LIBELLES_TONS: Record<Ton, string> = {
+  sobre: aTraduire('sobre'),
+  chaleureux: aTraduire('chaleureux'),
+  humoristique: aTraduire('humoristique'),
+  enfants: aTraduire('pour les enfants'),
+};
 
 /** Le ton chaleureux est celui de la consigne du script 03 : rien à ajouter. */
 const CONSIGNES_TONS: Record<Ton, string> = { sobre: tonSobre, chaleureux: '', humoristique: tonHumoristique, enfants: tonEnfants };

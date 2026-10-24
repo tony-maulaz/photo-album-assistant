@@ -13,6 +13,7 @@ import consigneMeilleure from '../ia/consignes/selection_meilleure_pile.txt?raw'
 import suffixeJson from '../ia/consignes/selection_suffixe_json.txt?raw';
 import systemeDescription from '../ia/consignes/selection_systeme_description.txt?raw';
 import consigneContexte from '../ia/consignes/textes_contexte.txt?raw';
+import { aTraduire } from './langue';
 import { jetonsImage, PRIX_RECHERCHE_WEB, type Modele } from './tarifs';
 
 // ---------------------------------------------------------------------------
@@ -245,24 +246,30 @@ export interface Etiquettes {
   description: string;
 }
 
-export const LIBELLES_PERSONNES: Record<Personnes, string> = { aucune: 'sans personne', '1': 'une personne', '2-4': '2 à 4 personnes', groupe: 'groupe' };
+/** Libellés en français (texte de la recherche locale) ; à passer à `t` là où ils sont affichés. */
+export const LIBELLES_PERSONNES: Record<Personnes, string> = {
+  aucune: aTraduire('sans personne'),
+  '1': aTraduire('une personne'),
+  '2-4': aTraduire('2 à 4 personnes'),
+  groupe: aTraduire('groupe'),
+};
 export const LIBELLES_TYPES: Record<TypePhoto, string> = {
-  portrait: 'portrait',
-  groupe: 'photo de groupe',
-  paysage: 'paysage',
-  monument: 'monument',
-  repas: 'repas',
-  animal: 'animal',
-  activite: 'activité',
-  selfie: 'selfie',
-  document: 'document',
+  portrait: aTraduire('portrait'),
+  groupe: aTraduire('photo de groupe'),
+  paysage: aTraduire('paysage'),
+  monument: aTraduire('monument'),
+  repas: aTraduire('repas'),
+  animal: aTraduire('animal'),
+  activite: aTraduire('activité'),
+  selfie: aTraduire('selfie'),
+  document: aTraduire('document'),
 };
 export const LIBELLES_DEFAUTS: Record<Defaut, string> = {
-  yeux_fermes: 'yeux fermés',
-  flou_de_bouge: 'flou de bougé',
-  tete_coupee: 'tête coupée',
-  contre_jour: 'contre-jour',
-  horizon_penche: 'horizon penché',
+  yeux_fermes: aTraduire('yeux fermés'),
+  flou_de_bouge: aTraduire('flou de bougé'),
+  tete_coupee: aTraduire('tête coupée'),
+  contre_jour: aTraduire('contre-jour'),
+  horizon_penche: aTraduire('horizon penché'),
 };
 
 const TYPES = Object.keys(LIBELLES_TYPES) as TypePhoto[];
@@ -365,7 +372,7 @@ export function lireEtiquettes(reponse: unknown, ids: string[]): Map<string, Eti
   return resultat;
 }
 
-/** Texte cherchable d'une photo étiquetée (recherche en langage naturel, sans appel). */
+/** Texte cherchable d'une photo étiquetée (recherche en langage naturel, sans appel) : toujours en français, comme la recherche. */
 export function texteEtiquettes(e: Etiquettes): string {
   return [e.description, e.type ? LIBELLES_TYPES[e.type] : '', e.personnes ? LIBELLES_PERSONNES[e.personnes] : '', ...e.defauts.map((d) => LIBELLES_DEFAUTS[d])].filter(Boolean).join(' ; ');
 }

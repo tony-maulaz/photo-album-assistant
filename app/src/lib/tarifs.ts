@@ -2,8 +2,11 @@
 // Valeurs relevées sur https://platform.claude.com/docs/en/about-claude/pricing
 // le 21.10.2026 : à revérifier avant chaque phase IA.
 
+import { aTraduire } from './langue';
+
 export interface Modele {
   id: string;
+  /** Nom affiché (à passer à `t` là où il est montré). */
   nom: string;
   /** USD par million de jetons d'entrée et de sortie (prompt ≤ 100 000 jetons pour Haiku 5.5). */
   entree: number;
@@ -15,11 +18,11 @@ export interface Modele {
 }
 
 export const MODELES: Modele[] = [
-  { id: 'claude-haiku-5-5', nom: 'Claude Haiku 5.5 (rapide)', entree: 0.1, sortie: 0.5, coteImageMax: 2576, effort: true },
-  { id: 'claude-sonnet-5-5', nom: 'Claude Sonnet 5.5 (standard)', entree: 2, sortie: 10, coteImageMax: 2576, effort: true },
-  { id: 'claude-opus-5-5', nom: 'Claude Opus 5.5 (avancé)', entree: 4, sortie: 20, coteImageMax: 2576, effort: true },
-  { id: 'claude-haiku-4-5', nom: 'Claude Haiku 4.5 (ancien, scripts)', entree: 1, sortie: 5, coteImageMax: 1568, effort: false },
-  { id: 'claude-sonnet-4-6', nom: 'Claude Sonnet 4.6 (ancien, scripts)', entree: 3, sortie: 15, coteImageMax: 1568, effort: true },
+  { id: 'claude-haiku-5-5', nom: aTraduire('Claude Haiku 5.5 (rapide)'), entree: 0.1, sortie: 0.5, coteImageMax: 2576, effort: true },
+  { id: 'claude-sonnet-5-5', nom: aTraduire('Claude Sonnet 5.5 (standard)'), entree: 2, sortie: 10, coteImageMax: 2576, effort: true },
+  { id: 'claude-opus-5-5', nom: aTraduire('Claude Opus 5.5 (avancé)'), entree: 4, sortie: 20, coteImageMax: 2576, effort: true },
+  { id: 'claude-haiku-4-5', nom: aTraduire('Claude Haiku 4.5 (ancien, scripts)'), entree: 1, sortie: 5, coteImageMax: 1568, effort: false },
+  { id: 'claude-sonnet-4-6', nom: aTraduire('Claude Sonnet 4.6 (ancien, scripts)'), entree: 3, sortie: 15, coteImageMax: 1568, effort: true },
 ];
 
 /** USD par recherche web (10 USD les 1000). */

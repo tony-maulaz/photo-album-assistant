@@ -57,11 +57,18 @@ export interface Indicateurs extends Exposition {
 
 export type Signal = 'flou' | 'sombre' | 'cramee' | 'contre_jour';
 
+/**
+ * Marque un libellé à traduire, comme `aTraduire` de `lib/langue` : ce module
+ * sert aussi au worker d'analyse, qui ne doit pas charger les traductions.
+ */
+const aTraduire = <T extends string>(texte: T): T => texte;
+
+/** Libellés affichés (à passer à `t` là où ils sont montrés). */
 export const LIBELLES_SIGNAUX: Record<Signal, string> = {
-  flou: 'peu nette',
-  sombre: 'sombre',
-  cramee: 'cramée',
-  contre_jour: 'contre-jour',
+  flou: aTraduire('peu nette'),
+  sombre: aTraduire('sombre'),
+  cramee: aTraduire('cramée'),
+  contre_jour: aTraduire('contre-jour'),
 };
 
 /**
