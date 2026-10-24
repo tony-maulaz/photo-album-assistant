@@ -1,20 +1,27 @@
 // Grille de photos virtualisée (SPEC § 5.4) : seules les cases visibles
 // existent. Sélection au clic, Ctrl+clic, Maj+clic et rectangle ; glisser
-// la sélection sur un dossier du panneau.
+// la sélection sur un dossier du panneau. Titres de groupe en option (une
+// journée) ; badge « nouveau » sur les photos arrivées à la dernière mise à
+// jour de l'inventaire (D63).
 
+import { signal } from '@preact/signals';
 import { dessinerRecadrage, recadrageUtile, tailleRecadree, type Recadrage } from '../../lib/recadrage';
 import type { ComponentChildren } from 'preact';
-import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { disposer, elementsVisibles, voisinVertical } from '../../lib/grille';
 import { aTraduire, t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
+import { arrivees, jourArrivee } from '../../lib/selection';
 import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../../navigateur/miniatures';
-import { reglages, serviceMiniatures, session } from '../etat';
-import { dateHeure, pluriel } from '../format';
+import { reglages, serviceMiniatures, session, versionPlan } from '../etat';
+import { dateHeure, jourCourt, pluriel } from '../format';
 import { ancre, glisse, selection, visionneuse, vue, VUE_MIS_DE_COTE } from '../organiser';
 
 const MARGE = 20;
 const ESPACE = 14;
 const LEGENDE = 22;
+/** Hauteur d'un titre de groupe (« Samedi 27 juin 2025 »). */
+const TITRE = 40;
 /** Place libre sous la dernière ligne, pour la barre d'action flottante. */
 const PIED = 72;
 
@@ -84,11 +91,20 @@ function etiquetteGlisse(n: number): HTMLElement {
   return e;
 }
 
+/** Photo à amener à l'écran dans la grille affichée (résultat d'une aide IA, « voir ») ; remise à `null` une fois montrée. */
+export const photoAMontrer = signal<string | null>(null);
+
 export interface OptionsGrille {
   /** Badges supplémentaires sur la miniature (étoiles, alertes…). */
   badges?: (f: FichierPlan) => ComponentChildren;
+  /** Pastilles en colonne en haut à gauche, sous le badge « nouveau » (signaux…). */
+  pastilles?: (f: FichierPlan) => ComponentChildren;
   /** Texte sous la miniature (par défaut : l'heure, ou le nom). */
-  legende?: (f: FichierPlan) => string;
+  legende?: (f: FichierPlan) => ComponentChildren;
+  /** Lignes de légende (2 : l'heure et la description de l'IA). */
+  lignesLegende?: number;
+  /** Titres de groupe : chacun ouvre une nouvelle ligne avant l'élément `debut` (indices croissants). */
+  groupes?: { debut: number; titre: ComponentChildren }[];
   /** Lignes ajoutées à l'infobulle de la case (ce que l'IA dit de la photo…). */
   infobulle?: (f: FichierPlan) => string[];
   /** Classe CSS supplémentaire d'une case. */
@@ -109,11 +125,23 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   const [rect, setRect] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const taille = options.taille ?? reglages.value.tailleMiniatures;
   const largeurCase = taille + ESPACE;
-  const hauteurCase = taille + LEGENDE + ESPACE;
+  const lignesLegende = options.lignesLegende ?? 1;
+  const hauteurLegende = LEGENDE * lignesLegende;
+  const hauteurCase = taille + hauteurLegende + ESPACE;
   const colonnes = Math.max(1, Math.floor((dims.largeur - 2 * MARGE + ESPACE) / largeurCase));
-  const lignes = Math.ceil(elements.length / colonnes);
+  const groupes = options.groupes;
+  const disposition = useMemo(
+    () => disposer(elements.length, colonnes, groupes?.map((g) => g.debut) ?? [], { marge: MARGE, case: hauteurCase, titre: TITRE }),
+    [elements, colonnes, hauteurCase, groupes],
+  );
   const choisis = selection.value;
   const enMisDeCote = vue.value === VUE_MIS_DE_COTE;
+  // Jour de la dernière arrivée de photos (mise à jour de l'inventaire) : ses photos portent le badge « nouveau ».
+  const derniere = useMemo(() => {
+    const s = session.value;
+    return s ? arrivees([...s.plan.fichiers.values()]).at(-1)?.jour : undefined;
+  }, [versionPlan.value, session.value]);
+  const position = (i: number) => ({ x: MARGE + disposition.colonne[i] * largeurCase, y: disposition.haut[disposition.ligne[i]] });
 
   useLayoutEffect(() => {
     const el = conteneur.current;
@@ -129,6 +157,16 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     setDefile(0);
   }, [options.cleVue ?? vue.value]);
 
+  // Photo demandée ailleurs (« voir ») : on la fait venir au milieu de la grille, si elle y est.
+  const aMontrer = photoAMontrer.value;
+  useEffect(() => {
+    const el = conteneur.current;
+    const i = aMontrer ? elements.findIndex((f) => f.id === aMontrer) : -1;
+    if (!el || i < 0) return;
+    el.scrollTop = Math.max(0, position(i).y - (el.clientHeight - hauteurCase) / 2);
+    photoAMontrer.value = null;
+  }, [aMontrer, elements, disposition]);
+
   // Flèches du clavier : ← → d'une photo à l'autre, ↑ ↓ d'une ligne à l'autre ; Maj étend la sélection.
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
@@ -137,26 +175,31 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(cible.tagName) || cible.isContentEditable) return;
       if (document.querySelector('.visionneuse, .tri-rapide, .comparateur, .voile') || !elements.length) return;
       const actuel = elements.findIndex((f) => f.id === ancre.value);
-      const pas = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' ? -colonnes : colonnes;
-      const i = actuel < 0 ? 0 : Math.max(0, Math.min(elements.length - 1, actuel + pas));
+      const horizontal = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+      const i =
+        actuel < 0
+          ? 0
+          : horizontal
+            ? Math.max(0, Math.min(elements.length - 1, actuel + (e.key === 'ArrowLeft' ? -1 : 1)))
+            : voisinVertical(disposition, actuel, e.key === 'ArrowUp' ? -1 : 1);
       const id = elements[i].id;
       selection.value = e.shiftKey ? new Set([...selection.value, id]) : new Set([id]);
       ancre.value = id;
       const el = conteneur.current;
       if (el) {
-        const y = MARGE + Math.floor(i / colonnes) * hauteurCase;
-        if (y < el.scrollTop) el.scrollTop = y - MARGE;
+        const { y } = position(i);
+        // En remontant, on montre aussi le titre de la journée au-dessus de la ligne.
+        const titre = disposition.titres.some((g) => g.debut === disposition.premier[disposition.ligne[i]]) ? TITRE : 0;
+        if (y - titre < el.scrollTop) el.scrollTop = y - titre - MARGE;
         else if (y + hauteurCase > el.scrollTop + el.clientHeight) el.scrollTop = y + hauteurCase - el.clientHeight + MARGE;
       }
       e.preventDefault();
     };
     window.addEventListener('keydown', touche);
     return () => window.removeEventListener('keydown', touche);
-  }, [elements, colonnes, hauteurCase]);
+  }, [elements, disposition, hauteurCase]);
 
-  const debut = Math.max(0, Math.floor((defile - MARGE) / hauteurCase) - 2) * colonnes;
-  const fin = Math.min(elements.length, (Math.ceil((defile + dims.hauteur) / hauteurCase) + 2) * colonnes);
-  const position = (i: number) => ({ x: MARGE + (i % colonnes) * largeurCase, y: MARGE + Math.floor(i / colonnes) * hauteurCase });
+  const { debut, fin } = elementsVisibles(disposition, defile - 2 * hauteurCase, defile + dims.hauteur + 2 * hauteurCase, hauteurCase);
 
   const cliquer = (e: MouseEvent, i: number) => {
     const id = elements[i].id;
@@ -203,14 +246,11 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
       const r = { x0: Math.min(depart.x, p.x), y0: Math.min(depart.y, p.y), x1: Math.max(depart.x, p.x), y1: Math.max(depart.y, p.y) };
       setRect(r);
       const n = new Set(base);
-      const l0 = Math.max(0, Math.floor((r.y0 - MARGE) / hauteurCase));
-      const l1 = Math.min(lignes - 1, Math.floor((r.y1 - MARGE) / hauteurCase));
-      for (let l = l0; l <= l1; l++) {
-        for (let c = 0; c < colonnes; c++) {
-          const i = l * colonnes + c;
-          if (i >= elements.length) break;
-          const { x, y } = position(i);
-          if (x < r.x1 && x + taille > r.x0 && y < r.y1 && y + taille + LEGENDE > r.y0) n.add(elements[i].id);
+      for (let l = 0; l < disposition.haut.length && disposition.haut[l] < r.y1; l++) {
+        if (disposition.haut[l] + taille + hauteurLegende <= r.y0) continue;
+        for (let i = disposition.premier[l]; i < disposition.premier[l + 1]; i++) {
+          const { x } = position(i);
+          if (x < r.x1 && x + taille > r.x0) n.add(elements[i].id);
         }
       }
       selection.value = n;
@@ -237,6 +277,8 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   for (let i = debut; i < fin; i++) {
     const f = elements[i];
     const { x, y } = position(i);
+    const nouveau = !!derniere && !!f.ajout && jourArrivee(f.ajout) === derniere;
+    const pastilles = options.pastilles?.(f);
     cases.push(
       <div
         key={f.id}
@@ -253,12 +295,33 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
           <Miniature f={f} taille={taille} rotation={options.badges ? f.rotation : 0} recadrage={options.badges ? f.recadrage : undefined} />
           {f.categorie === 'video' && <span class="badge video">{t`vidéo`}</span>}
           {enMisDeCote && !options.badges && <span class="badge raison">{texteRaison(f)}</span>}
+          {(nouveau || pastilles) && (
+            <span class="pastilles-gauche">
+              {nouveau && (
+                <span class="pastille-nouveau" title={t`Arrivée le ${jourCourt(derniere)}, à la dernière mise à jour de l’inventaire`}>
+                  {t`nouveau`}
+                </span>
+              )}
+              {pastilles}
+            </span>
+          )}
           {options.badges?.(f)}
         </div>
-        <div class="legende">{options.legende ? options.legende(f) : enMisDeCote ? dateHeure(f.date) : f.date && f.date.length > 10 ? f.date.slice(11, 16) : f.nom}</div>
+        <div class={`legende${lignesLegende > 1 ? ' plusieurs-lignes' : ''}`} style={lignesLegende > 1 ? { height: `${hauteurLegende}px` } : undefined}>
+          {options.legende ? options.legende(f) : enMisDeCote ? dateHeure(f.date) : f.date && f.date.length > 10 ? f.date.slice(11, 16) : f.nom}
+        </div>
       </div>,
     );
   }
+  // Titres de groupe visibles (les autres ne sont pas dessinés, comme les cases).
+  const titreDe = new Map(groupes?.map((g) => [g.debut, g.titre]));
+  const titres = disposition.titres
+    .filter((g) => g.y + TITRE >= defile - hauteurCase && g.y <= defile + dims.hauteur + hauteurCase)
+    .map((g) => (
+      <div key={`titre:${g.debut}`} class="titre-groupe" style={{ top: `${g.y}px`, left: `${MARGE}px`, right: `${MARGE}px`, height: `${TITRE}px` }}>
+        {titreDe.get(g.debut)}
+      </div>
+    ));
 
   return (
     <div
@@ -269,7 +332,8 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
       onMouseDown={commencerRectangle}
       aria-label={t`Photos du dossier`}
     >
-      <div class="plateau" style={{ height: `${lignes * hauteurCase + 2 * MARGE + PIED}px` }}>
+      <div class="plateau" style={{ height: `${disposition.hauteur + PIED}px` }}>
+        {titres}
         {cases}
         {rect && <div class="rectangle" style={{ left: `${rect.x0}px`, top: `${rect.y0}px`, width: `${rect.x1 - rect.x0}px`, height: `${rect.y1 - rect.y0}px` }} />}
       </div>

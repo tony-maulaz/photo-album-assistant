@@ -391,7 +391,7 @@ try {
   await page.locator('.tri-rapide').waitFor();
   await page.locator('.tri-rapide img').waitFor({ timeout: 20_000 });
   await capturer(page, '12_tri_rapide');
-  verifier((await page.locator('.tri-infos').innerText()).includes('Reste à décider : 0'), 'tri rapide plein écran avec compteur');
+  verifier((await page.locator('.tri-infos').innerText()).includes('Tout est décidé'), 'tri rapide plein écran avec compteur');
   await page.keyboard.press('Escape');
 
   // Aides IA de la sélection : étiquettes (API simulée), puis recherche locale.

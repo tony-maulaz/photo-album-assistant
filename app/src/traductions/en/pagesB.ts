@@ -545,7 +545,7 @@ export const TEXTES: Record<string, string> = {
     'Your folder already contains subfolders. The {0} loose at the top level will be sorted by places and outings; for each subfolder, choose what becomes of it. Nothing is changed in the original folder.',
   'Aucun sous-dossier : rien à décider ici.': 'No subfolders: nothing to decide here.',
   'Pour tous :': 'For all:',
-  '{0} à trier · {1} gardés et nettoyés · {2} à ne pas toucher': '{0} to sort · {1} kept and cleaned · {2} left as is',
+  '{0} à trier · {1} · {2} à ne pas toucher': '{0} to sort · {1} · {2} left as is',
   'Aucun sous-dossier': 'No subfolders',
 
   // Inventaire.tsx (informations sur la suite)

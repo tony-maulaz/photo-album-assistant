@@ -10,6 +10,8 @@ export interface PhotoChoix {
   date?: string;
   phash?: string;
   album?: 0 | 1 | 2;
+  /** Empreinte SHA-256 du contenu (copies exactes), si elle a été calculée. */
+  empreinte?: string;
 }
 
 /** Minutes depuis l'an 0 d'une date « AAAA-MM-JJTHH:MM:SS » (heure locale, sans fuseau). */
@@ -72,6 +74,20 @@ export function redondances(photos: PhotoChoix[], seuil = 20, fenetre = 45): str
     retenues.map((p) => p.id),
     pairesSemblables(retenues, seuil, fenetre),
   );
+}
+
+/**
+ * Copies exactes retenues dans des dossiers différents (même empreinte) : la
+ * même photo serait deux fois dans l'album. Dans un même dossier, l'alerte de
+ * redondance les signale déjà.
+ */
+export function copiesRetenues(photos: PhotoChoix[]): string[][] {
+  const parEmpreinte = new Map<string, PhotoChoix[]>();
+  for (const p of photos) {
+    if (!p.empreinte || !((p.album ?? 0) > 0)) continue;
+    parEmpreinte.set(p.empreinte, [...(parEmpreinte.get(p.empreinte) ?? []), p]);
+  }
+  return [...parEmpreinte.values()].filter((g) => new Set(g.map((p) => p.dossier)).size > 1).map((g) => g.map((p) => p.id));
 }
 
 /** Piles de photos semblables : scènes de l'étape « Doublons », plus la ressemblance locale. */
@@ -139,4 +155,74 @@ export function avancement(photos: (PhotoChoix & PhotoPage)[], cible: Cible): Av
   const pages = nombrePages(photos, cible);
   const valeur = cible.mode === 'pages' ? pages : petites + grandes * cible.photosParPage;
   return { retenues: petites + grandes, grandes, aDecider, pages, valeur, pourcent: cible.nombre > 0 ? (valeur / cible.nombre) * 100 : 0 };
+}
+
+/** Jour local (« AAAA-MM-JJ ») d'une date d'arrivée ISO (`ajout`, D63) ; vide si elle est illisible. */
+export function jourArrivee(ajout: string): string {
+  const d = new Date(ajout);
+  if (Number.isNaN(d.getTime())) return '';
+  const deux = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}`;
+}
+
+/** Jours d'arrivée des photos ajoutées par une mise à jour de l'inventaire, du plus ancien au plus récent. */
+export function arrivees(photos: { ajout?: string }[]): { jour: string; n: number }[] {
+  const n = new Map<string, number>();
+  for (const p of photos) {
+    const jour = p.ajout ? jourArrivee(p.ajout) : '';
+    if (jour) n.set(jour, (n.get(jour) ?? 0) + 1);
+  }
+  return [...n].map(([jour, k]) => ({ jour, n: k })).sort((a, b) => a.jour.localeCompare(b.jour));
+}
+
+export interface Periode {
+  /** Valeur du filtre : un jour « AAAA-MM-JJ » ou un mois « AAAA-MM ». */
+  cle: string;
+  disponibles: number;
+  retenues: number;
+}
+
+/**
+ * Barres de l'équilibre : une par jour tant qu'elles restent lisibles
+ * (`max` au plus), sinon une par mois (une année : 12 barres). Les photos
+ * sans date n'y figurent pas.
+ */
+export function periodesEquilibre(jours: Equilibre['jours'], max = 45): { unite: 'jour' | 'mois'; periodes: Periode[] } {
+  const dates = jours.filter((j) => /^\d{4}-\d{2}-\d{2}$/.test(j.jour));
+  if (dates.length <= max) return { unite: 'jour', periodes: dates.map((j) => ({ cle: j.jour, disponibles: j.disponibles, retenues: j.retenues })) };
+  const mois = new Map<string, Periode>();
+  for (const j of dates) {
+    const cle = j.jour.slice(0, 7);
+    const m = mois.get(cle) ?? { cle, disponibles: 0, retenues: 0 };
+    m.disponibles += j.disponibles;
+    m.retenues += j.retenues;
+    mois.set(cle, m);
+  }
+  return { unite: 'mois', periodes: [...mois.values()].sort((a, b) => a.cle.localeCompare(b.cle)) };
+}
+
+/** Groupe de photos consécutives prises le même jour (liste triée par date). */
+export interface GroupeJour {
+  /** Indice de la première photo du groupe dans la liste. */
+  debut: number;
+  /** Nombre de photos du groupe. */
+  n: number;
+  /** « AAAA-MM-JJ », ou vide pour les photos sans date. */
+  jour: string;
+  /** Dossiers des photos, dans l'ordre d'apparition. */
+  dossiers: string[];
+}
+
+/** Découpe une liste triée par date en journées, pour les titres de la grille. */
+export function groupesParJour(photos: { date?: string; dossier: string }[]): GroupeJour[] {
+  const groupes: GroupeJour[] = [];
+  photos.forEach((p, i) => {
+    const jour = p.date?.slice(0, 10) ?? '';
+    const g = groupes.at(-1);
+    if (g && g.jour === jour) {
+      g.n++;
+      if (!g.dossiers.includes(p.dossier)) g.dossiers.push(p.dossier);
+    } else groupes.push({ debut: i, n: 1, jour, dossiers: [p.dossier] });
+  });
+  return groupes;
 }

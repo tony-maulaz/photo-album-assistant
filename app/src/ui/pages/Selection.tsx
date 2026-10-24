@@ -2,23 +2,24 @@
 // l'album (★, ★★ grande photo) avec une boîte à outils locale et gratuite :
 // tri rapide, piles, comparateur, indicateurs, redondances, équilibre, cible.
 
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { LIBELLES_DEFAUTS, LIBELLES_PERSONNES, LIBELLES_TYPES } from '../../lib/aidesSelection';
 import { LIBELLES_SIGNAUX, type Signal } from '../../lib/indicateurs';
 import { cheminDossier, RACINE, type FichierPlan } from '../../lib/plan';
-import { avancement, equilibre, redondances } from '../../lib/selection';
+import { arrivees, avancement, copiesRetenues, equilibre, groupesParJour, periodesEquilibre, redondances, type GroupeJour, type Periode } from '../../lib/selection';
 import { BarreValidation } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
 import { Comparateur } from '../composants/Comparateur';
 import { EncartAnalyse } from '../composants/Analyse';
-import { GrillePhotos } from '../composants/GrillePhotos';
+import { GrillePhotos, photoAMontrer } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { PanneauDossiers, styleLargeurPanneau, TitreVue } from '../composants/PanneauDossiers';
 import { TriRapide } from '../composants/TriRapide';
 import { DialogueDeplacer } from '../composants/Visionneuse';
 import { annuler, changerAlbum, changerReglages, reglages, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
-import { aTraduire, t } from '../../lib/langue';
+import { aTraduire, langue, t } from '../../lib/langue';
 import { jourCourt, nombre, pluriel } from '../format';
 import { ancre, choisirVue, deplacerOuvert, selection, vue, VUE_AUTRES, VUE_MIS_DE_COTE } from '../organiser';
 import {
@@ -49,8 +50,30 @@ function estChampDeSaisie(e: KeyboardEvent): boolean {
 }
 
 const ETOILES = { 1: '★', 2: '★★', 0: '✕' } as const;
+/** Choix d'une photo en toutes lettres (comparateur), comme dans le tri rapide. */
+const CHOIX_PHOTO = { 0: aTraduire('Pas dans l’album'), 1: aTraduire('★ Dans l’album'), 2: aTraduire('★★ Grande photo') } as const;
 
-function Badges({ f, info, pile, ouverte, note, choixIA }: { f: FichierPlan; info?: InfoPhoto; pile?: string[]; ouverte: boolean; note?: number; choixIA?: string }) {
+const locale = () => (langue() === 'en' ? 'en-GB' : 'fr-CH');
+
+/** « Samedi 27 juin 2025 » depuis « 2025-06-27 ». */
+function jourLong(jour: string): string {
+  const [a, m, j] = jour.split('-').map(Number);
+  const texte = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(a, m - 1, j));
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
+/** « juin 2025 » (ou « juin 25 » en court) depuis « 2025-06 ». */
+function mois(cle: string, court = false): string {
+  const [a, m] = cle.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale(), { month: court ? 'short' : 'long', year: court ? '2-digit' : 'numeric' }).format(new Date(a, m - 1, 1));
+}
+
+/** Nom de dossier qui peut passer à la ligne après « _ », « - » ou « . », jamais au milieu d'un mot. */
+function coupable(nom: string): ComponentChildren {
+  return nom.split(/(?<=[_.-])/).flatMap((morceau, i) => (i ? [<wbr key={i} />, morceau] : [morceau]));
+}
+
+function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: string[]; ouverte: boolean; note?: number; choixIA?: string }) {
   return (
     <>
       {note !== undefined && (
@@ -58,44 +81,44 @@ function Badges({ f, info, pile, ouverte, note, choixIA }: { f: FichierPlan; inf
           {note}/10
         </span>
       )}
-      {choixIA && (
-        <span class="badge choix-ia" title={t`Meilleure de sa pile selon l’IA : ${choixIA}`}>
-          {t`choix IA`}
-        </span>
-      )}
       {f.album !== undefined && <span class={`etoiles a${f.album}`}>{ETOILES[f.album]}</span>}
-      {pile && pile[0] === f.id && (
-        <button
-          type="button"
-          class="badge-pile"
-          title={ouverte ? t`Replier la pile` : t`Pile de ${pile.length} photos semblables : cliquer pour la déplier`}
-          onClick={(e) => {
-            e.stopPropagation();
-            const n = new Set(pilesOuvertes.value);
-            if (n.has(pile[0])) n.delete(pile[0]);
-            else n.add(pile[0]);
-            pilesOuvertes.value = n;
-          }}
-        >
-          {ouverte ? '▾' : '▸'} {pile.length}
-        </button>
-      )}
-      {pile && pile[0] !== f.id && <span class="badge-pile dans-pile" title={t`Dans une pile de photos semblables`} />}
-      {info && info.signaux.length > 0 && (
-        <span class="signaux">
-          {info.signaux.map((s) => (
-            <span key={s} class={`signal ${s}`} title={t(LIBELLES_SIGNAUX[s])}>
-              {t(LIBELLES_SIGNAUX[s])}
+      {/* En bas, une rangée : pile à gauche, rotation et recadrage au milieu, choix de l'IA à droite ; elle passe sur deux lignes plutôt que de se chevaucher. */}
+      <span class="rangee-bas">
+        <span>
+          {pile && pile[0] === f.id && (
+            <button
+              type="button"
+              class="badge-pile"
+              title={ouverte ? t`Replier la pile` : t`Pile de ${pile.length} photos semblables : cliquer pour la déplier`}
+              onClick={(e) => {
+                e.stopPropagation();
+                const n = new Set(pilesOuvertes.value);
+                if (n.has(pile[0])) n.delete(pile[0]);
+                else n.add(pile[0]);
+                pilesOuvertes.value = n;
+              }}
+            >
+              {ouverte ? '▾' : '▸'} {pile.length}
+            </button>
+          )}
+          {pile && pile[0] !== f.id && <span class="badge-pile dans-pile" title={t`Dans une pile de photos semblables`} />}
+        </span>
+        <span>
+          {f.rotation || f.recadrage ? (
+            <span class="badge rotation">
+              {f.rotation ? <span title={t`Tournée pour l’album (touche R)`}>↻ {f.rotation}°</span> : null}
+              {f.recadrage ? <span title={t`Recadrée pour l’album (touche K pour changer)`}>✂</span> : null}
             </span>
-          ))}
+          ) : null}
         </span>
-      )}
-      {f.rotation ? <span class="badge rotation">↻ {f.rotation}°</span> : null}
-      {f.recadrage ? (
-        <span class="badge rotation" title={t`Recadrée pour l’album (touche K pour changer)`}>
-          ✂
+        <span>
+          {choixIA && (
+            <span class="badge choix-ia" title={t`Meilleure de sa pile selon l’IA : ${choixIA}`}>
+              {t`choix IA`}
+            </span>
+          )}
         </span>
-      ) : null}
+      </span>
     </>
   );
 }
@@ -147,41 +170,64 @@ function Cible({ photos }: { photos: FichierPlan[] }) {
 function Equilibre({ photos }: { photos: FichierPlan[] }) {
   const s = session.value!;
   const e = equilibre(photos);
-  const max = Math.max(1, ...e.jours.map((j) => j.disponibles));
+  // Une barre par jour, ou par mois quand les jours seraient trop nombreux pour être lisibles.
+  const { unite, periodes } = periodesEquilibre(e.jours);
+  const [pointee, setPointee] = useState<Periode | null>(null);
+  const max = Math.max(1, ...periodes.map((p) => p.disponibles));
   const sansRien = e.sorties.filter((x) => x.retenues === 0 && x.disponibles > 0);
+  const nom = (p: Periode, court = false) => (unite === 'jour' ? jourCourt(p.cle) : mois(p.cle, court));
+  const detail = (p: Periode) => t`${nom(p)} : ${nombre(p.retenues)} sur ${pluriel(p.disponibles, 'photo')} dans l’album`;
+  const active = periodes.find((p) => p.cle === filtres.value.jour);
+  const lue = pointee ?? active;
   return (
     <section class="outil">
-      <h3>{t`Équilibre par jour`}</h3>
-      <div class="barres-jours" role="img" aria-label={t`Photos retenues par jour`}>
-        {e.jours.map((j) => (
-          <button
-            type="button"
-            key={j.jour}
-            class={`barre-jour${filtres.value.jour === j.jour ? ' actif' : ''}`}
-            title={t`${jourCourt(j.jour)} : ${j.retenues} retenue(s) sur ${j.disponibles} — cliquer pour filtrer ce jour`}
-            onClick={() => (filtres.value = { ...filtres.value, jour: filtres.value.jour === j.jour ? '' : j.jour })}
-          >
-            <span class="dispo" style={{ height: `${(j.disponibles / max) * 100}%` }} />
-            <span class="retenues" style={{ height: `${(j.retenues / max) * 100}%` }} />
-          </button>
-        ))}
-      </div>
+      <h3>{unite === 'jour' ? t`Équilibre par jour` : t`Équilibre par mois`}</h3>
+      {periodes.length > 0 && (
+        <>
+          <div class="barres-jours" role="group" aria-label={unite === 'jour' ? t`Photos retenues par jour` : t`Photos retenues par mois`}>
+            {periodes.map((p) => (
+              <button
+                type="button"
+                key={p.cle}
+                class={`barre-jour${filtres.value.jour === p.cle ? ' actif' : ''}`}
+                title={`${detail(p)} — ${unite === 'jour' ? t`cliquer pour n’afficher que ce jour` : t`cliquer pour n’afficher que ce mois`}`}
+                aria-label={detail(p)}
+                aria-pressed={filtres.value.jour === p.cle}
+                onMouseEnter={() => setPointee(p)}
+                onMouseLeave={() => setPointee(null)}
+                onFocus={() => setPointee(p)}
+                onBlur={() => setPointee(null)}
+                onClick={() => (filtres.value = { ...filtres.value, jour: filtres.value.jour === p.cle ? '' : p.cle })}
+              >
+                <span class="dispo" style={{ height: `${(p.disponibles / max) * 100}%` }} />
+                <span class="retenues" style={{ height: `${(p.retenues / max) * 100}%` }} />
+              </button>
+            ))}
+          </div>
+          <div class="axe-barres discret" aria-hidden="true">
+            <span>{nom(periodes[0], true)}</span>
+            {periodes.length > 1 && <span>{nom(periodes.at(-1)!, true)}</span>}
+          </div>
+          <p class={`lecture-barre${lue ? '' : ' discret'}`}>{lue ? detail(lue) : t`Pointez une barre pour voir sa date ; un clic n’affiche que ses photos.`}</p>
+        </>
+      )}
       <p class="discret legende-barres">
         <span class="pastille dispo" /> {t`disponibles`} <span class="pastille retenues" /> {t`retenues`}
       </p>
       {sansRien.length > 0 && (
         <div class="alertes-outil">
           <strong>{t`${pluriel(sansRien.length, 'sortie sans photo retenue', 'sorties sans photo retenue')} :`}</strong>
-          <ul class="liste-courte">
+          <ul class="sorties-sans-photo">
             {sansRien.slice(0, 8).map((x) => (
               <li key={x.dossier}>
-                <button type="button" class="lien" onClick={() => choisirVue(x.dossier)}>
-                  {cheminDossier(s.plan, x.dossier) || 'Photos'}
+                <button type="button" class="lien" onClick={() => choisirVue(x.dossier)} title={cheminDossier(s.plan, x.dossier) || 'Photos'}>
+                  {coupable(s.plan.dossiers.get(x.dossier)?.nom ?? 'Photos')}
                 </button>{' '}
-                ({x.disponibles})
+                <span class="discret">({nombre(x.disponibles)})</span>
               </li>
             ))}
           </ul>
+          {sansRien.length > 8 && <p class="discret">{t`… et ${pluriel(sansRien.length - 8, 'autre')}.`}</p>}
         </div>
       )}
     </section>
@@ -190,12 +236,27 @@ function Equilibre({ photos }: { photos: FichierPlan[] }) {
 
 function Redondances({ photos, infos }: { photos: FichierPlan[]; infos: Map<string, InfoPhoto> }) {
   const s = session.value!;
-  const groupes = redondances(photos.map((p) => ({ id: p.id, dossier: p.dossier, date: p.date, phash: infos.get(p.id)?.indicateurs?.phash, album: p.album })));
-  if (!groupes.length) return null;
+  const choix = photos.map((p) => ({ id: p.id, dossier: p.dossier, date: p.date, phash: infos.get(p.id)?.indicateurs?.phash, album: p.album, empreinte: p.empreinte }));
+  const groupes = redondances(choix);
+  // Copies exactes retenues dans des dossiers différents : la même photo serait deux fois dans l'album.
+  const copies = copiesRetenues(choix);
+  if (!groupes.length && !copies.length) return null;
+  const nomDossier = (id: string) => s.plan.dossiers.get(s.plan.fichiers.get(id)?.dossier ?? '')?.nom ?? '';
   return (
     <section class="outil">
       <h3>{t`Redondances`}</h3>
       <ul class="liste-courte">
+        {copies.map((g) => {
+          const dossiers = [...new Set(g.map(nomDossier))];
+          return (
+            <li key={`copie:${g[0]}`}>
+              {t`Même photo retenue dans ${pluriel(dossiers.length, 'dossier')} (${dossiers.join(', ')})`}{' '}
+              <button type="button" class="lien" onClick={() => (comparaison.value = g.slice(0, 4))}>
+                {t`comparer`}
+              </button>
+            </li>
+          );
+        })}
         {groupes.slice(0, 12).map((g) => {
           const f = s.plan.fichiers.get(g[0])!;
           return (
@@ -208,7 +269,7 @@ function Redondances({ photos, infos }: { photos: FichierPlan[]; infos: Map<stri
           );
         })}
       </ul>
-      {groupes.length > 12 && <p class="discret">{t`… et ${groupes.length - 12} autres.`}</p>}
+      {groupes.length > 12 && <p class="discret">{t`… et ${pluriel(groupes.length - 12, 'autre')}.`}</p>}
     </section>
   );
 }
@@ -230,9 +291,15 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
   const jours = [...new Set(photos.map((p) => p.date?.slice(0, 10)).filter((j): j is string => !!j))].sort();
   const appareils = [...new Set(photos.map((p) => p.appareil ?? ''))].sort();
   const signaux = new Set([...infos.values()].flatMap((i) => i.signaux));
+  // Photos arrivées après le premier tri (mise à jour de l'inventaire, D63), par jour d'arrivée.
+  const jourArrivees = arrivees(photos);
+  // Chaque compte dit combien de photos donnerait la pastille, avec les autres filtres en place.
+  const avecChoix = filtrer(photos, infos, { ...f, etoiles: 'toutes' }, ia);
+  const nouvelles = filtrer(photos, infos, { ...f, arrivee: 'nouvelles' }, ia).length;
   const actif = JSON.stringify(f) !== JSON.stringify(FILTRES_DEFAUT);
   // Filtres moins courants : repliés tant qu'aucun n'est utilisé.
-  const secondaires = (['jour', 'appareil', 'signal', 'tri', 'personnes', 'typePhoto', 'defaut'] as const).filter((k) => f[k] !== FILTRES_DEFAUT[k]).length;
+  const secondaires =
+    (['jour', 'appareil', 'signal', 'tri', 'personnes', 'typePhoto', 'defaut'] as const).filter((k) => f[k] !== FILTRES_DEFAUT[k]).length + (f.arrivee && f.arrivee !== 'nouvelles' ? 1 : 0);
   const [deplie, setDeplie] = useState(false);
   const voirPlus = deplie || secondaires > 0;
   return (
@@ -241,10 +308,26 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
         {CHOIX.map(([valeur, libelle, compter]) => (
           <button key={valeur} type="button" class={`pastille-filtre${f.etoiles === valeur ? ' actif' : ''}`} aria-pressed={f.etoiles === valeur} onClick={() => changer({ etoiles: valeur })}>
             {t(libelle)}
-            {compter && <span class="compte">{nombre(photos.filter(compter).length)}</span>}
+            {compter && <span class="compte">{nombre(avecChoix.filter(compter).length)}</span>}
           </button>
         ))}
       </div>
+      {jourArrivees.length > 0 && (
+        <button
+          type="button"
+          class={`pastille-filtre filtre-nouvelles${f.arrivee ? ' actif' : ''}`}
+          aria-pressed={!!f.arrivee}
+          title={
+            jourArrivees.length === 1
+              ? t`Photos arrivées le ${jourCourt(jourArrivees[0].jour)}, par une mise à jour de l’inventaire`
+              : t`Photos arrivées après le premier tri, par une mise à jour de l’inventaire`
+          }
+          onClick={() => changer({ arrivee: f.arrivee ? '' : 'nouvelles' })}
+        >
+          {t`Nouvelles`}
+          <span class="compte">{nombre(nouvelles)}</span>
+        </button>
+      )}
       <button
         type="button"
         class={`pastille-filtre${empiler.value ? ' actif' : ''}`}
@@ -277,12 +360,25 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
         <div class="filtres-secondaires">
           <select value={f.jour} onChange={(e) => changer({ jour: e.currentTarget.value })} aria-label={t`Jour`}>
             <option value="">{t`Tous les jours`}</option>
+            {/* Un mois choisi dans l'équilibre (barres par mois). */}
+            {f.jour.length === 7 && <option value={f.jour}>{mois(f.jour)}</option>}
             {jours.map((j) => (
               <option key={j} value={j}>
                 {jourCourt(j)}
               </option>
             ))}
           </select>
+          {jourArrivees.length > 1 && (
+            <select value={f.arrivee} onChange={(e) => changer({ arrivee: e.currentTarget.value })} aria-label={t`Arrivée`}>
+              <option value="">{t`Toutes les arrivées`}</option>
+              <option value="nouvelles">{t`Nouvelles seulement`}</option>
+              {jourArrivees.map((a) => (
+                <option key={a.jour} value={a.jour}>
+                  {t`Arrivées le ${jourCourt(a.jour)} (${nombre(a.n)})`}
+                </option>
+              ))}
+            </select>
+          )}
           {appareils.length > 1 && (
             <select value={f.appareil} onChange={(e) => changer({ appareil: e.currentTarget.value })} aria-label={t`Appareil`}>
               <option value="">{t`Tous les appareils`}</option>
@@ -344,6 +440,22 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
   );
 }
 
+/** Titre d'une journée dans la grille : la date, les sorties (si la vue en a plusieurs) et le nombre de photos. */
+function TitreJour({ g, vueActuelle }: { g: GroupeJour; vueActuelle: string }) {
+  const s = session.value!;
+  const autres = g.dossiers.filter((d) => d !== vueActuelle);
+  const noms = autres.slice(0, 2).map((d) => s.plan.dossiers.get(d)?.nom ?? '');
+  return (
+    <>
+      <strong>{g.jour ? jourLong(g.jour) : t`Sans date`}</strong>
+      <span class="discret">
+        {noms.length ? `${noms.join(', ')}${autres.length > 2 ? ` +${autres.length - 2}` : ''} · ` : ''}
+        {pluriel(g.n, 'photo')}
+      </span>
+    </>
+  );
+}
+
 export function PageSelection() {
   const s = session.value!;
   versionPlan.value;
@@ -363,6 +475,26 @@ export function PageSelection() {
 
   // On arrive sur toutes les photos du projet (le panneau sert ensuite de filtre par sortie).
   useEffect(() => choisirVue(RACINE), []);
+
+  // Photo à montrer (résultat d'une aide IA) cachée par les filtres, une pile fermée ou la sortie affichée : on la rend visible.
+  const aMontrer = photoAMontrer.value;
+  const essais = useRef(0);
+  useEffect(() => {
+    if (!aMontrer || elements.some((f) => f.id === aMontrer)) {
+      essais.current = 0;
+      return;
+    }
+    if (essais.current++ > 3) photoAMontrer.value = null;
+    else if (!dansVue.some((f) => f.id === aMontrer)) {
+      if (!toutes.some((f) => f.id === aMontrer)) photoAMontrer.value = null;
+      else {
+        choisirVue(RACINE);
+        selection.value = new Set([aMontrer]);
+        ancre.value = aMontrer;
+      }
+    } else if (!filtrees.some((f) => f.id === aMontrer)) filtres.value = FILTRES_DEFAUT;
+    else if (pilesDe.has(aMontrer)) pilesOuvertes.value = new Set([...pilesOuvertes.value, pilesDe.get(aMontrer)![0]]);
+  }, [aMontrer, elements]);
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
@@ -406,6 +538,21 @@ export function PageSelection() {
   const titreVue = v === RACINE ? t`Toutes les photos` : (plan.dossiers.get(v)?.nom ?? '');
   const comparees = comparaison.value?.map((id) => plan.fichiers.get(id)).filter((f): f is FichierPlan => !!f) ?? [];
 
+  // Liste sur plusieurs jours : la date sous chaque photo et, triée par date, un titre par journée.
+  const joursAffiches = new Set(elements.map((f) => f.date?.slice(0, 10) ?? ''));
+  const plusieursJours = joursAffiches.size > 1;
+  const memeAnnee = new Set([...joursAffiches].map((j) => j.slice(0, 4))).size === 1;
+  const parDate = filtres.value.tri === 'date' && !filtres.value.recherche.trim();
+  const groupes = parDate && plusieursJours ? groupesParJour(elements).map((g) => ({ debut: g.debut, titre: <TitreJour g={g} vueActuelle={v} /> })) : undefined;
+  const quand = (f: FichierPlan): string => {
+    const heure = f.date && f.date.length > 10 ? f.date.slice(11, 16) : '';
+    if (!f.date || !plusieursJours) return heure || f.nom;
+    const jour = memeAnnee ? `${f.date.slice(8, 10)}.${f.date.slice(5, 7)}` : jourCourt(f.date);
+    return heure ? `${jour} ${heure}` : jour;
+  };
+  // Après l'étiquetage (IA8), la description s'ajoute sur une seconde ligne : la date reste visible.
+  const decrites = Object.keys(ia.etiquettes).length > 0;
+
   return (
     <div class="page-organiser page-selection" style={styleLargeurPanneau()}>
       <EnteteEtape
@@ -424,11 +571,14 @@ export function PageSelection() {
       <PanneauDossiers simple />
       <section class="contenu-organiser">
         <div class="tete-vue">
-          <TitreVue titre={titreVue} id={v === RACINE ? undefined : v} />
-          <span class="discret resume-vue">
-            {filtrees.length !== dansVue.length ? t`${pluriel(filtrees.length, 'photo')} sur ${nombre(dansVue.length)}` : pluriel(filtrees.length, 'photo')} ·{' '}
-            {t`${nombre(nonDecidees)} à décider`}
-          </span>
+          {/* Le résumé sous le titre : le nom de la vue garde la place d'être lu en entier. */}
+          <div class="titre-selection">
+            <TitreVue titre={titreVue} id={v === RACINE ? undefined : v} />
+            <span class="discret resume-vue">
+              {filtrees.length !== dansVue.length ? t`${pluriel(filtrees.length, 'photo')} sur ${nombre(dansVue.length)}` : pluriel(filtrees.length, 'photo')} ·{' '}
+              {t`${nombre(nonDecidees)} à décider`}
+            </span>
+          </div>
           <span class="espace" />
           <div class="barre-outils">
             <button type="button" class="principal" disabled={!elements.length} onClick={() => ouvrirTri()} title={t`Touche T`}>
@@ -495,17 +645,36 @@ export function PageSelection() {
             cleVue: `${v}|${JSON.stringify(filtres.value)}|${empiler.value}`,
             ouvrir: (i) => ouvrirTri(i),
             classe: (f) => (f.album === undefined ? 'a-decider' : f.album === 0 ? 'refusee' : 'retenue'),
+            groupes,
             badges: (f) => (
               <Badges
                 f={f}
-                info={infos.get(f.id)}
                 pile={pilesDe.get(f.id)}
                 ouverte={pilesOuvertes.value.has(pilesDe.get(f.id)?.[0] ?? '')}
                 note={ia.appreciations[f.id]?.note}
                 choixIA={ia.meilleures[f.id]?.justification}
               />
             ),
-            legende: (f) => (ia.etiquettes[f.id]?.description ? ia.etiquettes[f.id].description : f.date && f.date.length > 10 ? f.date.slice(11, 16) : f.nom),
+            pastilles: (f) => {
+              const signaux = infos.get(f.id)?.signaux ?? [];
+              return signaux.length
+                ? signaux.map((x) => (
+                    <span key={x} class={`signal ${x}`} title={t(LIBELLES_SIGNAUX[x])}>
+                      {t(LIBELLES_SIGNAUX[x])}
+                    </span>
+                  ))
+                : null;
+            },
+            lignesLegende: decrites ? 2 : 1,
+            legende: (f) =>
+              decrites ? (
+                <>
+                  <span>{quand(f)}</span>
+                  <span class="description-ia">{ia.etiquettes[f.id]?.description ?? ''}</span>
+                </>
+              ) : (
+                quand(f)
+              ),
             infobulle: (f) => {
               const info = infos.get(f.id);
               return [
@@ -542,21 +711,32 @@ export function PageSelection() {
           fermer={() => (comparaison.value = null)}
           entete={(f) => (
             <>
-              {f.album !== undefined ? <span class={`etoiles a${f.album}`}>{ETOILES[f.album]}</span> : <span class="discret">{t`à décider`}</span>}
+              {/* Le choix actuel en toutes lettres, sur chaque photo. */}
+              <span class={`choix-actuel a${f.album ?? 'x'}`}>{f.album === undefined ? t`À décider` : t(CHOIX_PHOTO[f.album])}</span>
               {lignesIA(s, f.id).length > 0 && <span class="texte-ia">{lignesIA(s, f.id).join(' · ')}</span>}
             </>
           )}
           actions={(f) => (
             <>
-              <button type="button" onClick={() => choisir([f.id], 1)}>
-                ★
-              </button>
-              <button type="button" onClick={() => choisir([f.id], 2)}>
-                ★★
-              </button>
-              <button type="button" onClick={() => choisir([f.id], 0)}>
-                ✕ {t`Pas pour l’album`}
-              </button>
+              {(
+                [
+                  [1, '★', t`Dans l’album`],
+                  [2, '★★', t`Grande photo (pleine page)`],
+                  [0, `✕ ${t`Pas pour l’album`}`, t`Pas pour l’album`],
+                  [undefined, t`À décider`, t`À décider`],
+                ] as const
+              ).map(([valeur, libelle, titre]) => (
+                <button
+                  key={String(valeur)}
+                  type="button"
+                  class={f.album === valeur ? `actif a${valeur ?? 'x'}` : ''}
+                  aria-pressed={f.album === valeur}
+                  title={titre}
+                  onClick={() => choisir([f.id], valeur)}
+                >
+                  {libelle}
+                </button>
+              ))}
             </>
           )}
         />

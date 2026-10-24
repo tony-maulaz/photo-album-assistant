@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { session } from '../etat';
-import { dateHeure } from '../format';
+import { dateHeure, pluriel } from '../format';
 
 /** Adresse `blob:` de l'original d'une photo, libérée quand le composant disparaît. */
 export function useOriginal(f: FichierPlan | undefined): string | null {
@@ -191,7 +191,7 @@ export function Comparateur({
           <Volet key={photos[seule].id} f={photos[seule]} vue={vue} rotation={photos[seule].rotation ?? 0} actions={actions?.(photos[seule])} entete={entete?.(photos[seule])} />
         )}
       </div>
-      {seule === null && n > 4 && <p class="discret plus-de-photos">{t`${n - 4} autres photos : double-clic ou Entrée pour les voir une à une.`}</p>}
+      {seule === null && n > 4 && <p class="discret plus-de-photos">{t`${pluriel(n - 4, 'autre photo', 'autres photos')} : double-clic ou Entrée pour les voir une à une.`}</p>}
     </div>
   );
 }

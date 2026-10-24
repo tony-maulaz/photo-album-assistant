@@ -2,7 +2,9 @@
 // IA12 à IA15), SPEC § 6.9 et § 6.10. Elles notent, décrivent, remarquent et
 // proposent ; elles ne cochent jamais rien (principe P5).
 
-import { useState } from 'preact/hooks';
+import { signal } from '@preact/signals';
+import type { ComponentChildren } from 'preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { demandesEtiquettes, demandesAppreciation, LIBELLES_DEFAUTS, LIBELLES_PERSONNES, LIBELLES_TYPES, demandeControleSelection, demandeMeilleure, estimerDemandes, lireAppreciation, lireControleSelection, lireEtiquettes, lireMeilleure, lotsPile, texteEtiquettes, type Appreciation, type DemandeIA, type Etiquettes, type PhotoIA, type Remarque } from '../../lib/aidesSelection';
 import { demandeCouverture, demandeCouvertureTri, demandesControleAlbum, demandeTextes, lireControleAlbum, lireCouverture, lireCouvertureTri, lireTextes, LIBELLES_TONS, type RemarqueAlbum, type Ton } from '../../lib/aidesAlbum';
 import { ordreAlbum, paginer, photosAlbum, sections, type Section } from '../../lib/album';
@@ -16,7 +18,8 @@ import { enParallele } from '../../navigateur/workers';
 import { contexteExecution, evenements, session, versionIA, type Session } from '../etat';
 import { pluriel } from '../format';
 import { selection, vue } from '../organiser';
-import { photosVue } from '../selection';
+import { derniereMeilleure, montrerPhotos, photosVue } from '../selection';
+import { Miniature } from '../composants/GrillePhotos';
 import { ETAPE } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs, type Usage } from './AidesIA';
@@ -184,9 +187,11 @@ enregistrerAide({
     }
     if (!finale) return t`Réponse inexploitable : rien à proposer.${texteEchecs(bilan)}`;
     await s.aides.fusionner('IA10', { [finale.id]: { justification: finale.justification, pile: pile.map((p) => p.id) } });
-    selection.value = new Set([finale.id]);
-    const f = s.plan.fichiers.get(finale.id);
-    return t`L’IA préfère ${f?.nom ?? t`cette photo`} (sélectionnée) : ${finale.justification}`;
+    // La photo elle-même, pas son nom de fichier : sélectionnée, amenée à l'écran et montrée dans le panneau.
+    derniereMeilleure.value = finale.id;
+    resultatArrive.value = 'IA10';
+    montrerPhotos([finale.id]);
+    return t`L’IA préfère la photo maintenant sélectionnée : ${finale.justification}`;
   },
 });
 
@@ -214,7 +219,10 @@ enregistrerAide({
     const k = d.ids.filter((id) => (s.plan.fichiers.get(id)?.album ?? 0) > 0).length;
     const bilan: BilanEchecs = { echecs: 0 };
     const [res] = await executer(s, [d], (r) => lireControleSelection(r, d.ids, k), l, bilan);
-    if (res) await s.aides.fusionner('IA11', { [sortie]: res.r });
+    if (res) {
+      await s.aides.fusionner('IA11', { [sortie]: res.r });
+      resultatArrive.value = 'IA11';
+    }
     return t`${pluriel(res?.r.length ?? 0, 'remarque')} sur la sélection de ${nom}.${texteEchecs(bilan)}`;
   },
 });
@@ -255,32 +263,88 @@ export function lignesIA(s: Session, id: string): string[] {
   return lignes;
 }
 
+/** Aide de la sélection dont le résultat vient d'arriver : son bloc dans le panneau défile jusqu'à l'écran. */
+const resultatArrive = signal<'IA10' | 'IA11' | null>(null);
+
+/**
+ * Résultat d'une aide IA dans le panneau : à son arrivée, le panneau défile
+ * pour le montrer au-dessus des messages (en bas à droite), qui le cacheraient.
+ */
+function ResultatIA({ fonction, children }: { fonction: 'IA10' | 'IA11'; children: ComponentChildren }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const arrive = resultatArrive.value === fonction;
+  useEffect(() => {
+    if (!arrive) return;
+    resultatArrive.value = null;
+    // Un instant plus tard : la barre de progression de l'aide a disparu, la mise en page est faite.
+    setTimeout(() => ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 100);
+  }, [arrive]);
+  return (
+    <div ref={ref} class="resultat-ia">
+      {children}
+    </div>
+  );
+}
+
+/** Vignette cliquable d'une photo citée par l'IA : elle la sélectionne et l'amène à l'écran dans la grille. */
+function VignetteIA({ f, taille }: { f: FichierPlan; taille: number }) {
+  return (
+    <button type="button" class="vignette-ia" onClick={() => montrerPhotos([f.id])} title={t`Montrer cette photo dans la grille`}>
+      <Miniature f={f} taille={taille} rotation={f.rotation} />
+    </button>
+  );
+}
+
 /** Bloc « Aides IA » du panneau de droite de l'étape « Sélection ». */
 export function AidesSelection() {
   const s = session.value!;
   versionIA.value;
-  const remarques = resultatsSelection(s).controles[vue.value] ?? [];
+  const resultats = resultatsSelection(s);
+  const remarques = resultats.controles[vue.value] ?? [];
+  const meilleure = derniereMeilleure.value ? s.plan.fichiers.get(derniereMeilleure.value) : undefined;
+  const raison = meilleure ? resultats.meilleures[meilleure.id]?.justification : undefined;
   return (
     <section class="outil">
       <h3>{t`Aides IA`}</h3>
       <AideIA fonction="IA8" />
       <AideIA fonction="IA9" />
       <AideIA fonction="IA10" />
+      {meilleure && raison && (
+        <ResultatIA fonction="IA10">
+          <div class="meilleure-ia">
+            <VignetteIA f={meilleure} taille={64} />
+            <p>
+              <strong>{t`L’IA préfère cette photo :`}</strong> {raison}
+            </p>
+          </div>
+        </ResultatIA>
+      )}
       <AideIA fonction="IA11" />
       {vue.value === RACINE && <p class="discret">{t`Choisissez une sortie dans le panneau pour la faire contrôler.`}</p>}
       {remarques.length > 0 && (
-        <ul class="liste-courte remarques">
-          {remarques.map((r, i) => (
-            <li key={i}>
-              <strong>{r.type === 'redondance' ? t`Redondance :` : r.type === 'manque' ? t`Manque :` : r.type === 'faible' ? t`Photo faible :` : t`Remarque :`}</strong> {r.texte}{' '}
-              {r.photos.length > 0 && (
-                <button type="button" class="lien" onClick={() => (selection.value = new Set(r.photos))}>
-                  {t`voir (${r.photos.length})`}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <ResultatIA fonction="IA11">
+          <ul class="remarques">
+            {remarques.map((r, i) => (
+              <li key={i}>
+                <strong>{r.type === 'redondance' ? t`Redondance :` : r.type === 'manque' ? t`Manque :` : r.type === 'faible' ? t`Photo faible :` : t`Remarque :`}</strong> {r.texte}
+                {r.photos.length > 0 && (
+                  <span class="vignettes-remarque">
+                    {r.photos
+                      .slice(0, 4)
+                      .map((id) => s.plan.fichiers.get(id))
+                      .filter((f): f is FichierPlan => !!f)
+                      .map((f) => (
+                        <VignetteIA key={f.id} f={f} taille={44} />
+                      ))}
+                    <button type="button" class="lien" onClick={() => montrerPhotos(r.photos)}>
+                      {t`voir (${r.photos.length})`}
+                    </button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </ResultatIA>
       )}
     </section>
   );
