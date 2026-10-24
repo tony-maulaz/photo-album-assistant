@@ -2,7 +2,7 @@
 
 import { signal } from '@preact/signals';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { langue, t } from '../../lib/langue';
+import { t, tc } from '../../lib/langue';
 
 interface Demande {
   id: number;
@@ -81,8 +81,8 @@ function Boite({ d }: { d: Demande }) {
         )}
         <div class="actions droite">
           <button type="button" onClick={() => fermer(null)}>
-            {/* « Annuler » ferme ici la boîte sans rien faire : « Cancel ». La clé « Annuler » vaut « Undo » partout ailleurs (annuler une action, Ctrl+Z). */}
-            {langue() === 'en' ? 'Cancel' : 'Annuler'}
+            {/* « Annuler » ferme ici la boîte sans rien faire : « Cancel », et non « Undo » comme ailleurs. */}
+            {tc('dialogue', 'Annuler')}
           </button>
           <button ref={bouton} type="button" class={d.danger ? 'danger' : 'principal'} disabled={!!d.saisie && (!!erreur || !valeur.trim())} onClick={valider}>
             {d.bouton ?? (d.saisie ? t`Valider` : t`Confirmer`)}
