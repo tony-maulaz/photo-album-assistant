@@ -1,5 +1,6 @@
 // Choix, mémorisation et parcours des dossiers locaux (File System Access).
 
+import { t } from '../lib/langue';
 import { effacerCle, ecrireCle, lireCle } from './stockage';
 
 export type Mode = 'read' | 'readwrite';
@@ -18,7 +19,7 @@ export function dossierDepart(): Promise<FileSystemDirectoryHandle | undefined> 
 
 /** Choisit le dossier de départ fixe (lecture seule : il sert seulement de point de départ). */
 export async function choisirDossierDepart(): Promise<FileSystemDirectoryHandle> {
-  if (!window.showDirectoryPicker) throw new Error('Ce navigateur ne permet pas de choisir un dossier : utilisez Chrome ou Edge.');
+  if (!window.showDirectoryPicker) throw new Error(t`Ce navigateur ne permet pas de choisir un dossier : utilisez Chrome ou Edge.`);
   const dossier = await window.showDirectoryPicker({ id: 'depart', mode: 'read', startIn: await depart() });
   await ecrireCle('dossier:depart', dossier);
   return dossier;
@@ -35,7 +36,7 @@ async function depart(): Promise<FileSystemHandle | 'pictures'> {
 
 /** Ouvre le sélecteur de dossier et mémorise le choix sous `cle`. */
 export async function choisirDossier(cle: string, mode: Mode): Promise<FileSystemDirectoryHandle> {
-  if (!window.showDirectoryPicker) throw new Error('Ce navigateur ne permet pas de choisir un dossier : utilisez Chrome ou Edge.');
+  if (!window.showDirectoryPicker) throw new Error(t`Ce navigateur ne permet pas de choisir un dossier : utilisez Chrome ou Edge.`);
   let dossier: FileSystemDirectoryHandle;
   // Le dossier de départ (fixe, ou le dernier choisi quel que soit l'usage) prime sur la mémoire du navigateur par identifiant.
   try {

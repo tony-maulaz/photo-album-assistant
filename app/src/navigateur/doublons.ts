@@ -6,6 +6,7 @@
 
 import { analyserDossier, cleVue, etatDoublon, consigneSysteme, estimationDoublons, etageRafales, SCHEMA_VERIF, SCHEMA_VUE, type OutilsIA, type PhotoDoublon, type ResultatDossier } from '../lib/doublons';
 import { dansDossierGarde } from '../lib/floues';
+import { t } from '../lib/langue';
 import { cheminDossier, contenu, horsAlbum, type FichierPlan, type Plan } from '../lib/plan';
 import { coutUSD, modele as infoModele } from '../lib/tarifs';
 import { cleAnalyse, type Analyses } from './analyses';
@@ -45,11 +46,11 @@ function jourDe(f: FichierPlan): string {
 
 /** « 18.07.26 », ou « Sans date ». */
 function nomJour(jour: string): string {
-  return jour === 'sans' ? 'Sans date' : `${jour.slice(8, 10)}.${jour.slice(5, 7)}.${jour.slice(2, 4)}`;
+  return jour === 'sans' ? t`Sans date` : `${jour.slice(8, 10)}.${jour.slice(5, 7)}.${jour.slice(2, 4)}`;
 }
 
 export function nomLot(plan: Plan, lot: string): string {
-  return lot.startsWith(PREFIXE_JOUR) ? nomJour(lot.slice(PREFIXE_JOUR.length)) : cheminDossier(plan, lot) || 'Photos (racine)';
+  return lot.startsWith(PREFIXE_JOUR) ? nomJour(lot.slice(PREFIXE_JOUR.length)) : cheminDossier(plan, lot) || t`Photos (racine)`;
 }
 
 /**
@@ -177,7 +178,7 @@ export async function analyserDoublons(o: OptionsDoublons, precedent?: EtatDoubl
       resultat.dossiers[d] = { ...r, propositions: [...acceptes, ...r.propositions], photos: photos.length };
     } catch (err) {
       if (err instanceof BudgetAtteint) budgetAtteint = true;
-      else erreurs.push(`${nom} : ${err instanceof Error ? err.message : String(err)}`);
+      else erreurs.push(t`${nom} : ${err instanceof Error ? err.message : String(err)}`);
     }
     faits++;
     o.progres(faits, o.dossiers.length, nom);

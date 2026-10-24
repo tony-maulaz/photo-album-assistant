@@ -6,6 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { extraireJson } from '../lib/doublons';
+import { langue, t } from '../lib/langue';
 import { outilRechercheWeb } from '../lib/nommage';
 import { coutUSD, MODELES, modele as infoModele, type Consommation } from '../lib/tarifs';
 import { client } from './claude';
@@ -17,7 +18,7 @@ const SIMULTANES = 3;
 /** Le budget du projet serait dépassé : l'appel n'est pas fait (pause). */
 export class BudgetAtteint extends Error {
   constructor() {
-    super('Budget IA du projet atteint : augmentez-le (étape 1) pour continuer.');
+    super(t`Budget IA du projet atteint : augmentez-le (étape 1) pour continuer.`);
   }
 }
 
@@ -82,7 +83,7 @@ export class ServiceIA {
       // Cache abîmé : il est mis de côté (jamais écrasé), on repart d'un cache vide.
       const nom = `cache_ia_illisible_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
       await this.etat.ecrire(nom, brut).catch(() => undefined);
-      this.journal('alerte', `Cache des réponses IA illisible : gardé dans .album/${nom}, les aides devront être relancées.`);
+      this.journal('alerte', t`Cache des réponses IA illisible : gardé dans .album/${nom}, les aides devront être relancées.`);
       this.cache = {};
     }
   }
@@ -132,11 +133,12 @@ export class ServiceIA {
     let alerte: string | null = null;
     for (const seuil of [0.8, 0.5]) {
       if (avant < seuil * this.projet.budget_chf && apres >= seuil * this.projet.budget_chf) {
-        alerte = `${Math.round(seuil * 100)} % du budget IA du projet dépensé (${apres.toFixed(2).replace('.', ',')} / ${this.projet.budget_chf} CHF).`;
+        const montant = langue() === 'en' ? apres.toFixed(2) : apres.toFixed(2).replace('.', ',');
+        alerte = t`${Math.round(seuil * 100)} % du budget IA du projet dépensé (${montant} / ${this.projet.budget_chf} CHF).`;
         break;
       }
     }
-    this.journal('ia', `${a.fonction} : ${usd.toFixed(4)} USD (${a.modele})`, {
+    this.journal('ia', t`${a.fonction} : ${usd.toFixed(4)} USD (${a.modele})`, {
       fonction: a.fonction,
       modele: a.modele,
       usd,
@@ -239,7 +241,7 @@ export class ServiceIA {
           r = null;
         }
       }
-      if (r === null) this.journal('alerte', `${a.fonction} : réponse inexploitable (${reponse.stop_reason ?? 'illisible'}), ignorée`);
+      if (r === null) this.journal('alerte', t`${a.fonction} : réponse inexploitable (${reponse.stop_reason ?? t`illisible`}), ignorée`);
       this.cache[a.cle] = { r, quand: new Date().toISOString(), modele: a.modele };
       await this.enregistrerCache();
       return r;

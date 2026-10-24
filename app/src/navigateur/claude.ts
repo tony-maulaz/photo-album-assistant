@@ -1,6 +1,7 @@
 // Accès à l'API Claude depuis le navigateur, avec la clé de l'utilisateur.
 
 import Anthropic from '@anthropic-ai/sdk';
+import { t } from '../lib/langue';
 import { cleApi } from './cle';
 
 /**
@@ -10,19 +11,19 @@ import { cleApi } from './cle';
  */
 export function client(): Anthropic {
   const apiKey = cleApi();
-  if (!apiKey) throw new Error('Saisissez d’abord la clé API (Réglages).');
+  if (!apiKey) throw new Error(t`Saisissez d’abord la clé API (Réglages).`);
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 2 });
 }
 
 /** Message d'erreur compréhensible pour une erreur du SDK. */
 export function expliquerErreur(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return 'Clé API refusée (401) : vérifiez-la.';
-  if (err instanceof Anthropic.PermissionDeniedError) return `Accès refusé (403) : ${err.message}`;
-  if (err instanceof Anthropic.NotFoundError) return `Introuvable (404) : ${err.message}`;
-  if (err instanceof Anthropic.RateLimitError) return 'Trop de requêtes (429) : patientez puis réessayez.';
-  if (err instanceof Anthropic.BadRequestError) return `Requête refusée (400) : ${err.message}`;
-  if (err instanceof Anthropic.APIConnectionError) return `Échec réseau (connexion, CORS ou blocage) : ${err.message}`;
-  if (err instanceof Anthropic.APIError) return `Erreur de l’API (${err.status}) : ${err.message}`;
+  if (err instanceof Anthropic.AuthenticationError) return t`Clé API refusée (401) : vérifiez-la.`;
+  if (err instanceof Anthropic.PermissionDeniedError) return t`Accès refusé (403) : ${err.message}`;
+  if (err instanceof Anthropic.NotFoundError) return t`Introuvable (404) : ${err.message}`;
+  if (err instanceof Anthropic.RateLimitError) return t`Trop de requêtes (429) : patientez puis réessayez.`;
+  if (err instanceof Anthropic.BadRequestError) return t`Requête refusée (400) : ${err.message}`;
+  if (err instanceof Anthropic.APIConnectionError) return t`Échec réseau (connexion, CORS ou blocage) : ${err.message}`;
+  if (err instanceof Anthropic.APIError) return t`Erreur de l’API (${err.status}) : ${err.message}`;
   return err instanceof Error ? err.message : String(err);
 }
 
