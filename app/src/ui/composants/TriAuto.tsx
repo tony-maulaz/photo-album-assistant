@@ -160,7 +160,7 @@ export function TriAuto() {
         <div class="options-tri">
           {nombreCase('gapJours', t`Nouvelle sortie après (jours sans photo)`, 1, 1, t`Au même lieu, si plus de jours passent sans photo, une nouvelle sortie commence.`)}
           {nombreCase('dureeMaxJours', t`Durée maximale d’une sortie (jours)`, 1, 1, t`Coupe en plusieurs sorties un lieu photographié très souvent, comme la maison.`)}
-          {caseACocher('parMois', t`Un dossier par mois`, t`Un dossier par lieu et par mois (${nomsSortie().lieu}_AAAA-MM), sans chercher les sorties.`)}
+          {caseACocher('parMois', t`Un dossier par mois`, t`Un dossier par lieu et par mois (${nomsSortie().lieu}_MM.AA), sans chercher les sorties.`)}
           {caseACocher('sansEvenement', t`Un seul dossier par lieu`, t`Toutes les photos d’un lieu ensemble, sans découpage en sorties ni date.`)}
           {nombreCase('distanceVoyageKm', t`Voyage au-delà de (km du domicile)`, 1, 1, t`Une sortie plus loin que cette distance de la maison compte comme un voyage.`)}
           {nombreCase('gapVoyage', t`Étapes d’un voyage : écart maximal (jours)`, 0, 1, t`Deux sorties lointaines séparées de plus de jours que cela forment deux voyages.`)}

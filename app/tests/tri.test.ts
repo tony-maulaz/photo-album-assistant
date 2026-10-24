@@ -4,10 +4,13 @@ import { Historique, planVide, RACINE, versJson, type FichierPlan, type Plan } f
 import {
   appliquerTri,
   arborescence,
+  dateDeNom,
   distanceM,
   estDossierMois,
   grouper,
+  moisDeNom,
   nomDescriptif,
+  nomDossierLibre,
   nomDominant,
   OPTIONS_TRI_DEFAUT,
   optionsDepuisPrereglage,
@@ -59,6 +62,17 @@ describe('briques du script 01', () => {
     expect(sansDate('Jardin_11.07.25')).toBe('Jardin');
     expect(sansDate('Annecy_27-29.06.25')).toBe('Annecy');
     expect(sansDate('Sortie_2025-06-09')).toBe('Sortie');
+  });
+
+  it('date des noms de dossiers comme ceux de la famille (JJ.MM.AA)', () => {
+    expect(dateDeNom('2025-11-22')).toBe('22.11.25');
+    expect(dateDeNom('2025-06-27', '2025-06-29')).toBe('27-29.06.25');
+    expect(dateDeNom('2025-06-28', '2025-07-02')).toBe('28.06-02.07.25');
+    expect(dateDeNom('2025-12-28', '2026-01-02')).toBe('28.12.25-02.01.26');
+    expect(moisDeNom('2025-11')).toBe('11.25');
+    // Le point d'une date n'est pas une extension : « Lausanne_12.01.26_2 », pas « Lausanne_12.01_2.26 ».
+    expect(nomDossierLibre('Lausanne_12.01.26', new Set(['lausanne_12.01.26']))).toBe('Lausanne_12.01.26_2');
+    expect(nomDossierLibre('Lausanne_12.01.26', new Set())).toBe('Lausanne_12.01.26');
   });
 
   it('dossiers de mois', () => {
@@ -124,36 +138,36 @@ describe('arborescence', () => {
   it('découpe par écart (30 j) et par durée maximale (21 j)', () => {
     const ps = ['2026-01-01', '2026-01-10', '2026-03-01', '2026-05-01', '2026-05-11', '2026-05-21', '2026-05-31'].map((d) => photo(`${d}T10:00:00`, 46.5, 6.6));
     const d = arborescence(grouper(ps, [], O()), new Map([[0, 'Lausanne']]), O());
-    expect(chemins(d)).toEqual({ 'Lausanne_2026-01': 2, 'Lausanne_2026-03-01': 1, 'Lausanne_2026-05': 3, 'Lausanne_2026-05-31': 1 });
+    expect(chemins(d)).toEqual({ 'Lausanne_01-10.01.26': 2, 'Lausanne_01.03.26': 1, 'Lausanne_01-21.05.26': 3, 'Lausanne_31.05.26': 1 });
   });
 
   it('un dossier par jour, nom géocodé manquant, Sans_lieu', () => {
     const ps = [photo('2026-01-01T10:00:00', 46.5, 6.6), photo('2026-01-02T09:00:00', 46.5, 6.6), photo('2026-01-05T09:00:00')];
     const g = grouper(ps, [], O());
-    expect(chemins(arborescence(g, new Map(), O()))).toEqual({ 'Lieu_00_2026-01': 2, Sans_lieu: 1 });
-    expect(chemins(arborescence(g, new Map([[0, 'Lausanne']]), O({ parJour: true })))).toEqual({ 'Lausanne_2026-01-01': 1, 'Lausanne_2026-01-02': 1, Sans_lieu: 1 });
-    expect(chemins(arborescence(g, new Map([[0, 'Lausanne']]), O({ parMois: true })))).toEqual({ 'Lausanne_2026-01': 2, Sans_lieu: 1 });
+    expect(chemins(arborescence(g, new Map(), O()))).toEqual({ 'Lieu_00_01-02.01.26': 2, Sans_lieu: 1 });
+    expect(chemins(arborescence(g, new Map([[0, 'Lausanne']]), O({ parJour: true })))).toEqual({ 'Lausanne_01.01.26': 1, 'Lausanne_02.01.26': 1, Sans_lieu: 1 });
+    expect(chemins(arborescence(g, new Map([[0, 'Lausanne']]), O({ parMois: true })))).toEqual({ 'Lausanne_01.26': 2, Sans_lieu: 1 });
     expect(chemins(arborescence(g, new Map([[0, 'Lausanne']]), O({ sansEvenement: true })))).toEqual({ Lausanne: 2, Sans_lieu: 1 });
   });
 
   it('collisions entre groupes homonymes : suffixe _b', () => {
     const ps = [photo('2026-01-01T10:00:00', 46.5, 6.6), photo('2026-01-01T15:00:00', 46.6, 6.6)];
     const d = arborescence(grouper(ps, [], O()), new Map([[0, 'Lausanne'], [1, 'Lausanne']]), O());
-    expect(chemins(d)).toEqual({ 'Lausanne_2026-01-01': 1, 'Lausanne_2026-01-01_b': 1 });
+    expect(chemins(d)).toEqual({ 'Lausanne_01.01.26': 1, 'Lausanne_01.01.26_b': 1 });
   });
 
   it('nom descriptif des fichiers, sans répéter le lieu ni la date', () => {
     const ps = [photo('2026-06-09T10:00:00', 46.5, 6.6, 'Cigognes Avenches 09.06.25.jpg'), photo('2026-06-09T11:00:00', 46.5, 6.6, 'Cigognes Avenches 09.06.25 (1).jpg'), photo('2026-06-09T12:00:00', 46.5, 6.6)];
-    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Avenches']]), O()))).toEqual({ 'Cigognes_Avenches_2026-06-09': 3 });
-    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Payerne']]), O()))).toEqual({ 'Cigognes_Avenches_Payerne_2026-06-09': 3 });
-    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Payerne']]), O({ nomsFichiers: false })))).toEqual({ 'Payerne_2026-06-09': 3 });
+    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Avenches']]), O()))).toEqual({ 'Cigognes_Avenches_09.06.26': 3 });
+    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Payerne']]), O()))).toEqual({ 'Cigognes_Avenches_Payerne_09.06.26': 3 });
+    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Payerne']]), O({ nomsFichiers: false })))).toEqual({ 'Payerne_09.06.26': 3 });
   });
 
   it('lieux connus : un dossier parent, un sous-dossier par événement, ou à plat', () => {
     const maison = lieu('Maison', 46.5, 6.6, 200, { domicile: true });
     const ps = [photo('2026-01-01T10:00:00', 46.5, 6.6), photo('2026-01-01T11:00:00', 46.5, 6.6, 'Anniversaire Lea.jpg'), photo('2026-03-01T10:00:00', 46.5, 6.6), photo(undefined, 46.5, 6.6)];
     const d = arborescence(grouper(ps, [maison], O()), new Map(), O());
-    expect(chemins(d)).toEqual({ 'Maison/Anniversaire_Lea_2026-01-01': 2, 'Maison/2026-03-01': 1, Maison: 1 });
+    expect(chemins(d)).toEqual({ 'Maison/Anniversaire_Lea_01.01.26': 2, 'Maison/01.03.26': 1, Maison: 1 });
     expect(d.find((x) => x.chemin.length === 2)!.info).toEqual({ origine: 'lieu_connu', lieu: 'Maison', lat: 46.5, lon: 6.6 });
     const plat = arborescence(grouper(ps, [{ ...maison, un_seul_dossier: true }], O()), new Map(), O());
     expect(chemins(plat)).toEqual({ Maison: 4 });
@@ -175,21 +189,21 @@ describe('arborescence', () => {
       photo('2026-07-14T09:00:00', 14.02, 99.53),
     ];
     const d = arborescence(grouper(ps, [maison], O()), noms, O());
-    expect(chemins(d)).toEqual({ 'Voyage_Bangkok_2026-07/Bangkok_2026-07': 3, 'Voyage_Bangkok_2026-07/Kanchanaburi_2026-07': 2 });
+    expect(chemins(d)).toEqual({ 'Voyage_Bangkok_11-14.07.26/Bangkok_11-12.07.26': 3, 'Voyage_Bangkok_11-14.07.26/Kanchanaburi_13-14.07.26': 2 });
     expect(d[0].infoParent).toEqual({ origine: 'voyage', lieu: 'Bangkok' });
     expect(d[1].info).toMatchObject({ origine: 'etape', lieu: 'Kanchanaburi' });
     // Sans domicile, ou passe désactivée : pas de voyage.
-    expect(Object.keys(chemins(arborescence(grouper(ps, [], O()), noms, O())))).toEqual(['Bangkok_2026-07', 'Kanchanaburi_2026-07']);
-    expect(Object.keys(chemins(arborescence(grouper(ps, [maison], O()), noms, O({ voyages: false }))))).toEqual(['Bangkok_2026-07', 'Kanchanaburi_2026-07']);
+    expect(Object.keys(chemins(arborescence(grouper(ps, [], O()), noms, O())))).toEqual(['Bangkok_11-12.07.26', 'Kanchanaburi_13-14.07.26']);
+    expect(Object.keys(chemins(arborescence(grouper(ps, [maison], O()), noms, O({ voyages: false }))))).toEqual(['Bangkok_11-12.07.26', 'Kanchanaburi_13-14.07.26']);
   });
 
   it('passe voyages : un retour au domicile entre deux étapes les sépare', () => {
     const etapes = [photo('2026-07-11T10:00:00', 13.75, 100.5), photo('2026-07-15T10:00:00', 14.02, 99.53)];
     // Trois jours d'écart, sans photo à la maison : même voyage (gap-voyage-max 7).
-    expect(Object.keys(chemins(arborescence(grouper(etapes, [maison], O()), noms, O())))).toEqual(['Voyage_Bangkok_2026-07/Bangkok_2026-07-11', 'Voyage_Bangkok_2026-07/Kanchanaburi_2026-07-15']);
+    expect(Object.keys(chemins(arborescence(grouper(etapes, [maison], O()), noms, O())))).toEqual(['Voyage_Bangkok_11-15.07.26/Bangkok_11.07.26', 'Voyage_Bangkok_11-15.07.26/Kanchanaburi_15.07.26']);
     // Une photo à la maison entre les deux : deux sorties distinctes.
     const avecRetour = [etapes[0], photo('2026-07-13T10:00:00', 46.5, 6.6), etapes[1]];
-    expect(Object.keys(chemins(arborescence(grouper(avecRetour, [maison], O()), noms, O())))).toEqual(['Bangkok_2026-07-11', 'Maison/2026-07-13', 'Kanchanaburi_2026-07-15']);
+    expect(Object.keys(chemins(arborescence(grouper(avecRetour, [maison], O()), noms, O())))).toEqual(['Bangkok_11.07.26', 'Maison/13.07.26', 'Kanchanaburi_15.07.26']);
   });
 });
 
@@ -244,14 +258,15 @@ describe('application au plan', () => {
     const plan = planVrac();
     const m = appliquerTri(plan, tri(false), aTrier);
     expect(m).not.toBeNull();
-    expect(['a.jpg', 'Juillet/b.jpg', 'Juillet/c.jpg', 'BESTOF/d.jpg'].map((id) => ou(plan, id))).toEqual(['Bangkok_2026-07', 'Bangkok_2026-07', 'Kanchanaburi_2026-07-13', 'BESTOF']);
+    expect(['a.jpg', 'Juillet/b.jpg', 'Juillet/c.jpg', 'BESTOF/d.jpg'].map((id) => ou(plan, id))).toEqual(['Bangkok_11-12.07.26', 'Bangkok_11-12.07.26', 'Kanchanaburi_13.07.26', 'BESTOF']);
     // La photo floue reste de côté, mais reviendra dans le bon dossier.
     expect(plan.fichiers.get('Juillet/flou.jpg')).toMatchObject({ statut: 'mis_de_cote', raison: 'floues' });
-    expect(ou(plan, 'Juillet/flou.jpg')).toBe('Kanchanaburi_2026-07-13');
+    expect(ou(plan, 'Juillet/flou.jpg')).toBe('Kanchanaburi_13.07.26');
     expect(plan.dossiers.has('s:Juillet')).toBe(false);
     expect(plan.dossiers.has('s:BESTOF')).toBe(true);
-    const bangkok = [...plan.dossiers.values()].find((d) => d.nom === 'Bangkok_2026-07')!;
-    expect(bangkok).toMatchObject({ parent: RACINE, origine: 'tri', tri: { origine: 'gps', lieu: 'Bangkok' } });
+    const bangkok = [...plan.dossiers.values()].find((d) => d.nom === 'Bangkok_11-12.07.26')!;
+    // Le nom donné par le tri est noté : tant que le dossier le porte, il est « automatique » (Nommage).
+    expect(bangkok).toMatchObject({ parent: RACINE, origine: 'tri', tri: { origine: 'gps', lieu: 'Bangkok', nom: 'Bangkok_11-12.07.26' } });
   });
 
   it('relancer avec la même proposition ne change rien ; une autre remplace la précédente', () => {
@@ -262,14 +277,14 @@ describe('application au plan', () => {
     expect(JSON.stringify(versJson(plan))).toBe(avant);
     appliquerTri(plan, tri(true), aTrier);
     const noms = [...plan.dossiers.values()].filter((d) => d.origine === 'tri').map((d) => d.nom).sort();
-    expect(noms).toEqual(['Bangkok_2026-07-11', 'Bangkok_2026-07-12', 'Kanchanaburi_2026-07-13']);
+    expect(noms).toEqual(['Bangkok_11.07.26', 'Bangkok_12.07.26', 'Kanchanaburi_13.07.26']);
   });
 
   it('un dossier homonyme d’une autre origine n’est jamais mélangé', () => {
     const plan = planVrac();
-    plan.dossiers.set('n99', { id: 'n99', nom: 'Bangkok_2026-07', parent: RACINE, origine: 'cree' });
+    plan.dossiers.set('n99', { id: 'n99', nom: 'Bangkok_11-12.07.26', parent: RACINE, origine: 'cree' });
     appliquerTri(plan, tri(false), aTrier);
-    expect(ou(plan, 'a.jpg')).toBe('Bangkok_2026-07_2');
+    expect(ou(plan, 'a.jpg')).toBe('Bangkok_11-12.07.26_2');
     expect(appliquerTri(plan, tri(false), aTrier)).toBeNull();
   });
 
@@ -286,7 +301,7 @@ describe('application au plan', () => {
     h.annuler(plan);
     expect(etat(plan)).toBe(avant);
     h.retablir(plan);
-    expect(ou(plan, 'a.jpg')).toBe('Bangkok_2026-07');
+    expect(ou(plan, 'a.jpg')).toBe('Bangkok_11-12.07.26');
   });
 });
 

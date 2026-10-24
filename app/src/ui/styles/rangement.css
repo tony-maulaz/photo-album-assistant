@@ -1,1 +1,126 @@
 /* Lot « rangement » de la campagne de tests du 24.10.2026 : règles ajoutées par ce lot. */
+
+/* --- Lieux et sorties --- */
+
+/* Dossier fait seulement de sous-dossiers : la grille montre leurs photos, avec cette explication au-dessus. */
+.encart-sous-dossiers {
+  margin: 4px 20px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-size: 13px;
+}
+
+/* Photos arrivées avec une mise à jour de l'inventaire (D63). */
+.badge.nouveau {
+  background: var(--accent);
+  color: var(--accent-texte);
+}
+
+.recherche-dossiers .case-nouveautes {
+  flex: 1 1 100%;
+  margin-top: 0;
+}
+
+/* Ligne de temps : les événements du calendrier sur plusieurs rangées, leur nom en entier. */
+.ldt-evenements {
+  align-items: stretch;
+}
+
+.ldt-evenements .ldt-nom {
+  align-self: center;
+}
+
+.ldt-evenements .ldt-evenement {
+  height: 16px;
+  line-height: 16px;
+  padding: 0 4px;
+  overflow: visible;
+  text-overflow: clip;
+  font-weight: 600;
+}
+
+/* --- Petits dossiers --- */
+
+.titre-petits {
+  margin: 22px 0 8px;
+  font-size: 17px;
+}
+
+.petits-seuls .liste-seuls {
+  margin: 8px 0 0;
+}
+
+.ligne-petit,
+.petit-decide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--ombre-douce);
+}
+
+.ligne-petit .bande-miniatures,
+.petit-decide .bande-miniatures {
+  display: flex;
+  gap: 4px;
+  padding: 0;
+  background: none;
+}
+
+.ligne-petit.dans-groupe {
+  margin-left: 18px;
+}
+
+.nom-petit {
+  min-width: 0;
+}
+
+/* Décision prise : la ligne reste, plus discrète, avec de quoi l'annuler. */
+.petit-decide {
+  opacity: 0.85;
+  box-shadow: none;
+  border: 1px dashed var(--bord);
+}
+
+.decision-petit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.groupe-jour {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 4px 12px;
+  border-left: 3px solid var(--accent);
+  font-size: 14px;
+}
+
+/* --- Nommage --- */
+
+.actions-nommage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tableau.nommage tr.renomme td {
+  background: var(--accent-doux);
+}
+
+.nom-renomme {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ok);
+}

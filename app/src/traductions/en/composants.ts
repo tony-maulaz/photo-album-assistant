@@ -36,8 +36,8 @@ export const TEXTES: Record<string, string> = {
   'Durée maximale d’une sortie (jours)': 'Maximum length of an outing (days)',
   'Coupe en plusieurs sorties un lieu photographié très souvent, comme la maison.': 'Splits a very often photographed place, such as home, into several outings.',
   'Un dossier par mois': 'One folder per month',
-  'Un dossier par lieu et par mois ({0}_AAAA-MM), sans chercher les sorties.':
-    'One folder per place and per month ({0}_YYYY-MM), without looking for outings.',
+  'Un dossier par lieu et par mois ({0}_MM.AA), sans chercher les sorties.':
+    'One folder per place and per month ({0}_MM.YY), without looking for outings.',
   'Un seul dossier par lieu': 'A single folder per place',
   'Toutes les photos d’un lieu ensemble, sans découpage en sorties ni date.': 'All the photos of a place together, not split into outings and without a date.',
   'Voyage au-delà de (km du domicile)': 'Trip beyond (km from home)',

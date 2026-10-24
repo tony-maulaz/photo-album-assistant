@@ -3,8 +3,9 @@
 // avant de créer la sortie.
 
 import { nomsSortie } from '../../lib/sortie';
-import { useEffect, useState } from 'preact/hooks';
-import { resumes, RACINE } from '../../lib/plan';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { cheminDossier, contenu, resumes, RACINE } from '../../lib/plan';
+import { premierDossierAvecPhotos } from '../../lib/rangement';
 import { BarreValidation } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
 import { Icone } from '../composants/Icones';
@@ -26,11 +27,13 @@ import {
   elementsVue,
   mettreSelectionDeCote,
   nouveauDossierAvec,
+  ouvrirDossier,
   parentPourNouveau,
   recentsValides,
   remettreSelection,
   renommage,
   selection,
+  sousDossiersSeulement,
   visionneuse,
   vue,
   VUE_AUTRES,
@@ -49,8 +52,19 @@ export function PageOrganiser() {
   const plan = s.plan;
   // La vue courante peut avoir disparu (fusion, annulation).
   if (vue.value !== VUE_MIS_DE_COTE && vue.value !== VUE_AUTRES && !plan.dossiers.has(vue.value)) choisirVue(RACINE);
+  // À l'arrivée, la racine vide après le tri laisserait une grille vide : on ouvre le premier dossier qui a des photos.
+  const arrivee = useRef(true);
+  if (arrivee.current) {
+    arrivee.current = false;
+    if (vue.value === RACINE && contenu(plan, RACINE).length === 0) {
+      const premier = premierDossierAvecPhotos(plan);
+      if (premier) ouvrirDossier(premier);
+    }
+  }
   const v = vue.value;
   const elements = elementsVue(plan, v);
+  const sousDossiers = sousDossiersSeulement(plan, v);
+  const debutChemin = v === RACINE ? 0 : cheminDossier(plan, v).length + 1;
   const choisis = selection.value;
   const r = resumes(plan);
   const enMisDeCote = v === VUE_MIS_DE_COTE;
@@ -58,7 +72,8 @@ export function PageOrganiser() {
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
-      if (estChampDeSaisie(e) || deplacerOuvert.value) return;
+      // Déjà traitée (Ctrl+Z global de l'application, dialogue…) : ne pas annuler deux fois.
+      if (e.defaultPrevented || estChampDeSaisie(e) || deplacerOuvert.value) return;
       const ctrl = e.ctrlKey || e.metaKey;
       const ids = [...selection.value];
       if (ctrl && e.key.toLowerCase() === 'z' && !e.shiftKey) annuler();
@@ -143,10 +158,16 @@ export function PageOrganiser() {
           </div>
           <TitreVue titre={titreVue} id={dossier && dossier.parent !== null ? dossier.id : undefined} />
           {!enMisDeCote && !enAutres && <ActionsDossier />}
-          {resumeVue && (
+          {resumeVue && !sousDossiers && (
             <span class="discret resume-vue">
               {periode(resumeVue.du, resumeVue.au)} · {pluriel(resumeVue.photos, 'photo')}
               {resumeVue.videos ? ` · ${pluriel(resumeVue.videos, 'vidéo')}` : ''}
+            </span>
+          )}
+          {resumeVue && sousDossiers && (
+            <span class="discret resume-vue">
+              {periode(resumeVue.duTotal, resumeVue.auTotal)} · {pluriel(resumeVue.photosTotal, 'photo')}
+              {resumeVue.videosTotal ? ` · ${pluriel(resumeVue.videosTotal, 'vidéo')}` : ''} {t`dans ses sous-dossiers`}
             </span>
           )}
           {dossier && dossier.parent !== null && resumeVue?.du && resumeVue.au && (
@@ -228,6 +249,19 @@ export function PageOrganiser() {
               ))}
             </ul>
           </div>
+        ) : sousDossiers ? (
+          <>
+            <p class="encart-sous-dossiers">
+              {t`« ${titreVue} » ne contient que des sous-dossiers : voici leurs photos, avec le nom du sous-dossier sous chacune. Cliquez sur un sous-dossier à gauche pour ne voir que le sien.`}
+            </p>
+            <GrillePhotos
+              elements={elements}
+              options={{
+                // Le chemin depuis le dossier affiché : « 05.01.25 », « Voyage/Plage ».
+                legende: (f) => cheminDossier(plan, f.dossier).slice(debutChemin),
+              }}
+            />
+          </>
         ) : (
           <GrillePhotos elements={elements} />
         )}

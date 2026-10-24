@@ -43,6 +43,8 @@ export interface InfoTri {
   lieu?: string;
   lat?: number;
   lon?: number;
+  /** Nom donné par le tri : tant que le dossier le porte, son nom est automatique (étape « Nommage »). */
+  nom?: string;
 }
 
 export interface FichierPlan {

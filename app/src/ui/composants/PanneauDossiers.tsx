@@ -5,12 +5,14 @@ import { estNomDeSortie, nomsSortie } from '../../lib/sortie';
 import { signal } from '@preact/signals';
 import { Fragment } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
+import { SEUIL_PETIT_DOSSIER } from '../../lib/fragments';
 import { aTraduire, t } from '../../lib/langue';
 import { cleNom } from '../../lib/noms';
+import { dossiersNouveaux } from '../../lib/rangement';
 import { cheminDossier, estDescendant, fusionnerDossiers, renommerDossier, resumes, RACINE, scinderParJour, supprimerDossierVide, type DossierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
 import { appliquer, changerReglages, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
-import { nombre, periode } from '../format';
+import { nombre, periode, pluriel } from '../format';
 import {
   choisirVue,
   deplacerVers,
@@ -31,8 +33,8 @@ import {
 import { confirmer } from './Dialogues';
 import { Icone } from './Icones';
 
-/** En dessous de ce nombre de photos, un dossier est signalé « petit » (§ 6.4). */
-export const SEUIL_PETIT = 3;
+/** En dessous de ce nombre de photos, un dossier est signalé « petit » (§ 6.4) : le seuil de l'étape « Petits dossiers ». */
+export const SEUIL_PETIT = SEUIL_PETIT_DOSSIER;
 
 /** Au-delà, un dossier est signalé « très grand » (§ 6.4). */
 export const SEUIL_GRAND = 200;
@@ -102,6 +104,8 @@ interface Arbre {
   visibles: Set<string> | null;
   /** Alertes de chaque dossier (§ 6.4) : libellé court (en français, traduit à l'affichage) et explication. */
   alertes: Map<string, [string, string][]>;
+  /** Photos et vidéos arrivées avec une mise à jour de l'inventaire, pas encore dans la sortie (D63), par dossier. */
+  nouveaux: Map<string, number>;
 }
 
 /** Badges d'alerte de l'arborescence prévue (§ 6.4) : le libellé court sert aussi de code (« gardé », « hors album »), traduit à l'affichage. */
@@ -271,6 +275,11 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
               </span>
             )}
             {total === 0 && d.parent !== null && <span class="badge vide">{t`vide`}</span>}
+            {(arbre.nouveaux.get(d.id) ?? 0) > 0 && (
+              <span class="badge nouveau" title={t`${pluriel(arbre.nouveaux.get(d.id)!, 'photo ou vidéo arrivée', 'photos ou vidéos arrivées')} avec la mise à jour de l’inventaire, pas encore dans la sortie`}>
+                {t`nouveau`}
+              </span>
+            )}
             {(arbre.alertes.get(d.id) ?? []).map(([texte, aide]) => (
               <span key={texte} class={`badge alerte-dossier ${texte === 'gardé' || texte === 'ne pas toucher' ? 'info' : ''}`} title={aide}>
                 {t(texte)}
@@ -318,6 +327,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
   const version = versionPlan.value;
   const [filtre, setFiltre] = useState('');
   const [seulementAlertes, setSeulementAlertes] = useState(false);
+  const [seulementNouveaux, setSeulementNouveaux] = useState(false);
 
   const arbre = useMemo<Arbre>(() => {
     const enfants = new Map<string, DossierPlan[]>();
@@ -353,8 +363,15 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       }
       visibles = visibles ? new Set([...visibles].filter((id) => avec.has(id))) : avec;
     }
-    return { enfants, resumes: r, visibles, alertes };
-  }, [version, filtre, seulementAlertes]);
+    const nouveaux = dossiersNouveaux(s.plan, (id) => id in s.etatSortie.fichiers);
+    // « Nouveautés seulement » : les dossiers où sont arrivées des photos, et leurs parents pour les atteindre.
+    if (seulementNouveaux && nouveaux.size) {
+      const avec = new Set([RACINE]);
+      for (const id of nouveaux.keys()) for (let y = s.plan.dossiers.get(id); y; y = y.parent === null ? undefined : s.plan.dossiers.get(y.parent)) avec.add(y.id);
+      visibles = visibles ? new Set([...visibles].filter((id) => avec.has(id))) : avec;
+    }
+    return { enfants, resumes: r, visibles, alertes, nouveaux };
+  }, [version, filtre, seulementAlertes, seulementNouveaux]);
 
   const nbMisDeCote = elementsVue(s.plan, VUE_MIS_DE_COTE).length;
   const nbAutres = elementsVue(s.plan, VUE_AUTRES).length;
@@ -439,6 +456,12 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
             </button>
           )}
         </div>
+        {arbre.nouveaux.size > 0 && (
+          <label class="case case-nouveautes" title={t`Photos ajoutées à la source après le premier tri (mise à jour de l’inventaire), pas encore écrites dans la sortie`}>
+            <input type="checkbox" checked={seulementNouveaux} onChange={(e) => setSeulementNouveaux(e.currentTarget.checked)} />{' '}
+            {t`Seulement les nouveautés (${pluriel(arbre.nouveaux.size, 'dossier')})`}
+          </label>
+        )}
       </div>
       {ordrePanneau.value === 'periode' ? (
         <ul class="arbre plat">

@@ -239,8 +239,14 @@ export function racineNom(nom: string): string {
     .normalize('NFKD')
     .replace(/[^\x00-\x7f]/g, '')
     .toLowerCase()
+    // suffixe d'un nom déjà pris après la date : _b, _2
+    .replace(/(\d)_([b-z]|\d)$/, '$1')
+    // 28.06-02.07.25, 28.12.25-02.01.26 (noms du tri sur deux mois ou deux années)
+    .replace(/[_\-. ]\d{1,2}\.\d{1,2}(\.\d{2,4})?[-–]\d{1,2}\.\d{1,2}\.\d{2,4}$/, '')
     .replace(/[_\-. ]\d{1,2}([-–]\d{1,2})?[.\-]\d{1,2}[.\-]\d{2,4}$/, '')
     .replace(/[_\-. ]\d{4}[-_]\d{2}([-_]\d{2})?(_[b-z])?$/, '')
+    // 11.25 : un dossier par mois
+    .replace(/_\d{2}\.\d{2}$/, '')
     .replace(/[^a-z0-9]/g, '');
 }
 
@@ -277,13 +283,40 @@ export function chevauchement(a: DossierInfo, b: DossierInfo): boolean {
   return a1 <= b2 && b1 <= a2;
 }
 
-/** Paires de dossiers d'un répertoire à présenter côte à côte (version sans IA de l'étape « Consolidation »). */
-export function rapprochementsLocaux(g: GroupeFreres): Rapprochement[] {
+/**
+ * Deux noms proches ne désignent la même sortie que si elle se suit dans le
+ * temps : au plus ce nombre de jours entre la fin de l'une et le début de
+ * l'autre (Vallon le 22.11 et le 13.12 sont deux sorties).
+ */
+export const JOURS_MAX_NOMS_PROCHES = 2;
+
+/** Jours entre deux dossiers (0 s'ils se touchent ou se recouvrent), ou `null` si l'un n'a pas de date. */
+export function joursEntre(a: DossierInfo, b: DossierInfo): number | null {
+  if (!a.du || !a.au || !b.du || !b.au) return null;
+  const jour = (d: string) => Date.parse(`${d.slice(0, 10)}T00:00:00Z`) / 86_400_000;
+  return Math.max(0, jour(b.du) - jour(a.au), jour(a.du) - jour(b.au));
+}
+
+/** Clé d'une paire de dossiers, dans un ordre fixe (paires ignorées, `.album/aides.json`). */
+export function clePaire(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * Paires de dossiers d'un répertoire à présenter côte à côte (version sans
+ * IA de l'étape « Consolidation ») : noms proches et proches dans le temps
+ * (sans quoi un nom de village courant rapprochait toutes ses sorties de
+ * l'année), ou périodes qui se recouvrent. Les paires `ignorees` (clés
+ * `clePaire`) ne sont plus proposées.
+ */
+export function rapprochementsLocaux(g: GroupeFreres, ignorees: ReadonlySet<string> = new Set()): Rapprochement[] {
   const paires: Rapprochement[] = [];
   g.dossiers.forEach((a, i) => {
     for (const b of g.dossiers.slice(i + 1)) {
+      if (ignorees.has(clePaire(a.id, b.id))) continue;
       const raisons: Rapprochement['raisons'] = [];
-      if (nomsProches(a.nom, b.nom)) raisons.push('noms_proches');
+      const jours = joursEntre(a, b);
+      if (nomsProches(a.nom, b.nom) && (jours === null || jours <= JOURS_MAX_NOMS_PROCHES)) raisons.push('noms_proches');
       if (chevauchement(a, b)) raisons.push('chevauchement');
       if (raisons.length) paires.push({ a: a.id, b: b.id, raisons });
     }
