@@ -9,6 +9,7 @@ import { nombre } from '../format';
 import { fermerProjet } from '../projets';
 import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
 import { Icone } from './Icones';
+import { Logo } from './Logo';
 
 /** Ouvert / fermé, refermé par un clic ailleurs ou Échap. */
 function useDeroulant(): [boolean, (v?: boolean) => void, RefObject<HTMLDivElement | null>] {
@@ -166,9 +167,7 @@ export function Entete() {
   return (
     <header class="entete">
       <button type="button" class="marque" onClick={() => (page.value = { nom: 'accueil' })} title={t`Accueil`}>
-        <span class="logo">
-          <Icone nom="photo" taille={20} />
-        </span>
+        <Logo />
         {!s && t`Album photos`}
       </button>
       {s && (

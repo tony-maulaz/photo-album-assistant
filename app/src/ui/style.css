@@ -357,12 +357,32 @@ main {
 .logo {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
-  background: var(--accent);
-  color: var(--accent-texte);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* Au survol du logo, les photos de la pile s'écartent un peu ; au repos, rien ne bouge. */
+.logo .photo {
+  transform-origin: 32px 40px;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.marque:is(:hover, :focus-visible) .logo .fond {
+  transform: rotate(-9deg);
+}
+
+.marque:is(:hover, :focus-visible) .logo .milieu {
+  transform: rotate(-4deg);
+}
+
+.marque:is(:hover, :focus-visible) .logo .devant {
+  transform: rotate(4deg) translateY(-1.5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo .photo {
+    transition: none;
+  }
 }
 
 .entete .projet {
