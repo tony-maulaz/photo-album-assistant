@@ -14,7 +14,8 @@ import { enParallele } from '../../navigateur/workers';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Miniature } from '../composants/GrillePhotos';
 import { annuler, appliquer, contexteExecution, notifier, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
-import { ETAPE } from '../../navigateur/projet';
+import { ETAPE, nomEtape } from '../../navigateur/projet';
+import { aTraduire, t } from '../../lib/langue';
 import { jourCourt, nombre, pluriel } from '../format';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs } from './AidesIA';
 
@@ -23,11 +24,11 @@ export const DUREE_MAX_SORTIE_JOURS = 31;
 
 /** Pourquoi un dossier n'entre pas dans la consolidation (petits dossiers et consolidation), ou `null` s'il y entre. */
 export function raisonExclusion(plan: Plan, d: DossierInfo, exclus: ReadonlySet<string>): string | null {
-  if (d.nom.startsWith('_') || d.nom === DOSSIER_CAPTURES) return 'dossier technique';
-  if (['garder', 'ignorer'].includes(traitementDe(plan, d.id) ?? '')) return 'gardé tel quel';
-  if (exclus.has(d.id)) return 'exclu à la main';
-  if (estDossierMois(d.nom)) return 'dossier de mois';
-  if (d.du && d.au && (Date.parse(d.au.slice(0, 10)) - Date.parse(d.du.slice(0, 10))) / 86_400_000 > DUREE_MAX_SORTIE_JOURS) return 'plus d’un mois';
+  if (d.nom.startsWith('_') || d.nom === DOSSIER_CAPTURES) return aTraduire('dossier technique');
+  if (['garder', 'ignorer'].includes(traitementDe(plan, d.id) ?? '')) return aTraduire('gardé tel quel');
+  if (exclus.has(d.id)) return aTraduire('exclu à la main');
+  if (estDossierMois(d.nom)) return aTraduire('dossier de mois');
+  if (d.du && d.au && (Date.parse(d.au.slice(0, 10)) - Date.parse(d.du.slice(0, 10))) / 86_400_000 > DUREE_MAX_SORTIE_JOURS) return aTraduire('plus d’un mois');
   return null;
 }
 
@@ -63,15 +64,16 @@ function DossiersExclus() {
   return (
     <details class="tri-auto">
       <summary>
-        <strong>{pluriel(liste.length, 'dossier non pris en compte', 'dossiers non pris en compte')}</strong> (de mois, de plus d’un mois, gardés tels quels ou exclus à la main)
+        <strong>{pluriel(liste.length, 'dossier non pris en compte', 'dossiers non pris en compte')}</strong>
+        {t` (de mois, de plus d’un mois, gardés tels quels ou exclus à la main)`}
       </summary>
       <ul class="liste-courte">
         {liste.map(({ d, raison }) => (
           <li key={d.id}>
-            {d.nom} — <span class="discret">{raison}</span>{' '}
+            {d.nom} — <span class="discret">{raison && t(raison)}</span>{' '}
             {raison === 'exclu à la main' && (
               <button type="button" class="lien" onClick={() => basculerExclusion(s, d.id)}>
-                inclure à nouveau
+                {t`inclure à nouveau`}
               </button>
             )}
           </li>
@@ -92,10 +94,10 @@ type ResultatIA6 = Consolidation & { cle: string };
 
 enregistrerAide({
   id: 'IA3',
-  nom: 'Proposer un rattachement avec l’IA',
+  nom: aTraduire('Proposer un rattachement avec l’IA'),
   etape: ETAPE.petits,
-  description: 'Pour chaque petit dossier, l’IA compare ses photos à celles des sorties voisines dans le temps et propose de le rattacher ou de le garder à part.',
-  envoi: 'planches de miniatures du petit dossier et de ses 3 voisins les plus semblables',
+  description: aTraduire('Pour chaque petit dossier, l’IA compare ses photos à celles des sorties voisines dans le temps et propose de le rattacher ou de le garder à part.'),
+  envoi: aTraduire('planches de miniatures du petit dossier et de ses 3 voisins les plus semblables'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -129,16 +131,16 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA3', ajouts);
     }
-    return `${pluriel(Object.keys(ajouts).length, 'proposition')} pour ${pluriel(liste.length, 'petit dossier', 'petits dossiers')}.${texteEchecs(bilan)}`;
+    return t`${pluriel(Object.keys(ajouts).length, 'proposition')} pour ${pluriel(liste.length, 'petit dossier', 'petits dossiers')}.${texteEchecs(bilan)}`;
   },
 });
 
 enregistrerAide({
   id: 'IA6',
-  nom: 'Proposer des fusions avec l’IA',
+  nom: aTraduire('Proposer des fusions avec l’IA'),
   etape: ETAPE.consolidation,
-  description: 'Pour chaque répertoire, l’IA lit la liste des dossiers (nom, nombre de photos, période) et propose de fusionner ceux qui couvrent la même activité.',
-  envoi: 'liste des dossiers, planches des petits dossiers et des dossiers non identifiés',
+  description: aTraduire('Pour chaque répertoire, l’IA lit la liste des dossiers (nom, nombre de photos, période) et propose de fusionner ceux qui couvrent la même activité.'),
+  envoi: aTraduire('liste des dossiers, planches des petits dossiers et des dossiers non identifiés'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -171,7 +173,7 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA6', ajouts);
     }
-    return `${pluriel(n, 'proposition')} dans ${pluriel(groupes.length, 'répertoire')}.${texteEchecs(bilan)}`;
+    return t`${pluriel(n, 'proposition')} dans ${pluriel(groupes.length, 'répertoire')}.${texteEchecs(bilan)}`;
   },
 });
 
@@ -186,14 +188,14 @@ function Vignettes({ d, n = 6 }: { d: DossierInfo; n?: number }) {
 }
 
 function periode(d: DossierInfo): string {
-  if (!d.du) return 'date inconnue';
+  if (!d.du) return t`date inconnue`;
   return d.du.slice(0, 10) === d.au?.slice(0, 10) ? jourCourt(d.du) : `${jourCourt(d.du)} – ${jourCourt(d.au)}`;
 }
 
 function essayer(m: () => Modification | null, ok: string) {
   try {
     appliquer(m());
-    notifier('ok', ok, { libelle: 'Annuler', faire: annuler });
+    notifier('ok', ok, { libelle: t`Annuler`, faire: annuler });
   } catch (err) {
     notifier('erreur', texteErreur(err));
   }
@@ -221,9 +223,8 @@ export function PagePetitsDossiers() {
 
   return (
     <div class="page large avec-barre page-fragments">
-      <TeteEtape numero={ETAPE.petits} titre="Petits dossiers" cle="petits">
-        Le tri par lieux isole parfois quelques photos dans un petit dossier (un arrêt en route, une photo sans GPS). Chacun est montré à côté des sorties voisines
-        dans le temps, les plus ressemblantes d’abord : rattachez-le, ou gardez-le à part.
+      <TeteEtape numero={ETAPE.petits} titre={nomEtape(ETAPE.petits)} cle="petits">
+        {t`Le tri par lieux isole parfois quelques photos dans un petit dossier (un arrêt en route, une photo sans GPS). Chacun est montré à côté des sorties voisines dans le temps, les plus ressemblantes d’abord : rattachez-le, ou gardez-le à part.`}
       </TeteEtape>
       <AideIA fonction="IA3" />
       {surs.length > 0 && (
@@ -233,21 +234,22 @@ export function PagePetitsDossiers() {
             class="principal"
             onClick={() =>
               essayer(
-                () => enchainer(s.plan, `Rattacher ${surs.length} petits dossiers`, surs.map((f) => () => fusionnerDossiers(s.plan, f.dossier.id, decisions[f.dossier.id].cible!))),
+                () => enchainer(s.plan, t`Rattacher ${surs.length} petits dossiers`, surs.map((f) => () => fusionnerDossiers(s.plan, f.dossier.id, decisions[f.dossier.id].cible!))),
                 `${pluriel(surs.length, 'petit dossier rattaché', 'petits dossiers rattachés')}.`,
               )
             }
           >
-            Tout accepter : rattacher les {nombre(surs.length)} propositions sûres (confiance 8 ou plus)
+            {t`Tout accepter : rattacher les ${nombre(surs.length)} propositions sûres (confiance 8 ou plus)`}
           </button>
         </p>
       )}
-      {visibles.length === 0 && <p class="encart">Aucun petit dossier (moins de 5 photos) à rattacher.</p>}
+      {visibles.length === 0 && <p class="encart">{t`Aucun petit dossier (moins de 5 photos) à rattacher.`}</p>}
       {seuls.length > 0 && (
         <details class="avances petits-seuls">
           <summary>
-            {pluriel(seuls.length, 'petit dossier sans sortie voisine', 'petits dossiers sans sortie voisine')} (à moins de 12 h) : {seuls.length > 1 ? 'ils restent' : 'il reste'} à
-            part
+            {seuls.length > 1
+              ? t`${pluriel(seuls.length, 'petit dossier sans sortie voisine', 'petits dossiers sans sortie voisine')} (à moins de 12 h) : ils restent à part`
+              : t`${pluriel(seuls.length, 'petit dossier sans sortie voisine', 'petits dossiers sans sortie voisine')} (à moins de 12 h) : il reste à part`}
           </summary>
           <ul class="liste-seuls">
             {seuls.map((f) => (
@@ -262,7 +264,7 @@ export function PagePetitsDossiers() {
               </li>
             ))}
           </ul>
-          <p class="discret">Pour en rattacher un quand même, glissez-le sur un autre dossier à l’étape {ETAPE.lieux}.</p>
+          <p class="discret">{t`Pour en rattacher un quand même, glissez-le sur un autre dossier à l’étape ${ETAPE.lieux}.`}</p>
         </details>
       )}
       <div class="groupes">
@@ -280,8 +282,8 @@ export function PagePetitsDossiers() {
               <Vignettes d={f.dossier} />
               {d && (
                 <p class={`proposition-ia${d.absorber ? '' : ' a-part'}`}>
-                  <strong>IA :</strong> {d.absorber && cible ? `rattacher à « ${cible.nom} »` : d.nomPropose ? `garder à part, sous le nom « ${d.nomPropose} »` : 'garder à part'}
-                  {d.confiance !== null ? ` (confiance ${d.confiance}/10)` : ''} — {d.raison}
+                  <strong>{t`IA :`}</strong> {d.absorber && cible ? t`rattacher à « ${cible.nom} »` : d.nomPropose ? t`garder à part, sous le nom « ${d.nomPropose} »` : t`garder à part`}
+                  {d.confiance !== null ? t` (confiance ${d.confiance}/10)` : ''} — {d.raison}
                 </p>
               )}
               <div class="voisins">
@@ -290,27 +292,27 @@ export function PagePetitsDossiers() {
                     <div>
                       <strong>{v.dossier.nom}</strong>{' '}
                       <span class="discret">
-                        {pluriel(v.dossier.photos.length, 'photo')} · {periode(v.dossier)} · à {nombre(Math.abs(v.ecart) / 60, 1)} h
-                        {v.ressemblance < 99 ? ` · ressemblance ${v.ressemblance}` : ''}
+                        {pluriel(v.dossier.photos.length, 'photo')} · {periode(v.dossier)} · {t`à ${nombre(Math.abs(v.ecart) / 60, 1)} h`}
+                        {v.ressemblance < 99 ? t` · ressemblance ${v.ressemblance}` : ''}
                       </span>
                     </div>
                     <Vignettes d={v.dossier} n={4} />
-                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, f.dossier.id, v.dossier.id), `« ${f.dossier.nom} » rattaché à « ${v.dossier.nom} ».`)}>
-                      Rattacher ici
+                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, f.dossier.id, v.dossier.id), t`« ${f.dossier.nom} » rattaché à « ${v.dossier.nom} ».`)}>
+                      {t`Rattacher ici`}
                     </button>
                   </div>
                 ))}
-                {f.voisins.length === 0 && <p class="discret">Aucune sortie voisine à moins de 12 h.</p>}
+                {f.voisins.length === 0 && <p class="discret">{t`Aucune sortie voisine à moins de 12 h.`}</p>}
               </div>
               <footer>
                 {d?.nomPropose && !d.absorber && (
-                  <button type="button" onClick={() => essayer(() => renommerDossier(s.plan, f.dossier.id, d.nomPropose!), `Renommé « ${d.nomPropose} ».`)}>
-                    Renommer « {d.nomPropose} »
+                  <button type="button" onClick={() => essayer(() => renommerDossier(s.plan, f.dossier.id, d.nomPropose!), t`Renommé « ${d.nomPropose} ».`)}>
+                    {t`Renommer « ${d.nomPropose} »`}
                   </button>
                 )}
                 <span class="espace" />
                 <button type="button" onClick={() => garder(f.dossier.id)}>
-                  Garder à part
+                  {t`Garder à part`}
                 </button>
               </footer>
             </article>
@@ -318,7 +320,7 @@ export function PagePetitsDossiers() {
         })}
       </div>
       <BarreValidation
-        resume={`${pluriel(visibles.length, 'petit dossier', 'petits dossiers')} à examiner`}
+        resume={t`${pluriel(visibles.length, 'petit dossier', 'petits dossiers')} à examiner`}
         revenir={() => revenirDe('petits')}
         valider={() => validerEtape('petits')}
       />
@@ -332,7 +334,7 @@ export function PagePetitsDossiers() {
 
 /** Applique une fusion proposée : vers le dossier cible existant, ou un nouveau dossier au nom proposé. */
 function fusion(plan: Plan, parent: string, f: FusionProposee): Modification | null {
-  const libelle = `Fusionner dans « ${f.cible} »`;
+  const libelle = t`Fusionner dans « ${f.cible} »`;
   if (f.cibleId) {
     const cible = f.cibleId;
     return enchainer(plan, libelle, f.sources.map((src) => () => fusionnerDossiers(plan, src, cible)));
@@ -362,13 +364,12 @@ export function PageConsolidation() {
 
   return (
     <div class="page large avec-barre page-consolidation">
-      <TeteEtape numero={ETAPE.consolidation} titre="Consolidation" cle="consolidation">
-        Plusieurs dossiers couvrent parfois la même activité (une journée à la plage coupée en deux par le tri). Les propositions sont montrées côte à côte ; vous
-        pouvez aussi fusionner à la main en glissant un dossier sur un autre à l’étape {ETAPE.lieux}.
+      <TeteEtape numero={ETAPE.consolidation} titre={nomEtape(ETAPE.consolidation)} cle="consolidation">
+        {t`Plusieurs dossiers couvrent parfois la même activité (une journée à la plage coupée en deux par le tri). Les propositions sont montrées côte à côte ; vous pouvez aussi fusionner à la main en glissant un dossier sur un autre à l’étape ${ETAPE.lieux}.`}
       </TeteEtape>
       <AideIA fonction="IA6" />
       <DossiersExclus />
-      {groupes.length === 0 && <p class="encart">Aucun répertoire ne contient plusieurs dossiers à comparer.</p>}
+      {groupes.length === 0 && <p class="encart">{t`Aucun répertoire ne contient plusieurs dossiers à comparer.`}</p>}
       {groupes.map((g) => {
         const r = resultats[g.parent];
         const fusions = (r?.fusions ?? []).filter((f) => f.sources.every((x) => s.plan.dossiers.has(x)) && (!f.cibleId || s.plan.dossiers.has(f.cibleId)));
@@ -378,19 +379,20 @@ export function PageConsolidation() {
         if (!fusions.length && !renommages.length && !locaux.length) return null;
         return (
           <section key={g.parent} class="groupe-consolidation">
-            <h2>{g.parent === 'racine' ? 'Photos (racine)' : nomDe(g.parent)}</h2>
+            <h2>{g.parent === 'racine' ? t`Photos (racine)` : nomDe(g.parent)}</h2>
             {fusions.map((f) => (
               <article key={`${f.cible}${f.sources.join()}`} class="carte-groupe">
                 <header>
-                  <span class="source ia">IA</span> Fusionner {f.sources.map((x) => `« ${nomDe(x)} »`).join(', ')} dans « {f.cible} »{!f.cibleId && ' (nouveau dossier)'}
+                  <span class="source ia">{t`IA`}</span> {t`Fusionner ${f.sources.map((x) => t`« ${nomDe(x)} »`).join(', ')} dans « ${f.cible} »`}
+                  {!f.cibleId && t` (nouveau dossier)`}
                 </header>
                 <p class="discret">{f.raison}</p>
                 <div class="cote-a-cote">
                   {[...(f.cibleId ? [f.cibleId] : []), ...f.sources].map((id) => parId.get(id)).filter((d): d is DossierInfo => !!d).map((d) => (
                     <div key={d.id}>
                       <strong>{d.nom}</strong> <span class="discret">{pluriel(d.photos.length, 'photo')} · {periode(d)}</span>{' '}
-                      <button type="button" class="lien" onClick={() => basculerExclusion(s, d.id)} title="Ne plus proposer ce dossier à la consolidation">
-                        exclure
+                      <button type="button" class="lien" onClick={() => basculerExclusion(s, d.id)} title={t`Ne plus proposer ce dossier à la consolidation`}>
+                        {t`exclure`}
                       </button>
                       <Vignettes d={d} n={4} />
                     </div>
@@ -398,17 +400,17 @@ export function PageConsolidation() {
                 </div>
                 <footer>
                   <span class="espace" />
-                  <button type="button" class="principal" onClick={() => essayer(() => fusion(s.plan, g.parent, f), `Fusionné dans « ${f.cible} ».`)}>
-                    Fusionner
+                  <button type="button" class="principal" onClick={() => essayer(() => fusion(s.plan, g.parent, f), t`Fusionné dans « ${f.cible} ».`)}>
+                    {t`Fusionner`}
                   </button>
                 </footer>
               </article>
             ))}
             {renommages.map((x) => (
               <p key={x.dossier}>
-                <span class="source ia">IA</span> Renommer « {nomDe(x.dossier)} » en « {x.nom} » — <span class="discret">{x.raison}</span>{' '}
-                <button type="button" onClick={() => essayer(() => renommerDossier(s.plan, x.dossier, x.nom), `Renommé « ${x.nom} ».`)}>
-                  Renommer
+                <span class="source ia">{t`IA`}</span> {t`Renommer « ${nomDe(x.dossier)} » en « ${x.nom} »`} — <span class="discret">{x.raison}</span>{' '}
+                <button type="button" onClick={() => essayer(() => renommerDossier(s.plan, x.dossier, x.nom), t`Renommé « ${x.nom} ».`)}>
+                  {t`Renommer`}
                 </button>
               </p>
             ))}
@@ -419,16 +421,15 @@ export function PageConsolidation() {
               return (
                 <article key={`${p.a}|${p.b}`} class="carte-groupe locale">
                   <header>
-                    <span class="source">Même activité ?</span> {p.raisons.includes('noms_proches') ? 'noms proches' : ''}
-                    {p.raisons.length === 2 ? ' et ' : ''}
-                    {p.raisons.includes('chevauchement') ? 'périodes qui se chevauchent' : ''}
+                    <span class="source">{t`Même activité ?`}</span>{' '}
+                    {p.raisons.length === 2 ? t`noms proches et périodes qui se chevauchent` : p.raisons.includes('noms_proches') ? t`noms proches` : t`périodes qui se chevauchent`}
                   </header>
                   <div class="cote-a-cote">
                     {[a, b].map((d) => (
                       <div key={d.id}>
                         <strong>{d.nom}</strong> <span class="discret">{pluriel(d.photos.length, 'photo')} · {periode(d)}</span>{' '}
-                        <button type="button" class="lien" onClick={() => basculerExclusion(s, d.id)} title="Ne plus proposer ce dossier à la consolidation">
-                          exclure
+                        <button type="button" class="lien" onClick={() => basculerExclusion(s, d.id)} title={t`Ne plus proposer ce dossier à la consolidation`}>
+                          {t`exclure`}
                         </button>
                         <Vignettes d={d} n={4} />
                       </div>
@@ -436,11 +437,11 @@ export function PageConsolidation() {
                   </div>
                   <footer>
                     <span class="espace" />
-                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, b.id, a.id), `« ${b.nom} » fusionné dans « ${a.nom} ».`)}>
-                      Fusionner dans « {a.nom} »
+                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, b.id, a.id), t`« ${b.nom} » fusionné dans « ${a.nom} ».`)}>
+                      {t`Fusionner dans « ${a.nom} »`}
                     </button>
-                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, a.id, b.id), `« ${a.nom} » fusionné dans « ${b.nom} ».`)}>
-                      Fusionner dans « {b.nom} »
+                    <button type="button" onClick={() => essayer(() => fusionnerDossiers(s.plan, a.id, b.id), t`« ${a.nom} » fusionné dans « ${b.nom} ».`)}>
+                      {t`Fusionner dans « ${b.nom} »`}
                     </button>
                   </footer>
                 </article>
@@ -450,7 +451,7 @@ export function PageConsolidation() {
         );
       })}
       <BarreValidation
-        resume={`${pluriel(total, 'proposition IA', 'propositions IA')} à examiner`}
+        resume={t`${pluriel(total, 'proposition IA', 'propositions IA')} à examiner`}
         revenir={() => revenirDe('consolidation')}
         valider={() => validerEtape('consolidation')}
       />

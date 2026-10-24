@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { changerTraitement, estDescendant, RACINE, resumes, type FichierPlan, type Plan, type TraitementDossier } from '../../lib/plan';
 import type { Progression } from '../../navigateur/inventaire';
-import { ETAPE, type CodeEtape } from '../../navigateur/projet';
+import { ETAPE, nomEtape, type CodeEtape } from '../../navigateur/projet';
+import { aTraduire, t } from '../../lib/langue';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { ProgressionAnalyse } from '../composants/Analyse';
@@ -16,20 +17,20 @@ import { analyseAFaire, analyseEnCours, lancerAnalyseDossier } from '../analyseD
 import { DOSSIER_SANS_DATE } from '../../lib/tri';
 
 const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
-  parcours: 'Parcours des dossiers',
-  tailles: 'Taille et date des fichiers',
-  exif: 'Date, appareil et GPS des photos',
-  videos: 'Date des vidéos',
+  parcours: aTraduire('Parcours des dossiers'),
+  tailles: aTraduire('Taille et date des fichiers'),
+  exif: aTraduire('Date, appareil et GPS des photos'),
+  videos: aTraduire('Date des vidéos'),
 };
 
 const TRAITEMENTS: [TraitementDossier, string, string][] = [
-  ['trier', 'Trier ses photos', 'elles rejoignent le tri par lieux et sorties. Pour un dossier fourre-tout : « Divers », « Téléphone ».'],
+  ['trier', aTraduire('Trier ses photos'), aTraduire('elles rejoignent le tri par lieux et sorties. Pour un dossier fourre-tout : « Divers », « Téléphone ».')],
   [
     'garder',
-    'Garder tel quel',
-    'recopié à l’identique ; ses photos peuvent aller dans l’album. Pour un dossier déjà bien rangé (« Anniversaire Lea »), ou un mois de petites sorties.',
+    aTraduire('Garder tel quel'),
+    aTraduire('recopié à l’identique ; ses photos peuvent aller dans l’album. Pour un dossier déjà bien rangé (« Anniversaire Lea »), ou un mois de petites sorties.'),
   ],
-  ['ignorer', 'Garder tel quel, pas pour l’album', 'recopié à l’identique ; ses photos ne sont pas proposées pour l’album. Pour des documents, scans, fonds d’écran.'],
+  ['ignorer', aTraduire('Garder tel quel, pas pour l’album'), aTraduire('recopié à l’identique ; ses photos ne sont pas proposées pour l’album. Pour des documents, scans, fonds d’écran.')],
 ];
 
 /** Trois photos réparties dans un dossier (et ses sous-dossiers), pour le reconnaître d'un coup d'œil. */
@@ -48,26 +49,26 @@ function SousDossiers() {
   if (!dossiers.length) return null;
   return (
     <section id="sous-dossiers">
-      <h2>Que faire des sous-dossiers déjà rangés ?</h2>
+      <h2>{t`Que faire des sous-dossiers déjà rangés ?`}</h2>
       <p class="discret">
-        Les {pluriel(racine.photos + racine.videos, 'élément')} en vrac à la racine seront triés par lieux et sorties. Pour chaque sous-dossier, choisissez :
+        {t`Les ${pluriel(racine.photos + racine.videos, 'élément')} en vrac à la racine seront triés par lieux et sorties. Pour chaque sous-dossier, choisissez :`}
       </p>
       <dl class="choix-traitement">
         {TRAITEMENTS.map(([v, libelle, explication]) => (
           <div key={v}>
-            <dt>{libelle}</dt>
-            <dd>{explication}</dd>
+            <dt>{t(libelle)}</dt>
+            <dd>{t(explication)}</dd>
           </div>
         ))}
       </dl>
       <table class="tableau sous-dossiers">
         <thead>
           <tr>
-            <th>Dossier</th>
-            <th>Période</th>
-            <th class="n">Photos</th>
-            <th class="n">Vidéos</th>
-            <th>Que faire ?</th>
+            <th>{t`Dossier`}</th>
+            <th>{t`Période`}</th>
+            <th class="n">{t`Photos`}</th>
+            <th class="n">{t`Vidéos`}</th>
+            <th>{t`Que faire ?`}</th>
           </tr>
         </thead>
         <tbody>
@@ -89,10 +90,10 @@ function SousDossiers() {
                 <td class="n">{nombre(x.photosTotal)}</td>
                 <td class="n">{nombre(x.videosTotal)}</td>
                 <td>
-                  <select value={d.traitement ?? 'garder'} onChange={(e) => appliquer(changerTraitement(s.plan, [d.id], e.currentTarget.value as TraitementDossier))} aria-label={`Que faire de ${d.nom}`}>
+                  <select value={d.traitement ?? 'garder'} onChange={(e) => appliquer(changerTraitement(s.plan, [d.id], e.currentTarget.value as TraitementDossier))} aria-label={t`Que faire de ${d.nom}`}>
                     {TRAITEMENTS.map(([v, l]) => (
                       <option key={v} value={v}>
-                        {l}
+                        {t(l)}
                       </option>
                     ))}
                   </select>
@@ -104,10 +105,10 @@ function SousDossiers() {
       </table>
       <p class="actions">
         <button type="button" onClick={() => appliquer(changerTraitement(s.plan, dossiers.map((d) => d.id), 'trier'))}>
-          Tout trier
+          {t`Tout trier`}
         </button>
         <button type="button" onClick={() => appliquer(changerTraitement(s.plan, dossiers.map((d) => d.id), 'garder'))}>
-          Tout garder tel quel
+          {t`Tout garder tel quel`}
         </button>
       </p>
     </section>
@@ -124,38 +125,67 @@ function AVerifier() {
   const captures = capturesProposees(s).length;
   const sansDate = [...s.plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && f.statut === 'archive' && f.origineDate === 'fichier').length;
   const points = [
-    sousDossiers > 0 && <>que faire des <strong>{pluriel(sousDossiers, 'sous-dossier déjà rangé', 'sous-dossiers déjà rangés')}</strong> ;</>,
-    captures > 0 && <>les <strong>{pluriel(captures, 'capture d’écran trouvée', 'captures d’écran trouvées')}</strong> ;</>,
-    copies && copies.nbCopies > 0 && <>les <strong>{pluriel(copies.nbCopies, 'copie en double', 'copies en double')}</strong> ;</>,
+    sousDossiers > 0 && (
+      <>
+        {t`que faire des`} <strong>{pluriel(sousDossiers, 'sous-dossier déjà rangé', 'sous-dossiers déjà rangés')}</strong>
+        {t` ;`}
+      </>
+    ),
+    captures > 0 && (
+      <>
+        {t`les`} <strong>{pluriel(captures, 'capture d’écran trouvée', 'captures d’écran trouvées')}</strong>
+        {t` ;`}
+      </>
+    ),
+    copies && copies.nbCopies > 0 && (
+      <>
+        {t`les`} <strong>{pluriel(copies.nbCopies, 'copie en double', 'copies en double')}</strong>
+        {t` ;`}
+      </>
+    ),
     sansDate > 0 && s.projet.mode === 'vrac' && (
       <>
-        les <strong>{pluriel(sansDate, 'photo sans date', 'photos sans date')}</strong> : elles iront dans « {DOSSIER_SANS_DATE} », à placer à la main ;
+        {t`les`} <strong>{pluriel(sansDate, 'photo sans date', 'photos sans date')}</strong>
+        {t` : elles iront dans « ${DOSSIER_SANS_DATE} », à placer à la main ;`}
       </>
     ),
   ].filter(Boolean);
   return (
     <div class="encart a-verifier">
-      {enCours ? <ProgressionAnalyse /> : <p class="ok">✓ Analyse des photos terminée.</p>}
+      {enCours ? <ProgressionAnalyse /> : <p class="ok">{t`✓ Analyse des photos terminée.`}</p>}
       {points.length > 0 ? (
         <>
           <p>
-            <strong>{enCours ? 'Pendant ce temps, vérifiez :' : 'Vérifiez :'}</strong>
+            <strong>{enCours ? t`Pendant ce temps, vérifiez :` : t`Vérifiez :`}</strong>
           </p>
           <ol>
             {points.map((x, i) => (
               <li key={i}>{x}</li>
             ))}
           </ol>
-          <p class="discret">Puis « Valider et continuer »{enCours ? ', dès la fin de l’analyse' : ''}.</p>
+          <p class="discret">{enCours ? t`Puis « Valider et continuer », dès la fin de l’analyse.` : t`Puis « Valider et continuer ».`}</p>
         </>
       ) : (
-        <p class="discret">Rien d’autre à vérifier : « Valider et continuer »{enCours ? ' dès la fin de l’analyse' : ''}.</p>
+        <p class="discret">{enCours ? t`Rien d’autre à vérifier : « Valider et continuer » dès la fin de l’analyse.` : t`Rien d’autre à vérifier : « Valider et continuer ».`}</p>
       )}
     </div>
   );
 }
 
-const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const MOIS = [
+  aTraduire('janv.'),
+  aTraduire('févr.'),
+  aTraduire('mars'),
+  aTraduire('avr.'),
+  aTraduire('mai'),
+  aTraduire('juin'),
+  aTraduire('juil.'),
+  aTraduire('août'),
+  aTraduire('sept.'),
+  aTraduire('oct.'),
+  aTraduire('nov.'),
+  aTraduire('déc.'),
+];
 
 export function PageInventaire() {
   const s = session.value!;
@@ -191,24 +221,24 @@ export function PageInventaire() {
     const p = progression;
     return (
       <div class="page etroite">
-        <TeteEtape numero={ETAPE.inventaire} titre="Inventaire">
-          L’application lit chaque fichier du dossier à trier : taille, date de prise de vue, appareil. Rien n’est modifié.
+        <TeteEtape numero={ETAPE.inventaire} titre={nomEtape(ETAPE.inventaire)}>
+          {t`L’application lit chaque fichier du dossier à trier : taille, date de prise de vue, appareil. Rien n’est modifié.`}
         </TeteEtape>
         {p && (
           <>
             <BarreProgression
               faits={p.faits}
               total={p.total}
-              texte={`${ETAPES_INVENTAIRE[p.etape]} : ${nombre(p.faits)}${p.total ? ` / ${nombre(p.total)}` : ''} — ${duree(performance.now() - debut)}`}
+              texte={t`${t(ETAPES_INVENTAIRE[p.etape])} : ${nombre(p.faits)}${p.total ? ` / ${nombre(p.total)}` : ''} — ${duree(performance.now() - debut)}`}
             />
             <button type="button" onClick={() => (arreter.current = true)}>
-              Arrêter
+              {t`Arrêter`}
             </button>
           </>
         )}
         {!p && (
           <button type="button" class="principal" onClick={() => void lancer()}>
-            Lancer l’inventaire
+            {t`Lancer l’inventaire`}
           </button>
         )}
       </div>
@@ -240,66 +270,63 @@ export function PageInventaire() {
 
   return (
     <div class="page avec-barre">
-      <TeteEtape numero={ETAPE.inventaire} titre="Inventaire">
-        Voici ce que contient « {s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies) : c’est gratuit, cela se fait
-        sur cet ordinateur et ne modifie rien.
+      <TeteEtape numero={ETAPE.inventaire} titre={nomEtape(ETAPE.inventaire)}>
+        {t`Voici ce que contient « ${s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.`}
       </TeteEtape>
       <AVerifier />
 
       <div class="tableau-bord">
         <div class="tuile-chiffre">
-          <strong>{nombre(photos.length)}</strong> photos
+          <strong>{nombre(photos.length)}</strong> {t`photos`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{nombre(videos.length)}</strong> vidéos
+          <strong>{nombre(videos.length)}</strong> {t`vidéos`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{nombre(autres.length)}</strong> autres fichiers
+          <strong>{nombre(autres.length)}</strong> {t`autres fichiers`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{nombre(dossiers.length)}</strong> dossiers
+          <strong>{nombre(dossiers.length)}</strong> {t`dossiers`}
         </div>
         <div class="tuile-chiffre">
-          <strong>{taille(inv.octets)}</strong> au total
+          <strong>{taille(inv.octets)}</strong> {t`au total`}
         </div>
       </div>
 
       <p>
-        Période : {dates.length ? `du ${jourCourt(dates[0])} au ${jourCourt(dates.at(-1))}` : 'inconnue'}. Inventaire fait en {duree(inv.dureeMs)}.
+        {t`Période : ${dates.length ? t`du ${jourCourt(dates[0])} au ${jourCourt(dates.at(-1))}` : t`inconnue`}. Inventaire fait en ${duree(inv.dureeMs)}.`}
       </p>
 
       {mois.length > 0 && (
-        <div class="histogramme" aria-label="Photos par mois">
+        <div class="histogramme" aria-label={t`Photos par mois`}>
           {mois.map(([m, n]) => (
-            <div key={m} class="barre-mois" title={`${MOIS[Number(m.slice(5)) - 1]} ${m.slice(0, 4)} : ${pluriel(n, 'photo')}`}>
+            <div key={m} class="barre-mois" title={t`${t(MOIS[Number(m.slice(5)) - 1])} ${m.slice(0, 4)} : ${pluriel(n, 'photo')}`}>
               <div class="valeur" style={{ height: `${Math.max(2, (n / maxMois) * 100)}%` }} />
-              <span>{MOIS[Number(m.slice(5)) - 1]}</span>
+              <span>{t(MOIS[Number(m.slice(5)) - 1])}</span>
             </div>
           ))}
         </div>
       )}
 
-      <h2>Dates de prise de vue</h2>
+      <h2>{t`Dates de prise de vue`}</h2>
       <ul>
-        <li>{pluriel(origines.exif, 'photo datée', 'photos datées')} par l’appareil (EXIF) ;</li>
-        <li>{nombre(origines.nom)} datées par leur nom de fichier ;</li>
-        <li>{nombre(origines.video)} vidéos datées par leurs données internes ;</li>
-        <li class={origines.fichier ? 'attention' : ''}>{nombre(origines.fichier)} sans date (ni l’appareil, ni le nom du fichier ne la donnent).</li>
+        <li>{t`${pluriel(origines.exif, 'photo datée', 'photos datées')} par l’appareil (EXIF) ;`}</li>
+        <li>{t`${nombre(origines.nom)} datées par leur nom de fichier ;`}</li>
+        <li>{t`${nombre(origines.video)} vidéos datées par leurs données internes ;`}</li>
+        <li class={origines.fichier ? 'attention' : ''}>{t`${nombre(origines.fichier)} sans date (ni l’appareil, ni le nom du fichier ne la donnent).`}</li>
       </ul>
 
       {s.projet.mode === 'vrac' && <SousDossiers />}
       {s.projet.mode === 'deja_trie' && (
         <div class="encart">
-          <p>
-            Ce dossier est déjà trié : vous pouvez chercher les doublons puis réorganiser les dossiers, ou commencer directement là où vous en avez besoin.
-          </p>
+          <p>{t`Ce dossier est déjà trié : vous pouvez chercher les doublons puis réorganiser les dossiers, ou commencer directement là où vous en avez besoin.`}</p>
           <div class="actions">
             {(
               [
-                ['doublons', 'Chercher les doublons'],
-                ['lieux', 'Réorganiser les dossiers'],
-                ['nommage', 'Nommer les dossiers'],
-                ['selection', 'Choisir les photos de l’album'],
+                ['doublons', t`Chercher les doublons`],
+                ['lieux', t`Réorganiser les dossiers`],
+                ['nommage', t`Nommer les dossiers`],
+                ['selection', t`Choisir les photos de l’album`],
               ] as [CodeEtape, string][]
             ).map(([code, libelle]) => (
               <button
@@ -326,18 +353,17 @@ export function PageInventaire() {
         const sansGps = photos.filter((f) => !f.gps).length;
         return (
           <>
-            <h2>Dates et positions</h2>
+            <h2>{t`Dates et positions`}</h2>
             <p>
-              {pluriel(photos.length - sansGps, 'photo avec position GPS', 'photos avec position GPS')}, {pluriel(sansGps, 'sans', 'sans')} (rangées avec les photos
-              du même jour par le tri automatique ; l’IA peut aider à les situer).
+              {t`${pluriel(photos.length - sansGps, 'photo avec position GPS', 'photos avec position GPS')}, ${pluriel(sansGps, 'sans', 'sans')} (rangées avec les photos du même jour par le tri automatique ; l’IA peut aider à les situer).`}
             </p>
             {incertaines.length > 0 && (
               <>
                 <p class="attention" id="sans-date">
-                  {pluriel(incertaines.length, 'photo sans date', 'photos sans date')} : la date du fichier est souvent celle d’une copie, elle n’est donc pas utilisée.{' '}
+                  {t`${pluriel(incertaines.length, 'photo sans date', 'photos sans date')} : la date du fichier est souvent celle d’une copie, elle n’est donc pas utilisée.`}{' '}
                   {s.projet.mode === 'vrac'
-                    ? `Le tri automatique les mettra dans « ${DOSSIER_SANS_DATE} », pour que vous les placiez à la main.`
-                    : 'Elles restent dans leurs dossiers ; dans l’album, elles se placent à la fin de leur sortie.'}
+                    ? t`Le tri automatique les mettra dans « ${DOSSIER_SANS_DATE} », pour que vous les placiez à la main.`
+                    : t`Elles restent dans leurs dossiers ; dans l’album, elles se placent à la fin de leur sortie.`}
                 </p>
                 <div class="bande-miniatures">
                   {incertaines.slice(0, 12).map((f) => (
@@ -352,17 +378,17 @@ export function PageInventaire() {
         );
       })()}
 
-      <h2>À savoir</h2>
+      <h2>{t`À savoir`}</h2>
       <ul>
-        {racine.photos + racine.videos > 0 && <li>{pluriel(racine.photos + racine.videos, 'élément')} directement à la racine du dossier (pas dans un sous-dossier).</li>}
-        {petits.length > 0 && <li>{pluriel(petits.length, 'petit dossier', 'petits dossiers')} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.</li>}
-        {misDeCote.length > 0 && <li>{nombre(misDeCote.length)} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « _mis_de_cote ».</li>}
-        {inv.ignores.length > 0 && <li>{pluriel(inv.ignores.length, 'fichier ignoré', 'fichiers ignorés')} : l’état d’un ancien projet (dossier « .album »).</li>}
-        <li>Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont pas vus : Windows les recrée.</li>
+        {racine.photos + racine.videos > 0 && <li>{t`${pluriel(racine.photos + racine.videos, 'élément')} directement à la racine du dossier (pas dans un sous-dossier).`}</li>}
+        {petits.length > 0 && <li>{t`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.`}</li>}
+        {misDeCote.length > 0 && <li>{t`${nombre(misDeCote.length)} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « _mis_de_cote ».`}</li>}
+        {inv.ignores.length > 0 && <li>{t`${pluriel(inv.ignores.length, 'fichier ignoré', 'fichiers ignorés')} : l’état d’un ancien projet (dossier « .album »).`}</li>}
+        <li>{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont pas vus : Windows les recrée.`}</li>
       </ul>
 
       <BarreValidation
-        resume={analyseEnCours.value || analyseAFaire(s) ? 'Analyse des photos en cours…' : `${pluriel(inv.fichiers, 'fichier')} dans « ${s.source.racine.name} »`}
+        resume={analyseEnCours.value || analyseAFaire(s) ? t`Analyse des photos en cours…` : t`${pluriel(inv.fichiers, 'fichier')} dans « ${s.source.racine.name} »`}
         revenir={() => allerEtape('projet')}
         // Dossier en vrac : on enchaîne avec les floues ; dossier déjà trié : avec les doublons.
         valider={() => validerEtape('inventaire')}
@@ -374,14 +400,14 @@ export function PageInventaire() {
           type="button"
           class="lien"
           onClick={async () => {
-            if (await confirmer('Refaire l’inventaire ?', 'Le dossier à trier sera relu entièrement. Les changements faits dans l’arborescence seront perdus.', 'Refaire l’inventaire', true)) {
+            if (await confirmer(t`Refaire l’inventaire ?`, t`Le dossier à trier sera relu entièrement. Les changements faits dans l’arborescence seront perdus.`, t`Refaire l’inventaire`, true)) {
               s.projet.inventaire = undefined;
               versionProjet.value++;
               void lancer();
             }
           }}
         >
-          Refaire l’inventaire
+          {t`Refaire l’inventaire`}
         </button>
       </p>
     </div>

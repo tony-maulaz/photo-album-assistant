@@ -5,9 +5,9 @@ import { MODELES } from '../../lib/tarifs';
 import { client, expliquerErreur } from '../../navigateur/claude';
 import { cleApi, cleMasquee, cleMemorisee, enregistrerCleApi, oublierCleApi } from '../../navigateur/cle';
 import type { Reglages } from '../../navigateur/reglages';
-import { ETAPE } from '../../navigateur/projet';
+import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { TeteEtape } from '../composants/Cadre';
-import { t } from '../../lib/langue';
+import { aTraduire, t } from '../../lib/langue';
 import { ChoixLangue } from '../composants/ChoixLangue';
 import { ReglageDossierDepart } from '../composants/DossierDepart';
 import { changerReglages, notifier, page, reglages, session, versionIA } from '../etat';
@@ -19,7 +19,7 @@ function SelectModele({ valeur, changer }: { valeur: string; changer: (v: string
     <select value={valeur} onChange={(e) => changer(e.currentTarget.value)}>
       {MODELES.map((m) => (
         <option key={m.id} value={m.id}>
-          {m.nom} — {nombre(m.entree, m.entree < 1 ? 2 : 0)} / {nombre(m.sortie, m.sortie < 1 ? 2 : 0)} USD par million de jetons
+          {t`${m.nom} — ${nombre(m.entree, m.entree < 1 ? 2 : 0)} / ${nombre(m.sortie, m.sortie < 1 ? 2 : 0)} USD par million de jetons`}
         </option>
       ))}
     </select>
@@ -37,25 +37,22 @@ export function PageReglages() {
 
   return (
     <div class="page etroite">
-      <TeteEtape titre="Réglages">Ces réglages sont propres à cet ordinateur et à ce navigateur.</TeteEtape>
+      <TeteEtape titre={t`Réglages`}>{t`Ces réglages sont propres à cet ordinateur et à ce navigateur.`}</TeteEtape>
 
-      <h2>Clé API Claude</h2>
-      <p class="explication">
-        Nécessaire seulement pour les aides IA. La clé reste dans ce navigateur et ne part que vers api.anthropic.com.
-      </p>
-      <p>{actuelle ? `Clé actuelle : ${cleMasquee(actuelle)} (${cleMemorisee() ? 'mémorisée sur cet ordinateur' : 'gardée jusqu’à la fermeture de l’onglet'}).` : 'Aucune clé.'}</p>
+      <h2>{t`Clé API Claude`}</h2>
+      <p class="explication">{t`Nécessaire seulement pour les aides IA. La clé reste dans ce navigateur et ne part que vers api.anthropic.com.`}</p>
+      <p>{actuelle ? t`Clé actuelle : ${cleMasquee(actuelle)} (${cleMemorisee() ? t`mémorisée sur cet ordinateur` : t`gardée jusqu’à la fermeture de l’onglet`}).` : t`Aucune clé.`}</p>
       <div class="formulaire">
-        <label for="cle">Nouvelle clé</label>
+        <label for="cle">{t`Nouvelle clé`}</label>
         <input id="cle" type="password" class="large" autocomplete="off" placeholder="sk-ant-…" value={cle} onInput={(e) => setCle(e.currentTarget.value)} />
         <label />
         <label class="case">
-          <input type="checkbox" checked={souvenir} onChange={(e) => setSouvenir(e.currentTarget.checked)} /> Se souvenir de la clé sur cet ordinateur
+          <input type="checkbox" checked={souvenir} onChange={(e) => setSouvenir(e.currentTarget.checked)} /> {t`Se souvenir de la clé sur cet ordinateur`}
         </label>
       </div>
       {souvenir && (
         <p class="attention">
-          Attention : ouverte par double-clic, l’application partage son stockage avec toutes les pages HTML ouvertes depuis cet ordinateur. Une clé mémorisée
-          pourrait être lue par un autre fichier HTML. Ne cochez pas sur un ordinateur partagé.
+          {t`Attention : ouverte par double-clic, l’application partage son stockage avec toutes les pages HTML ouvertes depuis cet ordinateur. Une clé mémorisée pourrait être lue par un autre fichier HTML. Ne cochez pas sur un ordinateur partagé.`}
         </p>
       )}
       <div class="actions">
@@ -67,26 +64,26 @@ export function PageReglages() {
             enregistrerCleApi(cle.trim(), souvenir);
             setCle('');
             rafraichir((n) => n + 1);
-            notifier('ok', 'Clé enregistrée.');
+            notifier('ok', t`Clé enregistrée.`);
           }}
         >
-          Enregistrer la clé
+          {t`Enregistrer la clé`}
         </button>
         <button
           type="button"
           disabled={!actuelle}
           onClick={async () => {
-            setTest('Test en cours…');
+            setTest(t`Test en cours…`);
             try {
               let n = 0;
               for await (const _ of client().models.list()) n++;
-              setTest(`✓ La clé fonctionne (${n} modèles accessibles).`);
+              setTest(t`✓ La clé fonctionne (${n} modèles accessibles).`);
             } catch (err) {
               setTest(`✗ ${expliquerErreur(err)}`);
             }
           }}
         >
-          Tester
+          {t`Tester`}
         </button>
         <button
           type="button"
@@ -97,57 +94,57 @@ export function PageReglages() {
             rafraichir((n) => n + 1);
           }}
         >
-          Oublier la clé
+          {t`Oublier la clé`}
         </button>
       </div>
       {test && <p>{test}</p>}
 
-      <h2>Fenêtres de choix de dossier et de fichier</h2>
+      <h2>{t`Fenêtres de choix de dossier et de fichier`}</h2>
       <ReglageDossierDepart />
 
-      <h2>Affichage</h2>
+      <h2>{t`Affichage`}</h2>
       <div class="formulaire">
         <label for="langue">{t`Langue (language)`}</label>
         <ChoixLangue />
-        <label for="miniatures">Taille des miniatures</label>
+        <label for="miniatures">{t`Taille des miniatures`}</label>
         <input id="miniatures" type="range" min="100" max="600" step="20" value={r.tailleMiniatures} onInput={(e) => changer({ tailleMiniatures: Number(e.currentTarget.value) })} />
-        <label for="theme">Thème</label>
+        <label for="theme">{t`Thème`}</label>
         <select id="theme" value={r.theme} onChange={(e) => changer({ theme: e.currentTarget.value as Reglages['theme'] })}>
-          <option value="auto">Comme l’ordinateur</option>
-          <option value="clair">Clair</option>
-          <option value="sombre">Sombre</option>
+          <option value="auto">{t`Comme l’ordinateur`}</option>
+          <option value="clair">{t`Clair`}</option>
+          <option value="sombre">{t`Sombre`}</option>
         </select>
       </div>
 
       {/* Ce qui ne sert qu'aux habitués : replié par défaut. */}
       <details class="avances reglages-avances">
-        <summary>Réglages avancés : modèles IA, coûts, OpenStreetMap</summary>
-      <h2>Modèles par usage</h2>
+        <summary>{t`Réglages avancés : modèles IA, coûts, OpenStreetMap`}</summary>
+      <h2>{t`Modèles par usage`}</h2>
       <div class="formulaire">
-        <label>Rapide (gros volumes : étiquettes)</label>
+        <label>{t`Rapide (gros volumes : étiquettes)`}</label>
         <SelectModele valeur={r.modeles.rapide} changer={(v) => changer({ modeles: { ...r.modeles, rapide: v } })} />
-        <label>Standard (par défaut)</label>
+        <label>{t`Standard (par défaut)`}</label>
         <SelectModele valeur={r.modeles.standard} changer={(v) => changer({ modeles: { ...r.modeles, standard: v } })} />
-        <label>Avancé (doublons, nommage difficile, textes)</label>
+        <label>{t`Avancé (doublons, nommage difficile, textes)`}</label>
         <SelectModele valeur={r.modeles.avance} changer={(v) => changer({ modeles: { ...r.modeles, avance: v } })} />
       </div>
 
-      <h2>Coûts</h2>
+      <h2>{t`Coûts`}</h2>
       <div class="formulaire">
-        <label for="taux">1 USD vaut (CHF)</label>
+        <label for="taux">{t`1 USD vaut (CHF)`}</label>
         <input id="taux" type="number" step="0.01" min="0" class="court" value={r.tauxUsdChf} onChange={(e) => changer({ tauxUsdChf: Number(e.currentTarget.value) || r.tauxUsdChf })} />
-        <label for="seuil">Demander confirmation au-delà de (CHF)</label>
+        <label for="seuil">{t`Demander confirmation au-delà de (CHF)`}</label>
         <input id="seuil" type="number" step="0.5" min="0" class="court" value={r.seuilConfirmationChf} onChange={(e) => changer({ seuilConfirmationChf: Number(e.currentTarget.value) || 0 })} />
-        <label for="budget">Budget par défaut d’un projet (CHF)</label>
+        <label for="budget">{t`Budget par défaut d’un projet (CHF)`}</label>
         <input id="budget" type="number" step="5" min="0" class="court" value={r.budgetDefautChf} onChange={(e) => changer({ budgetDefautChf: Number(e.currentTarget.value) || 0 })} />
       </div>
 
-      <h2>Noms de lieux (Nominatim)</h2>
+      <h2>{t`Noms de lieux (Nominatim)`}</h2>
       <div class="formulaire">
-        <label for="email">Adresse e-mail (facultative)</label>
+        <label for="email">{t`Adresse e-mail (facultative)`}</label>
         <input id="email" type="email" class="large" value={r.emailNominatim} onChange={(e) => changer({ emailNominatim: e.currentTarget.value.trim() })} />
       </div>
-      <p class="aide-champ">Transmise à OpenStreetMap avec les demandes de noms de lieux, comme le demandent ses règles d’usage. Elle n’est envoyée nulle part ailleurs.</p>
+      <p class="aide-champ">{t`Transmise à OpenStreetMap avec les demandes de noms de lieux, comme le demandent ses règles d’usage. Elle n’est envoyée nulle part ailleurs.`}</p>
       </details>
     </div>
   );
@@ -159,16 +156,16 @@ export function PageJournal() {
   useEffect(() => void s?.etat.lireJournal().then((l) => setEntrees(l.reverse())), [s]);
   return (
     <div class="page etroite">
-      <TeteEtape titre="Journal">L’activité du projet : création, inventaire, aides IA et leur coût, écritures dans la sortie, alertes.</TeteEtape>
-      {!s && <p class="discret">Ouvrez un projet pour voir son journal.</p>}
+      <TeteEtape titre={t`Journal`}>{t`L’activité du projet : création, inventaire, aides IA et leur coût, écritures dans la sortie, alertes.`}</TeteEtape>
+      {!s && <p class="discret">{t`Ouvrez un projet pour voir son journal.`}</p>}
       {s && Object.keys(s.projet.couts_usd ?? {}).length > 0 && (
         <>
-          <h2>Coûts des aides IA</h2>
+          <h2>{t`Coûts des aides IA`}</h2>
           <table class="tableau">
             <thead>
               <tr>
-                <th>Aide</th>
-                <th class="n">Dépensé</th>
+                <th>{t`Aide IA`}</th>
+                <th class="n">{t`Dépensé`}</th>
               </tr>
             </thead>
             <tbody>
@@ -177,21 +174,21 @@ export function PageJournal() {
                 .map(([f, usd]) => (
                   <tr key={f}>
                     <td>
-                      {f} {FONCTIONS_IA.find(([code]) => code === f)?.[1] ?? ''}
+                      {f} {nomFonction(f)}
                     </td>
                     <td class="n">{nombre(usd * reglages.value.tauxUsdChf, 2)} CHF</td>
                   </tr>
                 ))}
               <tr class="total">
-                <td>Total (budget du projet : {s.projet.budget_chf} CHF)</td>
+                <td>{t`Total (budget du projet : ${s.projet.budget_chf} CHF)`}</td>
                 <td class="n">{nombre(s.ia.depenseCHF(), 2)} CHF</td>
               </tr>
             </tbody>
           </table>
-          <h2>Activité</h2>
+          <h2>{t`Activité`}</h2>
         </>
       )}
-      {s && entrees.length === 0 && <p class="discret">Rien pour l’instant.</p>}
+      {s && entrees.length === 0 && <p class="discret">{t`Rien pour l’instant.`}</p>}
       <ul class="journal-projet">
         {entrees.map((e, i) => (
           <li key={i}>
@@ -203,22 +200,29 @@ export function PageJournal() {
   );
 }
 
+// Libellés traduits à l'affichage (`t`) ; « — » reste tel quel.
 const FONCTIONS_IA: [string, string, number, string, string][] = [
-  ['IA1', 'Cas limites de netteté', ETAPE.floues, 'Miniatures des photos à la limite', '—'],
-  ['IA7', 'Doublons', ETAPE.doublons, 'Planches vue d’ensemble + vérifications', '—'],
-  ['IA2', 'Situer les photos sans GPS', ETAPE.tri, 'Miniatures + photos voisines dans le temps', 'Oui'],
-  ['IA3', 'Petits dossiers', ETAPE.petits, 'Planches du fragment et de ses voisins', '—'],
-  ['IA4', 'Nommage des sorties (avec les monuments reconnus)', ETAPE.nommage, '5 photos par dossier, GPS, calendrier, contexte', 'Oui'],
-  ['IA6', 'Consolidation', ETAPE.consolidation, 'Liste des dossiers + planches des petits', '—'],
-  ['IA8', 'Étiquettes et description', ETAPE.selection, 'Planches de miniatures', '—'],
-  ['IA9', 'Appréciation', ETAPE.selection, 'Miniatures moyennes', '—'],
-  ['IA10', 'Meilleure de la pile', ETAPE.selection, 'Photos de la pile en grand', '—'],
-  ['IA11', 'Contrôle de la sélection', ETAPE.selection, 'Photos retenues par sortie', '—'],
-  ['IA12', 'Titres et introductions de section', ETAPE.album, 'Photos retenues, noms, contexte', 'Oui'],
-  ['IA13', 'Légendes', ETAPE.album, 'Photos concernées, contexte', 'Option'],
-  ['IA14', 'Suggestions de couverture', ETAPE.album, 'Les ★★', '—'],
-  ['IA15', 'Contrôle de l’album', ETAPE.album, 'Pages simulées', '—'],
+  ['IA1', aTraduire('Cas limites de netteté'), ETAPE.floues, aTraduire('Miniatures des photos à la limite'), '—'],
+  ['IA7', aTraduire('Doublons'), ETAPE.doublons, aTraduire('Planches vue d’ensemble + vérifications'), '—'],
+  ['IA2', aTraduire('Situer les photos sans GPS'), ETAPE.tri, aTraduire('Miniatures + photos voisines dans le temps'), aTraduire('Oui')],
+  ['IA3', aTraduire('Petits dossiers'), ETAPE.petits, aTraduire('Planches du fragment et de ses voisins'), '—'],
+  ['IA4', aTraduire('Nommage des sorties (avec les monuments reconnus)'), ETAPE.nommage, aTraduire('5 photos par dossier, GPS, calendrier, contexte'), aTraduire('Oui')],
+  ['IA6', aTraduire('Consolidation'), ETAPE.consolidation, aTraduire('Liste des dossiers + planches des petits'), '—'],
+  ['IA8', aTraduire('Étiquettes et description'), ETAPE.selection, aTraduire('Planches de miniatures'), '—'],
+  ['IA9', aTraduire('Appréciation'), ETAPE.selection, aTraduire('Miniatures moyennes'), '—'],
+  ['IA10', aTraduire('Meilleure de la pile'), ETAPE.selection, aTraduire('Photos de la pile en grand'), '—'],
+  ['IA11', aTraduire('Contrôle de la sélection'), ETAPE.selection, aTraduire('Photos retenues par sortie'), '—'],
+  ['IA12', aTraduire('Titres et introductions de section'), ETAPE.album, aTraduire('Photos retenues, noms, contexte'), aTraduire('Oui')],
+  ['IA13', aTraduire('Légendes'), ETAPE.album, aTraduire('Photos concernées, contexte'), aTraduire('Option')],
+  ['IA14', aTraduire('Suggestions de couverture'), ETAPE.album, aTraduire('Les ★★'), '—'],
+  ['IA15', aTraduire('Contrôle de l’album'), ETAPE.album, aTraduire('Pages simulées'), '—'],
 ];
+
+/** Nom d'une fonction IA de la table, dans la langue de l'interface. */
+function nomFonction(code: string): string {
+  const nom = FONCTIONS_IA.find(([c]) => c === code)?.[1];
+  return nom ? t(nom) : '';
+}
 
 export function PageFonctionsIA() {
   const s = session.value;
@@ -228,41 +232,40 @@ export function PageFonctionsIA() {
   const taux = reglages.value.tauxUsdChf;
   return (
     <div class="page">
-      <TeteEtape titre="Fonctions IA">
-        Toutes les aides IA, facultatives. Chacune affiche son coût estimé avant d’être lancée, et rien n’est envoyé sans votre action. Les réponses sont gardées :
-        relancer une aide déjà faite ne coûte rien.
+      <TeteEtape titre={t`Fonctions IA`}>
+        {t`Toutes les aides IA, facultatives. Chacune affiche son coût estimé avant d’être lancée, et rien n’est envoyé sans votre action. Les réponses sont gardées : relancer une aide déjà faite ne coûte rien.`}
       </TeteEtape>
       {s ? (
         <p>
-          Budget du projet : <strong>{nombre(s.ia.depenseCHF(), 2)}</strong> CHF dépensés sur {s.projet.budget_chf} CHF (détail dans le Journal).{' '}
+          {t`Budget du projet :`} <strong>{nombre(s.ia.depenseCHF(), 2)}</strong> {t`CHF dépensés sur ${s.projet.budget_chf} CHF (détail dans le Journal).`}{' '}
           <button
             type="button"
             class="lien"
-            title="Une réponse illisible ou refusée est gardée pour ne pas repayer ; l’oublier permet de la redemander."
+            title={t`Une réponse illisible ou refusée est gardée pour ne pas repayer ; l’oublier permet de la redemander.`}
             onClick={() =>
               void s.ia.oublierInexploitables().then((n) => {
                 versionIA.value++;
-                notifier('info', n ? `${n} réponse(s) illisible(s) oubliée(s) : relancez les aides concernées.` : 'Aucune réponse illisible.');
+                notifier('info', n ? t`${n} réponse(s) illisible(s) oubliée(s) : relancez les aides concernées.` : t`Aucune réponse illisible.`);
               })
             }
           >
-            Redemander les réponses illisibles
+            {t`Redemander les réponses illisibles`}
           </button>
         </p>
       ) : (
-        <p class="discret">Ouvrez un projet pour voir le coût estimé de chaque aide.</p>
+        <p class="discret">{t`Ouvrez un projet pour voir le coût estimé de chaque aide.`}</p>
       )}
       <table class="tableau fonctions-ia">
         <thead>
           <tr>
             <th />
-            <th>Aide</th>
-            <th>Étape</th>
-            <th>Ce qui est envoyé</th>
-            <th>Web</th>
-            <th>Modèle</th>
-            <th>Coût estimé</th>
-            <th class="n">Dépensé</th>
+            <th>{t`Aide IA`}</th>
+            <th>{t`Étape`}</th>
+            <th>{t`Ce qui est envoyé`}</th>
+            <th>{t`Web`}</th>
+            <th>{t`Modèle`}</th>
+            <th>{t`Coût estimé`}</th>
+            <th class="n">{t`Dépensé`}</th>
             <th />
           </tr>
         </thead>
@@ -273,17 +276,17 @@ export function PageFonctionsIA() {
             return (
               <tr key={code}>
                 <td>{code}</td>
-                <td>{a?.nom ?? nom}</td>
+                <td>{t(a?.nom ?? nom)}</td>
                 <td>{etape}</td>
-                <td>{a?.envoi ?? envoi}</td>
-                <td>{a ? (a.web ? 'oui' : '—') : web}</td>
+                <td>{t(a?.envoi ?? envoi)}</td>
+                <td>{a ? (a.web ? t`oui` : '—') : web === '—' ? web : t(web)}</td>
                 <td class="discret">{a ? modeleDe(a.usage) : ''}</td>
-                <td>{!s || !a ? '' : e === null ? 'rien à faire' : texteCout(e)}</td>
+                <td>{!s || !a ? '' : e === null ? t`rien à faire` : texteCout(e)}</td>
                 <td class="n">{couts[code] ? `${nombre(couts[code] * taux, 2)} CHF` : ''}</td>
                 <td>
                   {s && (
                     <button type="button" class="lien" onClick={() => (page.value = { nom: 'etape', numero: etape })}>
-                      Étape {etape}
+                      {t`Étape ${etape}`}
                     </button>
                   )}
                 </td>
@@ -299,113 +302,113 @@ export function PageFonctionsIA() {
 export function PageAide() {
   return (
     <div class="page etroite aide">
-      <TeteEtape titre="Aide">Comment utiliser l’application, étape par étape.</TeteEtape>
+      <TeteEtape titre={t`Aide`}>{t`Comment utiliser l’application, étape par étape.`}</TeteEtape>
 
-      <h2>Le principe</h2>
+      <h2>{t`Le principe`}</h2>
       <p>
-        Le dossier de photos d’origine n’est jamais modifié. Toutes vos décisions (dossiers, déplacements, éléments mis de côté) sont gardées dans le projet, puis
-        l’étape {ETAPE.sortie} écrit le résultat dans le dossier de sortie et vérifie que chaque fichier d’origine s’y retrouve. Vous pouvez fermer l’onglet à tout moment :
-        tout est enregistré au fur et à mesure.
+        {t`Le dossier de photos d’origine n’est jamais modifié. Toutes vos décisions (dossiers, déplacements, éléments mis de côté) sont gardées dans le projet, puis l’étape ${ETAPE.sortie} écrit le résultat dans le dossier de sortie et vérifie que chaque fichier d’origine s’y retrouve. Vous pouvez fermer l’onglet à tout moment : tout est enregistré au fur et à mesure.`}
       </p>
 
-      <h2>Au lancement</h2>
+      <h2>{t`Au lancement`}</h2>
       <p>
-        Le navigateur redemande l’accès à vos dossiers à chaque session : c’est une mesure de sécurité. L’écran « Reprendre » regroupe ces demandes ; cliquez
-        sur « Autoriser » pour chaque dossier.
+        {t`Le navigateur redemande l’accès à vos dossiers à chaque session : c’est une mesure de sécurité. L’écran « Reprendre » regroupe ces demandes ; cliquez sur « Autoriser » pour chaque dossier.`}
       </p>
 
-      <h2>Deux façons de commencer</h2>
+      <h2>{t`Deux façons de commencer`}</h2>
       <ul>
         <li>
-          <strong>Trier un nouveau dossier</strong> (en vrac) : les douze étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers
-          déjà nommés sont gardés tels quels, sauf si vous choisissez de les trier aussi (étape {ETAPE.inventaire}).
+          <strong>{t`Trier un nouveau dossier`}</strong>
+          {t` (en vrac) : les douze étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers déjà nommés sont gardés tels quels, sauf si vous choisissez de les trier aussi (étape ${ETAPE.inventaire}).`}
         </li>
         <li>
-          <strong>Ouvrir un dossier déjà trié</strong> : ses sous-dossiers deviennent les dossiers de la sortie. Les dossiers « _a_supprimer », « _doublons » et les
-          photos marquées « _doublon » des anciens scripts sont reconnus et mis de côté. Après l’inventaire, on passe aux doublons, puis aux lieux et sorties (le
-          tri automatique et ses suites sont sautés).
+          <strong>{t`Ouvrir un dossier déjà trié`}</strong>
+          {t` : ses sous-dossiers deviennent les dossiers de la sortie. Les dossiers « _a_supprimer », « _doublons » et les photos marquées « _doublon » des anciens scripts sont reconnus et mis de côté. Après l’inventaire, on passe aux doublons, puis aux lieux et sorties (le tri automatique et ses suites sont sautés).`}
         </li>
       </ul>
 
-      <h2>Les étapes</h2>
+      <h2>{t`Les étapes`}</h2>
       <ol>
         <li>
-          <strong>Projet</strong> : dossiers, préréglage, contexte (transmis à l’IA), budget IA.
+          <strong>{nomEtape(ETAPE.projet)}</strong>
+          {t` : dossiers, préréglage, contexte (transmis à l’IA), budget IA.`}
         </li>
         <li>
-          <strong>Inventaire</strong> : chiffres, sous-dossiers (trier ou garder tels quels), captures d’écran, doublons exacts (même photo en plusieurs
-          exemplaires, ou copie WhatsApp réduite), appareils et décalage d’horloge.
+          <strong>{nomEtape(ETAPE.inventaire)}</strong>
+          {t` : chiffres, sous-dossiers (trier ou garder tels quels), captures d’écran, doublons exacts (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), appareils et décalage d’horloge.`}
         </li>
         <li>
-          <strong>Photos floues</strong> : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».
+          <strong>{nomEtape(ETAPE.floues)}</strong>
+          {t` : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».`}
         </li>
         <li>
-          <strong>Doublons</strong> : rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un
-          dossier en vrac, les photos sont comparées journée par journée.
+          <strong>{nomEtape(ETAPE.doublons)}</strong>
+          {t` : rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un dossier en vrac, les photos sont comparées journée par journée.`}
         </li>
         <li>
-          <strong>Tri automatique</strong> : enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.
+          <strong>{nomEtape(ETAPE.tri)}</strong>
+          {t` : enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.`}
         </li>
         <li>
-          <strong>Lieux et sorties</strong> : vérifiez et corrigez l’arborescence (ci-dessous).
+          <strong>{nomEtape(ETAPE.lieux)}</strong>
+          {t` : vérifiez et corrigez l’arborescence (ci-dessous).`}
         </li>
         <li>
-          <strong>Petits dossiers</strong> : rattachez-les à une sortie voisine, ou gardez-les à part.
+          <strong>{nomEtape(ETAPE.petits)}</strong>
+          {t` : rattachez-les à une sortie voisine, ou gardez-les à part.`}
         </li>
         <li>
-          <strong>Nommage</strong> : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.
+          <strong>{nomEtape(ETAPE.nommage)}</strong>
+          {t` : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.`}
         </li>
         <li>
-          <strong>Consolidation</strong> : fusionnez les dossiers qui couvrent la même activité.
+          <strong>{nomEtape(ETAPE.consolidation)}</strong>
+          {t` : fusionnez les dossiers qui couvrent la même activité.`}
         </li>
         <li>
-          <strong>Sélection</strong> : Espace = ★ dans l’album, 2 = ★★ grande photo, X = pas pour l’album (elle reste dans l’archive), T = tri rapide, C = comparer, R = tourner.
+          <strong>{nomEtape(ETAPE.selection)}</strong>
+          {t` : Espace = ★ dans l’album, 2 = ★★ grande photo, X = pas pour l’album (elle reste dans l’archive), T = tri rapide, C = comparer, R = tourner.`}
         </li>
         <li>
-          <strong>Album</strong> : ordre, sections, titres, légendes, couverture, aperçu des pages.
+          <strong>{nomEtape(ETAPE.album)}</strong>
+          {t` : ordre, sections, titres, légendes, couverture, aperçu des pages.`}
         </li>
         <li>
-          <strong>Création de la sortie</strong> : l’archive triée, l’album numéroté pour ifolor, ce qui est mis de côté, le rapport et le bilan.
+          <strong>{nomEtape(ETAPE.sortie)}</strong>
+          {t` : l’archive triée, l’album numéroté pour ifolor, ce qui est mis de côté, le rapport et le bilan.`}
         </li>
       </ol>
 
-      <h2>Les aides IA</h2>
+      <h2>{t`Les aides IA`}</h2>
       <p>
-        Toutes sont facultatives. Chaque bouton affiche son coût estimé avant de partir ; au-delà du seuil (Réglages), une confirmation est demandée, et le budget
-        du projet n’est jamais dépassé. Les réponses sont gardées : relancer ne coûte rien. La page « Fonctions IA » dit ce que chaque aide envoie.
+        {t`Toutes sont facultatives. Chaque bouton affiche son coût estimé avant de partir ; au-delà du seuil (Réglages), une confirmation est demandée, et le budget du projet n’est jamais dépassé. Les réponses sont gardées : relancer ne coûte rien. La page « Fonctions IA » dit ce que chaque aide envoie.`}
       </p>
 
-      <h2>Corriger l’arborescence (étape {ETAPE.lieux})</h2>
+      <h2>{t`Corriger l’arborescence (étape ${ETAPE.lieux})`}</h2>
       <ul>
-        <li>Cliquez sur un dossier du panneau pour voir ses photos.</li>
-        <li>Sélectionnez : clic, Ctrl+clic (ajouter), Maj+clic (une plage), ou un rectangle tracé dans un espace vide. « Toute la journée » et « Toute l’heure » complètent la sélection.</li>
-        <li>Déplacez : glissez la sélection sur un dossier du panneau, ou touche M (puis tapez une partie du nom), ou touches 1 à 9 (derniers dossiers utilisés).</li>
+        <li>{t`Cliquez sur un dossier du panneau pour voir ses photos.`}</li>
+        <li>{t`Sélectionnez : clic, Ctrl+clic (ajouter), Maj+clic (une plage), ou un rectangle tracé dans un espace vide. « Toute la journée » et « Toute l’heure » complètent la sélection.`}</li>
+        <li>{t`Déplacez : glissez la sélection sur un dossier du panneau, ou touche M (puis tapez une partie du nom), ou touches 1 à 9 (derniers dossiers utilisés).`}</li>
         <li>
-          Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la
-          sélection) partent dans un nouveau dossier voisin.
+          {t`Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.`}
         </li>
-        <li>Glissez un dossier sur un autre pour les fusionner ; double-cliquez sur un nom (ou F2) pour le renommer ; « Scinder par jour » coupe un dossier en journées.</li>
-        <li>Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, photos entremêlées avec un autre dossier.</li>
-        <li>Suppr met de côté (rien n’est supprimé : les éléments iront dans « _mis_de_cote ») ; dans « Mis de côté », Suppr les remet.</li>
-        <li>Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.</li>
-        <li>Ctrl+Z annule, Ctrl+Y rétablit.</li>
+        <li>{t`Glissez un dossier sur un autre pour les fusionner ; double-cliquez sur un nom (ou F2) pour le renommer ; « Scinder par jour » coupe un dossier en journées.`}</li>
+        <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, photos entremêlées avec un autre dossier.`}</li>
+        <li>{t`Suppr met de côté (rien n’est supprimé : les éléments iront dans « _mis_de_cote ») ; dans « Mis de côté », Suppr les remet.`}</li>
+        <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>
+        <li>{t`Ctrl+Z annule, Ctrl+Y rétablit.`}</li>
       </ul>
 
-      <h2>Créer la sortie (étape {ETAPE.sortie})</h2>
+      <h2>{t`Créer la sortie (étape ${ETAPE.sortie})`}</h2>
       <p>
-        Le bouton écrit ce qui manque et déplace ce qui a changé de dossier ; relancé, il ne recopie jamais un fichier déjà en place. Le bilan dit si chaque
-        fichier d’origine est dans la sortie. Seulement dans ce cas, vous pouvez copier la sortie sur le NAS, la vérifier, puis supprimer vous-même le dossier
-        d’origine.
+        {t`Le bouton écrit ce qui manque et déplace ce qui a changé de dossier ; relancé, il ne recopie jamais un fichier déjà en place. Le bilan dit si chaque fichier d’origine est dans la sortie. Seulement dans ce cas, vous pouvez copier la sortie sur le NAS, la vérifier, puis supprimer vous-même le dossier d’origine.`}
       </p>
       <p>
-        La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil
-        (EXIF) ; pour les autres, la date d’origine est notée dans « Rapport.html ».
+        {t`La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « Rapport.html ».`}
       </p>
 
-      <h2>Configuration et clé API</h2>
+      <h2>{t`Configuration et clé API`}</h2>
       <p>
-        Le dossier « config » contient les lieux connus (dont le domicile), les appareils et les calendriers : ne le publiez jamais. La clé API n’y est jamais
-        écrite ; elle reste dans le navigateur, le temps de la session sauf si vous cochez « se souvenir ».
+        {t`Le dossier « config » contient les lieux connus (dont le domicile), les appareils et les calendriers : ne le publiez jamais. La clé API n’y est jamais écrite ; elle reste dans le navigateur, le temps de la session sauf si vous cochez « se souvenir ».`}
       </p>
     </div>
   );
