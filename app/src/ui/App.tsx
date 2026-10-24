@@ -99,8 +99,8 @@ export function App() {
   return (
     <div class={`app page-${p.nom}${p.nom === 'etape' ? ` etape-${p.numero}` : ''}`}>
       <Entete />
-      <main>{contenu}</main>
       {p.nom === 'etape' && s && <BandeauSource />}
+      <main>{contenu}</main>
       <Messages />
       <Dialogues />
     </div>

@@ -1,1 +1,75 @@
 /* Lot « accueil » de la campagne de tests du 24.10.2026 : règles ajoutées par ce lot. */
+
+/* Accueil : configuration et clé API facultatives, dites sans alarmer (gris neutre, pas beige). */
+.etat-config .puce-etat.facultatif:not(.ok) {
+  background: var(--surface-2);
+  color: var(--texte-2);
+  font-weight: 500;
+}
+
+/* Nouveau projet : le dossier de sortie contient déjà un projet. */
+.projet-existant {
+  margin: 4px 0 8px;
+}
+
+.projet-existant p {
+  margin-top: 0;
+}
+
+/* Choisir ou créer le dossier de configuration sans quitter l'étape. */
+.choix-configuration {
+  margin: 10px 0;
+  border-color: var(--accent);
+}
+
+.choix-configuration p {
+  margin-top: 0;
+}
+
+/* Captures d'écran proposées : une case par photo, son nom dessous, agrandie d'un clic. */
+.captures-proposees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.captures-proposees li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 124px;
+}
+
+.captures-proposees li.decochee .image-capture {
+  opacity: 0.45;
+}
+
+.captures-proposees .image-capture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 116px;
+  height: 116px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  cursor: zoom-in;
+}
+
+.captures-proposees label.case {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.captures-proposees .nom-capture {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

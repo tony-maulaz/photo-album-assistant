@@ -3,12 +3,14 @@ import {
   cheminDossier,
   contenu,
   creerDossier,
+  dateSure,
   deplacerFichiers,
   depuisJson,
   ErreurPlan,
   fusionnerDossiers,
   Historique,
   mettreDeCote,
+  periodeDe,
   RACINE,
   recadrer,
   remettre,
@@ -132,6 +134,21 @@ describe('opérations sur le plan', () => {
     expect([r.get(annecy)!.photos, r.get(annecy)!.au, r.get(paleo)!.photos]).toEqual([2, '2025-06-28', 2]);
     h.retablir(plan);
     expect(resumes(plan).get(annecy)!.photos).toBe(4);
+  });
+
+  it('la date du fichier d’une photo sans date n’étire pas la période d’un dossier', () => {
+    const plan = exemple();
+    const annecy = id(plan, 'Annecy_27-29.06.25');
+    // « vrac.jpg » n'a que la date de son fichier (04.07.2025), souvent celle d'une copie.
+    expect(plan.fichiers.get('vrac.jpg')).toMatchObject({ origineDate: 'fichier', date: expect.stringMatching(/^2025-07-04/) });
+    const racine = resumes(plan).get(RACINE)!;
+    expect([racine.photos, racine.du, racine.au, racine.duTotal, racine.auTotal]).toEqual([1, undefined, undefined, '2025-06-27', '2025-07-24']);
+    deplacerFichiers(plan, ['vrac.jpg'], annecy);
+    const r = resumes(plan).get(annecy)!;
+    expect([r.photos, r.du, r.au, r.duTotal, r.auTotal]).toEqual([3, '2025-06-27', '2025-06-28', '2025-06-27', '2025-06-28']);
+    expect(dateSure(plan.fichiers.get('vrac.jpg')!)).toBeUndefined();
+    expect(periodeDe(contenu(plan, annecy))).toEqual({ du: '2025-06-27', au: '2025-06-28' });
+    expect(periodeDe([{ date: '2025-07-04', origineDate: 'fichier' }])).toEqual({ du: undefined, au: undefined });
   });
 
   it('renomme un fichier dont le nom est déjà pris dans le dossier cible', () => {

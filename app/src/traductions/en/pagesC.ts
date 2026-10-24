@@ -55,10 +55,12 @@ export const TEXTES: Record<string, string> = {
   appareil: 'device',
   appareils: 'devices',
   'Lieux connus, calendriers, appareils : facultatif, mais utile pour nommer les sorties': 'Known places, calendars, devices: optional, but useful for naming the outings',
-  'Pas encore de configuration': 'No configuration yet',
+  'Configuration : facultative':
+    'Configuration: optional',
   'Clé API saisie pour cette session': 'API key entered for this session',
   'Seules les aides IA en ont besoin : tout le reste fonctionne sans': 'Only the AI helpers need it: everything else works without it',
-  'Clé API : à saisir pour les aides IA': 'API key: to be entered for the AI helpers',
+  'Clé API : facultative (aides IA)':
+    'API key: optional (AI helpers)',
   Configuration: 'Configuration',
   Réglages: 'Settings',
 
@@ -120,10 +122,12 @@ export const TEXTES: Record<string, string> = {
 
   // Projet.tsx
   ' :': ':',
-  '« {0} » — {1} lieu(x) connu(s)': '“{0}” — {1} known place(s)',
+  '« {0} » — {1}':
+    '“{0}” — {1}',
   ', domicile « {0} »': ', home “{0}”',
   ', pas de domicile (la détection des voyages en a besoin)': ', no home (trip detection needs one)',
-  '{0} calendrier(s) actif(s), {1} appareil(s).': '{0} active calendar(s), {1} device(s).',
+  '{0}, {1}.':
+    '{0}, {1}.',
   'aucun dossier « config » choisi : les lieux connus, calendriers et appareils ne seront pas utilisés.':
     'no “config” folder chosen: known places, calendars and devices will not be used.',
   'Clé API': 'API key',
@@ -149,8 +153,10 @@ export const TEXTES: Record<string, string> = {
   'Budget IA du projet (CHF)': 'Project AI budget (CHF)',
   'Les aides IA s’arrêtent avant de dépasser ce montant. Il se change aussi plus tard, à l’étape Projet.':
     'The AI helpers stop before going over this amount. It can also be changed later, in the Project step.',
-  'Configuration : {0} — clé API : {1}.': 'Configuration: {0} — API key: {1}.',
-  'aucune (facultative pour l’instant)': 'none (optional for now)',
+  'Facultatif, réglable plus tard : configuration (lieux connus, appareils) {0}, clé API pour les aides IA {1}. Tout le reste fonctionne sans.':
+    'Optional, can be set later: configuration (known places, devices) {0}, API key for the AI helpers {1}. Everything else works without them.',
+  'pas encore choisie':
+    'not chosen yet',
   saisie: 'entered',
   '« {0} » → « {1} »': '“{0}” → “{1}”',
   'Choisissez les deux dossiers.': 'Choose both folders.',
@@ -278,7 +284,6 @@ export const TEXTES: Record<string, string> = {
   ' pour {0}{1}. Vérifiez-les et corrigez-les à l’étape suivante, en glissant les photos d’un dossier à l’autre.':
     ' for {0}{1}. Check and correct them in the next step, by dragging photos from one folder to another.',
   ' · {0} (moins de {1} photos), à rattacher plus loin': ' · {0} (fewer than {1} photos), to be attached later on',
-  '{0} · {1} photos': '{0} · {1} photos',
   'Arborescence pas encore calculée': 'Folder tree not calculated yet',
   'Calculez l’arborescence pour continuer': 'Calculate the folder tree to continue',
 

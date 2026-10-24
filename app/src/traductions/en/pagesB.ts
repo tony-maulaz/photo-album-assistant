@@ -415,8 +415,10 @@ export const TEXTES: Record<string, string> = {
   '{0} par l’appareil (EXIF) ;': '{0} by the camera (EXIF);',
   'photo datée': 'photo dated',
   'photos datées': 'photos dated',
-  '{0} datées par leur nom de fichier ;': '{0} dated by their file name;',
-  '{0} vidéos datées par leurs données internes ;': '{0} videos dated by their internal data;',
+  '{0} par le nom du fichier ;':
+    '{0} by the file name;',
+  '{0} par les données internes ;':
+    '{0} by their internal data;',
   '{0} sans date (ni l’appareil, ni le nom du fichier ne la donnent).': '{0} without a date (neither the camera nor the file name gives it).',
   'Ce dossier est déjà trié : vous pouvez chercher les doublons puis réorganiser les dossiers, ou commencer directement là où vous en avez besoin.':
     'This folder is already sorted: you can look for duplicates and then reorganise the folders, or start straight away where you need to.',
@@ -437,8 +439,8 @@ export const TEXTES: Record<string, string> = {
   'À savoir': 'Good to know',
   '{0} directement à la racine du dossier (pas dans un sous-dossier).': '{0} directly at the top level of the folder (not in a subfolder).',
   '{0} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.': '{0} (1 or 2 photos): to attach elsewhere in the next step if needed.',
-  '{0} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « {1} ».':
-    '{0} item(s) already set aside by the old scripts (blurry, duplicates): they will go to “{1}”.',
+  '{0} (floues, doublons…) : comptés ci-dessus, ils iront dans « {1} ».':
+    '{0} (blurry, duplicates…): counted above, they will go to “{1}”.',
   '{0} : l’état d’un ancien projet (dossier « .album »).': '{0}: the state of an earlier project (“.album” folder).',
   'fichier ignoré': 'file ignored',
   'fichiers ignorés': 'files ignored',
@@ -560,8 +562,8 @@ export const TEXTES: Record<string, string> = {
   '{0} : elles iront dans « {1} », à placer à la main.': '{0}: they will go to “{1}”, to be placed by hand.',
   '« Valider et continuer » dès la fin de l’analyse.': '“Confirm and continue” as soon as the analysis is finished.',
   'Rien à décider ici : « Valider et continuer ».': 'Nothing to decide here: “Confirm and continue”.',
-  'Le dossier à trier sera relu entièrement et les photos analysées de nouveau (les résultats des photos inchangées sont réutilisés, sans frais). Les changements faits dans l’arborescence seront perdus et les étapes suivantes seront à refaire.':
-    'The folder to sort will be read again in full and the photos analysed again (results for unchanged photos are reused, at no cost). Changes made to the folder tree will be lost and the following steps will have to be done again.',
+  'Le dossier à trier sera relu entièrement et les photos analysées de nouveau (les résultats des photos inchangées sont réutilisés, sans frais). Tout ce qui a été décidé depuis l’inventaire sera perdu : l’arborescence, les noms des dossiers, la sélection et l’album ; les étapes suivantes seront à refaire. Pour ajouter des photos arrivées depuis, utilisez plutôt « Mettre à jour l’inventaire ».':
+    'The folder to sort will be read again in full and the photos analysed again (results for unchanged photos are reused, at no cost). Everything decided since the inventory will be lost: the folder tree, the folder names, the selection and the album; the following steps will have to be done again. To add photos that arrived since, use “Update the inventory” instead.',
 
   // Organisation.tsx
   'dossier gardé': 'kept folder',

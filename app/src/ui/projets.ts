@@ -1,6 +1,8 @@
 // Actions de projet : créer, construire le plan, rouvrir, autorisations à reprendre.
 
+import exemple from '../../../config.exemple/config.json';
 import { configAlbumDefaut, type ConfigAlbum } from '../lib/album';
+import { VERSION_CONFIG, type Config } from '../lib/config';
 import { t, type Langue } from '../lib/langue';
 import { depuisJson, Historique, planVide, RACINE, versJson, type PlanJson } from '../lib/plan';
 import { definirLangueSortie, etatVide, type EtatSortie } from '../lib/sortie';
@@ -8,7 +10,7 @@ import { comparerSource, integrerSource, planInitial, type ChangementsSource } f
 import { ResultatsAides } from '../navigateur/aides';
 import { Analyses } from '../navigateur/analyses';
 import { DossierConfig } from '../navigateur/configuration';
-import { AccesDossier, dossierMemorise, etatAutorisation, relation, type Mode } from '../navigateur/dossiers';
+import { AccesDossier, choisirDossier, dossierMemorise, etatAutorisation, memoriserDossier, relation, type Mode } from '../navigateur/dossiers';
 import { lireDoublons } from '../navigateur/doublons';
 import { Geocodage } from '../navigateur/geocodage';
 import { ServiceIA } from '../navigateur/ia';
@@ -245,6 +247,30 @@ export async function chargerConfiguration(dossier: FileSystemDirectoryHandle): 
   const d = new DossierConfig(dossier);
   configuration.value = { dossier: d, lecture: await d.lire() };
   void chargerEvenements();
+}
+
+/**
+ * Configuration vide. Les préréglages de l'exemple restent écrits : plus
+ * modifiables depuis D58, ils sont encore exigés par la lecture de config.json.
+ */
+export function configVide(): Config {
+  return { version: VERSION_CONFIG, modifie_le: '', lieux_connus: [], appareils: [], calendriers: [], prereglages: structuredClone(exemple.prereglages) };
+}
+
+/** Choisit un dossier « config » existant et le charge (page Configuration, ou sans quitter une étape). */
+export async function choisirDossierConfig(): Promise<void> {
+  await chargerConfiguration(await choisirDossier('config', 'readwrite'));
+}
+
+/** Crée « config » (avec un config.json vide) dans le dossier choisi, ou reprend celui qui s'y trouve ; rend le nom du dossier choisi. */
+export async function creerDossierConfig(): Promise<string> {
+  const parent = await choisirDossier('config-parent', 'readwrite');
+  const d = await parent.getDirectoryHandle('config', { create: true });
+  await memoriserDossier('config', d);
+  const dc = new DossierConfig(d);
+  if (!(await dc.lire())) await dc.ecrire(configVide(), null);
+  await chargerConfiguration(d);
+  return parent.name;
 }
 
 export interface Autorisation {

@@ -7,7 +7,8 @@ export const TEXTES: Record<string, string> = {
   'Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier calcul seront remplacés (Ctrl+Z annule).':
     'The photos to sort will be arranged again: moves made by hand since the last calculation will be replaced (Ctrl+Z undoes).',
   Recalculer: 'Recalculate',
-  'Tri par lieux : {0} dossiers proposés pour {1} fichiers': 'Sort by place: {0} folders proposed for {1} files',
+  'Tri par lieux : {0} pour {1}':
+    'Sort by place: {0} for {1}',
   'dossier proposé': 'folder proposed',
   'dossiers proposés': 'folders proposed',
   '{0} : vérifiez-les à l’étape suivante, « Lieux et sorties ».': '{0}: check them in the next step, “Places and outings”.',
@@ -20,8 +21,8 @@ export const TEXTES: Record<string, string> = {
   'Deux photos prises à moins de {0} km l’une de l’autre vont dans le même lieu. Plus petit : un dossier par quartier ; plus grand : un dossier par ville ou par région.':
     'Two photos taken less than {0} km apart go to the same place. Smaller: one folder per neighbourhood; larger: one folder per town or region.',
   'Un dossier par jour': 'One folder per day',
-  'Coché : un séjour de 4 jours au même endroit donne 4 dossiers, un par jour (pratique pour un voyage). Décoché : les jours qui se suivent au même endroit forment une seule sortie (pratique pour une année).':
-    'Ticked: a 4-day stay in the same place gives 4 folders, one per day (handy for a trip). Unticked: consecutive days in the same place form a single outing (handy for a whole year).',
+  'Décoché (conseillé, même pour des vacances) : les jours passés au même endroit forment une seule sortie, et chaque nouvel endroit a la sienne ; une semaine au même hôtel donne un dossier. Coché : un dossier pour chaque jour, même sans changer d’endroit.':
+    'Unticked (recommended, even for a holiday): the days spent in the same place form a single outing, and each new place gets its own; a week at the same hotel gives one folder. Ticked: one folder for each day, even without changing place.',
   'Regrouper les voyages': 'Group trips',
   'Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « {0}_… », avec une sortie par étape.':
     'Outings far from home that follow one another without going back home are gathered in a “{0}_…” folder, with one outing per stage.',
@@ -175,8 +176,8 @@ export const TEXTES: Record<string, string> = {
   'Captures d’écran': 'Screenshots',
   'capture d’écran trouvée': 'screenshot found',
   'captures d’écran trouvées': 'screenshots found',
-  'Ranger les {0} captures dans « {1} »':
-    'Put the {0} screenshots in “{1}”',
+  'Ranger {0} dans « {1} »':
+    'Put {0} in “{1}”',
   '{0} dans « {1} ».':
     '{0} in “{1}”.',
   'capture rangée': 'screenshot filed',
@@ -194,7 +195,6 @@ export const TEXTES: Record<string, string> = {
   'copie réduite': 'smaller copy',
   Écarter: 'Set aside',
   '… et {0} autres groupes.': '… and {0} more groups.',
-  'Choisissez d’abord le dossier de configuration (page Configuration).': 'First choose the configuration folder (Configuration page).',
   'Appareil « {0} » enregistré dans la configuration avec le décalage {1}.': 'Camera “{0}” saved in the configuration with the offset {1}.',
   'Appareil « {0} » enregistré dans la configuration.': 'Camera “{0}” saved in the configuration.',
   Appareils: 'Cameras',

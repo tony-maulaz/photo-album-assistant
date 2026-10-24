@@ -195,7 +195,29 @@ export interface ResumeDossier {
   auTotal?: string;
 }
 
-/** Nombres et dates (du–au) de chaque dossier, mis à jour en direct dans le panneau. */
+/**
+ * Date de prise de vue sur laquelle compter pour une période : pas celle du
+ * fichier (photo sans date), souvent celle d'une copie, qui étirerait par
+ * exemple « Belgique » du 24.07.25 au jour de la copie.
+ */
+export function dateSure(f: { date?: string; origineDate?: OrigineDate }): string | undefined {
+  return f.origineDate === 'fichier' ? undefined : f.date;
+}
+
+/** Premier et dernier jour (« AAAA-MM-JJ ») des dates sûres d'une liste de photos et vidéos. */
+export function periodeDe(fichiers: Iterable<{ date?: string; origineDate?: OrigineDate }>): { du?: string; au?: string } {
+  let du: string | undefined;
+  let au: string | undefined;
+  for (const f of fichiers) {
+    const jour = dateSure(f)?.slice(0, 10);
+    if (!jour) continue;
+    if (!du || jour < du) du = jour;
+    if (!au || jour > au) au = jour;
+  }
+  return { du, au };
+}
+
+/** Nombres et dates (du–au, dates sûres seulement) de chaque dossier, mis à jour en direct dans le panneau. */
 export function resumes(plan: Plan): Map<string, ResumeDossier> {
   const r = new Map<string, ResumeDossier>();
   for (const id of plan.dossiers.keys()) r.set(id, { photos: 0, videos: 0, octets: 0, photosTotal: 0, videosTotal: 0 });
@@ -206,8 +228,8 @@ export function resumes(plan: Plan): Map<string, ResumeDossier> {
     if (f.categorie === 'photo') s.photos++;
     else s.videos++;
     s.octets += f.taille;
-    if (f.date) {
-      const jour = f.date.slice(0, 10);
+    const jour = dateSure(f)?.slice(0, 10);
+    if (jour) {
       if (!s.du || jour < s.du) s.du = jour;
       if (!s.au || jour > s.au) s.au = jour;
     }

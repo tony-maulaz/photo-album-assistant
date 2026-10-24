@@ -1,18 +1,41 @@
 // Tri automatique par lieux et sorties (étape « Tri automatique », script 01) pour un dossier
 // en vrac : réglages simples et avancés, noms des lieux par OpenStreetMap,
-// puis l'arborescence proposée remplace le vrac dans le plan (annulable).
+// puis l'arborescence proposée remplace le vrac dans le plan (annulable). Sans
+// connexion, les lieux gardent des noms provisoires : le tri n'est jamais bloqué.
 
 import { nomsSortie } from '../../lib/sortie';
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
-import { gardeSaPlace, RACINE, traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
+import { gardeSaPlace, RACINE, resumes, traitementDe, type DossierPlan, type FichierPlan, type Plan } from '../../lib/plan';
 import { arborescence, avecSansDate, grouper, OPTIONS_TRI_DEFAUT, optionsDepuisPrereglage, rangerVideos, appliquerTri, separerSansDate, type OptionsTri, type PhotoTri } from '../../lib/tri';
-import { appliquer, changerEtape, configuration, journal, notifier, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
+import { appliquer, changerEtape, configuration, journal, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
 import { t } from '../../lib/langue';
 import { duree, nombre, pluriel } from '../format';
 import { BarreProgression } from './Cadre';
 import { confirmer } from './Dialogues';
 import { ETAPE } from '../../navigateur/projet';
+import { useLieuxProposes } from './LieuxFrequents';
+
+/**
+ * Réglages de départ (D58 : plus de menu de préréglage). Ceux de config.json
+ * ne se modifient plus et ne sont plus lus ; « voyage » reste pour les projets
+ * créés quand on pouvait le choisir.
+ */
+const PREREGLAGES: Record<string, unknown> = {
+  annee: { rayon_km: 2, par_jour: false, voyages: true, lieux_connus: true },
+  voyage: { rayon_km: 2, par_jour: true, voyages: false, lieux_connus: false },
+};
+
+/** Dossiers proposés par le tri qui contiennent des photos ou des vidéos (un dossier vidé, par exemple de ses floues, ne compte pas). */
+export function dossiersProposes(plan: Plan): DossierPlan[] {
+  const r = resumes(plan);
+  return [...plan.dossiers.values()].filter((d) => d.origine === 'tri' && r.get(d.id)!.photos + r.get(d.id)!.videos > 0);
+}
+
+/** Échec d'une requête à OpenStreetMap (pas de connexion, serveur indisponible) : le tri continue sans les noms. */
+function erreurReseau(err: unknown): boolean {
+  return !(err instanceof DOMException && err.name === 'AbortError');
+}
 
 /** Fichiers que le tri range : tout, sauf le contenu des dossiers qui gardent leur place et les captures d'écran. */
 export function fichiersATrier(plan: Plan): FichierPlan[] {
@@ -30,8 +53,7 @@ export function fichiersARanger(plan: Plan): FichierPlan[] {
 export function TriAuto() {
   const s = session.value!;
   const config = configuration.value?.lecture?.config;
-  const prereglages = config?.prereglages ?? { annee: { rayon_km: 2, par_jour: false, voyages: true, lieux_connus: true }, voyage: { rayon_km: 2, par_jour: true, voyages: false, lieux_connus: false } };
-  const depuis = (nom: string): OptionsTri => ({ ...OPTIONS_TRI_DEFAUT, ...optionsDepuisPrereglage(prereglages[nom]) });
+  const depuis = (nom: string): OptionsTri => ({ ...OPTIONS_TRI_DEFAUT, ...optionsDepuisPrereglage(PREREGLAGES[nom] ?? PREREGLAGES.annee) });
   // Plus de choix de préréglage à l'écran (D58) : les réglages « Année » servent de départ, chaque option est expliquée.
   const prereglage = s.projet.prereglage || 'annee';
   const [o, setO] = useState<OptionsTri>(() => ({ ...depuis(prereglage), ...(s.projet.tri as Partial<OptionsTri> | undefined) }));
@@ -43,6 +65,7 @@ export function TriAuto() {
   // Trier en plusieurs fois (D63) : après un premier tri, seules les photos arrivées depuis restent à ranger.
   const aRanger = dejaTrie ? fichiersARanger(s.plan) : aTrier;
   const lieux = config?.lieux_connus ?? [];
+  const lieuxProposes = useLieuxProposes();
 
   /** `nouvelles` : seulement les photos pas encore rangées, sans toucher aux dossiers déjà faits. */
   const calculer = async (nouvelles = false) => {
@@ -62,7 +85,17 @@ export function TriAuto() {
     try {
       const manquants = s.geocodage.manquants(g.groupes);
       if (manquants) setProgres({ faits: 0, total: manquants });
-      const noms = await s.geocodage.nommer(g.groupes, reglages.value.emailNominatim, (faits, total) => setProgres({ faits, total }), () => arreter.current);
+      let noms: (string | null)[];
+      let sansNoms = false;
+      try {
+        noms = await s.geocodage.nommer(g.groupes, reglages.value.emailNominatim, (faits, total) => setProgres({ faits, total }), () => arreter.current);
+      } catch (err) {
+        if (!erreurReseau(err)) throw err;
+        // Hors ligne : les noms déjà connus (cache) sont gardés, les autres lieux s'appellent « Lieu_01 »…
+        noms = g.groupes.map((gr) => s.geocodage.connu(gr.lat, gr.lon)?.nom ?? null);
+        sansNoms = true;
+        journal('tri', t`Noms des lieux indisponibles (OpenStreetMap) : ${texteErreur(err)}`);
+      }
       const proposes = arborescence(g, new Map(g.groupes.map((gr, i) => [gr.index, noms[i]])), o);
       const dates = new Map(photos.map((p) => [p.id, p.date]));
       const avecVideos = avecSansDate(
@@ -82,15 +115,26 @@ export function TriAuto() {
       planifierEnregistrement();
       versionProjet.value++;
       changerEtape(ETAPE.tri, 'en_cours');
-      const n = avecVideos.length;
+      // Même compte que le résumé de l'étape : un dossier vidé (photos écartées) ne compte pas.
+      const n = nouvelles ? new Set(liste.map((f) => s.plan.fichiers.get(f.id)).filter((f) => f?.statut === 'archive').map((f) => f!.dossier)).size : dossiersProposes(s.plan).length;
       journal(
         'tri',
         nouvelles
           ? t`Tri des nouvelles photos : ${pluriel(liste.length, 'fichier rangé', 'fichiers rangés')} dans ${pluriel(n, 'dossier')}`
-          : t`Tri par lieux : ${n} dossiers proposés pour ${aTrier.length} fichiers`,
+          : t`Tri par lieux : ${pluriel(n, 'dossier proposé', 'dossiers proposés')} pour ${pluriel(aTrier.length, 'fichier')}`,
         { options: o, groupes: g.groupes.length },
       );
-      notifier('ok', t`${pluriel(n, 'dossier proposé', 'dossiers proposés')} : vérifiez-les à l’étape suivante, « Lieux et sorties ».`);
+      notifier(
+        'ok',
+        nouvelles
+          ? t`${pluriel(liste.length, 'fichier rangé', 'fichiers rangés')} dans ${pluriel(n, 'dossier')} : vérifiez-les à l’étape suivante, « Lieux et sorties ».`
+          : t`${pluriel(n, 'dossier proposé', 'dossiers proposés')} : vérifiez-les à l’étape suivante, « Lieux et sorties ».`,
+      );
+      if (sansNoms)
+        notifier(
+          'info',
+          t`Noms des lieux indisponibles (OpenStreetMap injoignable) : les dossiers ont des noms provisoires (« ${nomsSortie().lieu}_01 »…). Renommez-les plus tard, ou recalculez une fois connecté.`,
+        );
     } catch (err) {
       notifier('erreur', t`Tri interrompu : ${texteErreur(err)}`);
     } finally {
@@ -139,14 +183,24 @@ export function TriAuto() {
         {caseACocher(
           'parJour',
           t`Un dossier par jour`,
-          t`Coché : un séjour de 4 jours au même endroit donne 4 dossiers, un par jour (pratique pour un voyage). Décoché : les jours qui se suivent au même endroit forment une seule sortie (pratique pour une année).`,
+          t`Décoché (conseillé, même pour des vacances) : les jours passés au même endroit forment une seule sortie, et chaque nouvel endroit a la sienne ; une semaine au même hôtel donne un dossier. Coché : un dossier pour chaque jour, même sans changer d’endroit.`,
         )}
         {caseACocher(
           'voyages',
           t`Regrouper les voyages`,
           <>
             {t`Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « ${nomsSortie().voyage}_… », avec une sortie par étape.`}
-            {!domicile && <strong> {t`Sans effet pour l’instant : cochez « C’est notre domicile » sur un lieu ci-dessus, ou indiquez-le dans la Configuration.`}</strong>}
+            {!domicile &&
+              (lieuxProposes ? (
+                <strong> {t`Sans effet pour l’instant : cochez « C’est notre domicile » sur un lieu ci-dessus, ou indiquez-le dans la Configuration.`}</strong>
+              ) : (
+                <>
+                  <strong> {t`Sans effet pour l’instant : aucun domicile n’est enregistré.`}</strong>{' '}
+                  <button type="button" class="lien" onClick={() => (page.value = { nom: 'configuration' })}>
+                    {t`Indiquer le domicile dans la Configuration`}
+                  </button>
+                </>
+              ))}
           </>,
         )}
         {caseACocher(

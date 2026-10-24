@@ -1,6 +1,8 @@
 // Inventaire (SPEC § 6.2) : appareils et leur décalage d'horloge. Les copies
 // exactes sont passées à l'étape « Doublons », les captures d'écran au « Tri
-// automatique » (D61).
+// automatique » (D61). Enregistrer un appareil ou son décalage demande le
+// dossier de configuration : sans lui, les boutons laissent place à une
+// explication et au moyen de le choisir ou de le créer sur place.
 
 import { useState } from 'preact/hooks';
 import { appareilsDetectes, mesurerDecalage, type MesureDecalage } from '../../lib/appareils';
@@ -8,6 +10,7 @@ import { t } from '../../lib/langue';
 import { appliquerDecalages } from '../../lib/inventaire';
 import { appliquer, configuration, notifier, session, texteErreur, versionPlan } from '../etat';
 import { jourCourt, nombre } from '../format';
+import { ChoixConfiguration } from './ChoixConfiguration';
 
 function Appareils() {
   const s = session.value!;
@@ -15,6 +18,8 @@ function Appareils() {
   const config = configuration.value;
   const appareilsConfig = config?.lecture?.config?.appareils ?? [];
   const [mesure, setMesure] = useState<{ a: string; b: string; r: MesureDecalage | null } | null>(null);
+  const [choixConfig, setChoixConfig] = useState(false);
+  const avecConfig = !!config?.lecture?.config;
   const photos = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut !== 'mis_de_cote');
   const liste = appareilsDetectes(photos);
   if (liste.length === 0) return null;
@@ -24,7 +29,7 @@ function Appareils() {
   const enregistrer = async (modele: string, decalage = '+00:00') => {
     const c = configuration.value;
     if (!c?.lecture?.config) {
-      notifier('erreur', t`Choisissez d’abord le dossier de configuration (page Configuration).`);
+      setChoixConfig(true);
       return;
     }
     try {
@@ -54,7 +59,7 @@ function Appareils() {
             <th class="n">{t`Photos`}</th>
             <th>{t`Période`}</th>
             <th>{t`Décalage d’horloge`}</th>
-            <th />
+            {avecConfig && <th />}
           </tr>
         </thead>
         <tbody>
@@ -71,23 +76,40 @@ function Appareils() {
                   {jourCourt(a.du)} – {jourCourt(a.au)}
                 </td>
                 <td>{c ? c.decalage : <span class="discret">{t`non enregistré`}</span>}</td>
-                <td>
-                  {!c && (
-                    <button type="button" class="lien" onClick={() => void enregistrer(a.modele)}>
-                      {t`Enregistrer`}
-                    </button>
-                  )}
-                  {liste.length > 1 && (
-                    <button type="button" class="lien" onClick={() => mesurer(liste.find((x) => x.modele !== a.modele)!.modele, a.modele)} title={t`Compare les photos d’une même scène prises par deux appareils`}>
-                      {t`Mesurer le décalage`}
-                    </button>
-                  )}
-                </td>
+                {avecConfig && (
+                  <td>
+                    {!c && (
+                      <button type="button" class="lien" onClick={() => void enregistrer(a.modele)}>
+                        {t`Enregistrer`}
+                      </button>
+                    )}
+                    {liste.length > 1 && (
+                      <button type="button" class="lien" onClick={() => mesurer(liste.find((x) => x.modele !== a.modele)!.modele, a.modele)} title={t`Compare les photos d’une même scène prises par deux appareils`}>
+                        {t`Mesurer le décalage`}
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}
         </tbody>
       </table>
+      {!avecConfig &&
+        (choixConfig ? (
+          <ChoixConfiguration
+            pourquoi={t`Les appareils et le décalage de leur horloge sont gardés dans un dossier de configuration.`}
+            apres={() => setChoixConfig(false)}
+            annuler={() => setChoixConfig(false)}
+          />
+        ) : (
+          <p class="discret">
+            {t`Facultatif : pour enregistrer un appareil ou mesurer le décalage de son horloge (deux appareils qui n’étaient pas à la même heure), il faut un dossier de configuration.`}{' '}
+            <button type="button" class="lien" onClick={() => setChoixConfig(true)}>
+              {t`Choisir ou créer le dossier de configuration`}
+            </button>
+          </p>
+        ))}
       {mesure && (
         <p class="encart">
           {mesure.r ? (
