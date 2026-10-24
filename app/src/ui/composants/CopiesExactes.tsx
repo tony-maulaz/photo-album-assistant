@@ -2,14 +2,15 @@
 // exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que
 // soit le dossier. L'utilisateur choisit les exemplaires à garder ; la
 // proposition garde le meilleur de chaque emplacement (un dossier qui garde sa
-// place, ou les photos à trier), et met de côté les autres.
+// place, ou les photos à trier, sauf si la photo est déjà dans un dossier
+// « Garder, nettoyer »), et met de côté les autres.
 
 import { dossierMisDeCote } from '../../lib/sortie';
 import { useMemo, useState } from 'preact/hooks';
-import { groupesDoublonsExacts, type GroupeExact } from '../../lib/doublonsExacts';
+import { groupesDoublonsExacts, type GenreEmplacement, type GroupeExact } from '../../lib/doublonsExacts';
 import { t } from '../../lib/langue';
 import { ecarterDoublonsExacts } from '../../lib/inventaire';
-import { cheminDossier, gardeSaPlace, type FichierPlan } from '../../lib/plan';
+import { cheminDossier, traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
 import { analyseAFaire, analyseEnCours } from '../analyseDossier';
 import { annuler, appliquer, notifier, session, versionIA, versionPlan } from '../etat';
 import { pluriel } from '../format';
@@ -17,6 +18,19 @@ import { Miniature } from './GrillePhotos';
 
 /** Emplacement des photos à trier (racine, dossiers « Trier ») : un seul, le tri les répartira. */
 const A_TRIER = '§a_trier';
+
+/**
+ * Où est une photo, pour la proposition. Dossier déjà trié : chaque dossier est
+ * un emplacement, laissé tel quel. En vrac : les dossiers « Garder, nettoyer »
+ * et « Ne pas toucher » gardent leur place ; toutes les autres photos sont à trier.
+ */
+function lieu(plan: Plan, dejaTrie: boolean, f: FichierPlan): { emplacement: string; genre: GenreEmplacement } {
+  if (dejaTrie) return { emplacement: f.dossier, genre: 'tel_quel' };
+  const tr = traitementDe(plan, f.dossier);
+  if (tr === 'nettoyer') return { emplacement: f.dossier, genre: 'nettoyer' };
+  if (tr === 'garder') return { emplacement: f.dossier, genre: 'tel_quel' };
+  return { emplacement: A_TRIER, genre: 'a_trier' };
+}
 
 /**
  * Groupes de copies exactes parmi les photos encore dans l'archive, ou `null`
@@ -40,8 +54,7 @@ export function useCopiesExactes(): GroupeExact[] | null {
         phash: s.analyses.get(f)?.phash,
         dims: f.dims,
         exif: f.origineDate === 'exif',
-        // Dossier déjà trié : chaque dossier est un emplacement. En vrac : ceux qui gardent leur place, et « à trier ».
-        emplacement: s.projet.mode === 'deja_trie' || gardeSaPlace(s.plan, f.dossier) ? f.dossier : A_TRIER,
+        ...lieu(s.plan, s.projet.mode === 'deja_trie', f),
       })),
     );
   }, [pret, versionPlan.value, versionIA.value]);
@@ -61,6 +74,8 @@ export function CopiesExactes() {
   const [choix, setChoix] = useState<Record<string, string[]>>({});
   const gardes = (g: GroupeExact) => choix[g.garde] ?? g.aGarder;
   const chemin = (f: FichierPlan) => cheminDossier(s.plan, f.dossier) || t`racine`;
+  // Dossiers qui gardent leur place : la proposition en tient compte, on l'explique.
+  const avecDossiersGardes = s.projet.mode === 'vrac' && [...s.plan.dossiers.values()].some((d) => d.traitement && d.traitement !== 'trier');
 
   if (!groupes) {
     return (
@@ -90,7 +105,8 @@ export function CopiesExactes() {
   const ecarter = () => {
     appliquer(ecarterDoublonsExacts(s.plan, groupes, new Set(groupes.flatMap(gardes))));
     setChoix({});
-    notifier('ok', t`${pluriel(total, 'copie écartée', 'copies écartées')}.`, { libelle: t`Annuler`, faire: annuler });
+    // La section disparaît avec les groupes : le message dit où sont les copies, et permet d'annuler.
+    notifier('ok', t`${pluriel(total, 'copie écartée', 'copies écartées')} dans « ${dossierMisDeCote('doublons_exacts')} ».`, { libelle: t`Annuler`, faire: annuler });
   };
 
   const carte = (g: GroupeExact) => {
@@ -122,6 +138,8 @@ export function CopiesExactes() {
       <h2>{t`Copies exactes`}</h2>
       <p class="discret">
         {t`La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « ${dossierMisDeCote('doublons_exacts')} ».`}
+        {avecDossiersGardes &&
+          t` Proposition : un exemplaire par dossier. Une photo à trier déjà rangée dans un dossier « Garder, nettoyer » y a sa place : ses exemplaires à trier sont écartés, pour ne pas la trier deux fois. Une photo d’un dossier « Ne pas toucher » (un « Best of », par exemple) reste aussi parmi les photos à trier.`}
       </p>
       {aDecider.length > 0 && (
         <>

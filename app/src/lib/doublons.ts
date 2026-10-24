@@ -79,6 +79,12 @@ export function rafales(photos: PhotoDoublon[], p = PARAMETRES_DOUBLONS): Propos
   return propositions;
 }
 
+/**
+ * Nom donné à une scène locale dans la consigne de vérification (script 06) :
+ * envoyé tel quel à l'IA, il n'est pas affiché (la page en donne une légende traduite).
+ */
+export const SCENE_LOCALE = 'scènes proches (détection locale)';
+
 /** Scènes locales : photos non groupées par le modèle, semblables (distance ≤ 20). */
 export function scenesLocales(photos: PhotoDoublon[], deja: Set<string>, seuil = PARAMETRES_DOUBLONS.distanceScene): string[][] {
   const groupees = new Set(deja);
@@ -348,7 +354,7 @@ export async function analyserDossier(photos: PhotoDoublon[], ia: OutilsIA | nul
   const vue = await ia.appeler('vue', planches, consigneVue, cleVue(restants, ia.identite));
   const candidats: { ids: string[]; scene: string }[] = lireScenes(vue, restants.length).map((s) => ({ ids: s.numeros.map((n) => restants[n - 1].id), scene: s.scene }));
   const groupees = new Set(candidats.flatMap((c) => c.ids));
-  for (const s of scenesLocales(restants, groupees, p.distanceScene)) candidats.push({ ids: s, scene: 'scènes proches (détection locale)' });
+  for (const s of scenesLocales(restants, groupees, p.distanceScene)) candidats.push({ ids: s, scene: SCENE_LOCALE });
 
   // Vérification en grand : 6 photos au plus par appel, heure sur chaque vignette (I5, I7).
   const marques = new Set<string>();

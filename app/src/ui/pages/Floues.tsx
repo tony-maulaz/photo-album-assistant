@@ -34,6 +34,13 @@ export function PageFloues() {
   versionPlan.value;
   versionIA.value;
   const [seuil, setSeuil] = useState(s.projet.seuil_flou ?? SEUIL_FLOU);
+  // La position du curseur est gardée dans le projet dès qu'elle change : un rechargement ne la perd pas
+  // (le seuil ne s'applique au plan qu'à « Valider »).
+  const changerSeuil = (v: number) => {
+    setSeuil(v);
+    s.projet.seuil_flou = v;
+    planifierEnregistrement();
+  };
   const [voir, setVoir] = useState<'toutes' | 'ecartees'>('toutes');
   const nettete = (f: FichierPlan) => s.analyses.get(f)?.nettete;
   const concernees = useMemo(() => photosConcernees(s.plan), [versionPlan.value]);
@@ -52,13 +59,16 @@ export function PageFloues() {
   useEffect(() => {
     selection.value = new Set();
     const touche = (e: KeyboardEvent) => {
-      if (estChampDeSaisie(e) || visionneuse.value !== null) return;
+      // Déjà traitée ailleurs (raccourci commun à toutes les pages) : ne pas annuler deux fois.
+      if (e.defaultPrevented || estChampDeSaisie(e) || visionneuse.value !== null) return;
       const ctrl = e.ctrlKey || e.metaKey;
       const ids = [...selection.value];
-      if (ctrl && e.key.toLowerCase() === 'z') annuler();
-      else if (ctrl && e.key.toLowerCase() === 'y') retablir();
-      else if (!ctrl && e.key.toLowerCase() === 's' && ids.length) appliquer(deciderFlou(session.value!.plan, ids, 'sauvee'));
-      else if (!ctrl && (e.key === 'Delete' || e.key.toLowerCase() === 'x') && ids.length) appliquer(deciderFlou(session.value!.plan, ids, 'ecartee'));
+      const k = e.key.toLowerCase();
+      // Ctrl+Y ou Ctrl+Maj+Z rétablit, Ctrl+Z annule.
+      if (ctrl && (k === 'y' || (k === 'z' && e.shiftKey))) retablir();
+      else if (ctrl && k === 'z') annuler();
+      else if (!ctrl && k === 's' && ids.length) appliquer(deciderFlou(session.value!.plan, ids, 'sauvee'));
+      else if (!ctrl && (e.key === 'Delete' || k === 'x') && ids.length) appliquer(deciderFlou(session.value!.plan, ids, 'ecartee'));
       else if (e.key === 'Escape') selection.value = new Set();
       else return;
       e.preventDefault();
@@ -94,10 +104,10 @@ export function PageFloues() {
             max={versCurseur(1000)}
             value={versCurseur(seuil)}
             aria-label={t`Tolérance au flou`}
-            onInput={(e) => setSeuil(depuisCurseur(Number(e.currentTarget.value)))}
+            onInput={(e) => changerSeuil(depuisCurseur(Number(e.currentTarget.value)))}
           />
         </label>
-        <button type="button" class="lien" disabled={seuil === SEUIL_FLOU} onClick={() => setSeuil(SEUIL_FLOU)} title={t`Réglage calibré sur de vraies photos`}>
+        <button type="button" class="lien" disabled={seuil === SEUIL_FLOU} onClick={() => changerSeuil(SEUIL_FLOU)} title={t`Réglage calibré sur de vraies photos`}>
           {t`Revenir au réglage conseillé`}
         </button>
         <strong class="compteur-floues">{pluriel(ecartees, 'photo écartée', 'photos écartées')}</strong>

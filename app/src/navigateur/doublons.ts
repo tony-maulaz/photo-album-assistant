@@ -139,7 +139,14 @@ export interface OptionsDoublons {
 /** Hauteur des miniatures du cache : au-delà, la planche part des originaux. */
 const COTE_MINIATURE = 256;
 
-export async function analyserDoublons(o: OptionsDoublons, precedent?: EtatDoublons): Promise<{ etat: EtatDoublons; budgetAtteint: boolean; erreurs: string[] }> {
+/**
+ * Analyse des lots demandés. `faits` : lots traités ; `arrete` : l'utilisateur
+ * a arrêté avant la fin (les lots déjà traités sont gardés).
+ */
+export async function analyserDoublons(
+  o: OptionsDoublons,
+  precedent?: EtatDoublons,
+): Promise<{ etat: EtatDoublons; budgetAtteint: boolean; erreurs: string[]; faits: number; arrete: boolean }> {
   const resultat: EtatDoublons = {
     version: 1,
     strict: o.strict,
@@ -195,5 +202,5 @@ export async function analyserDoublons(o: OptionsDoublons, precedent?: EtatDoubl
     ecriture = ecriture.then(() => o.etat.ecrire(FICHIER, resultat)).catch(() => undefined);
     await ecriture;
   });
-  return { etat: resultat, budgetAtteint, erreurs };
+  return { etat: resultat, budgetAtteint, erreurs, faits, arrete: faits < o.dossiers.length && o.arreter() };
 }

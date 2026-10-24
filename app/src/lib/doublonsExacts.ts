@@ -3,8 +3,10 @@
 // petite, très semblable). L'utilisateur choisit les exemplaires à garder ;
 // la proposition garde le meilleur exemplaire de chaque emplacement (un
 // dossier qui garde sa place, ou les photos à trier) : une sélection « Best
-// of » faite de copies reste entière. Les copies d'un même emplacement et les
-// versions réduites sont proposées pour `_mis_de_cote/doublons_exacts/`.
+// of » faite de copies reste entière. Une photo à trier qui a déjà sa place
+// dans un dossier « Garder, nettoyer » n'est pas triée une seconde fois. Les
+// copies d'un même emplacement et les versions réduites sont proposées pour
+// `_mis_de_cote/doublons_exacts/`.
 
 export interface PhotoExacte {
   id: string;
@@ -22,13 +24,25 @@ export interface PhotoExacte {
   exif: boolean;
   /** Où est la photo : l'identifiant d'un dossier qui garde sa place, ou une même valeur pour toutes les photos à trier. */
   emplacement: string;
+  /**
+   * Genre de l'emplacement : `a_trier` (racine, dossiers « Trier » : le tri les
+   * répartira), `nettoyer` (dossier « Garder, nettoyer » : la photo y a déjà sa
+   * place), `tel_quel` (« Ne pas toucher », ou dossier d'une archive déjà triée).
+   */
+  genre: GenreEmplacement;
 }
 
+export type GenreEmplacement = 'a_trier' | 'nettoyer' | 'tel_quel';
+
 export interface GroupeExact {
-  /** Le meilleur exemplaire (EXIF, le plus grand…). */
+  /** Le meilleur exemplaire (EXIF, le plus grand…) ; celui d'un dossier « Garder, nettoyer » plutôt qu'un exemplaire à trier. */
   garde: string;
   copies: { id: string; type: 'identique' | 'reduite' }[];
-  /** Proposition : les exemplaires à garder, le meilleur de chaque emplacement (jamais une version réduite). */
+  /**
+   * Proposition : les exemplaires à garder, le meilleur de chaque emplacement
+   * (jamais une version réduite) ; aucun exemplaire à trier quand la photo est
+   * déjà dans un dossier « Garder, nettoyer ».
+   */
   aGarder: string[];
 }
 
@@ -168,17 +182,22 @@ export function groupesDoublonsExacts(photos: PhotoExacte[]): GroupeExact[] {
     if (absorbes.has(g)) continue;
     const reduites = reduitesDe(g);
     if (g.length + reduites.length < 2) continue;
+    // Déjà dans un dossier « Garder, nettoyer » : la photo a sa place, ses
+    // exemplaires à trier passent en dernier et sont proposés à l'écart (sinon
+    // le tri la rangerait une seconde fois dans un nouveau dossier).
+    const dejaRangee = g.some((p) => p.genre === 'nettoyer');
+    const ordre = dejaRangee ? [...g.filter((p) => p.genre !== 'a_trier'), ...g.filter((p) => p.genre === 'a_trier')] : g;
     // Le meilleur exemplaire de chaque emplacement (g est trié du meilleur au moins bon).
     const aGarder: string[] = [];
     const emplacements = new Set<string>();
-    for (const p of g) {
-      if (emplacements.has(p.emplacement)) continue;
+    for (const p of ordre) {
+      if (emplacements.has(p.emplacement) || (dejaRangee && p.genre === 'a_trier')) continue;
       emplacements.add(p.emplacement);
       aGarder.push(p.id);
     }
     resultat.push({
-      garde: g[0].id,
-      copies: [...g.slice(1).map((p) => ({ id: p.id, type: 'identique' as const })), ...reduites.map((p) => ({ id: p.id, type: 'reduite' as const }))],
+      garde: ordre[0].id,
+      copies: [...ordre.slice(1).map((p) => ({ id: p.id, type: 'identique' as const })), ...reduites.map((p) => ({ id: p.id, type: 'reduite' as const }))],
       aGarder,
     });
   }

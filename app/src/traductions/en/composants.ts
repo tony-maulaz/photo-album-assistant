@@ -352,7 +352,6 @@ export const TEXTES: Record<string, string> = {
   // CopiesExactes.tsx
   'Copies exactes': 'Exact copies',
   'Gardez au moins un exemplaire de chaque photo.': 'Keep at least one copy of each photo.',
-  '{0}.': '{0}.',
   'Cliquer pour garder ou écarter cet exemplaire': 'Click to keep or set aside this copy',
   'La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « {0} ».':
     'The same photo several times (same content, or a reduced copy sent through WhatsApp), whatever the folder. Click a copy to keep it or set it aside; copies set aside go to “{0}”.',

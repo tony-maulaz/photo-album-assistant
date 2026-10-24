@@ -6,11 +6,11 @@
 
 import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { accepterProposition, ecarterDuGroupe, etatDoublon, gardeeActuelle, garderALaPlace, type Proposition } from '../../lib/doublons';
+import { accepterProposition, ecarterDuGroupe, etatDoublon, gardeeActuelle, garderALaPlace, SCENE_LOCALE, type Proposition } from '../../lib/doublons';
 import { cheminDossier, combiner, garderAussi, type FichierPlan } from '../../lib/plan';
 import { MODELES } from '../../lib/tarifs';
 import { cleApi } from '../../navigateur/cle';
-import { analyserDoublons, estimerDoublons, lotsANouveau, lotsDoublons, photosLot } from '../../navigateur/doublons';
+import { analyserDoublons, estimerDoublons, lotsANouveau, lotsDoublons, photosLot, type EtatDoublons } from '../../navigateur/doublons';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { BudgetAtteint } from '../../navigateur/ia';
 import { cleMiniature } from '../../navigateur/miniatures';
@@ -59,6 +59,20 @@ enregistrerAide({
   },
 });
 
+/** Doublons encore à relire (ni écartés ni gardés), tous lots confondus. */
+function aRelire(etat: EtatDoublons): number {
+  const plan = session.value!.plan;
+  let n = 0;
+  for (const d of Object.values(etat.dossiers)) for (const p of d.propositions) for (const x of p.doublons) if (etatDoublon(plan.fichiers.get(x.id)) === 'propose') n++;
+  return n;
+}
+
+/** « Analyse arrêtée : 3 journées sur 7 analysées. » */
+function texteArret(journees: boolean, faits: number, total: number): string {
+  if (journees) return faits <= 1 ? t`Analyse arrêtée : ${nombre(faits)} journée sur ${nombre(total)} analysée.` : t`Analyse arrêtée : ${nombre(faits)} journées sur ${nombre(total)} analysées.`;
+  return faits <= 1 ? t`Analyse arrêtée : ${nombre(faits)} dossier sur ${nombre(total)} analysé.` : t`Analyse arrêtée : ${nombre(faits)} dossiers sur ${nombre(total)} analysés.`;
+}
+
 interface Groupe {
   dossier: string;
   p: Proposition;
@@ -94,6 +108,14 @@ function Vignette({ f, taille, legende, gardee, etat }: { f: FichierPlan; taille
   );
 }
 
+/** Légende d'un groupe, cohérente avec son badge : rafale (locale) ou vérification par l'IA. */
+function scene(p: Proposition): string {
+  if (p.source === 'rafale') return t`photos quasi identiques prises à quelques secondes`;
+  // Scène repérée par ressemblance (pas par la vue d'ensemble), puis vérifiée par l'IA.
+  if (!p.scene || p.scene === SCENE_LOCALE) return t`photos semblables repérées sur l’ordinateur, vérifiées par l’IA`;
+  return p.scene;
+}
+
 function CarteGroupe({ g, comparer }: { g: Groupe; comparer: (g: Groupe) => void }) {
   const s = session.value!;
   const fichier = (id: string) => s.plan.fichiers.get(id);
@@ -110,7 +132,7 @@ function CarteGroupe({ g, comparer }: { g: Groupe; comparer: (g: Groupe) => void
     <article class={`carte-groupe ${etat}`}>
       <header>
         <span class={`source ${g.p.source}`}>{g.p.source === 'rafale' ? t`Rafale` : t`IA`}</span>
-        <span>{g.p.scene || (g.p.source === 'rafale' ? t`photos quasi identiques prises à quelques secondes` : '')}</span>
+        <span>{scene(g.p)}</span>
         <span class="discret">{cheminDossier(s.plan, garde.dossier) || t`Photos (racine)`}</span>
       </header>
       <div class="photos-groupe">
@@ -266,12 +288,13 @@ export function PageDoublons() {
         s.doublons,
       );
       s.doublons = res.etat;
-      const n = Object.values(res.etat.dossiers).reduce((a, d) => a + d.propositions.reduce((b, p) => b + p.doublons.length, 0), 0);
-      journal('doublons', t`Doublons (${avecIA ? t`IA, ${modele}` : t`rafales`}, ${strict ? t`strict` : t`prudent`}) : ${n} proposés en ${Math.round((performance.now() - debut) / 1000)} s`);
+      const n = aRelire(res.etat);
+      journal('doublons', t`Doublons (${avecIA ? t`IA, ${modele}` : t`rafales`}, ${strict ? t`strict` : t`prudent`}) : ${pluriel(n, 'doublon à relire', 'doublons à relire')} en ${Math.round((performance.now() - debut) / 1000)} s`);
       if (res.budgetAtteint) notifier('erreur', new BudgetAtteint().message);
+      else if (res.arrete) notifier('info', texteArret(un === 'journée', res.faits, lots.length));
       else if (res.erreurs.length)
         notifier('erreur', t`${un === 'journée' ? pluriel(res.erreurs.length, 'journée non analysée', 'journées non analysées') : pluriel(res.erreurs.length, 'dossier non analysé', 'dossiers non analysés')} : ${res.erreurs[0]}`);
-      else notifier('ok', t`${pluriel(n, 'doublon proposé', 'doublons proposés')} : relisez-les ci-dessous.`);
+      else notifier('ok', n === 0 ? t`Aucun doublon à relire.` : n === 1 ? t`1 doublon proposé : relisez-le ci-dessous.` : t`${nombre(n)} doublons proposés : relisez-les ci-dessous.`);
       changerEtape(ETAPE.doublons, 'en_cours');
     } catch (err) {
       notifier('erreur', t`Analyse interrompue : ${texteErreur(err)}`);
@@ -296,7 +319,7 @@ export function PageDoublons() {
     const aAccepter = visibles.filter((g) => g.p.doublons.some((d) => etatDoublon(fichier(d.id)) === 'propose'));
     const n = aAccepter.reduce((a, g) => a + g.p.doublons.filter((d) => etatDoublon(fichier(d.id)) === 'propose').length, 0);
     if (!n || !(await confirmer(t`Écarter tous les doublons affichés ?`, t`${pluriel(n, 'photo')} iront dans « ${dossierMisDeCote('doublons')} » (rien n’est supprimé, Ctrl+Z annule).`, t`Écarter`))) return;
-    appliquer(combiner(t`Écarter ${n} doublons`, ...aAccepter.map((g) => accepterProposition(plan, g.p, gardeeActuelle(g.p, fichier)))));
+    appliquer(combiner(t`Écarter ${pluriel(n, 'doublon')}`, ...aAccepter.map((g) => accepterProposition(plan, g.p, gardeeActuelle(g.p, fichier)))));
     notifier('ok', `${pluriel(n, 'doublon écarté', 'doublons écartés')}.`, { libelle: t`Annuler`, faire: annuler });
   };
 
@@ -447,7 +470,13 @@ export function PageDoublons() {
             {totalProposes ? t` · ${nombre(totalProposes)} à relire` : ''}
           </>
         }
-        alertes={totalProposes ? [t`${pluriel(totalProposes, 'doublon proposé', 'doublons proposés')} pas encore relus (ils restent dans l’archive)`] : []}
+        alertes={
+          totalProposes === 1
+            ? [t`1 doublon proposé pas encore relu (il reste dans l’archive)`]
+            : totalProposes
+              ? [t`${nombre(totalProposes)} doublons proposés pas encore relus (ils restent dans l’archive)`]
+              : []
+        }
         revenir={() => revenirDe('doublons')}
         valider={() => validerEtape('doublons')}
       />
