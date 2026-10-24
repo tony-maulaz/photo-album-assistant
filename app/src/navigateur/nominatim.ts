@@ -1,6 +1,7 @@
 // Géocodage inverse et recherche d'adresse avec Nominatim (OpenStreetMap),
 // en respectant la règle d'usage : au plus une requête par seconde.
 
+import { t } from '../lib/langue';
 import { nomDepuisAdresse } from '../lib/noms';
 
 const SERVEUR = 'https://nominatim.openstreetmap.org';
@@ -29,7 +30,7 @@ function requete<T>(chemin: string, parametres: Record<string, string>, email?: 
     derniere = envoi;
     const reponse = await fetch(`${SERVEUR}/${chemin}?${p}`, { headers: { Accept: 'application/json' } });
     const dureeMs = performance.now() - envoi;
-    if (!reponse.ok) throw new Error(`Nominatim a répondu ${reponse.status} ${reponse.statusText}`);
+    if (!reponse.ok) throw new Error(t`Nominatim a répondu ${reponse.status} ${reponse.statusText}`);
     return { donnees: (await reponse.json()) as T, statut: reponse.status, dureeMs, envoi };
   });
   file = suite.catch(() => undefined);

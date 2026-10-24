@@ -5,6 +5,7 @@
 
 import { fichiersAlbum, ordreAlbum, photosAlbum, planifierAlbum, sections, textesAlbum, type ActionAlbum, type ConfigAlbum, type EtatAlbum, type FichierAlbum } from '../lib/album';
 import { changerOrientation, orientationApresRotation, orientationJpeg } from '../lib/jpeg';
+import { t } from '../lib/langue';
 import type { Plan } from '../lib/plan';
 import { DOSSIER_ALBUM, type EtatSortie } from '../lib/sortie';
 import type { AccesDossier } from './dossiers';
@@ -109,7 +110,7 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
   const deplacer = async (depuis: string, vers: string) => {
     const [dossier, nom] = separer(vers);
     const poignee = await o.sortie.poignee(album(depuis));
-    if (typeof poignee.move !== 'function') throw new Error('Ce navigateur ne sait pas renommer un fichier (move).');
+    if (typeof poignee.move !== 'function') throw new Error(t`Ce navigateur ne sait pas renommer un fichier (move).`);
     await poignee.move(await o.sortie.dossier(album(dossier), true), nom);
     etat[vers] = etat[depuis];
     delete etat[depuis];

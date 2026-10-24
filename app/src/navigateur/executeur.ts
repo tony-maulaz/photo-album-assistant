@@ -4,6 +4,7 @@
 
 import type { DemandeIA } from '../lib/aidesSelection';
 import { estimerDemandes } from '../lib/aidesSelection';
+import { t } from '../lib/langue';
 import type { BlocContenu, RequeteIA } from '../lib/nommage';
 import type { FichierPlan, Plan } from '../lib/plan';
 import { modele as infoModele } from '../lib/tarifs';
@@ -25,7 +26,7 @@ export interface ContexteExecution {
 
 function fichier(c: ContexteExecution, id: string): FichierPlan {
   const f = c.plan.fichiers.get(id);
-  if (!f) throw new Error(`Photo inconnue : ${id}`);
+  if (!f) throw new Error(t`Photo inconnue : ${id}`);
   return f;
 }
 

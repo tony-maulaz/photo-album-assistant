@@ -2,6 +2,7 @@
 // sauvegarde horodatée, et refus d'écraser une modification faite ailleurs.
 
 import { nomSauvegarde, sauvegardesEnTrop, validerConfig, type Config } from '../lib/config';
+import { t } from '../lib/langue';
 
 export const NOM_CONFIG = 'config.json';
 
@@ -15,7 +16,7 @@ export interface LectureConfig {
 
 export class ModifieAilleurs extends Error {
   constructor() {
-    super('config.json a été modifié ailleurs depuis sa lecture : rechargez-le avant d’enregistrer.');
+    super(t`config.json a été modifié ailleurs depuis sa lecture : rechargez-le avant d’enregistrer.`);
   }
 }
 
@@ -39,7 +40,7 @@ export class DossierConfig {
       erreurs = validerConfig(v);
       if (!erreurs.length) config = v as Config;
     } catch (err) {
-      erreurs = [`JSON illisible : ${(err as Error).message}`];
+      erreurs = [t`JSON illisible : ${(err as Error).message}`];
     }
     return { config, erreurs, texte, modifie: f.lastModified, taille: f.size };
   }
