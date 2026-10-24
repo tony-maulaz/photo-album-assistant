@@ -129,7 +129,8 @@ try {
     for (const f of fichiers) await ecrire(chemins[f.name], f);
     const f0140 = fichiers.find((f) => f.name.startsWith('0140'));
     const f0141 = fichiers.find((f) => f.name.startsWith('0141'));
-    // Copie exacte dans le vrac (proposée à l'écart), copies voulues dans BESTOF et janvier (gardées, D61).
+    // Copie exacte dans le vrac (proposée à l'écart) ; 0141 aussi dans BESTOF (« Ne pas toucher » : copie voulue, gardée)
+    // et dans janvier (« Garder, nettoyer » : la photo y a sa place, son exemplaire à trier est proposé à l'écart).
     await ecrire('copie de 0140.jpg', f0140);
     await ecrire('BESTOF/0141_best.jpg', f0141);
     await ecrire('janvier/0141_janvier.jpg', f0141);
@@ -157,7 +158,7 @@ try {
   // Étape 2 : inventaire, des informations seulement ; l'analyse des photos se fait toute seule (D56).
   await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   const aVerifier = await page.locator('.a-verifier').innerText();
-  verifier(aVerifier.includes('2 sous-dossiers') && aVerifier.includes('1 copie exacte'), `inventaire : ce qui attend aux étapes suivantes (${aVerifier.split('\n').slice(1, 3).join(' / ')})`);
+  verifier(aVerifier.includes('2 sous-dossiers') && aVerifier.includes('2 copies exactes'), `inventaire : ce qui attend aux étapes suivantes (${aVerifier.split('\n').slice(1, 3).join(' / ')})`);
   verifier((await page.locator('.outils-etape').innerText()).includes('Mettre à jour l’inventaire'), '« Mettre à jour l’inventaire » en haut de la page');
   verifier((await page.locator('#copies, #captures, .sous-dossiers').count()) === 0, 'ni copies, ni captures, ni sous-dossiers à l’inventaire (D61)');
   await capturer(page, 'v1_inventaire');
@@ -192,13 +193,16 @@ try {
   // Copies exactes en tête : un exemplaire gardé par emplacement, l'utilisateur peut changer (D61).
   await page.locator('#copies .groupe-exact').first().waitFor({ timeout: 60_000 });
   const aDecider = page.locator('#copies > .groupes-exacts > .groupe-exact');
-  verifier((await aDecider.count()) === 1 && (await aDecider.first().locator('.exemplaire.ecarte').innerText()).includes('copie de 0140.jpg'), 'copies exactes : la copie du vrac est proposée à l’écart');
-  verifier((await page.locator('#copies details summary').innerText()).includes('1 photo présente dans plusieurs dossiers'), 'copies voulues (BESTOF, janvier) : toutes gardées');
-  await page.locator('#copies details summary').click();
+  verifier((await aDecider.count()) === 2 && (await aDecider.first().locator('.exemplaire.ecarte').innerText()).includes('copie de 0140.jpg'), 'copies exactes : la copie du vrac est proposée à l’écart');
+  const copie0141 = aDecider.nth(1);
+  verifier(
+    (await copie0141.locator('.exemplaire.garde').count()) === 2 && (await copie0141.locator('.exemplaire.ecarte').innerText()).includes('racine'),
+    'copie déjà rangée dans janvier (« Garder, nettoyer ») : l’exemplaire à trier est proposé à l’écart, celui de BESTOF (« Ne pas toucher ») gardé',
+  );
   await capturer(page, 'v2b_copies');
-  await page.getByRole('button', { name: 'Écarter 1 copie' }).click();
+  await page.getByRole('button', { name: 'Écarter 2 copies' }).click();
   await page.locator('#copies > .groupes-exacts').waitFor({ state: 'detached' });
-  verifier(true, 'copie exacte écartée');
+  verifier(true, 'copies exactes écartées');
   // Les rafales se repèrent toutes seules à l'ouverture de la page.
   await page.locator('.apercu-lots > summary', { hasText: 'Aperçu par journée' }).waitFor({ timeout: 60_000 });
   verifier(true, 'dossier en vrac : rafales repérées toutes seules, journée par journée');

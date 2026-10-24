@@ -52,7 +52,7 @@ export const TEXTES: Record<string, string> = {
   'Environ {0} CHF (au plus) pour {1}. Des planches de miniatures sont envoyées à l’IA (api.anthropic.com).':
     'About {0} CHF (at most) for {1}. Thumbnail contact sheets are sent to the AI (api.anthropic.com).',
   Lancer: 'Start',
-  'Doublons ({0}, {1}) : {2} proposés en {3} s': 'Duplicates ({0}, {1}): {2} proposed in {3} s',
+  'Doublons ({0}, {1}) : {2} en {3} s': 'Duplicates ({0}, {1}): {2} in {3} s',
   'IA, {0}': 'AI, {0}',
   rafales: 'bursts',
   strict: 'strict',
@@ -62,14 +62,13 @@ export const TEXTES: Record<string, string> = {
   'journées non analysées': 'days not analysed',
   'dossier non analysé': 'folder not analysed',
   'dossiers non analysés': 'folders not analysed',
-  '{0} : relisez-les ci-dessous.': '{0}: review them below.',
-  'doublon proposé': 'proposed duplicate',
-  'doublons proposés': 'proposed duplicates',
+  'Aucun doublon à relire.': 'No duplicates to review.',
+  '1 doublon proposé : relisez-le ci-dessous.': '1 proposed duplicate: review it below.',
+  '{0} doublons proposés : relisez-les ci-dessous.': '{0} proposed duplicates: review them below.',
   'Analyse interrompue : {0}': 'Analysis interrupted: {0}',
   'Écarter tous les doublons affichés ?': 'Set aside all the duplicates shown?',
   '{0} iront dans « {1} » (rien n’est supprimé, Ctrl+Z annule).':
     '{0} will go to “{1}” (nothing is deleted, Ctrl+Z undoes).',
-  'Écarter {0} doublons': 'Set aside {0} duplicates',
   'doublon écarté': 'duplicate set aside',
   'doublons écartés': 'duplicates set aside',
   Annuler: 'Undo',
@@ -127,7 +126,8 @@ export const TEXTES: Record<string, string> = {
   'Écarter tous les doublons affichés': 'Set aside all the duplicates shown',
   'Afficher 30 groupes de plus ({0} restants)': 'Show 30 more groups ({0} left)',
   ' · {0} à relire': ' · {0} to review',
-  '{0} pas encore relus (ils restent dans l’archive)': '{0} not reviewed yet (they stay in the archive)',
+  '1 doublon proposé pas encore relu (il reste dans l’archive)': '1 proposed duplicate not reviewed yet (it stays in the archive)',
+  '{0} doublons proposés pas encore relus (ils restent dans l’archive)': '{0} proposed duplicates not reviewed yet (they stay in the archive)',
   'Comparer le groupe': 'Compare the group',
 
   // Organisation.tsx

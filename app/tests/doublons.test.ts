@@ -17,6 +17,7 @@ import {
   lireScenes,
   memesMots,
   rafales,
+  SCENE_LOCALE,
   scenesLocales,
   type OutilsIA,
   type PhotoDoublon,
@@ -170,6 +171,27 @@ describe('analyse d’un dossier (orchestration, IA simulée)', () => {
   it('sans IA : rafales et scènes locales seulement', async () => {
     const r = await analyserDossier(photos, null, false);
     expect(r.propositions.map((p) => p.source)).toEqual(['rafale']);
+  });
+
+  it('scène repérée localement : nommée pour la consigne, la proposition garde ce nom (la page en affiche une légende traduite)', async () => {
+    const consignes: string[] = [];
+    const r = await analyserDossier(
+      [
+        { id: 'a', date: '2026-07-24T10:00:00', phash: h(0), nettete: 500 },
+        { id: 'b', date: '2026-07-24T11:00:00', phash: h(0xffff), nettete: 400 },
+      ],
+      {
+        ...ia,
+        appeler: async (_t, _p, consigne, cle) => {
+          if (cle.startsWith('vue:')) return { scenes: [] };
+          consignes.push(consigne);
+          return { groupes: [{ garder: 1, garder_description: 'lac au soleil', doublons: [{ numero: 2, description: 'lac au soleil, flou' }], raison: 'même vue' }] };
+        },
+      },
+      false,
+    );
+    expect(consignes[0]).toContain(SCENE_LOCALE);
+    expect(r.propositions).toMatchObject([{ source: 'ia', scene: SCENE_LOCALE, garde: 'a', doublons: [{ id: 'b' }] }]);
   });
 
   it('vue d’ensemble illisible : on continue avec les scènes locales', async () => {

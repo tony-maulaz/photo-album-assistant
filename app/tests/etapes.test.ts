@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { planVide, type FichierPlan, type Plan } from '../src/lib/plan';
-import { lotsDoublons, photosLot } from '../src/navigateur/doublons';
+import { analyserDoublons, lotsDoublons, photosLot } from '../src/navigateur/doublons';
 import type { Analyses } from '../src/navigateur/analyses';
+import type { EtatProjet } from '../src/navigateur/projet';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, etapeInutile, etapePrecedente, etapeSuivante, migrerEtapes, nouveauProjet, parcours } from '../src/navigateur/projet';
 
 describe('étapes (D54)', () => {
@@ -118,6 +119,29 @@ describe('lots des doublons', () => {
     expect(photosLot(p, 'jour:sans', analyses).map((x) => x.id)).toEqual(['copie1', 'copie2']);
     expect(photosLot(p, 'jour:2026-07-18', analyses).map((x) => x.id)).toEqual(['a', 'b', 'c']);
     expect(photosLot(p, 'g', analyses).map((x) => x.id)).toEqual(['e', 'f']);
+  });
+
+  it('recherche arrêtée : les lots déjà traités sont gardés, et leur nombre est rendu pour le bilan', async () => {
+    const p = plan();
+    const lots = lotsDoublons(p, true).map((l) => l.id);
+    let faits = 0;
+    const options = {
+      plan: p,
+      etat: { ecrire: async () => undefined } as unknown as EtatProjet,
+      analyses,
+      dossiers: lots,
+      strict: false,
+      ia: null,
+      miniature: async () => new Blob(),
+      original: async () => new Blob(),
+      progres: (n: number) => (faits = n),
+    };
+    const arretee = await analyserDoublons({ ...options, arreter: () => faits >= 1 });
+    expect(arretee).toMatchObject({ faits: 1, arrete: true });
+    expect(Object.keys(arretee.etat.dossiers)).toEqual([lots[0]]);
+    faits = 0;
+    const complete = await analyserDoublons({ ...options, arreter: () => false });
+    expect(complete).toMatchObject({ faits: 3, arrete: false });
   });
 
   it('dossier déjà trié : par dossier, comme avant', () => {
