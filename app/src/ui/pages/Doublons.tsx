@@ -10,7 +10,7 @@ import { accepterProposition, ecarterDuGroupe, etatDoublon, gardeeActuelle, gard
 import { cheminDossier, combiner, garderAussi, type FichierPlan } from '../../lib/plan';
 import { MODELES } from '../../lib/tarifs';
 import { cleApi } from '../../navigateur/cle';
-import { analyserDoublons, estimerDoublons, lotsDoublons, photosLot } from '../../navigateur/doublons';
+import { analyserDoublons, estimerDoublons, lotsANouveau, lotsDoublons, photosLot } from '../../navigateur/doublons';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { BudgetAtteint } from '../../navigateur/ia';
 import { cleMiniature } from '../../navigateur/miniatures';
@@ -222,7 +222,8 @@ export function PageDoublons() {
   const totalProposes = [...parDossier.values()].reduce((a, x) => a + x.proposes, 0);
   const totalEcartes = [...plan.fichiers.values()].filter((f) => f.statut === 'mis_de_cote' && f.raison === 'doublons').length;
 
-  const lancer = async (avecIA: boolean) => {
+  /** `lots` : seulement ces lots (journées ou dossiers) ; par défaut, tous. */
+  const lancer = async (avecIA: boolean, lots: string[] = dossiers) => {
     if (avecIA && !cleApi()) {
       notifier('erreur', t`Saisissez d’abord votre clé API dans Réglages.`, { libelle: t`Réglages`, faire: () => (page.value = { nom: 'reglages' }) });
       return;
@@ -251,7 +252,7 @@ export function PageDoublons() {
           plan,
           etat: s.etat,
           analyses: s.analyses,
-          dossiers,
+          dossiers: lots,
           strict,
           ia: avecIA ? { service: s.ia, modele } : null,
           miniature: async (f) => {
@@ -280,9 +281,15 @@ export function PageDoublons() {
     }
   };
 
-  // Les rafales se repèrent toutes seules (gratuit, local) dès que l'analyse des photos est prête (D56).
+  // Les rafales se repèrent toutes seules (gratuit, local) dès que l'analyse des photos est prête (D56) ;
+  // après une mise à jour de l'inventaire, seulement là où des photos sont arrivées (D63).
   useEffect(() => {
-    if (!s.doublons && !progres && !analyseEnCours.value && analysesManquantes === 0) void lancer(false);
+    if (progres || analyseEnCours.value || analysesManquantes > 0) return;
+    if (!s.doublons) void lancer(false);
+    else {
+      const nouveaux = lotsANouveau(plan, s.doublons, dossiers, s.analyses);
+      if (nouveaux.length) void lancer(false, nouveaux);
+    }
   }, [analysesManquantes === 0, !!analyseEnCours.value]);
 
   const toutAccepter = async () => {

@@ -5,7 +5,7 @@
 import { nomsSortie } from '../../lib/sortie';
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
-import { gardeSaPlace, type FichierPlan, type Plan } from '../../lib/plan';
+import { gardeSaPlace, RACINE, traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
 import { arborescence, avecSansDate, grouper, OPTIONS_TRI_DEFAUT, optionsDepuisPrereglage, rangerVideos, appliquerTri, separerSansDate, type OptionsTri, type PhotoTri } from '../../lib/tri';
 import { appliquer, changerEtape, configuration, journal, notifier, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
 import { t } from '../../lib/langue';
@@ -17,6 +17,14 @@ import { ETAPE } from '../../navigateur/projet';
 /** Fichiers que le tri range : tout, sauf le contenu des dossiers qui gardent leur place et les captures d'écran. */
 export function fichiersATrier(plan: Plan): FichierPlan[] {
   return [...plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && !f.capture && !gardeSaPlace(plan, f.dossier));
+}
+
+/**
+ * Fichiers pas encore rangés : à la racine ou dans un dossier « à trier » de la
+ * source. Après un premier tri, ce sont les photos arrivées depuis (D63).
+ */
+export function fichiersARanger(plan: Plan): FichierPlan[] {
+  return fichiersATrier(plan).filter((f) => f.dossier === RACINE || traitementDe(plan, f.dossier) === 'trier');
 }
 
 export function TriAuto() {
@@ -32,13 +40,21 @@ export function TriAuto() {
   const changer = (m: Partial<OptionsTri>) => setO({ ...o, ...m });
   const aTrier = fichiersATrier(s.plan);
   const dejaTrie = [...s.plan.dossiers.values()].some((d) => d.origine === 'tri');
+  // Trier en plusieurs fois (D63) : après un premier tri, seules les photos arrivées depuis restent à ranger.
+  const aRanger = dejaTrie ? fichiersARanger(s.plan) : aTrier;
   const lieux = config?.lieux_connus ?? [];
 
-  const calculer = async () => {
-    if (dejaTrie && !(await confirmer(t`Recalculer l’arborescence ?`, t`Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier calcul seront remplacés (Ctrl+Z annule).`, t`Recalculer`)))
+  /** `nouvelles` : seulement les photos pas encore rangées, sans toucher aux dossiers déjà faits. */
+  const calculer = async (nouvelles = false) => {
+    if (
+      dejaTrie &&
+      !nouvelles &&
+      !(await confirmer(t`Recalculer l’arborescence ?`, t`Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier calcul seront remplacés (Ctrl+Z annule).`, t`Recalculer`))
+    )
       return;
+    const liste = nouvelles ? aRanger : aTrier;
     // Sans vraie date, une photo ne peut pas être rangée dans une sortie : elle va dans « _sans_date ».
-    const { datees, sansDate } = separerSansDate(aTrier);
+    const { datees, sansDate } = separerSansDate(liste);
     const photos: PhotoTri[] = datees.filter((f) => f.categorie === 'photo').map((f) => ({ id: f.id, nom: f.id.split('/').pop()!, date: f.date, gps: f.gps }));
     photos.sort((a, b) => a.id.localeCompare(b.id));
     const g = grouper(photos, lieux, o);
@@ -60,14 +76,20 @@ export function TriAuto() {
       // Le géocodage a pu durer : seules les photos encore à trier maintenant sont rangées.
       const plan = session.value?.plan;
       if (plan !== s.plan) return;
-      appliquer(appliquerTri(s.plan, avecVideos, new Set(fichiersATrier(s.plan).map((f) => f.id))));
+      appliquer(appliquerTri(s.plan, avecVideos, new Set((nouvelles ? fichiersARanger(s.plan) : fichiersATrier(s.plan)).map((f) => f.id)), { garderAnciens: nouvelles }));
       s.projet.prereglage = prereglage;
       s.projet.tri = { ...o };
       planifierEnregistrement();
       versionProjet.value++;
       changerEtape(ETAPE.tri, 'en_cours');
       const n = avecVideos.length;
-      journal('tri', t`Tri par lieux : ${n} dossiers proposés pour ${aTrier.length} fichiers`, { options: o, groupes: g.groupes.length });
+      journal(
+        'tri',
+        nouvelles
+          ? t`Tri des nouvelles photos : ${pluriel(liste.length, 'fichier rangé', 'fichiers rangés')} dans ${pluriel(n, 'dossier')}`
+          : t`Tri par lieux : ${n} dossiers proposés pour ${aTrier.length} fichiers`,
+        { options: o, groupes: g.groupes.length },
+      );
       notifier('ok', t`${pluriel(n, 'dossier proposé', 'dossiers proposés')} : vérifiez-les à l’étape suivante, « Lieux et sorties ».`);
     } catch (err) {
       notifier('erreur', t`Tri interrompu : ${texteErreur(err)}`);
@@ -96,10 +118,13 @@ export function TriAuto() {
   );
 
   return (
-    <details class="tri-auto" open={!dejaTrie}>
+    <details class="tri-auto" open={!dejaTrie || aRanger.length > 0}>
       <summary>
-        <strong>{t`Réglages du tri`}</strong> — {pluriel(aTrier.length, 'fichier à trier', 'fichiers à trier')}
-        {dejaTrie ? t` (déjà calculé : vous pouvez recalculer avec d’autres réglages)` : ''}
+        <strong>{t`Réglages du tri`}</strong> —{' '}
+        {dejaTrie && aRanger.length
+          ? pluriel(aRanger.length, 'nouveau fichier à ranger', 'nouveaux fichiers à ranger')
+          : pluriel(aTrier.length, 'fichier à trier', 'fichiers à trier')}
+        {dejaTrie && !aRanger.length ? t` (déjà calculé : vous pouvez recalculer avec d’autres réglages)` : ''}
       </summary>
       <div class="options-tri">
         <div class="option-tri">
@@ -152,9 +177,20 @@ export function TriAuto() {
         </div>
       ) : (
         <p class="actions">
-          <button type="button" class="principal" disabled={!aTrier.length} onClick={() => void calculer()}>
-            {dejaTrie ? t`Recalculer l’arborescence` : t`Calculer l’arborescence`}
-          </button>
+          {dejaTrie && aRanger.length > 0 ? (
+            <>
+              <button type="button" class="principal" onClick={() => void calculer(true)} title={t`Range seulement les photos arrivées depuis le dernier tri : les dossiers déjà faits ne bougent pas.`}>
+                {t`Ranger les ${pluriel(aRanger.length, 'nouvelle photo', 'nouvelles photos')}`}
+              </button>
+              <button type="button" onClick={() => void calculer()}>
+                {t`Tout recalculer`}
+              </button>
+            </>
+          ) : (
+            <button type="button" class="principal" disabled={!aTrier.length} onClick={() => void calculer()}>
+              {dejaTrie ? t`Recalculer l’arborescence` : t`Calculer l’arborescence`}
+            </button>
+          )}
           <span class="discret">{t`Les coordonnées moyennes de chaque lieu sont envoyées à OpenStreetMap (Nominatim) pour le nommer, une par seconde ; rien d’autre.`}</span>
         </p>
       )}

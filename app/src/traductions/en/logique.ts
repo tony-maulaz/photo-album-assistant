@@ -217,4 +217,12 @@ export const TEXTES: Record<string, string> = {
   // plan.ts : recadrage (D62)
   'Recadrer {0}': 'Crop {0}',
   'Enlever le recadrage de {0}': 'Remove the crop of {0}',
+
+  // rapport.ts, source.ts : trier en plusieurs fois (D63)
+  '{0} pas dans le projet (arrivés ou modifiés depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.':
+    '{0} not in the project (added or changed since the inventory): update the inventory, do not delete the source.',
+  'fichier de la source n’est': 'source file is',
+  'fichiers de la source ne sont': 'source files are',
+  'Fichiers de la source pas encore dans le projet': 'Source files not yet in the project',
+  'Mettre à jour l’inventaire': 'Update the inventory',
 };

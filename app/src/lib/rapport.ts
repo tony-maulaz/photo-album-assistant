@@ -46,6 +46,8 @@ export interface InfosRapport {
   date: Date;
   /** Album préparé dans `Album/` (étape « Album »), s'il y en a un. */
   album?: { photos: number; sections: number; pages: number; manquantes: number };
+  /** Fichiers de la source qui ne sont pas (ou plus tels quels) dans le projet : arrivés ou modifiés depuis l'inventaire (D63). */
+  horsProjet?: string[];
 }
 
 export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): string {
@@ -56,7 +58,8 @@ export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): strin
     .filter((x) => x.s.photos + x.s.videos > 0)
     .sort((a, b2) => a.chemin.localeCompare(b2.chemin, 'fr', { numeric: true }));
   const racine = r.get('racine');
-  const complet = b.manquants.length === 0;
+  const horsProjet = infos.horsProjet ?? [];
+  const complet = b.manquants.length === 0 && horsProjet.length === 0;
   const autres = [...plan.fichiers.values()].filter((f) => f.categorie === 'autre').map((f) => f.id).sort();
   const locale = langue() === 'en' ? 'en-GB' : 'fr-CH';
   const quand = infos.date.toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short' });
@@ -97,9 +100,12 @@ summary { cursor: pointer; } ul { margin: 6px 0; padding-left: 20px; } li { over
 ${
   complet
     ? `<strong class="ok">${t`Tout est dans le dossier de sortie.`}</strong> ${t`Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.`}`
-    : `<strong class="echec">${t`${nombre(b.manquants.length)} fichier(s) manquent dans la sortie : ne supprimez pas la source.`}</strong>`
+    : b.manquants.length
+      ? `<strong class="echec">${t`${nombre(b.manquants.length)} fichier(s) manquent dans la sortie : ne supprimez pas la source.`}</strong>`
+      : `<strong class="echec">${t`${pluriel(horsProjet.length, 'fichier de la source n’est', 'fichiers de la source ne sont')} pas dans le projet (arrivés ou modifiés depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.`}</strong>`
 }</p>
 ${liste(t`Fichiers manquants`, b.manquants.map((m) => `${m.id} → ${m.cible}`))}
+${liste(t`Fichiers de la source pas encore dans le projet`, horsProjet)}
 <p class="discret">${t`Les fichiers système masqués par le navigateur (comme ${code('Thumbs.db')}, le cache de miniatures de Windows) ne sont ni comptés ni copiés : Windows les recrée.`}</p>
 
 <h2>${t`Dossiers (${nombre(dossiers.length + (racine && racine.photos + racine.videos ? 1 : 0))})`}</h2>

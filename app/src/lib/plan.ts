@@ -83,6 +83,8 @@ export interface FichierPlan {
   rotation?: Rotation;
   /** Recadrage de la copie dans Album/ (étape « Sélection », D62), après la rotation. */
   recadrage?: Recadrage;
+  /** Ajouté par une mise à jour de l'inventaire (date ISO, D63) : arrivé dans la source après le premier tri. */
+  ajout?: string;
   /** Légende de la photo dans l'album (étape « Album »). */
   legende?: string;
   /** Doublon écarté à l'étape « Doublons » : la photo gardée à sa place, et pourquoi. */
@@ -263,6 +265,12 @@ export class Transaction {
   supprimerDossier(id: string) {
     if (!this.avantD.has(id)) this.avantD.set(id, this.plan.dossiers.get(id) ?? null);
     this.plan.dossiers.delete(id);
+  }
+
+  /** Retire un fichier du plan (disparu de la source avant d'avoir été copié). */
+  supprimerFichier(id: string) {
+    if (!this.avantF.has(id)) this.avantF.set(id, this.plan.fichiers.get(id) ?? null);
+    this.plan.fichiers.delete(id);
   }
 
   terminer(libelle: string): Modification | null {

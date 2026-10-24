@@ -1,10 +1,13 @@
 // Plan initial d'un dossier déjà trié (SPEC § 4.3) : ses sous-dossiers
 // deviennent les dossiers du plan, et chaque fichier reçoit sa date retenue.
+// Mise à jour de l'inventaire (D63) : ce qui a changé dans la source depuis
+// est intégré au plan sans toucher à ce qui est déjà décidé.
 
 import { dateDepuisNom, type DateNom } from './dates';
 import type { Categorie } from './fichiers';
 import { cleNom } from './noms';
-import { planVide, RACINE, type FichierPlan, type OrigineDate, type Plan, type RaisonMiseDeCote } from './plan';
+import { t } from './langue';
+import { planVide, RACINE, Transaction, type DossierPlan, type FichierPlan, type Modification, type OrigineDate, type Plan, type RaisonMiseDeCote, type TraitementDossier } from './plan';
 
 export interface ElementSource {
   /** Chemin relatif dans la source, avec « / ». */
@@ -175,3 +178,131 @@ export function planInitial(elements: ElementSource[]): PlanInitial {
   }
   return { plan, ignores };
 }
+
+// ---------------------------------------------------------------------------
+// Mise à jour de l'inventaire (D63) : trier un dossier en plusieurs fois
+// ---------------------------------------------------------------------------
+
+/** Un fichier de la source relue : chemin, taille et date de modification seulement (lecture rapide). */
+export interface FichierListe {
+  chemin: string;
+  taille: number;
+  modifie: number;
+}
+
+export interface ChangementsSource {
+  /** Fichiers apparus depuis l'inventaire. */
+  nouveaux: string[];
+  /** Fichiers dont la taille ou la date de modification a changé. */
+  modifies: string[];
+  /** Fichiers du projet qui ne sont plus dans la source. */
+  disparus: string[];
+}
+
+export const aucunChangement = (c: ChangementsSource | null | undefined): boolean => !c || c.nouveaux.length + c.modifies.length + c.disparus.length === 0;
+
+/** Ce qui a changé dans la source depuis l'inventaire, par rapport au plan. */
+export function comparerSource(plan: Plan, liste: FichierListe[]): ChangementsSource {
+  const vus = new Set<string>();
+  const nouveaux: string[] = [];
+  const modifies: string[] = [];
+  for (const e of liste) {
+    if (e.chemin.split('/').some((s) => IGNORES.has(s))) continue;
+    vus.add(e.chemin);
+    const f = plan.fichiers.get(e.chemin);
+    if (!f) nouveaux.push(e.chemin);
+    else if (f.taille !== e.taille || f.modifie !== e.modifie) modifies.push(e.chemin);
+  }
+  const disparus = [...plan.fichiers.keys()].filter((id) => !vus.has(id));
+  return { nouveaux: nouveaux.sort(), modifies: modifies.sort(), disparus: disparus.sort() };
+}
+
+/** Le dossier (ou un de ses parents) a-t-il été créé par le tri automatique ? */
+function dansDossierDuTri(plan: Plan, dossier: string): boolean {
+  for (let d = plan.dossiers.get(dossier); d; d = d.parent ? plan.dossiers.get(d.parent) : undefined) if (d.origine === 'tri') return true;
+  return false;
+}
+
+export interface ResultatIntegration {
+  modification: Modification | null;
+  ajoutes: number;
+  modifies: number;
+  /** Disparus de la source avant d'avoir été copiés : retirés du projet. */
+  retires: string[];
+  /** Disparus de la source mais déjà dans la sortie : gardés, rien n'est perdu. */
+  gardesSansSource: string[];
+}
+
+/**
+ * Intègre au plan les changements de la source, sans toucher à ce qui est
+ * décidé (une seule opération annulable) :
+ * - les fichiers nouveaux sont placés comme à l'inventaire (dans leur dossier
+ *   de la source, ou à trier à la racine) et marqués `ajout` ; un dossier de
+ *   la source absent du plan est recréé. Dans un dossier en vrac, un nouveau
+ *   sous-dossier garde sa place et sera nettoyé, sauf si ses anciennes photos
+ *   avaient été triées : il était « à trier », il le reste ;
+ * - les fichiers modifiés sont relus (taille, date, appareil, GPS), leurs
+ *   décisions gardées ;
+ * - les fichiers disparus sont retirés s'ils n'ont pas encore été copiés,
+ *   gardés s'ils sont déjà dans la sortie.
+ */
+export function integrerSource(
+  plan: Plan,
+  elements: ElementSource[],
+  disparus: string[],
+  o: { quand: string; vrac: boolean; dansLaSortie: (id: string) => boolean },
+): ResultatIntegration {
+  const tx = new Transaction(plan);
+  const nouveaux = elements.filter((e) => !plan.fichiers.has(e.chemin));
+  const modifies = elements.filter((e) => plan.fichiers.has(e.chemin));
+  const { plan: neuf } = planInitial(nouveaux);
+
+  // Dossiers de la source déjà dans le plan (même s'ils ont été renommés ou déplacés depuis), par chemin.
+  const existants = new Map([...plan.dossiers.values()].filter((d) => d.id.startsWith('s:')).map((d) => [cleNom(d.id), d.id]));
+  const assurer = (id: string): string => {
+    if (id === RACINE) return id;
+    const existant = existants.get(cleNom(id));
+    if (existant) return existant;
+    const d = neuf.dossiers.get(id)!;
+    const parent = assurer(d.parent ?? RACINE);
+    const chemin = id.slice(2);
+    let traitement: TraitementDossier | undefined;
+    if (o.vrac && parent === RACINE) {
+      const triees = [...plan.fichiers.values()].some((f) => f.id.startsWith(`${chemin}/`) && dansDossierDuTri(plan, f.dossier));
+      traitement = triees ? 'trier' : 'nettoyer';
+    }
+    tx.dossier({ ...d, parent, ...(traitement ? { traitement } : {}) } satisfies DossierPlan);
+    existants.set(cleNom(id), id);
+    return id;
+  };
+  for (const f of neuf.fichiers.values()) tx.fichier({ ...f, dossier: assurer(f.dossier), ajout: o.quand });
+
+  for (const e of modifies) {
+    const relu = planInitial([e]).plan.fichiers.get(e.chemin)!;
+    const { empreinte: _e, appareil: _a, marque: _m, gps: _g, dims: _d, decalage: _c, ...garde } = plan.fichiers.get(e.chemin)!;
+    tx.fichier({
+      ...garde,
+      taille: relu.taille,
+      modifie: relu.modifie,
+      date: relu.date,
+      origineDate: relu.origineDate,
+      ...(relu.appareil ? { appareil: relu.appareil } : {}),
+      ...(relu.marque ? { marque: relu.marque } : {}),
+      ...(relu.gps ? { gps: relu.gps } : {}),
+      ...(relu.dims ? { dims: relu.dims } : {}),
+    });
+  }
+
+  const retires: string[] = [];
+  const gardesSansSource: string[] = [];
+  for (const id of disparus) {
+    if (!plan.fichiers.has(id)) continue;
+    if (o.dansLaSortie(id)) gardesSansSource.push(id);
+    else {
+      tx.supprimerFichier(id);
+      retires.push(id);
+    }
+  }
+  return { modification: tx.terminer(t`Mettre à jour l’inventaire`), ajoutes: neuf.fichiers.size, modifies: modifies.length, retires, gardesSansSource };
+}
+

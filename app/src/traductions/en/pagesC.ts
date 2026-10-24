@@ -343,4 +343,9 @@ export const TEXTES: Record<string, string> = {
   'Noms des dossiers créés (« _mis_de_cote » ou « _set_aside »…), rapport, propositions de l’IA et noms de lieux. Fixée à la création : changer la langue de l’interface ensuite ne renomme rien.':
     'Names of the folders created (“_mis_de_cote” or “_set_aside”…), report, AI proposals and place names. Set when the project is created: changing the interface language later renames nothing.',
   '{0} (choisie à la création du projet)': '{0} (chosen when the project was created)',
+
+  // Tri.tsx, projets.ts : trier en plusieurs fois (D63)
+  'nouvelle photo pas encore rangée': 'new photo not arranged yet',
+  'nouvelles photos pas encore rangées': 'new photos not arranged yet',
+  'Mise à jour de l’inventaire : {0} ajoutés, {1} modifiés, {2} retirés en {3} s': 'Inventory update: {0} added, {1} changed, {2} removed in {3} s',
 };

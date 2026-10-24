@@ -21,12 +21,18 @@ export interface Inventaire {
   dureeMs: number;
 }
 
-export async function inventorier(
+/** Un fichier de la source avec son contenu accessible (lecture rapide : chemin, taille, date). */
+export interface FichierSource {
+  chemin: string;
+  fichier: File;
+}
+
+/** Liste rapide de la source : chemins, tailles et dates, sans rien lire des fichiers. */
+export async function listerSource(
   source: FileSystemDirectoryHandle,
   progres: (p: Progression) => void,
   arreter: () => boolean = () => false,
-): Promise<Inventaire> {
-  const debut = performance.now();
+): Promise<{ fichiers: FichierSource[]; dossiers: number }> {
   const entrees: { chemin: string; poignee: FileSystemFileHandle }[] = [];
   let dossiers = 0;
   for await (const e of parcourir(source, () => dossiers++)) {
@@ -34,23 +40,27 @@ export async function inventorier(
     if (entrees.length % 250 === 0) progres({ etape: 'parcours', faits: entrees.length, total: 0 });
     if (arreter()) throw new DOMException('Inventaire arrêté', 'AbortError');
   }
-
   let faits = 0;
-  const avecFichier = await enParallele(entrees, 16, async (e) => {
+  const fichiers = await enParallele(entrees, 16, async (e) => {
     const fichier = await e.poignee.getFile();
     if (++faits % 250 === 0) progres({ etape: 'tailles', faits, total: entrees.length });
-    return { e, fichier };
+    return { chemin: e.chemin, fichier };
   });
-  const elements: ElementSource[] = avecFichier.map(({ e, fichier }) => ({
-    chemin: e.chemin,
+  return { fichiers, dossiers };
+}
+
+/** Lecture détaillée de fichiers de la source : EXIF des photos, métadonnées des vidéos. */
+export async function lireDetails(fichiers: FichierSource[], progres: (p: Progression) => void, arreter: () => boolean = () => false): Promise<ElementSource[]> {
+  const elements: ElementSource[] = fichiers.map(({ chemin, fichier }) => ({
+    chemin,
     taille: fichier.size,
     modifie: fichier.lastModified,
-    categorie: categorie(e.chemin),
+    categorie: categorie(chemin),
   }));
 
-  const photos = avecFichier.map((x, i) => ({ ...x, i })).filter((x) => elements[x.i].categorie === 'photo');
-  faits = 0;
-  await enParallele(photos, 8, async ({ e, fichier, i }) => {
+  const photos = fichiers.map((x, i) => ({ ...x, i })).filter((x) => elements[x.i].categorie === 'photo');
+  let faits = 0;
+  await enParallele(photos, 8, async ({ chemin, fichier, i }) => {
     if (arreter()) throw new DOMException('Inventaire arrêté', 'AbortError');
     try {
       const exif = await lireExif(fichier);
@@ -58,7 +68,7 @@ export async function inventorier(
         ? { date: exif.date, decalage: exif.decalage, modele: exif.modele, marque: exif.marque, lat: exif.lat, lon: exif.lon, largeur: exif.largeur, hauteur: exif.hauteur }
         : null;
       // Sans dimensions EXIF (capture d'écran, WhatsApp) : on les lit dans l'en-tête JPEG.
-      if (!exif?.largeur && /\.jpe?g$/i.test(e.chemin)) {
+      if (!exif?.largeur && /\.jpe?g$/i.test(chemin)) {
         const d = await dimensionsJpeg(lecteurBlob(fichier), fichier.size);
         if (d) elements[i].dims = { l: d.largeur, h: d.hauteur };
       }
@@ -68,7 +78,7 @@ export async function inventorier(
     if (++faits % 100 === 0) progres({ etape: 'exif', faits, total: photos.length });
   });
 
-  const videos = avecFichier.map((x, i) => ({ ...x, i })).filter((x) => elements[x.i].categorie === 'video');
+  const videos = fichiers.map((x, i) => ({ ...x, i })).filter((x) => elements[x.i].categorie === 'video');
   faits = 0;
   await enParallele(videos, 4, async ({ fichier, i }) => {
     if (arreter()) throw new DOMException('Inventaire arrêté', 'AbortError');
@@ -80,6 +90,16 @@ export async function inventorier(
     }
     if (++faits % 20 === 0) progres({ etape: 'videos', faits, total: videos.length });
   });
+  return elements;
+}
 
+export async function inventorier(
+  source: FileSystemDirectoryHandle,
+  progres: (p: Progression) => void,
+  arreter: () => boolean = () => false,
+): Promise<Inventaire> {
+  const debut = performance.now();
+  const { fichiers, dossiers } = await listerSource(source, progres, arreter);
+  const elements = await lireDetails(fichiers, progres, arreter);
   return { elements, dossiers, dureeMs: performance.now() - debut };
 }

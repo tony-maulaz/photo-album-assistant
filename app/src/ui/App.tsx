@@ -1,5 +1,6 @@
 // Composant racine : cadre de l'application et page affichée.
 
+import { BandeauSource } from './composants/BandeauSource';
 import { Entete, Messages } from './composants/Cadre';
 import { Dialogues } from './composants/Dialogues';
 import { t } from '../lib/langue';
@@ -99,6 +100,7 @@ export function App() {
     <div class={`app page-${p.nom}${p.nom === 'etape' ? ` etape-${p.numero}` : ''}`}>
       <Entete />
       <main>{contenu}</main>
+      {p.nom === 'etape' && s && <BandeauSource />}
       <Messages />
       <Dialogues />
     </div>

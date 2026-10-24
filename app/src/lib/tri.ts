@@ -574,7 +574,7 @@ const memeInfo = (a?: InfoTri, b?: InfoTri) => JSON.stringify(a ?? null) === JSO
  * d'un tri précédent et des sous-dossiers « à trier » de la source devenus
  * vides. Relancer avec la même proposition ne change rien.
  */
-export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: Set<string>): Modification | null {
+export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: Set<string>, o: { garderAnciens?: boolean } = {}): Modification | null {
   const creation = new Transaction(plan);
   // Dossier enfant de `parent` pour un nom : un dossier du tri est repris ;
   // un dossier homonyme d'une autre origine n'est jamais mélangé (nom libre).
@@ -620,6 +620,7 @@ export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: 
   modifications.push(deCote.terminer('Ranger les photos écartées'));
 
   // Nettoyage : dossiers du tri précédent et dossiers « à trier » devenus vides, des feuilles vers la racine.
+  // `garderAnciens` (nouvelles photos seulement, D63) : les dossiers déjà faits ne sont jamais touchés.
   const nettoyage = new Transaction(plan);
   const utilises = () => new Set([...plan.fichiers.values()].map((f) => f.dossier));
   for (let encore = true; encore; ) {
@@ -627,7 +628,7 @@ export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: 
     const pleins = utilises();
     const parents = new Set([...plan.dossiers.values()].map((d) => d.parent));
     for (const d of [...plan.dossiers.values()]) {
-      const jetable = d.origine === 'tri' || (d.origine === 'source' && d.traitement === 'trier');
+      const jetable = (d.origine === 'tri' && !o.garderAnciens) || (d.origine === 'source' && d.traitement === 'trier');
       if (d.parent === null || !jetable || pleins.has(d.id) || parents.has(d.id)) continue;
       nettoyage.supprimerDossier(d.id);
       encore = true;

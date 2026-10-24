@@ -11,7 +11,7 @@ import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Captures } from '../composants/Captures';
 import { LieuxFrequents } from '../composants/LieuxFrequents';
 import { SEUIL_PETIT } from '../composants/PanneauDossiers';
-import { TriAuto } from '../composants/TriAuto';
+import { fichiersARanger, TriAuto } from '../composants/TriAuto';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { nombre, pluriel } from '../format';
 
@@ -35,6 +35,8 @@ export function PageTri() {
   const calcule = [...s.plan.dossiers.values()].some((d) => d.origine === 'tri');
   const photos = proposes.reduce((a, d) => a + r.get(d.id)!.photos, 0);
   const petits = proposes.filter((d) => r.get(d.id)!.photos + r.get(d.id)!.videos < SEUIL_PETIT).length;
+  // Photos arrivées après le premier tri (D63) : à ranger avant de continuer.
+  const nonRangees = calcule ? fichiersARanger(s.plan).length : 0;
 
   return (
     <div class="page etroite avec-barre">
@@ -53,7 +55,7 @@ export function PageTri() {
       {calcule && <SansGps />}
       <BarreValidation
         resume={calcule ? t`${pluriel(proposes.length, 'dossier proposé', 'dossiers proposés')} · ${nombre(photos)} photos` : t`Arborescence pas encore calculée`}
-        alertes={calcule ? [] : [t`Calculez l’arborescence pour continuer`]}
+        alertes={!calcule ? [t`Calculez l’arborescence pour continuer`] : nonRangees ? [pluriel(nonRangees, 'nouvelle photo pas encore rangée', 'nouvelles photos pas encore rangées')] : []}
         revenir={() => revenirDe('tri')}
         valider={() => validerEtape('tri')}
         validerActif={calcule}

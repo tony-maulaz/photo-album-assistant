@@ -120,6 +120,8 @@ export interface Projet {
   entetes_vus?: string[];
   /** Résumé du dernier inventaire de la source. */
   inventaire?: { quand: string; fichiers: number; dossiers: number; octets: number; dureeMs: number; ignores: string[] };
+  /** Mises à jour de l'inventaire (D63) : la source a changé depuis le premier inventaire. */
+  mises_a_jour?: { quand: string; ajoutes: number; modifies: number; retires: number }[];
 }
 
 /** Lecture et écriture des fichiers de `.album/`. Chaque écriture remplace le fichier d'un coup (fichier temporaire de Chrome). */

@@ -4,7 +4,7 @@ import { configAlbumDefaut, type ConfigAlbum } from '../lib/album';
 import { t, type Langue } from '../lib/langue';
 import { depuisJson, Historique, planVide, RACINE, versJson, type PlanJson } from '../lib/plan';
 import { definirLangueSortie, etatVide, type EtatSortie } from '../lib/sortie';
-import { planInitial } from '../lib/source';
+import { comparerSource, integrerSource, planInitial, type ChangementsSource } from '../lib/source';
 import { ResultatsAides } from '../navigateur/aides';
 import { Analyses } from '../navigateur/analyses';
 import { DossierConfig } from '../navigateur/configuration';
@@ -12,9 +12,9 @@ import { AccesDossier, dossierMemorise, etatAutorisation, relation, type Mode } 
 import { lireDoublons } from '../navigateur/doublons';
 import { Geocodage } from '../navigateur/geocodage';
 import { ServiceIA } from '../navigateur/ia';
-import { inventorier, type Progression } from '../navigateur/inventaire';
+import { inventorier, lireDetails, listerSource, type Progression } from '../navigateur/inventaire';
 import { ETAPE, EtatProjet, migrerEtapes, noterProjetRecent, nouveauProjet, projetsRecents, type Projet } from '../navigateur/projet';
-import { changerEtape, chargerEvenements, configuration, journal, notifier, page, planifierEnregistrement, reglages, session, versionIA, versionPlan, versionProjet } from './etat';
+import { appliquer, changementsSource, changerEtape, chargerEvenements, configuration, journal, notifier, page, planifierEnregistrement, reglages, session, versionIA, versionPlan, versionProjet } from './etat';
 
 /** Services du projet ouvert : analyses des photos et appels IA (cache, budget). */
 async function services(etat: EtatProjet, projet: Projet) {
@@ -123,6 +123,68 @@ export async function construirePlan(progres: (p: Progression) => void, arreter:
   return resume;
 }
 
+/**
+ * Relit rapidement la source (chemins, tailles, dates) et note ce qui a changé
+ * depuis l'inventaire (D63) : un bandeau propose alors la mise à jour.
+ */
+export async function verifierSource(): Promise<ChangementsSource | null> {
+  const s = session.value;
+  if (!s?.projet.inventaire) return null;
+  try {
+    const { fichiers } = await listerSource(s.source.racine, () => undefined);
+    if (session.value !== s) return null;
+    const c = comparerSource(s.plan, fichiers.map((f) => ({ chemin: f.chemin, taille: f.fichier.size, modifie: f.fichier.lastModified })));
+    changementsSource.value = c;
+    return c;
+  } catch {
+    return null;
+  }
+}
+
+export interface ResumeMiseAJour {
+  ajoutes: number;
+  modifies: number;
+  retires: string[];
+  gardesSansSource: string[];
+}
+
+/**
+ * Mise à jour de l'inventaire (D63) : seuls les fichiers nouveaux ou modifiés
+ * sont lus ; ils rejoignent le plan sans rien changer à ce qui est décidé.
+ * Les étapes déjà validées repassent « à revoir » : elles ne traiteront que le nouveau.
+ */
+export async function mettreAJourInventaire(progres: (p: Progression) => void, arreter: () => boolean): Promise<ResumeMiseAJour> {
+  const s = session.value;
+  if (!s) throw new Error(t`Aucun projet ouvert.`);
+  const debut = performance.now();
+  const { fichiers, dossiers } = await listerSource(s.source.racine, progres, arreter);
+  const c = comparerSource(s.plan, fichiers.map((f) => ({ chemin: f.chemin, taille: f.fichier.size, modifie: f.fichier.lastModified })));
+  const aLire = new Set([...c.nouveaux, ...c.modifies]);
+  const elements = await lireDetails(fichiers.filter((f) => aLire.has(f.chemin)), progres, arreter);
+  if (session.value !== s) throw new DOMException('Projet fermé', 'AbortError');
+  const quand = new Date().toISOString();
+  const r = integrerSource(s.plan, elements, c.disparus, { quand, vrac: s.projet.mode === 'vrac', dansLaSortie: (id) => id in s.etatSortie.fichiers });
+  appliquer(r.modification);
+  const octets = fichiers.reduce((n, f) => n + f.fichier.size, 0);
+  s.projet.source = { ...s.projet.source, fichiers: fichiers.length, octets };
+  s.projet.inventaire = { ...s.projet.inventaire!, fichiers: fichiers.length, dossiers, octets };
+  s.projet.mises_a_jour = [...(s.projet.mises_a_jour ?? []), { quand, ajoutes: r.ajoutes, modifies: r.modifies, retires: r.retires.length }];
+  // Ce qui était validé est à revoir : les étapes ne traiteront que le nouveau, le reste est gardé.
+  if (r.modification) for (let n = ETAPE.inventaire + 1; n <= s.projet.etapes.length; n++) if (s.projet.etapes[n - 1] === 'validee') changerEtape(n, 'a_revoir');
+  changementsSource.value = { nouveaux: [], modifies: [], disparus: r.gardesSansSource };
+  await s.etat.ecrire('plan.json', versJson(s.plan));
+  await s.etat.ecrire('projet.json', s.projet);
+  journal('inventaire', t`Mise à jour de l’inventaire : ${r.ajoutes} ajoutés, ${r.modifies} modifiés, ${r.retires.length} retirés en ${Math.round((performance.now() - debut) / 1000)} s`, {
+    ajoutes: c.nouveaux,
+    modifies: c.modifies,
+    retires: r.retires,
+    gardesSansSource: r.gardesSansSource,
+  });
+  versionPlan.value++;
+  versionProjet.value++;
+  return { ajoutes: r.ajoutes, modifies: r.modifies, retires: r.retires, gardesSansSource: r.gardesSansSource };
+}
+
 /** Première étape à reprendre : la première en cours ou à revoir, sinon la dernière validée. */
 export function etapeAReprendre(p: Projet): number {
   const i = p.etapes.findIndex((e) => e === 'en_cours' || e === 'a_revoir');
@@ -160,6 +222,9 @@ export async function ouvrirProjet(source: FileSystemDirectoryHandle, sortie: Fi
   versionPlan.value++;
   versionProjet.value++;
   page.value = { nom: 'etape', numero: etapeAReprendre(projet) };
+  // La source a-t-elle changé depuis (photos ajoutées pour trier en plusieurs fois, D63) ?
+  changementsSource.value = null;
+  void verifierSource();
 }
 
 /** Lit le projet d'un dossier de sortie sans l'ouvrir (pour vérifier la source). */

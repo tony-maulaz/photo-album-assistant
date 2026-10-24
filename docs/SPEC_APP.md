@@ -227,6 +227,13 @@ autre fichier.
   page relit la source, relance l'analyse (résultats des photos inchangées
   réutilisés) et remet les étapes suivantes à faire.
 
+**Trier en plusieurs fois** (D63) : à l'ouverture du projet, la source est
+relue rapidement ; un bandeau annonce les fichiers nouveaux, modifiés ou
+disparus. « Mettre à jour l'inventaire » ne lit que ceux-là et les ajoute au
+plan sans rien changer à ce qui est décidé (annulable) ; les étapes validées
+repassent « à revoir » et ne traitent que le nouveau. « Refaire
+l'inventaire » (repartir de zéro) est replié en bas de la page.
+
 **Étape 3 — Dossiers** (dossier en vrac avec sous-dossiers, D61) : pour
 chaque sous-dossier déjà présent dans la source, trois boutons côte à côte :
 - **Trier** : ses photos rejoignent le tri par lieux et sorties ;
@@ -248,6 +255,10 @@ n'existe plus (un projet qui l'avait le lit comme « Ne pas toucher »).
 - Les photos écartées iront dans `_mis_de_cote/floues/`.
 
 ### 6.4 Étapes 6 et 7 — Tri automatique, puis Lieux et sorties (aperçu central)
+Après une mise à jour de l'inventaire (D63), le tri automatique propose
+« Ranger les N nouvelles photos » : seules les photos pas encore rangées sont
+groupées, les dossiers déjà faits ne bougent pas.
+
 Deux pages (D54) : le **tri automatique** (captures d'écran parmi les photos
 à trier, rangées à part dans `Captures_ecran/` hors de l'album ; lieux
 fréquents à enregistrer ; réglages, calcul, résumé, photos sans GPS), puis **Lieux et
@@ -637,6 +648,10 @@ applique l'orientation EXIF (incident I14) ; photos à l'endroit partout.
 └── Rapport.html                 bilan lisible dans un navigateur
 ```
 
+- **Contrôle de la source** (D63) : après l'écriture, la source est relue ;
+  un fichier qui n'est pas dans le projet (arrivé ou modifié depuis
+  l'inventaire) empêche d'annoncer qu'on peut supprimer la source, dans le
+  bilan comme dans le rapport.
 - **Vidéos** : rangées dans la sortie dont la période contient leur date (à
   quelques heures près), sinon dans `_videos_non_classees/`.
 - **Dates des fichiers** : la copie porte la date du jour (le navigateur ne

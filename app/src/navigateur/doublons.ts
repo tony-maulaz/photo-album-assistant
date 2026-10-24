@@ -72,6 +72,15 @@ export function lotsDoublons(plan: Plan, parJour: boolean): LotDoublons[] {
     .sort((a, b) => Number(b.id.startsWith(PREFIXE_JOUR)) - Number(a.id.startsWith(PREFIXE_JOUR)) || a.id.localeCompare(b.id));
 }
 
+/**
+ * Lots à rechercher de nouveau après une mise à jour de l'inventaire (D63) :
+ * ceux qui ont reçu des photos ajoutées depuis la dernière recherche. Les
+ * autres gardent leurs propositions (celles de l'IA comprises).
+ */
+export function lotsANouveau(plan: Plan, etat: EtatDoublons, lots: string[], analyses: Analyses): string[] {
+  return lots.filter((id) => photosLot(plan, id, analyses).some((p) => (plan.fichiers.get(p.id)?.ajout ?? '') > etat.quand));
+}
+
 export async function lireDoublons(etat: EtatProjet): Promise<EtatDoublons | undefined> {
   const lu = await etat.lire<EtatDoublons>(FICHIER).catch(() => undefined);
   return lu && lu.version === 1 && typeof lu.dossiers === 'object' ? lu : undefined;

@@ -9,7 +9,9 @@ import { actionsAlbum, synchroniserAlbum, titreDossier, type ResultatAlbum } fro
 import { listerSortie, synchroniser, type ProgressionSynchro, type ResultatSynchro } from '../../navigateur/synchro';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
-import { changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
+import { allerEtape, changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
+import { miseAJourDemandee } from '../composants/BandeauSource';
+import { verifierSource } from '../projets';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { avecLangue, t } from '../../lib/langue';
 import { duree, nombre, pluriel, taille } from '../format';
@@ -32,6 +34,8 @@ export function PageSortie() {
   const [resultat, setResultat] = useState<ResultatSynchro | null>(null);
   const [resultatAlbum, setResultatAlbum] = useState<ResultatAlbum | null>(null);
   const [rapport, setRapport] = useState<string | null>(null);
+  /** Fichiers de la source absents du projet, relevés après l'écriture (D63). */
+  const [horsProjet, setHorsProjet] = useState<string[]>([]);
   const debut = useRef(0);
   const arreter = useRef(false);
 
@@ -111,13 +115,19 @@ export function PageSortie() {
       const secs = sections(ordre, (d) => titreDossier(s.plan, d), s.album);
       const album = { photos: ordre.length, sections: secs.length, pages: paginer(ordre, secs, s.album).length, manquantes: ra.conflits.length + ra.erreurs.length };
       // Le rapport est écrit dans la sortie : dans la langue du projet (D60).
-      const html = avecLangue(langueDeLaSortie(), () => genererRapport({ projet: s.projet.nom, source: s.source.racine.name, sortie: s.sortie.racine.name, date: new Date(), album }, s.plan, r.bilan));
+      // Contrôle de sécurité (D63) : la source relue ne doit rien contenir que le projet ignore.
+      const c = await verifierSource();
+      const horsProjet = c ? [...c.nouveaux, ...c.modifies] : [];
+      setHorsProjet(horsProjet);
+      const html = avecLangue(langueDeLaSortie(), () =>
+        genererRapport({ projet: s.projet.nom, source: s.source.racine.name, sortie: s.sortie.racine.name, date: new Date(), album, horsProjet }, s.plan, r.bilan),
+      );
       await s.etat.ecrireTexte(s.sortie.racine, nomsSortie().rapport, html);
       const lecture = configuration.value?.lecture;
       if (lecture?.config) await s.etat.ecrire('config_utilisee.json', lecture.config);
       setRapport(html);
       setResultat(r);
-      const complet = r.bilan.manquants.length === 0;
+      const complet = r.bilan.manquants.length === 0 && horsProjet.length === 0;
       changerEtape(ETAPE.sortie, complet ? 'validee' : 'en_cours');
       journal('sortie', t`Sortie : ${r.copies} copiés, ${r.deplaces} déplacés, ${r.gardes} à jour ; ${phraseBilan(r.bilan)} Album : ${ra.copies} copiées, ${ra.renommes} renommées, ${ra.retires} retirées.`, {
         copies: r.copies,
@@ -277,10 +287,27 @@ export function PageSortie() {
       )}
 
       {b && (
-        <div class={`encart bilan ${b.manquants.length ? 'incomplet' : 'complet'}`}>
+        <div class={`encart bilan ${b.manquants.length || horsProjet.length ? 'incomplet' : 'complet'}`}>
           <h2>{t`Bilan`}</h2>
           <p>{phraseBilan(b)}</p>
-          {b.manquants.length === 0 ? (
+          {horsProjet.length > 0 && (
+            <>
+              <p class="attention">
+                <strong>{t`${pluriel(horsProjet.length, 'fichier du dossier à trier n’est', 'fichiers du dossier à trier ne sont')} pas dans le projet`}</strong>
+                {t` (arrivés ou modifiés depuis l’inventaire) : ils ne sont pas dans la sortie. Ne supprimez pas le dossier d’origine.`}{' '}
+                <button type="button" class="lien" onClick={() => ((miseAJourDemandee.value = true), allerEtape('inventaire'))}>
+                  {t`Mettre à jour l’inventaire`}
+                </button>
+              </p>
+              <ul class="liste-courte">
+                {horsProjet.slice(0, 10).map((id) => (
+                  <li key={id}>{id}</li>
+                ))}
+                {horsProjet.length > 10 && <li>{t`… et ${nombre(horsProjet.length - 10)} autres (voir le rapport)`}</li>}
+              </ul>
+            </>
+          )}
+          {b.manquants.length === 0 && horsProjet.length === 0 ? (
             <p>
               <strong>{t`Tout est dans le dossier de sortie.`}</strong>{' '}
               {t`Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.`}

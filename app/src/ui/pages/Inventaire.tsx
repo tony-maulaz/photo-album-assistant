@@ -3,6 +3,7 @@
 import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { RACINE, resumes } from '../../lib/plan';
+import { heureLocale } from '../../lib/source';
 import type { Progression } from '../../navigateur/inventaire';
 import { ETAPE, nomEtape, type CodeEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
@@ -10,11 +11,12 @@ import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadr
 import { confirmer } from '../composants/Dialogues';
 import { ProgressionAnalyse } from '../composants/Analyse';
 import { copiesProposees, useCopiesExactes } from '../composants/CopiesExactes';
+import { miseAJourDemandee } from '../composants/BandeauSource';
 import { ExtrasInventaire } from '../composants/ExtrasInventaire';
 import { Miniature } from '../composants/GrillePhotos';
-import { allerEtape, changerEtape, notifier, session, texteErreur, validerEtape, versionPlan, versionProjet } from '../etat';
-import { duree, jourCourt, nombre, pluriel, taille } from '../format';
-import { construirePlan } from '../projets';
+import { allerEtape, changementsSource, changerEtape, notifier, session, texteErreur, validerEtape, versionPlan, versionProjet } from '../etat';
+import { dateHeure, duree, jourCourt, nombre, pluriel, taille } from '../format';
+import { construirePlan, mettreAJourInventaire } from '../projets';
 import { analyseAFaire, analyseEnCours, lancerAnalyseDossier } from '../analyseDossier';
 
 const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
@@ -33,6 +35,7 @@ function AVerifier() {
   const sousDossiers = s.projet.mode === 'vrac' ? [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').length : 0;
   const nbCopies = copies ? copiesProposees(copies) : 0;
   const sansDate = [...s.plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && f.statut === 'archive' && f.origineDate === 'fichier').length;
+  const derniere = s.projet.mises_a_jour?.at(-1);
   const points = [
     sousDossiers > 0 && t`${pluriel(sousDossiers, 'sous-dossier', 'sous-dossiers')} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.`,
     nbCopies > 0 && t`${pluriel(nbCopies, 'copie exacte', 'copies exactes')} (même photo en plusieurs exemplaires) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » les exemplaires à garder.`,
@@ -47,6 +50,11 @@ function AVerifier() {
             <li key={x}>{x}</li>
           ))}
         </ul>
+      )}
+      {derniere && (
+        <p class="discret">
+          {t`Dernière mise à jour de l’inventaire : ${dateHeure(heureLocale(Date.parse(derniere.quand)))}, ${pluriel(derniere.ajoutes, 'fichier ajouté', 'fichiers ajoutés')}.`}
+        </p>
       )}
       <p class="discret">{enCours ? t`« Valider et continuer » dès la fin de l’analyse.` : t`Rien à décider ici : « Valider et continuer ».`}</p>
     </div>
@@ -105,9 +113,39 @@ export function PageInventaire() {
     s.doublons = undefined;
     await s.etat.ecrire('doublons.json', null).catch(() => undefined);
     for (let n = ETAPE.inventaire + 1; n <= s.projet.etapes.length; n++) changerEtape(n, 'a_faire');
+    s.projet.mises_a_jour = undefined;
+    changementsSource.value = null;
     versionProjet.value++;
     void lancer();
   };
+
+  // Trier en plusieurs fois (D63) : seuls les fichiers nouveaux ou modifiés sont lus, tout ce qui est décidé reste.
+  const mettreAJour = async () => {
+    arreter.current = false;
+    setDebut(performance.now());
+    setProgression({ etape: 'parcours', faits: 0, total: 0 });
+    try {
+      const r = await mettreAJourInventaire(setProgression, () => arreter.current);
+      if (!r.ajoutes && !r.modifies && !r.retires.length) notifier('info', t`Le dossier à trier n’a pas changé depuis l’inventaire.`);
+      else {
+        const quoi = [pluriel(r.ajoutes, 'fichier ajouté', 'fichiers ajoutés'), ...(r.modifies ? [pluriel(r.modifies, 'fichier modifié relu', 'fichiers modifiés relus')] : [])].join(', ');
+        notifier('ok', t`Inventaire mis à jour : ${quoi}. Les étapes suivantes ne traiteront que le nouveau ; tout ce qui était décidé est gardé.`);
+        if (r.retires.length)
+          notifier('info', t`${pluriel(r.retires.length, 'fichier disparu', 'fichiers disparus')} du dossier à trier avant d’avoir été copiés : retirés du projet (liste dans le journal).`);
+      }
+    } catch (err) {
+      notifier('erreur', texteErreur(err));
+    } finally {
+      setProgression(null);
+      miseAJourDemandee.value = false;
+      // Les nouvelles photos sont analysées à leur tour (les autres gardent leurs résultats).
+      if (analyseAFaire(s)) void lancerAnalyseDossier();
+    }
+  };
+  // Demandée depuis le bandeau « le dossier à trier a changé » : lancée en arrivant.
+  useEffect(() => {
+    if (miseAJourDemandee.value && s.projet.inventaire && !progression) void mettreAJour();
+  }, [miseAJourDemandee.value]);
 
   // Projet tout neuf : l'inventaire part tout seul, puis l'analyse des photos (D56).
   useEffect(() => {
@@ -177,8 +215,8 @@ export function PageInventaire() {
         numero={ETAPE.inventaire}
         titre={nomEtape(ETAPE.inventaire)}
         outils={
-          <button type="button" class="lien" onClick={() => void refaire()}>
-            {t`Refaire l’inventaire`}
+          <button type="button" class="lien" onClick={() => void mettreAJour()} title={t`Ajoute les photos arrivées dans le dossier depuis l’inventaire, sans rien changer à ce qui est décidé`}>
+            {t`Mettre à jour l’inventaire`}
           </button>
         }
       >
@@ -296,6 +334,16 @@ export function PageInventaire() {
         {inv.ignores.length > 0 && <li>{t`${pluriel(inv.ignores.length, 'fichier ignoré', 'fichiers ignorés')} : l’état d’un ancien projet (dossier « .album »).`}</li>}
         <li>{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont pas vus : Windows les recrée.`}</li>
       </ul>
+
+      <details class="avances">
+        <summary>{t`Repartir de zéro`}</summary>
+        <p class="discret">
+          {t`Relit tout le dossier à trier comme au premier jour : l’arborescence, les noms, la sélection et l’album sont perdus. Pour ajouter des photos arrivées depuis, utilisez plutôt « Mettre à jour l’inventaire ».`}
+        </p>
+        <button type="button" class="danger" onClick={() => void refaire()}>
+          {t`Refaire l’inventaire`}
+        </button>
+      </details>
 
       <BarreValidation
         resume={analyseEnCours.value || analyseAFaire(s) ? t`Analyse des photos en cours…` : t`${pluriel(inv.fichiers, 'fichier')} dans « ${s.source.racine.name} »`}

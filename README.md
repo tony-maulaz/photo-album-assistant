@@ -13,7 +13,7 @@ nothing is ever deleted: what you set aside is kept in the output folder.
 
 | Step | What happens |
 |---|---|
-| Inventory | Reads dates (camera data or file names), GPS positions, cameras; analyses sharpness and similarity on your computer. |
+| Inventory | Reads dates (camera data or file names), GPS positions, cameras; analyses sharpness and similarity on your computer. Sort a folder in several sessions: photos added later are detected and added without losing what is already decided. |
 | Folders | For each existing subfolder: sort its photos, keep it and clean it (blurry photos, duplicates), or leave it as is. |
 | Blurry photos | Scores the sharpness of every photo; you adjust the tolerance and rescue the ones you like. |
 | Duplicates | Exact copies (you choose which one to keep), bursts of near-identical photos found locally; optionally, the same scene shot several times (AI). |

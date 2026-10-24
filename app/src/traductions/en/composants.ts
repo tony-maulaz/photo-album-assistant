@@ -382,4 +382,28 @@ export const TEXTES: Record<string, string> = {
   '{0} × {1} pixels': '{0} × {1} pixels',
   'Tout reprendre': 'Start over',
   'Valider le recadrage': 'Apply the crop',
+
+  // BandeauSource.tsx (D63)
+  'nouveau fichier': 'new file',
+  'nouveaux fichiers': 'new files',
+  'fichier modifié': 'changed file',
+  'fichiers modifiés': 'changed files',
+  'fichier disparu': 'missing file',
+  'fichiers disparus': 'missing files',
+  'Le dossier à trier a changé depuis l’inventaire : {0}.': 'The folder to sort has changed since the inventory: {0}.',
+  'Tout ce qui est déjà décidé sera gardé.': 'Everything already decided will be kept.',
+  'Mettre à jour l’inventaire': 'Update the inventory',
+  'Plus tard': 'Later',
+
+  // TriAuto.tsx : nouvelles photos seulement (D63)
+  'Tri des nouvelles photos : {0} dans {1}': 'Sorting new photos: {0} in {1}',
+  'fichier rangé': 'file arranged',
+  'fichiers rangés': 'files arranged',
+  'nouveau fichier à ranger': 'new file to arrange',
+  'nouveaux fichiers à ranger': 'new files to arrange',
+  'Range seulement les photos arrivées depuis le dernier tri : les dossiers déjà faits ne bougent pas.': 'Arranges only the photos added since the last sort: the folders already made do not move.',
+  'Ranger les {0}': 'Arrange the {0}',
+  'nouvelle photo': 'new photo',
+  'nouvelles photos': 'new photos',
+  'Tout recalculer': 'Recalculate everything',
 };

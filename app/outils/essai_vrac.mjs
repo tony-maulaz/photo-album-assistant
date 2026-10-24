@@ -158,7 +158,7 @@ try {
   await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   const aVerifier = await page.locator('.a-verifier').innerText();
   verifier(aVerifier.includes('2 sous-dossiers') && aVerifier.includes('1 copie exacte'), `inventaire : ce qui attend aux étapes suivantes (${aVerifier.split('\n').slice(1, 3).join(' / ')})`);
-  verifier((await page.locator('.outils-etape').innerText()).includes('Refaire l’inventaire'), '« Refaire l’inventaire » en haut de la page');
+  verifier((await page.locator('.outils-etape').innerText()).includes('Mettre à jour l’inventaire'), '« Mettre à jour l’inventaire » en haut de la page');
   verifier((await page.locator('#copies, #captures, .sous-dossiers').count()) === 0, 'ni copies, ni captures, ni sous-dossiers à l’inventaire (D61)');
   await capturer(page, 'v1_inventaire');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
@@ -301,6 +301,64 @@ try {
   verifier(PROJET_EN ? appelsIA.enAnglais === appelsIA.total && appelsIA.total > 0 : appelsIA.enAnglais === 0, `réponses de l’IA demandées en anglais : ${appelsIA.enAnglais} appel(s) sur ${appelsIA.total}`);
   verifier(sortie.includes('Photos/BESTOF/0141_best.jpg') && sortie.includes('Photos/janvier/0141_janvier.jpg'), 'dossiers gardés tels quels recopiés à l’identique');
   verifier(sortie.some((p) => /^Photos\/Sortie_Essai_\d+_18\.07\.26\/[^/]+\.jpg$/.test(p)), 'dossiers renommés d’après les noms proposés par l’IA');
+
+  // Trier en plusieurs fois (D63) : des photos arrivent dans la source après un premier tri complet.
+  const ecrireSortie = async () => {
+    await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
+    // « Vérifier à nouveau » quand il n'y a rien à écrire.
+    await page.getByRole('button', { name: /Créer \/ mettre à jour la sortie|Vérifier à nouveau/ }).click();
+    const ecrire = page.getByRole('button', { name: 'Écrire', exact: true });
+    if (await ecrire.isVisible({ timeout: 2000 }).catch(() => false)) await ecrire.click();
+    await page.locator('.encart.bilan').waitFor({ timeout: 60_000 });
+    await page.waitForTimeout(500);
+    return page.locator('.encart.bilan').innerText();
+  };
+  await page.evaluate(async () => {
+    const source = await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_source');
+    const copier = async (depuis, dossier, nom) => {
+      const octets = await (await (await source.getFileHandle(depuis)).getFile()).arrayBuffer();
+      const d = dossier ? await source.getDirectoryHandle(dossier, { create: true }) : source;
+      const w = await (await d.getFileHandle(nom, { create: true })).createWritable();
+      // Quelques octets après la fin de l'image : un autre fichier, la même photo pour le décodeur.
+      await w.write(new Blob([octets, new Uint8Array([1, 2, 3])]));
+      await w.close();
+    };
+    const noms = [];
+    for await (const nom of source.keys()) noms.push(nom);
+    await copier(noms.find((n) => n.startsWith('0181')), '', 'nouvelle_1.jpg');
+    await copier(noms.find((n) => n.startsWith('0107')), 'BESTOF', 'nouvelle_2.jpg');
+  });
+  const bilanAvant = await ecrireSortie();
+  verifier(bilanAvant.includes('ne sont pas dans le projet') && !bilanAvant.includes('Tout est dans le dossier de sortie.'), 'sécurité : la sortie signale les 2 fichiers de la source absents du projet, et ne dit pas « tout est dans la sortie »');
+  await page.reload();
+  await page.locator('.bandeau-source').waitFor({ timeout: 20_000 });
+  verifier((await page.locator('.bandeau-source').innerText()).includes('2 nouveaux fichiers'), 'à la réouverture, un bandeau annonce les 2 nouveaux fichiers');
+  await page.locator('.bandeau-source').getByRole('button', { name: 'Mettre à jour l’inventaire' }).click();
+  await page.getByText(/Inventaire mis à jour : 2 fichiers ajoutés/).first().waitFor({ timeout: 60_000 });
+  verifier(true, 'inventaire mis à jour : 2 fichiers ajoutés, le reste gardé');
+  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
+  await page.getByRole('button', { name: 'Ranger les 1 nouvelle photo' }).click();
+  // Rangée quand l'alerte « pas encore rangée » disparaît (le nom du nouveau lieu est demandé à OpenStreetMap).
+  await page.getByText('1 nouvelle photo pas encore rangée').waitFor({ state: 'detached', timeout: 60_000 });
+  await capturer(page, 'v9_rangement');
+  verifier(true, 'tri automatique : seule la nouvelle photo à trier est rangée');
+  const bilanApres = await ecrireSortie();
+  verifier(bilanApres.includes('Tout est dans le dossier de sortie.'), `après la mise à jour, bilan complet : ${bilanApres.split('\n').find((l) => l.includes('fichiers dans la source'))}`);
+  const sortieApres = await page.evaluate(async () => {
+    const lister = async (d, p) => {
+      const l = [];
+      for await (const [nom, h] of d.entries()) {
+        if (h.kind === 'directory') l.push(...(await lister(h, `${p}${nom}/`)));
+        else l.push(`${p}${nom}`);
+      }
+      return l;
+    };
+    return (await lister(await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie'), '')).sort();
+  });
+  const anciens = sortie.filter((p) => p.startsWith('Photos/') || p.startsWith(`${N.copies.split('/')[0]}/`));
+  verifier(anciens.every((p) => sortieApres.includes(p)), 'les fichiers déjà triés n’ont pas bougé dans la sortie');
+  verifier(sortieApres.includes('Photos/BESTOF/nouvelle_2.jpg') && sortieApres.some((p) => /^Photos\/[^/]+\/nouvelle_1\.jpg$/.test(p) && !p.startsWith('Photos/BESTOF')), `nouvelles photos : l’une dans BESTOF (dossier gardé), l’autre rangée par le tri (${sortieApres.filter((p) => p.includes('nouvelle_')).join(', ')})`);
 
   // Interface en anglais : chaque page ouverte, aucune traduction manquante (D60).
   const anglais = await controlerAnglais(page, CAPTURES);

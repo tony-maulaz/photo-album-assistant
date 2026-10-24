@@ -468,6 +468,27 @@ avec la date et l'appareil de l'original (EXIF repris, orientation remise à
 est imprimé. Un format que le navigateur ne sait pas décoder est copié entier,
 et la page Sortie le signale.
 
+**D63 — Trier un dossier en plusieurs fois.** On trie une année au fil des
+mois : le projet doit accepter des photos ajoutées à la source après un
+premier tri. Avant, le plan figeait la source à l'inventaire : les photos
+ajoutées étaient ignorées, et le bilan, qui ne comparait la sortie qu'au
+plan, annonçait « tout est dans la sortie » (risque de perte si l'on
+supprimait la source). Désormais : (1) à l'ouverture du projet, la source est
+relue rapidement (chemins, tailles, dates) et un bandeau annonce les fichiers
+nouveaux, modifiés ou disparus ; (2) « Mettre à jour l'inventaire » ne lit que
+ces fichiers et les intègre au plan en une opération annulable, sans rien
+changer à ce qui est décidé (dossier de la source, ou à trier à la racine ;
+un dossier « à trier » déjà trié le reste ; un nouveau sous-dossier est
+« Garder, nettoyer ») ; un fichier disparu est gardé s'il est déjà dans la
+sortie, retiré sinon (journal) ; les étapes validées repassent « à revoir » ;
+(3) le tri automatique propose « Ranger les N nouvelles photos », qui ne
+touche pas aux dossiers déjà faits (une sortie à cheval se fusionne à
+l'étape Lieux et sorties) ; les rafales ne sont recherchées que là où des
+photos sont arrivées ; (4) après l'écriture, la page Sortie relit la source :
+tant qu'un fichier n'est pas dans le projet, le bilan et le rapport disent de
+ne pas supprimer la source. « Refaire l'inventaire » (tout perdre) est replié
+sous « Repartir de zéro ».
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

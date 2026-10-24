@@ -3751,3 +3751,22 @@ button.bouton-ia:disabled {
   max-width: 100%;
 }
 
+/* « Le dossier à trier a changé » (D63) : en haut, sous l'en-tête, sans déplacer la page. */
+.bandeau-source {
+  position: fixed;
+  top: 66px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  max-width: min(960px, calc(100vw - 32px));
+  padding: 10px 14px 10px 18px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  box-shadow: var(--ombre);
+}
+

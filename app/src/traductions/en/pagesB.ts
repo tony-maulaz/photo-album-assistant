@@ -575,4 +575,29 @@ export const TEXTES: Record<string, string> = {
     '{0} cropped photos were copied whole (a format the browser cannot read): crop them in ifolor.',
   '{0} photo recadrée a été copiée entière (format que le navigateur ne sait pas lire) : recadrez-la dans ifolor.':
     '{0} cropped photo was copied whole (a format the browser cannot read): crop it in ifolor.',
+
+  // Inventaire.tsx : mise à jour (D63)
+  'Dernière mise à jour de l’inventaire : {0}, {1}.': 'Last inventory update: {0}, {1}.',
+  'fichier ajouté': 'file added',
+  'fichiers ajoutés': 'files added',
+  'Le dossier à trier n’a pas changé depuis l’inventaire.': 'The folder to sort has not changed since the inventory.',
+  'Inventaire mis à jour : {0}. Les étapes suivantes ne traiteront que le nouveau ; tout ce qui était décidé est gardé.':
+    'Inventory updated: {0}. The following steps will only deal with what is new; everything already decided is kept.',
+  'fichier modifié relu': 'changed file read again',
+  'fichiers modifiés relus': 'changed files read again',
+  '{0} du dossier à trier avant d’avoir été copiés : retirés du projet (liste dans le journal).': '{0} from the folder to sort before being copied: removed from the project (list in the log).',
+  'fichier disparu': 'missing file',
+  'fichiers disparus': 'missing files',
+  'Ajoute les photos arrivées dans le dossier depuis l’inventaire, sans rien changer à ce qui est décidé': 'Adds the photos that arrived in the folder since the inventory, without changing anything already decided',
+  'Mettre à jour l’inventaire': 'Update the inventory',
+  'Repartir de zéro': 'Start from scratch',
+  'Relit tout le dossier à trier comme au premier jour : l’arborescence, les noms, la sélection et l’album sont perdus. Pour ajouter des photos arrivées depuis, utilisez plutôt « Mettre à jour l’inventaire ».':
+    'Reads the whole folder to sort again as on the first day: the folder tree, names, selection and album are lost. To add photos that arrived since, use “Update the inventory” instead.',
+
+  // Sortie.tsx : contrôle de la source (D63)
+  '{0} pas dans le projet': '{0} not in the project',
+  'fichier du dossier à trier n’est': 'file of the folder to sort is',
+  'fichiers du dossier à trier ne sont': 'files of the folder to sort are',
+  ' (arrivés ou modifiés depuis l’inventaire) : ils ne sont pas dans la sortie. Ne supprimez pas le dossier d’origine.':
+    ' (added or changed since the inventory): they are not in the output. Do not delete the original folder.',
 };
