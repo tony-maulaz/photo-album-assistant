@@ -460,19 +460,19 @@ try {
   await page.getByText(/propositions à relire/).first().waitFor({ timeout: 60_000 });
   await page.locator('.proposition-texte', { hasText: 'Titre IA' }).first().getByRole('button', { name: 'utiliser' }).first().click();
   await page.waitForTimeout(200);
-  verifier((await page.locator('.titre-section').first().inputValue()) === 'Titre IA', `titre de section proposé par l’IA (IA12, ${appels.textes} appel(s)) et repris d’un clic`);
+  verifier((await page.locator('.section-album:not(.couverture-album) .titre-section').first().inputValue()) === 'Titre IA', `titre de section proposé par l’IA (IA12, ${appels.textes} appel(s)) et repris d’un clic`);
   await page.getByRole('button', { name: /Proposer des légendes/ }).click();
   // Même message que pour les titres : on attend que le bouton des légendes indique « déjà fait ».
   await page.getByRole('button', { name: /Proposer des légendes.*déjà fait/ }).waitFor({ timeout: 60_000 });
   await page.getByRole('button', { name: /Suggérer une couverture/ }).click();
   await page.getByText(/couvertures? proposées?/).first().waitFor({ timeout: 60_000 });
   await page.getByRole('button', { name: 'choisir comme couverture' }).first().click();
-  await page.getByText(/copiée en tête de « Album »/).first().waitFor({ timeout: 5000 }).catch(async () => console.log('DEBUG couverture :', await page.locator('.aides-album').innerText()));
-  verifier((await page.getByText(/copiée en tête de « Album »/).count()) >= 1, `couverture IA14 proposée (${appels.couverture} appel(s)) et choisie`);
+  await page.getByText(/Copiée en tête du dossier « Album »/).first().waitFor({ timeout: 5000 }).catch(async () => console.log('DEBUG couverture :', await page.locator('.aides-album').innerText()));
+  verifier((await page.getByText(/Copiée en tête du dossier « Album »/).count()) >= 1, `couverture IA14 proposée (${appels.couverture} appel(s)) et choisie`);
   await page.getByRole('button', { name: /Relire l’album/ }).click();
   await page.getByText(/remarques? sur l’album/).first().waitFor({ timeout: 60_000 });
   verifier((await page.locator('.aides-album .remarques li').count()) > 0, 'relecture de l’album IA15 : remarques avec les pages');
-  await page.locator('.photo-page').first().click();
+  await page.locator('.section-album:not(.couverture-album) .photo-page').first().click();
   await page.locator('.panneau-photo textarea').fill('Le grand panorama');
   await page.getByRole('button', { name: 'Enregistrer la légende' }).click();
   await capturer(page, '14_album');

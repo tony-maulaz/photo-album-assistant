@@ -1,6 +1,7 @@
 // Outils de sélection de l'étape « Sélection » (SPEC § 6.9) : redondances, piles,
 // équilibre, cible. Ils éclairent le choix, sans jamais choisir.
 
+import { nombrePages, type PhotoPage, type ReglagesPages } from './album';
 import { distanceHamming } from './phash';
 
 export interface PhotoChoix {
@@ -110,10 +111,10 @@ export function equilibre(photos: PhotoChoix[]): Equilibre {
   };
 }
 
-export interface Cible {
+/** Cible, et réglages de l'album qui changent la pagination (valeur par défaut s'ils manquent). */
+export interface Cible extends ReglagesPages {
   mode: 'photos' | 'pages';
   nombre: number;
-  photosParPage: number;
 }
 
 export interface Avancement {
@@ -126,12 +127,16 @@ export interface Avancement {
   pourcent: number;
 }
 
-/** Jauge de la cible (§ 6.9) : une ★★ occupe une page entière. */
-export function avancement(photos: PhotoChoix[], cible: Cible): Avancement {
+/**
+ * Jauge de la cible (§ 6.9) : une ★★ occupe une page entière. Les pages sont
+ * celles de l'aperçu de l'étape « Album » (`nombrePages` : sections sur une
+ * nouvelle page, copies en double comptées une fois).
+ */
+export function avancement(photos: (PhotoChoix & PhotoPage)[], cible: Cible): Avancement {
   const petites = photos.filter((p) => p.album === 1).length;
   const grandes = photos.filter((p) => p.album === 2).length;
   const aDecider = photos.filter((p) => p.album === undefined).length;
-  const pages = Math.ceil(petites / Math.max(1, cible.photosParPage)) + grandes;
+  const pages = nombrePages(photos, cible);
   const valeur = cible.mode === 'pages' ? pages : petites + grandes * cible.photosParPage;
   return { retenues: petites + grandes, grandes, aDecider, pages, valeur, pourcent: cible.nombre > 0 ? (valeur / cible.nombre) * 100 : 0 };
 }

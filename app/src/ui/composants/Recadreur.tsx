@@ -151,7 +151,8 @@ export function Recadreur({ f, fermer }: { f: FichierPlan; fermer: () => void })
       <div class="outils-recadrage">
         <div class="formats" role="radiogroup" aria-label={t`Format`}>
           {FORMATS.map((x) => (
-            <button key={x.cle} type="button" role="radio" aria-checked={ratio === x.ratio} onClick={() => choisirFormat(x.ratio)}>
+            // Depuis « Libre » ou « Carré », le format suit le sens de la photo (portrait ou paysage) ; ensuite, celui choisi.
+            <button key={x.cle} type="button" role="radio" aria-checked={ratio === x.ratio} onClick={() => choisirFormat(x.ratio, ratio && ratio !== 1 ? portrait : c.h > c.l)}>
               {nomFormat(x.cle)}
             </button>
           ))}

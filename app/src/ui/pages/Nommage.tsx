@@ -90,12 +90,13 @@ enregistrerAide({
 });
 
 /** Renomme plusieurs dossiers ; un nom déjà pris à côté reçoit un suffixe libre. */
-function renommerTous(plan: Plan, noms: [string, string][]): { m: Modification | null; refus: string[] } {
+function renommerTous(plan: Plan, noms: [string, string, string?][]): { m: Modification | null; refus: string[] } {
   const mods: (Modification | null)[] = [];
   const refus: string[] = [];
-  for (const [id, nom] of noms) {
+  for (const [id, nom, saisi] of noms) {
     try {
-      mods.push(renommerDossier(plan, id, nom));
+      // Le texte tapé (accents, espaces) reste le titre de la section dans l'album.
+      mods.push(renommerDossier(plan, id, nom, saisi));
     } catch {
       refus.push(nom);
     }
@@ -137,7 +138,7 @@ function Ligne({ c, p, saisi, saisir }: { c: CibleNommage; p?: PropositionNom; s
       </td>
       <td>
         <button type="button" disabled={!propre || propre === c.nom} onClick={() => {
-          const r = renommerTous(s.plan, [[c.dossier, propre]]);
+          const r = renommerTous(s.plan, [[c.dossier, propre, saisi]]);
           if (r.refus.length) notifier('erreur', t`« ${propre} » existe déjà à cet endroit.`);
           else appliquer(r.m);
         }}>
@@ -166,7 +167,7 @@ export function PageNommage() {
   const accepterSurs = () => {
     const r = renommerTous(
       s.plan,
-      surs.map((c) => [c.dossier, normaliserNom(saisi(c))]),
+      surs.map((c) => [c.dossier, normaliserNom(saisi(c)), saisi(c)]),
     );
     appliquer(r.m);
     const renommes = pluriel(surs.length - r.refus.length, 'dossier renommé', 'dossiers renommés');

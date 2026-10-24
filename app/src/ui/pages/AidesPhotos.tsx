@@ -439,7 +439,7 @@ enregistrerAide({
 });
 
 /** Réglages des textes et boutons des aides de l'étape « Album ». */
-export function AidesAlbum({ choisirCouverture }: { choisirCouverture: (id: string) => void }) {
+export function AidesAlbum() {
   const s = session.value!;
   versionIA.value;
   const [ton, setTon] = useState(reglagesTextes.ton);
@@ -478,20 +478,8 @@ export function AidesAlbum({ choisirCouverture }: { choisirCouverture: (id: stri
       <AideIA fonction="IA12" />
       <AideIA fonction="IA13" />
       <AideIA fonction="IA14" />
-      {couvertures.length > 0 && (
-        <ul class="liste-courte">
-          {couvertures
-            .filter((c) => s.plan.fichiers.has(c.id))
-            .map((c) => (
-              <li key={c.id}>
-                {s.plan.fichiers.get(c.id)!.nom} — {c.raison}{' '}
-                <button type="button" class="lien" onClick={() => choisirCouverture(c.id)}>
-                  {s.album.couverture === c.id ? t`couverture choisie ✓` : t`choisir comme couverture`}
-                </button>
-              </li>
-            ))}
-        </ul>
-      )}
+      {/* Les couvertures proposées sont montrées en miniatures avec la couverture, en tête de l'aperçu des pages (Album.tsx). */}
+      {couvertures.length > 0 && <p class="discret">{t`Couvertures proposées : voyez-les sous « Couverture », en tête de l’aperçu des pages.`}</p>}
       <AideIA fonction="IA15" />
       {remarques.length > 0 && (
         <ul class="liste-courte remarques">

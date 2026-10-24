@@ -101,5 +101,80 @@ describe('EXIF reporté sur une copie recadrée (D62)', () => {
     expect([...copie.slice(2 + segment.length)]).toEqual([0xff, 0xdb, 9, 9, 0xff, 0xd9]);
     expect(segmentExif(Uint8Array.from([0xff, 0xd8, 0xff, 0xda, 0xff, 0xd9]))).toBeNull();
   });
+
+  /**
+   * EXIF d'un téléphone, réduit à l'essentiel : IFD0 (taille, orientation 6,
+   * lien vers le sous-IFD Exif), sous-IFD Exif (PixelXDimension en LONG,
+   * PixelYDimension en SHORT), puis IFD1 (la vignette de la photo entière).
+   */
+  function jpegAvecVignette(petitBoutiste: boolean): Uint8Array {
+    const u16 = (v: number) => (petitBoutiste ? [v & 0xff, v >> 8] : [v >> 8, v & 0xff]);
+    const u32 = (v: number) => (petitBoutiste ? [...u16(v & 0xffff), ...u16(v >>> 16)] : [...u16(v >>> 16), ...u16(v & 0xffff)]);
+    const entree = (balise: number, type: 3 | 4, valeur: number) => [...u16(balise), ...u16(type), ...u32(1), ...(type === 3 ? [...u16(valeur), 0, 0] : u32(valeur))];
+    // En-tête (8 octets), IFD0 à 8 (4 entrées : 54 octets), IFD Exif à 62 (2 entrées : 30), IFD1 à 92 (1 entrée : 18), vignette à 110.
+    const tiff = [
+      ...(petitBoutiste ? [0x49, 0x49] : [0x4d, 0x4d]),
+      ...u16(42),
+      ...u32(8),
+      ...u16(4),
+      ...entree(0x0100, 3, 4000),
+      ...entree(0x0101, 3, 1848),
+      ...entree(0x0112, 3, 6),
+      ...entree(0x8769, 4, 62),
+      ...u32(92),
+      ...u16(2),
+      ...entree(0xa002, 4, 4000),
+      ...entree(0xa003, 3, 1848),
+      ...u32(0),
+      ...u16(1),
+      ...entree(0x0201, 4, 110),
+      ...u32(0),
+      0xff,
+      0xd8,
+      0xff,
+      0xd9,
+    ];
+    const longueur = tiff.length + 8;
+    return Uint8Array.from([0xff, 0xd8, 0xff, 0xe1, longueur >> 8, longueur & 0xff, 0x45, 0x78, 0x69, 0x66, 0, 0, ...tiff, 0xff, 0xda, 1, 2, 0xff, 0xd9]);
+  }
+
+  /** Balises d'un IFD du segment (valeur d'un SHORT ou d'un LONG), et le lien vers l'IFD suivant. */
+  function lireIfd(s: Uint8Array, petitBoutiste: boolean, position: number) {
+    const u16 = (p: number) => (petitBoutiste ? s[p] + (s[p + 1] << 8) : (s[p] << 8) + s[p + 1]);
+    const u32 = (p: number) => (petitBoutiste ? u16(p) + u16(p + 2) * 65536 : u16(p) * 65536 + u16(p + 2));
+    const ifd = 10 + position;
+    const balises = new Map<number, number>();
+    for (let k = 0; k < u16(ifd); k++) {
+      const e = ifd + 2 + k * 12;
+      balises.set(u16(e), u16(e + 2) === 3 ? u16(e + 8) : u32(e + 8));
+    }
+    return { balises, suivant: u32(ifd + 2 + u16(ifd) * 12) };
+  }
+
+  for (const petitBoutiste of [false, true]) {
+    it(`retire la vignette et donne la taille de la copie recadrée (${petitBoutiste ? 'II' : 'MM'})`, async () => {
+      const { orientationJpeg, segmentExif } = await import('../src/lib/jpeg');
+      const original = jpegAvecVignette(petitBoutiste);
+      expect(lireIfd(segmentExif(original)!, petitBoutiste, 8).suivant).toBe(0);
+      const segment = segmentExif(original, { largeur: 2772, hauteur: 70000 })!;
+      expect(segment.length).toBe(original.length - 8);
+      const ifd0 = lireIfd(segment, petitBoutiste, 8);
+      // Plus de lien vers IFD1 : les explorateurs de fichiers ne montrent plus la photo entière.
+      expect(ifd0.suivant).toBe(0);
+      expect([ifd0.balises.get(0x0100), ifd0.balises.get(0x0101), ifd0.balises.get(0x0112)]).toEqual([2772, 0xffff, 1]);
+      const exif = lireIfd(segment, petitBoutiste, ifd0.balises.get(0x8769)!);
+      // PixelXDimension en LONG, PixelYDimension en SHORT (borné à 65535).
+      expect([exif.balises.get(0xa002), exif.balises.get(0xa003)]).toEqual([2772, 0xffff]);
+      expect(orientationJpeg(Uint8Array.from([0xff, 0xd8, ...segment, 0xff, 0xd9]))).toBe(1);
+      // L'original n'est pas touché.
+      expect(lireIfd(original.subarray(2), petitBoutiste, 8).suivant).toBe(92);
+    });
+  }
+
+  it('laisse tel quel un EXIF tronqué, sans lire hors du segment', async () => {
+    const { segmentExif } = await import('../src/lib/jpeg');
+    const tronque = Uint8Array.from([0xff, 0xd8, 0xff, 0xe1, 0x00, 0x10, 0x45, 0x78, 0x69, 0x66, 0, 0, 0x4d, 0x4d, 0, 0x2a, 0, 0, 0x7f, 0xff, 0xff, 0xda]);
+    expect(segmentExif(tronque, { largeur: 10, hauteur: 10 })).toEqual(tronque.slice(2, 20));
+  });
 });
 

@@ -68,6 +68,18 @@ export function normaliser(r: Recadrage): Recadrage {
   return { x: arrondi(borne(r.x, 0, 1 - l)), y: arrondi(borne(r.y, 0, 1 - h)), l: arrondi(l), h: arrondi(h), angle: Math.round(borne(r.angle, -ANGLE_MAX, ANGLE_MAX) * 10) / 10 };
 }
 
+/**
+ * Recadrage après un quart de tour de plus (sens horaire si `sens` = 90) : le
+ * rectangle est en fractions de l'image tournée, il tourne donc avec elle pour
+ * garder la même partie de la photo. Le redressement est inchangé : il tourne
+ * l'image autour du centre du cadre, comme le quart de tour, et l'agrandissement
+ * qui évite les coins vides ne dépend pas du sens du cadre.
+ */
+export function tournerRecadrage(r: Recadrage, sens: 90 | -90): Recadrage {
+  const tourne = sens === 90 ? { x: 1 - r.y - r.h, y: r.x } : { x: r.y, y: 1 - r.x - r.l };
+  return normaliser({ ...tourne, l: r.h, h: r.l, angle: r.angle });
+}
+
 /** Signature d'un recadrage, pour savoir si une copie de l'album est encore la bonne. */
 export function signatureRecadrage(r: Recadrage | undefined): string {
   return recadrageUtile(r) ? [r.x, r.y, r.l, r.h, r.angle].join(',') : '';

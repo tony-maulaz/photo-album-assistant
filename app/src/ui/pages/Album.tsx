@@ -4,16 +4,16 @@
 
 import { nomsSortie } from '../../lib/sortie';
 import { useState } from 'preact/hooks';
-import { ordreAlbum, paginer, photosAlbum, sections, type Page, type Section } from '../../lib/album';
+import { cibleEnPages, conseilCible, doublesAlbum, ordreAlbum, paginer, photosAlbum, sections, type ConseilCible, type Page, type Section } from '../../lib/album';
 import { changerLegende, combiner, noterAlbum, tourner, type FichierPlan } from '../../lib/plan';
-import { titreDossier } from '../../navigateur/album';
+import { titreAlbum, titreDossier } from '../../navigateur/album';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { demander } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { allerEtape, annuler, appliquer, changerAlbum, notifier, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { t } from '../../lib/langue';
-import { AidesAlbum, textesProposes } from './AidesPhotos';
+import { AidesAlbum, couverturesProposees, textesProposes } from './AidesPhotos';
 import { jourCourt, nombre, periode, pluriel } from '../format';
 
 function retirerCle<T>(o: Record<string, T>, cle: string): Record<string, T> {
@@ -42,6 +42,111 @@ function MiniaturePage({ f, grande, seule, choisie, choisir }: { f: FichierPlan;
       <Miniature f={f} taille={grande || seule ? 208 : 100} rotation={f.rotation} recadrage={f.recadrage} />
       {f.legende && <span class="a-legende" title={f.legende}>✎</span>}
     </button>
+  );
+}
+
+/**
+ * Couverture, en tête de l'aperçu : la photo choisie (n'importe quelle photo
+ * de l'album, depuis son panneau, ou une proposition de l'IA), et le titre de
+ * l'album. Sa copie est écrite en tête de `Album/`, avec sa rotation et son recadrage.
+ */
+function Couverture({ ouvrir }: { ouvrir: (id: string) => void }) {
+  const s = session.value!;
+  const config = s.album;
+  const choisie = config.couverture ? s.plan.fichiers.get(config.couverture) : undefined;
+  const f = choisie?.statut === 'archive' ? choisie : undefined;
+  const propositions = couverturesProposees(s).filter((c) => s.plan.fichiers.get(c.id)?.statut === 'archive');
+  return (
+    <section class="section-album couverture-album">
+      <header class="entete-section">
+        <div class="ligne-titre">
+          <span class="numero-section" aria-hidden="true">
+            ◆
+          </span>
+          <input
+            class="titre-section"
+            value={titreAlbum(config, s.projet.nom)}
+            aria-label={t`Titre de l’album`}
+            onChange={(e) => {
+              const v = e.currentTarget.value.trim();
+              changerAlbum({ titre: v && v !== s.projet.nom ? v : undefined });
+            }}
+          />
+          <span class="discret">{t`Couverture et titre de l’album`}</span>
+        </div>
+      </header>
+      <div class="pages">
+        <div class="planche">
+          <div class="page-album-apercu droite pleine page-couverture">
+            <span class="numero-page">{t`Couverture`}</span>
+            {f ? (
+              <div class="photos-page n1">
+                <MiniaturePage f={f} grande seule choisie={false} choisir={() => ouvrir(f.id)} />
+              </div>
+            ) : (
+              <p class="discret sans-couverture">{t`Pas encore de couverture : cliquez une photo de l’album, puis « Choisir comme couverture ».`}</p>
+            )}
+          </div>
+        </div>
+        {propositions.length > 0 && (
+          <div class="couvertures-proposees">
+            <p>
+              <span class="source ia">{t`IA`}</span> {t`Couvertures proposées :`}
+            </p>
+            <div class="liste-couvertures">
+              {propositions.map((c) => {
+                const p = s.plan.fichiers.get(c.id)!;
+                return (
+                  <figure key={c.id} class={config.couverture === c.id ? 'choisie' : ''}>
+                    <Miniature f={p} taille={120} rotation={p.rotation} recadrage={p.recadrage} />
+                    <figcaption>{c.raison}</figcaption>
+                    <button type="button" class="lien" disabled={config.couverture === c.id} onClick={() => changerAlbum({ couverture: c.id })}>
+                      {config.couverture === c.id ? t`couverture choisie ✓` : t`choisir comme couverture`}
+                    </button>
+                  </figure>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+      {f && (
+        <p class="discret">
+          {t`Copiée en tête du dossier « Album » sous le nom « ${nomsSortie().couverture} ».`}{' '}
+          <button type="button" class="lien" onClick={() => changerAlbum({ couverture: undefined })}>
+            {t`retirer`}
+          </button>
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** Écart à la cible, et comment le combler (« Il manque 16 pages : retenez environ 64 photos de plus… »). */
+function texteEcart(c: ConseilCible): string {
+  return c.ecart < 0 ? t`Il manque ${pluriel(-c.ecart, 'page')}` : t`${pluriel(c.ecart, 'page')} de trop`;
+}
+
+function ConseilPages({ conseil }: { conseil: ConseilCible }) {
+  const photos = conseil.ecart < 0 ? t`retenez environ ${pluriel(conseil.photos, 'photo')} de plus` : t`retirez environ ${pluriel(conseil.photos, 'photo')}`;
+  return (
+    <p class="encart attention conseil-cible">
+      {t`${texteEcart(conseil)} pour atteindre la cible : ${photos}`}
+      {conseil.photosParPage ? (
+        <>
+          {t`, ou`}{' '}
+          <button type="button" class="lien" onClick={() => changerAlbum({ photosParPage: conseil.photosParPage })}>
+            {t`passez à ${pluriel(conseil.photosParPage, 'photo')} par page`}
+          </button>
+        </>
+      ) : null}
+      .{' '}
+      {conseil.ecart < 0 && (
+        <button type="button" class="lien" onClick={() => allerEtape('selection')}>
+          {t`Aller à la sélection`}
+        </button>
+      )}
+    </p>
   );
 }
 
@@ -212,11 +317,14 @@ function PanneauPhoto({ f, fermer }: { f: FichierPlan; fermer: () => void }) {
           <button type="button" onClick={() => appliquer(tourner(s.plan, [f.id], 90))}>
             ↻ {t`Tourner`}
           </button>
+          <button type="button" onClick={() => changerAlbum({ couverture: config.couverture === f.id ? undefined : f.id })}>
+            {config.couverture === f.id ? t`Ne plus en faire la couverture` : t`Choisir comme couverture`}
+          </button>
           {coupure === undefined ? (
             <button
               type="button"
               onClick={async () => {
-                const titre = await demander(t`Nouvelle section`, t`La section commencera à cette photo. Son titre :`, s.plan.dossiers.get(f.dossier)?.nom.replace(/_/g, ' ') ?? '', (v) => (v.trim() ? null : t`Donnez un titre.`), t`Créer`);
+                const titre = await demander(t`Nouvelle section`, t`La section commencera à cette photo. Son titre :`, titreDossier(s.plan, f.dossier), (v) => (v.trim() ? null : t`Donnez un titre.`), t`Créer`);
                 if (titre) changerAlbum({ coupures: { ...config.coupures, [f.id]: titre.trim() } });
               }}
             >
@@ -313,8 +421,11 @@ export function PageAlbum() {
   }
   const numeroPage = new Map(pages.map((p, i) => [p, i + 1]));
   const f = choisie ? parId.get(choisie) : undefined;
-  const cible = config.cible.mode === 'pages' ? config.cible.nombre : Math.ceil(config.cible.nombre / Math.max(1, config.photosParPage));
+  const cible = cibleEnPages(config);
+  const conseil = ordre.length ? conseilCible(ordre, config) : null;
+  const doubles = doublesAlbum(s.plan);
   const legendes = ordre.filter((x) => x.legende).length;
+  const nomDossier = (id: string) => s.plan.dossiers.get(s.plan.fichiers.get(id)?.dossier ?? '')?.nom ?? '';
 
   return (
     <div class="page large avec-barre page-album">
@@ -345,6 +456,17 @@ export function PageAlbum() {
           <input type="checkbox" checked={config.nouvellePageParSection} onChange={(e) => changerAlbum({ nouvellePageParSection: e.currentTarget.checked })} />{' '}
           {t`Chaque section commence sur une nouvelle page`}
         </label>
+        <label>
+          {t`Cible`}{' '}
+          <input
+            type="number"
+            class="tres-court cible-pages"
+            min="1"
+            value={config.cible.nombre}
+            onChange={(e) => changerAlbum({ cible: { ...config.cible, nombre: Math.max(1, Number(e.currentTarget.value) || 1) } })}
+          />{' '}
+          {config.cible.mode === 'pages' ? t`pages` : t`photos`}
+        </label>
         <details class="avances">
           <summary>{t`Réglages avancés`}</summary>
           <label class="case">
@@ -354,14 +476,17 @@ export function PageAlbum() {
         </details>
       </div>
 
-      {ordre.length > 0 && <AidesAlbum choisirCouverture={(id) => changerAlbum({ couverture: s.album.couverture === id ? undefined : id })} />}
-      {s.album.couverture && s.plan.fichiers.get(s.album.couverture) && (
-        <p class="discret">
-          {t`Couverture : ${s.plan.fichiers.get(s.album.couverture)!.nom} (copiée en tête de « Album » sous le nom « ${nomsSortie().couverture} »).`}{' '}
-          <button type="button" class="lien" onClick={() => changerAlbum({ couverture: undefined })}>
-            {t`retirer`}
-          </button>
-        </p>
+      {ordre.length > 0 && <AidesAlbum />}
+      {ordre.length > 0 && conseil && <ConseilPages conseil={conseil} />}
+      {doubles.length > 0 && (
+        <details class="doubles-album">
+          <summary>{t`${pluriel(doubles.length, 'photo en double retirée', 'photos en double retirées')} de l’album : la même photo était retenue dans deux dossiers.`}</summary>
+          <ul class="liste-courte">
+            {doubles.map((d) => (
+              <li key={d.id}>{t`${s.plan.fichiers.get(d.id)?.nom ?? d.id} (« ${nomDossier(d.id)} ») : déjà dans « ${nomDossier(d.garde)} »`}</li>
+            ))}
+          </ul>
+        </details>
       )}
       {ordre.length === 0 ? (
         <div class="encart">
@@ -387,6 +512,7 @@ export function PageAlbum() {
           {f && <PanneauPhoto key={f.id} f={f} fermer={() => setChoisie(null)} />}
           {onglet === 'pages' ? (
             <div class="sections-album">
+              <Couverture ouvrir={(id) => parId.has(id) && setChoisie(id)} />
               {secs.map((sec, k) => (
                 <section key={`${k}-${ordre[sec.debut].id}`} class="section-album">
                   <EnteteSection sec={sec} index={k} />
@@ -424,7 +550,7 @@ export function PageAlbum() {
 
       <BarreValidation
         resume={`${pluriel(ordre.length, 'photo')} · ${pluriel(secs.length, 'section')} · ${pluriel(pages.length, 'page')}`}
-        alertes={pages.length > cible * 1.1 ? [t`${nombre(pages.length - cible)} pages de plus que la cible`] : []}
+        alertes={conseil ? [texteEcart(conseil)] : []}
         revenir={() => revenirDe('album')}
         valider={() => validerEtape('album')}
         validerActif={ordre.length > 0}

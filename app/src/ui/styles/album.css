@@ -1,1 +1,76 @@
 /* Lot « album » de la campagne de tests du 24.10.2026 : règles ajoutées par ce lot. */
+
+/* Couverture, en tête de l'aperçu des pages : une page seule, puis les propositions de l'IA. */
+.page-couverture {
+  box-shadow: inset 10px 0 12px -10px rgb(16 24 40 / 0.18);
+}
+
+.page-couverture .numero-page {
+  font-weight: 700;
+}
+
+.sans-couverture {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.couvertures-proposees {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 820px;
+}
+
+.couvertures-proposees p {
+  margin: 0;
+}
+
+.liste-couvertures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.liste-couvertures figure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 168px;
+  margin: 0;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.liste-couvertures figure.choisie {
+  border-color: var(--accent);
+}
+
+.liste-couvertures figcaption {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Cible de pages (deux ou trois chiffres), et écart à la cible avec comment le combler. */
+input.tres-court.cible-pages {
+  width: 72px;
+}
+
+.conseil-cible button.lien {
+  font-size: inherit;
+}
+
+.doubles-album {
+  margin: 8px 0;
+  color: var(--discret);
+}
+
+.doubles-album summary {
+  cursor: pointer;
+}

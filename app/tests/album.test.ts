@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { signatureRecadrage } from '../src/lib/recadrage';
-import { configAlbumDefaut, fichiersAlbum, ordreAlbum, paginer, partieNom, planifierAlbum, sections, textesAlbum, type EtatAlbum } from '../src/lib/album';
+import { conseilCible, configAlbumDefaut, fichiersAlbum, nombrePages, ordreAlbum, paginer, partieNom, planifierAlbum, sansDoubles, sections, textesAlbum, titreDepuisNom, type EtatAlbum } from '../src/lib/album';
 import type { FichierPlan } from '../src/lib/plan';
 import { avancement, equilibre, minutes, piles, redondances } from '../src/lib/selection';
 
@@ -111,6 +111,112 @@ describe('sections et pages', () => {
     expect(md).toContain('(section démarrant à `0002_20260715_Riviere.jpg`)');
     expect(md).toContain('- `0003_20260715_Riviere.jpg` : Le pont sur la rivière');
     expect(md).toContain('## Elephants (suite)');
+    expect(md).toContain('Couverture : pas encore choisie');
+  });
+
+  it('les textes gardent le titre, la couverture et le plan des pages de l’aperçu', () => {
+    const s = sections(ordre, titre, config);
+    const f = fichiersAlbum(ordre, s, config);
+    const md = textesAlbum('Thaïlande 2026', s, f, new Map([['r2', 'Le pont sur la rivière']]), config, paginer(ordre, s, config), '0000_Couverture.jpg');
+    expect(md).toContain("Titre de l'album : Thaïlande 2026\nCouverture : `0000_Couverture.jpg`");
+    expect(md).toContain('## Riviere\n(section démarrant à `0002_20260715_Riviere.jpg`)\n\n- Page 2 : 0002 ★★ (pleine page)\n- Page 3 : 0003\n\nLégendes :\n- `0003_20260715_Riviere.jpg` : Le pont sur la rivière');
+    expect(md).toContain('## Elephants (suite)\n(section démarrant à `0004_20260716_Elephants.jpg`)\n\n- Page 4 : 0004, 0005\n- Page 5 : 0006');
+    // Sections sur une même page : chacune n'y montre que ses photos.
+    const serre = { ...config, nouvellePageParSection: false };
+    const md2 = textesAlbum('T', s, f, new Map(), serre, paginer(ordre, s, serre));
+    expect(md2).toContain('## Elephants\n(section démarrant à `0001_20260714_Elephants.jpg`)\n\n- Page 1 : 0001\n');
+    expect(md2).toContain('- Page 3 : 0003\n\n## Elephants (suite)\n(section démarrant à `0004_20260716_Elephants.jpg`)\n\n- Page 3 : 0004\n- Page 4 : 0005, 0006');
+  });
+});
+
+describe('titres de section tirés des noms de dossiers', () => {
+  it('sans la date finale, sans soulignés, mots collés séparés', () => {
+    expect(titreDepuisNom('SpectacleFeu_Chaweng_24.07.26')).toBe('Spectacle Feu Chaweng');
+    expect(titreDepuisNom('SpectacleFeu Chaweng 24.07.26')).toBe('Spectacle Feu Chaweng');
+    expect(titreDepuisNom('Kanchanaburi_2026-07-15')).toBe('Kanchanaburi');
+    expect(titreDepuisNom('Voyage_Kanchanaburi_2026-07')).toBe('Voyage Kanchanaburi');
+    expect(titreDepuisNom('Annecy_27-29.06.25')).toBe('Annecy');
+    expect(titreDepuisNom('Belgique_25.07-08.08.25')).toBe('Belgique');
+    expect(titreDepuisNom('Ski_Montagne_Martin_7-9.02.25')).toBe('Ski Montagne Martin');
+    expect(titreDepuisNom('Sejour_2026-07-15_2026-07-20')).toBe('Sejour');
+    expect(titreDepuisNom('Plage à Ko Samui 18.07.26')).toBe('Plage à Ko Samui');
+    expect(titreDepuisNom('KoSamui_18.07.2026')).toBe('Ko Samui');
+  });
+
+  it('garde une année seule, les sigles, les noms qui ne sont qu’une date', () => {
+    expect(titreDepuisNom('Valais_Mars_2025')).toBe('Valais Mars 2025');
+    expect(titreDepuisNom('BESTOF_2025')).toBe('BESTOF 2025');
+    expect(titreDepuisNom('Anna&Marc')).toBe('Anna&Marc');
+    expect(titreDepuisNom('iPhone_Lea')).toBe('iPhone Lea');
+    expect(titreDepuisNom('Sortie_Famille_35_12.05.25')).toBe('Sortie Famille 35');
+    expect(titreDepuisNom('2026-07-18')).toBe('2026-07-18');
+    expect(titreDepuisNom('_sans_date')).toBe('sans date');
+  });
+});
+
+describe('une même photo retenue dans deux dossiers', () => {
+  // « A imprimer » : un « Best of » fait de copies ; la sortie du jour contient les originaux.
+  const plage = [
+    photo('Koh_Samui/0.jpg', 'Koh_Samui', '2026-07-18T09:00:00', { taille: 5000 }),
+    photo('Koh_Samui/1.jpg', 'Koh_Samui', '2026-07-18T10:00:00', { taille: 5001, empreinte: 'e1' }),
+    photo('Koh_Samui/2.jpg', 'Koh_Samui', '2026-07-18T11:00:00', { taille: 5002, empreinte: 'e2' }),
+    photo('Koh_Samui/3.jpg', 'Koh_Samui', '2026-07-18T12:00:00', { taille: 5003 }),
+  ];
+  const bestOf = [
+    photo('A_imprimer/1.jpg', 'A_imprimer', '2026-07-18T10:00:00', { taille: 5001, empreinte: 'e1' }),
+    photo('A_imprimer/3.jpg', 'A_imprimer', '2026-07-18T12:00:00', { taille: 5003 }),
+    // Même taille, autre contenu : gardée.
+    photo('A_imprimer/autre.jpg', 'A_imprimer', '2026-07-18T11:00:00', { taille: 5002, empreinte: 'e9' }),
+  ];
+
+  it('gardée une fois, à sa première place dans l’album (empreinte, ou même date et mêmes dimensions)', () => {
+    const r = sansDoubles([...bestOf, ...plage]);
+    expect(r.retirees).toEqual([
+      { id: 'A_imprimer/1.jpg', garde: 'Koh_Samui/1.jpg' },
+      { id: 'A_imprimer/3.jpg', garde: 'Koh_Samui/3.jpg' },
+    ]);
+    // Les photos gardées restent dans l'ordre reçu.
+    expect(r.gardees.map((p) => p.id)).toEqual(['A_imprimer/autre.jpg', 'Koh_Samui/0.jpg', 'Koh_Samui/1.jpg', 'Koh_Samui/2.jpg', 'Koh_Samui/3.jpg']);
+    // La sortie commence plus tard que le « Best of » ce jour-là : c'est elle qui perd ses copies.
+    const tard = sansDoubles([...bestOf, ...plage.slice(1)]);
+    expect(tard.retirees.map((x) => x.id)).toEqual(['Koh_Samui/1.jpg', 'Koh_Samui/3.jpg']);
+    // Sans vraie date ni empreinte, deux fichiers de même taille ne sont pas confondus.
+    const sansDate = [photo('a', 'A', '2026-07-18T10:00:00', { taille: 9, origineDate: 'fichier' }), photo('b', 'B', '2026-07-18T10:00:00', { taille: 9, origineDate: 'fichier' })];
+    expect(sansDoubles(sansDate).retirees).toEqual([]);
+  });
+
+  it('l’album et la jauge de la cible ne la comptent qu’une fois', () => {
+    const config = { ...configAlbumDefaut(), photosParPage: 2 };
+    expect(nombrePages([...plage, ...bestOf], config)).toBe(nombrePages([...plage, bestOf[2]], config));
+  });
+});
+
+describe('cible de pages', () => {
+  // Trois sorties de 3 photos : 6 pages à 2 par page (chaque section sur une nouvelle page), 3 pages à 4 par page.
+  const photos = ['A', 'B', 'C'].flatMap((d, j) => [0, 1, 2].map((i) => photo(`${d}${i}`, d, `2026-07-1${j}T1${i}:00:00`)));
+
+  it('la jauge de « Sélection » compte les pages comme l’aperçu de « Album »', () => {
+    const config = { ...configAlbumDefaut(), photosParPage: 4 };
+    const ordre = ordreAlbum(photos);
+    const pages = paginer(ordre, sections(ordre, (d) => d, config), config).length;
+    expect(pages).toBe(3);
+    expect(nombrePages(photos, config)).toBe(pages);
+    expect(avancement(photos, { mode: 'pages', nombre: 24, photosParPage: 4 }).pages).toBe(3);
+    expect(avancement(photos, { mode: 'pages', nombre: 24, photosParPage: 4, nouvellePageParSection: false }).pages).toBe(3);
+    expect(avancement(photos, { mode: 'pages', nombre: 24, photosParPage: 2 }).pages).toBe(6);
+    expect(avancement(photos, { mode: 'pages', nombre: 24, photosParPage: 2, nouvellePageParSection: false }).pages).toBe(5);
+  });
+
+  it('dit combien de pages manquent, ou sont de trop, et comment y remédier', () => {
+    const config = { ...configAlbumDefaut(), photosParPage: 4 };
+    expect(configAlbumDefaut().cible).toEqual({ mode: 'pages', nombre: 24 });
+    // 3 pages pour 24 : il en manque 21, soit environ 84 photos ; même à 1 photo par page (9 pages), c'est trop peu.
+    expect(conseilCible(photos, config)).toEqual({ ecart: -21, photos: 84 });
+    expect(conseilCible(photos, { ...config, cible: { mode: 'pages', nombre: 6 } })).toEqual({ ecart: -3, photos: 12, photosParPage: 2 });
+    expect(conseilCible(photos, { ...config, cible: { mode: 'pages', nombre: 3 } })).toBeNull();
+    expect(conseilCible(photos, { ...config, photosParPage: 1, cible: { mode: 'pages', nombre: 4 } })).toEqual({ ecart: 5, photos: 5, photosParPage: 3 });
+    // Cible en photos : ramenée en pages, sans changer de mise en page.
+    expect(conseilCible(photos, { ...config, cible: { mode: 'photos', nombre: 40 } })).toEqual({ ecart: -7, photos: 28 });
   });
 });
 
@@ -210,8 +316,9 @@ describe('outils de sélection', () => {
       { jour: '2026-07-18', disponibles: 4, retenues: 4 },
       { jour: '2026-07-19', disponibles: 3, retenues: 1 },
     ]);
+    // Pages de l'aperçu : Plage (3 photos), Temple (1), puis la ★★ du Temple le lendemain, chaque section sur une nouvelle page.
     const a = avancement(photos, { mode: 'pages', nombre: 10, photosParPage: 4 });
-    expect([a.retenues, a.grandes, a.aDecider, a.pages, a.pourcent]).toEqual([5, 1, 1, 2, 20]);
+    expect([a.retenues, a.grandes, a.aDecider, a.pages, a.pourcent]).toEqual([5, 1, 1, 3, 30]);
     expect(avancement(photos, { mode: 'photos', nombre: 16, photosParPage: 4 }).valeur).toBe(8);
   });
 });

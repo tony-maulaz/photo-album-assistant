@@ -10,10 +10,12 @@ import {
   Historique,
   mettreDeCote,
   RACINE,
+  recadrer,
   remettre,
   renommerDossier,
   resumes,
   supprimerDossierVide,
+  tourner,
   versJson,
   type Plan,
 } from '../src/lib/plan';
@@ -152,6 +154,31 @@ describe('opérations sur le plan', () => {
     h.annuler(plan);
     h.annuler(plan);
     expect(plan.dossiers.has(nouveau)).toBe(false);
+  });
+
+  it('garde le nom tapé (accents, espaces) quand le dossier reçoit sa version sans accents', () => {
+    const plan = exemple();
+    const { id } = creerDossier(plan, 'Ko_Samui_2026-07-18');
+    renommerDossier(plan, id, 'Plage_a_Ko_Samui_18.07.26', 'Plage à Ko Samui 18.07.26');
+    expect(plan.dossiers.get(id)).toMatchObject({ nom: 'Plage_a_Ko_Samui_18.07.26', nomSaisi: 'Plage à Ko Samui 18.07.26' });
+    // Même nom, tapé déjà dans la convention : rien à garder.
+    expect(renommerDossier(plan, id, 'Plage_a_Ko_Samui_18.07.26', 'Plage_a_Ko_Samui_18.07.26')).not.toBeNull();
+    expect(plan.dossiers.get(id)!.nomSaisi).toBeUndefined();
+    renommerDossier(plan, id, 'Plage_a_Ko_Samui_18.07.26', 'Plage à Ko Samui 18.07.26');
+    // Un autre nom tapé directement (panneau des dossiers) oublie l'ancien texte.
+    renommerDossier(plan, id, 'Plage Chaweng');
+    expect(plan.dossiers.get(id)!.nomSaisi).toBeUndefined();
+  });
+
+  it('tourne une photo recadrée avec son recadrage (même partie de la photo)', () => {
+    const plan = exemple();
+    const id = 'Paleo_24.07.25/IMG_1.jpg';
+    recadrer(plan, id, { x: 0.1, y: 0.05, l: 0.6, h: 0.8, angle: 2 });
+    tourner(plan, [id], 90);
+    expect(plan.fichiers.get(id)).toMatchObject({ rotation: 90, recadrage: { x: 0.15, y: 0.1, l: 0.8, h: 0.6, angle: 2 } });
+    tourner(plan, [id], -90);
+    expect(plan.fichiers.get(id)!.rotation).toBeUndefined();
+    expect(plan.fichiers.get(id)!.recadrage).toEqual({ x: 0.1, y: 0.05, l: 0.6, h: 0.8, angle: 2 });
   });
 
   it('fusionne un dossier et ses sous-dossiers, puis annule', () => {
