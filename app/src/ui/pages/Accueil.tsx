@@ -11,7 +11,7 @@ import { confirmer } from '../composants/Dialogues';
 import { Icone } from '../composants/Icones';
 import { configuration, notifier, page, texteErreur } from '../etat';
 import { dateHeure, nombre, pluriel } from '../format';
-import { chargerConfiguration, lireProjet, ouvrirProjet, type Autorisation } from '../projets';
+import { type Autorisation, chargerConfiguration, etapeAReprendre, lireProjet, ouvrirProjet } from '../projets';
 
 /** Autorisations à redemander au lancement, remplies par `main.tsx`. */
 export const autorisations = signal<Autorisation[]>([]);
@@ -147,9 +147,11 @@ function avancement(p: ProjetRecent): { texte: string; part: number } {
   const etapes = p.etapes;
   if (!etapes) return { texte: t`Sortie « ${p.sortie.name} »`, part: 0 };
   const validees = etapes.filter((e) => e === 'validee').length;
-  if (validees === etapes.length) return { texte: t`Terminé · sortie créée`, part: 1 };
-  const i = etapes.findIndex((e) => e !== 'validee');
-  return { texte: t`Étape ${i + 1} sur ${etapes.length} · ${nomCourtEtape(i + 1)}`, part: validees / etapes.length };
+  // Terminé dès que la sortie est créée et que rien n'est à revoir (un dossier déjà trié saute des étapes).
+  if (etapes.at(-1) === 'validee' && !etapes.some((e) => e === 'en_cours' || e === 'a_revoir')) return { texte: t`Terminé · sortie créée`, part: 1 };
+  // L'étape affichée est celle où le projet rouvrira.
+  const n = etapeAReprendre({ etapes });
+  return { texte: t`Étape ${n} sur ${etapes.length} · ${nomCourtEtape(n)}`, part: validees / etapes.length };
 }
 
 function CarteProjet({ p, retirer }: { p: ProjetRecent; retirer: () => void }) {
