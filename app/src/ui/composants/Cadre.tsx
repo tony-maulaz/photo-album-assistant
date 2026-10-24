@@ -4,7 +4,7 @@ import type { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCourtEtape, nomEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
-import { messages, page, reglages, session, versionIA, versionProjet, type Page } from '../etat';
+import { messages, page, reglages, sansSousDossiers, session, versionIA, versionProjet, type Page } from '../etat';
 import { nombre } from '../format';
 import { fermerProjet } from '../projets';
 import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
@@ -52,9 +52,9 @@ function Avancement() {
     const code = CODES_ETAPES[i];
     // La création de la sortie suppose l'arborescence validée (§ 4.2).
     const verrouillee = code === 'sortie' && !arborescenceValidee(s.projet);
-    const inutile = etapeInutile(s.projet.mode, code);
+    const inutile = etapeInutile(s.projet.mode, code, sansSousDossiers(s));
     const etat = etats[i];
-    const detail = inutile ? t`inutile pour un dossier déjà trié` : verrouillee ? t`validez d’abord l’étape ${ETAPE.lieux} (${nomEtape(ETAPE.lieux)})` : t(LIBELLES[etat]);
+    const detail = inutile ? (s.projet.mode === 'vrac' ? t`rien à décider : aucun sous-dossier` : t`inutile pour un dossier déjà trié`) : verrouillee ? t`validez d’abord l’étape ${ETAPE.lieux} (${nomEtape(ETAPE.lieux)})` : t(LIBELLES[etat]);
     const symbole = inutile ? '–' : verrouillee ? '' : SYMBOLES[etat];
     const classe = `etape ${etat}${n === courante ? ' courante' : ''}${inutile ? ' inutile' : ''}${verrouillee ? ' verrouillee' : ''}`;
     return { n, nom, court: nomCourtEtape(n), etat, detail, symbole, classe };
@@ -212,7 +212,8 @@ export function Messages() {
 }
 
 /** Explication en deux phrases en tête de chaque page d'étape (§ 5.2). */
-export function TeteEtape({ numero, titre, cle, children }: { numero?: number; titre: string; cle?: string; children: ComponentChildren }) {
+/** En-tête d'une étape ; `outils` : actions rares, discrètes, à droite du titre (« Refaire l'inventaire »). */
+export function TeteEtape({ numero, titre, cle, outils, children }: { numero?: number; titre: string; cle?: string; outils?: ComponentChildren; children: ComponentChildren }) {
   // Avec `cle`, l'explication s'ouvre à la première visite, puis se replie derrière un bouton « Aide ».
   useExplicationVue(cle);
   const ouverte = !cle || explicationOuverte(cle);
@@ -227,6 +228,7 @@ export function TeteEtape({ numero, titre, cle, children }: { numero?: number; t
             {ouverte ? t`Replier` : t`Aide`}
           </button>
         )}
+        {outils && <span class="outils-etape">{outils}</span>}
       </h1>
       {ouverte && <p class="explication">{children}</p>}
     </div>

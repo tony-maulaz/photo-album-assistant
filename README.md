@@ -5,7 +5,7 @@ and prepare a printed photo album. Everything happens on your own computer:
 there is no server and no account to create.
 
 It is built for people who are not computer experts. You choose the folder to
-sort and an output folder, then follow twelve steps, each with a preview you
+sort and an output folder, then follow thirteen steps, each with a preview you
 can adjust before validating. **The original folder is never modified**, and
 nothing is ever deleted: what you set aside is kept in the output folder.
 
@@ -13,10 +13,11 @@ nothing is ever deleted: what you set aside is kept in the output folder.
 
 | Step | What happens |
 |---|---|
-| Inventory | Reads dates (camera data or file names), GPS positions, cameras; finds screenshots and exact copies. |
+| Inventory | Reads dates (camera data or file names), GPS positions, cameras; analyses sharpness and similarity on your computer. |
+| Folders | For each existing subfolder: sort its photos, keep it and clean it (blurry photos, duplicates), or leave it as is. |
 | Blurry photos | Scores the sharpness of every photo; you adjust the tolerance and rescue the ones you like. |
-| Duplicates | Finds bursts of near-identical photos locally; optionally, the same scene shot several times (AI). |
-| Automatic sorting | Groups photos by place and outing (GPS, trips away from home, known places, place names from OpenStreetMap, family calendar). |
+| Duplicates | Exact copies (you choose which one to keep), bursts of near-identical photos found locally; optionally, the same scene shot several times (AI). |
+| Automatic sorting | Puts screenshots aside, then groups photos by place and outing (GPS, trips away from home, known places, place names from OpenStreetMap, family calendar). |
 | Places and outings | Fix the result: drag photos between folders, timeline view, undo. |
 | Small folders, naming, consolidation | Attach stray photos to the right outing, give folders meaningful names, merge folders that cover the same activity. |
 | Selection | A toolbox, never an automatic choice: ★ / ★★, quick review, piles of similar photos, side-by-side comparison, balance per day, target number of pages. |

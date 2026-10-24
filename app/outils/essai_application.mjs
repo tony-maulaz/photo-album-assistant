@@ -116,9 +116,10 @@ try {
   await page.getByRole('heading', { name: /Doublons/ }).waitFor();
   verifier(true, 'dossier déjà trié : après l’inventaire, les doublons (le tri automatique est sauté)');
   verifier((await page.locator('.bandeau .etape.inutile', { hasText: 'Tri automatique' }).count()) === 1, 'frise : le tri automatique est marqué inutile pour un dossier déjà trié');
-  verifier((await page.locator('.etape-courante').innerText()).includes('Étape 4 sur 12'), `en-tête : ${await page.locator('.etape-courante').innerText()}`);
+  verifier((await page.locator('.bandeau .etape.inutile', { hasText: 'Dossiers' }).count()) === 1, 'frise : l’étape « Dossiers » aussi');
+  verifier((await page.locator('.etape-courante').innerText()).includes('Étape 5 sur 13'), `en-tête : ${await page.locator('.etape-courante').innerText()}`);
   await page.locator('.etape-courante').click();
-  verifier((await page.locator('.liste-etapes [role=menuitem]').count()) === 12, 'un clic sur l’étape en cours déroule la liste des douze étapes');
+  verifier((await page.locator('.liste-etapes [role=menuitem]').count()) === 13, 'un clic sur l’étape en cours déroule la liste des treize étapes');
   await page.keyboard.press('Escape');
   await page.locator('.bouton-menu').click();
   const menu = await page.locator('.menu-deroulant [role=menuitem]').allInnerTexts();
@@ -218,7 +219,7 @@ try {
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.locator('.page-selection').waitFor();
   verifier(true, 'dossier déjà trié : après les lieux et sorties, la sélection');
-  await page.locator('.bandeau .etape', { hasText: /^.?12Sortie$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).waitFor({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
   await page.getByRole('button', { name: 'Écrire' }).click();
@@ -254,7 +255,7 @@ try {
   await page.locator('.tuile').first().click();
   await page.keyboard.press('1');
   await page.waitForTimeout(300);
-  await page.locator('.bandeau .etape', { hasText: /^.?12Sortie$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
   await page.getByText(/1 fichier à déplacer/).waitFor({ timeout: 20_000 });
   verifier(true, 'un déplacement dans le plan devient un déplacement dans la sortie, sans recopie');
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
@@ -330,7 +331,7 @@ try {
     });
   });
 
-  await page.locator('.bandeau .etape', { hasText: /^.?4Doublons$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Doublons$/ }).click();
   verifier((await page.getByRole('button', { name: 'Analyser les photos' }).count()) === 0, 'analyse locale déjà faite à l’inventaire : plus de bouton « Analyser les photos »');
   await page.locator('.encart-ia > summary').click();
   await page.getByRole('button', { name: /Analyser avec l’IA/ }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
@@ -357,7 +358,7 @@ try {
   verifier((await page.locator('.barre-validation .resume').innerText()).includes('1 doublon écarté'), 'un doublon écarté après relecture');
 
   // Étape 9 : sélection au clavier, tri rapide, rotation.
-  await page.locator('.bandeau .etape', { hasText: /^.?10Sélection$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
   await page.locator('.page-selection .tuile').first().waitFor();
   await page.locator('.page-selection .tuile').first().click();
   await page.keyboard.press('Control+a');
@@ -434,7 +435,7 @@ try {
   verifier((await page.locator('.remarques li').count()) > 0, 'contrôle de la sélection IA11 : remarques affichées');
 
   // Étape 10 : aperçu paginé et légende.
-  await page.locator('.bandeau .etape', { hasText: /^.?11Album$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Album$/ }).click();
   await page.locator('.section-album').first().waitFor();
   const sections = await page.locator('.section-album').count();
   const pages = await page.locator('.page-album-apercu').count();
@@ -483,7 +484,7 @@ try {
       return (await lister(await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie'), '')).sort();
     });
   const ecrireSortie = async () => {
-    await page.locator('.bandeau .etape', { hasText: /^.?12Sortie$/ }).click();
+    await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
     await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
     await page.getByRole('button', { name: 'Écrire' }).click();
     await page.getByText('Tout est dans le dossier de sortie.').first().waitFor({ timeout: 60_000 });
@@ -507,7 +508,7 @@ try {
   verifier(fichiers.some((p) => p.startsWith('_mis_de_cote/doublons/')), 'le doublon écarté est dans _mis_de_cote/doublons');
 
   // Retirer une photo de l'album : les suivantes sont renumérotées, l'ancienne copie retirée (I1).
-  await page.locator('.bandeau .etape', { hasText: /^.?10Sélection$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
   await page.locator('.page-selection .tuile').nth(3).click();
   await page.keyboard.press('x');
   await ecrireSortie();

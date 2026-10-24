@@ -5,21 +5,21 @@
 
 import { pluriel } from '../ui/format';
 import { t } from './langue';
-import { combiner, mettreDeCote, remettre, traitementDe, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
+import { ressembleACapture } from './inventaire';
+import { combiner, mettreDeCote, nePasToucher, remettre, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
 
 /** Seuil calibré du script 01 (variance du Laplacien à 1024 px). */
 export const SEUIL_FLOU = 60;
 
-/** Le dossier (ou un parent) est-il gardé tel quel (étape 2) ? Son contenu n'est alors ni trié ni écarté. */
-export function dansDossierGarde(plan: Plan, dossier: string): boolean {
-  const t = traitementDe(plan, dossier);
-  return t === 'garder' || t === 'ignorer';
-}
 
-/** Photos concernées par l'étape : dans l'archive ou déjà écartées pour flou, hors captures d'écran et dossiers gardés tels quels. */
+/**
+ * Photos concernées par l'étape : dans l'archive ou déjà écartées pour flou, hors dossiers « Ne pas toucher ».
+ * Une capture d'écran, rangée ou non, n'est jamais une photo floue : une image d'écran est nette mais
+ * « plate », la mesure la prendrait pour floue (D61).
+ */
 export function photosConcernees(plan: Plan): FichierPlan[] {
   return [...plan.fichiers.values()].filter(
-    (f) => f.categorie === 'photo' && !f.capture && (f.statut === 'archive' || f.raison === 'floues') && !dansDossierGarde(plan, f.dossier),
+    (f) => f.categorie === 'photo' && !f.capture && !ressembleACapture(f) && (f.statut === 'archive' || f.raison === 'floues') && !nePasToucher(plan, f.dossier),
   );
 }
 

@@ -103,9 +103,9 @@ export async function construirePlan(progres: (p: Progression) => void, arreter:
   const inv = await inventorier(s.source.racine, progres, arreter);
   const { plan, ignores } = planInitial(inv.elements);
   // Dossier en vrac : les photos de la racine sont à trier ; les sous-dossiers
-  // (nommés ou de mois) sont gardés tels quels par défaut (§ 6.2), modifiable à l'étape 2.
+  // (nommés ou de mois) gardent leur place et sont nettoyés par défaut (D61), modifiable à l'étape « Dossiers ».
   if (s.projet.mode === 'vrac') {
-    for (const d of plan.dossiers.values()) if (d.parent === RACINE && d.origine === 'source') plan.dossiers.set(d.id, { ...d, traitement: 'garder' });
+    for (const d of plan.dossiers.values()) if (d.parent === RACINE && d.origine === 'source') plan.dossiers.set(d.id, { ...d, traitement: 'nettoyer' });
   }
   const octets = inv.elements.reduce((t, e) => t + e.taille, 0);
   s.plan = plan;

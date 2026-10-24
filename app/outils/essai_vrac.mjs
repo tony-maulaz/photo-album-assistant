@@ -122,7 +122,7 @@ try {
     for (const f of fichiers) await ecrire(chemins[f.name], f);
     const f0140 = fichiers.find((f) => f.name.startsWith('0140'));
     const f0141 = fichiers.find((f) => f.name.startsWith('0141'));
-    // Copie exacte dans le vrac (à écarter), copie voulue dans BESTOF (jamais touchée).
+    // Copie exacte dans le vrac (proposée à l'écart), copies voulues dans BESTOF et janvier (gardées, D61).
     await ecrire('copie de 0140.jpg', f0140);
     await ecrire('BESTOF/0141_best.jpg', f0141);
     await ecrire('janvier/0141_janvier.jpg', f0141);
@@ -143,25 +143,28 @@ try {
   await page.fill('#nom-projet', 'Essai vrac');
   await page.getByRole('button', { name: 'Créer le projet' }).click();
 
-  // Étape 2 : inventaire, sous-dossiers, captures, doublons exacts.
-  await page.getByRole('button', { name: 'Valider et continuer' }).waitFor({ timeout: 60_000 });
-  const lignes = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
-  verifier(lignes.length === 2 && lignes.some((l) => l.includes('BESTOF')) && lignes.some((l) => l.includes('janvier')), 'sous-dossiers BESTOF et janvier listés');
-  verifier((await page.locator('.sous-dossiers select').first().inputValue()) === 'garder', 'gardés tels quels par défaut');
-  await page.getByRole('button', { name: /Ranger les 1 captures/ }).click();
-  await page.getByText('1 capture rangée').waitFor();
-  verifier(true, 'capture d’écran rangée dans Captures_ecran');
+  // Étape 2 : inventaire, des informations seulement ; l'analyse des photos se fait toute seule (D56).
+  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   const aVerifier = await page.locator('.a-verifier').innerText();
-  verifier(aVerifier.includes('sous-dossiers déjà rangés'), `message d’accueil : ce qu’il faut vérifier (${aVerifier.split('\n').slice(0, 3).join(' / ')})`);
-  // Analyse des photos et recherche des copies : toutes seules, sans bouton (D56).
-  await page.locator('.groupe-exact').first().waitFor({ timeout: 60_000 });
-  const groupes = await page.locator('.groupe-exact').allInnerTexts();
-  verifier(groupes.length === 1 && groupes[0].includes('copie de 0140.jpg'), `un doublon exact (la copie du vrac ; BESTOF jamais touché) : ${groupes.length} groupe(s)`);
-  await page.getByRole('button', { name: /Écarter les 1 copies/ }).click();
+  verifier(aVerifier.includes('2 sous-dossiers') && aVerifier.includes('1 copie exacte'), `inventaire : ce qui attend aux étapes suivantes (${aVerifier.split('\n').slice(1, 3).join(' / ')})`);
+  verifier((await page.locator('.outils-etape').innerText()).includes('Refaire l’inventaire'), '« Refaire l’inventaire » en haut de la page');
+  verifier((await page.locator('#copies, #captures, .sous-dossiers').count()) === 0, 'ni copies, ni captures, ni sous-dossiers à l’inventaire (D61)');
   await capturer(page, 'v1_inventaire');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
-  // Étape 3 : floues.
+  // Étape 3 : que faire des sous-dossiers (D61).
+  await page.getByRole('heading', { name: /Dossiers/ }).waitFor();
+  const lignes = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
+  verifier(lignes.length === 2 && lignes.some((l) => l.includes('BESTOF')) && lignes.some((l) => l.includes('janvier')), 'étape « Dossiers » : BESTOF et janvier listés');
+  const actifs = await page.locator('.sous-dossiers [role=radio][aria-checked=true]').allInnerTexts();
+  verifier(actifs.length === 2 && actifs.every((x) => x === 'Garder, nettoyer'), `« Garder, nettoyer » par défaut, en boutons (${actifs.join(', ')})`);
+  const bestof = page.locator('.sous-dossiers tbody tr', { hasText: 'BESTOF' });
+  await bestof.getByRole('radio', { name: 'Ne pas toucher' }).click();
+  verifier((await bestof.getByRole('radio', { name: 'Ne pas toucher' }).getAttribute('aria-checked')) === 'true', 'un clic suffit pour changer de choix (BESTOF : ne pas toucher)');
+  await capturer(page, 'v1b_dossiers');
+  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+
+  // Étape 4 : floues.
   await page.getByRole('heading', { name: /Photos floues/ }).waitFor();
   const compteur = await page.locator('.compteur-floues').innerText();
   verifier(/photos? écartées?/.test(compteur), `curseur de netteté et compteur en direct : ${compteur}`);
@@ -172,16 +175,29 @@ try {
   await capturer(page, 'v2_floues');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
-  // Étape 4 : doublons, comparés journée par journée tant que le dossier est en vrac.
+  // Étape 5 : doublons, comparés journée par journée tant que le dossier est en vrac.
   await page.getByRole('heading', { name: /Doublons/ }).waitFor();
   verifier(true, 'après les floues, les doublons (nettoyer avant de ranger)');
+  // Copies exactes en tête : un exemplaire gardé par emplacement, l'utilisateur peut changer (D61).
+  await page.locator('#copies .groupe-exact').first().waitFor({ timeout: 60_000 });
+  const aDecider = page.locator('#copies > .groupes-exacts > .groupe-exact');
+  verifier((await aDecider.count()) === 1 && (await aDecider.first().locator('.exemplaire.ecarte').innerText()).includes('copie de 0140.jpg'), 'copies exactes : la copie du vrac est proposée à l’écart');
+  verifier((await page.locator('#copies details summary').innerText()).includes('1 photo présente dans plusieurs dossiers'), 'copies voulues (BESTOF, janvier) : toutes gardées');
+  await page.locator('#copies details summary').click();
+  await capturer(page, 'v2b_copies');
+  await page.getByRole('button', { name: 'Écarter 1 copie' }).click();
+  await page.locator('#copies > .groupes-exacts').waitFor({ state: 'detached' });
+  verifier(true, 'copie exacte écartée');
   // Les rafales se repèrent toutes seules à l'ouverture de la page.
   await page.locator('.apercu-lots > summary', { hasText: 'Aperçu par journée' }).waitFor({ timeout: 60_000 });
   verifier(true, 'dossier en vrac : rafales repérées toutes seules, journée par journée');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
-  // Étape 5 : tri automatique.
+  // Étape 6 : tri automatique ; les captures d'écran parmi les photos à trier se rangent d'abord.
   await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
+  await page.getByRole('button', { name: /Ranger les 1 captures/ }).click();
+  await page.getByText('1 capture rangée').waitFor();
+  verifier(true, 'capture d’écran rangée dans Captures_ecran, depuis le tri automatique');
   await page.getByRole('button', { name: 'Calculer l’arborescence' }).click();
   await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 60_000 });
   const resume = await page.locator('.resume-tri').innerText();
@@ -197,7 +213,7 @@ try {
   verifier((await page.locator('.resume-tri').innerText()) === resume, 'recalculer avec les mêmes réglages donne la même arborescence');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
-  // Étape 6 : lieux et sorties.
+  // Étape 7 : lieux et sorties.
   await page.locator('.panneau-dossiers').waitFor();
   const noms = await page.locator('.ligne-dossier .nom-dossier').allInnerTexts();
   await capturer(page, 'v3a_lieux');
@@ -216,10 +232,10 @@ try {
   verifier((await page.locator('.ldt-barre.actif').count()) >= 1, 'ligne de temps : le dossier choisi est mis en évidence');
   await page.getByRole('button', { name: 'Photos', exact: true }).click();
 
-  // Étapes 7 à 9 (IA simulée).
+  // Étapes 8 à 10 (IA simulée).
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.getByRole('heading', { name: /Petits dossiers/ }).waitFor();
-  verifier(true, 'après les lieux et sorties, on passe aux petits dossiers (étape 7)');
+  verifier(true, 'après les lieux et sorties, on passe aux petits dossiers (étape 8)');
   await capturer(page, 'v4_petits_dossiers');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.getByRole('heading', { name: /Nommage/ }).waitFor();
@@ -243,10 +259,10 @@ try {
   await capturer(page, 'v6_consolidation');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.locator('.page-selection').waitFor();
-  verifier(true, 'étapes 7, 8 et 9 parcourues jusqu’à la sélection');
+  verifier(true, 'étapes 8, 9 et 10 parcourues jusqu’à la sélection');
 
   // Sortie.
-  await page.locator('.bandeau .etape', { hasText: /^.?12Sortie$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
   await page.getByRole('button', { name: 'Écrire' }).click();
   await page.getByText('Tout est dans le dossier de sortie.').first().waitFor({ timeout: 60_000 });

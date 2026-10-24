@@ -4,7 +4,7 @@
 
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
-import { traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
+import { gardeSaPlace, type FichierPlan, type Plan } from '../../lib/plan';
 import { arborescence, avecSansDate, grouper, OPTIONS_TRI_DEFAUT, optionsDepuisPrereglage, rangerVideos, appliquerTri, separerSansDate, type OptionsTri, type PhotoTri } from '../../lib/tri';
 import { appliquer, changerEtape, configuration, journal, notifier, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
 import { t } from '../../lib/langue';
@@ -13,9 +13,9 @@ import { BarreProgression } from './Cadre';
 import { confirmer } from './Dialogues';
 import { ETAPE } from '../../navigateur/projet';
 
-/** Fichiers que le tri range : tout, sauf le contenu des dossiers gardés tels quels et les captures d'écran. */
+/** Fichiers que le tri range : tout, sauf le contenu des dossiers qui gardent leur place et les captures d'écran. */
 export function fichiersATrier(plan: Plan): FichierPlan[] {
-  return [...plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && !f.capture && !['garder', 'ignorer'].includes(traitementDe(plan, f.dossier) ?? ''));
+  return [...plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && !f.capture && !gardeSaPlace(plan, f.dossier));
 }
 
 export function TriAuto() {

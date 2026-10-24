@@ -7,7 +7,7 @@ const photo = (id: string, extra: Partial<PhotoExacte> = {}): PhotoExacte => ({
   dossier: id.includes('/') ? id.slice(0, id.lastIndexOf('/')) : '',
   taille: 3_000_000,
   exif: true,
-  gardeTelQuel: false,
+  emplacement: 'a_trier',
   dims: { l: 4000, h: 3000 },
   phash: 'c3a5e1f00f1e5a3c',
   ...extra,
@@ -36,20 +36,29 @@ describe('doublons exacts (D31)', () => {
       photo('Vrac/Anniversaire Lea.jpg', { empreinte: 'aa' }),
       photo('Vrac/autre.jpg', { empreinte: 'bb' }),
     ]);
-    expect(g).toEqual([{ garde: 'Vrac/Anniversaire Lea.jpg', copies: [{ id: 'Vrac/20250704_123456.jpg', type: 'identique' }] }]);
+    expect(g).toEqual([{ garde: 'Vrac/Anniversaire Lea.jpg', copies: [{ id: 'Vrac/20250704_123456.jpg', type: 'identique' }], aGarder: ['Vrac/Anniversaire Lea.jpg'] }]);
   });
 
-  it('BESTOF fait de copies voulues : jamais touché, ni comme copie ni comme référence', () => {
-    const photos = [
+  it('BESTOF fait de copies voulues : un exemplaire gardé par emplacement, les copies d’un même dossier proposées (D61)', () => {
+    const bestof = { emplacement: 'BESTOF_2025' };
+    const groupes = groupesDoublonsExacts([
       photo('Vrac/IMG_1.jpg', { empreinte: 'aa' }),
-      photo('BESTOF_2025/IMG_1.jpg', { empreinte: 'aa', gardeTelQuel: true }),
-      photo('BESTOF_2025/IMG_2.jpg', { empreinte: 'bb', gardeTelQuel: true }),
-      photo('BESTOF_2025/IMG_2 (1).jpg', { empreinte: 'bb', gardeTelQuel: true }),
-    ];
-    expect(groupesDoublonsExacts(photos)).toEqual([]);
-    // Deux copies hors BESTOF : l'une est proposée, celle du BESTOF reste.
-    expect(groupesDoublonsExacts([...photos, photo('Vrac/IMG_1 (1).jpg', { empreinte: 'aa' })])).toEqual([
-      { garde: 'Vrac/IMG_1.jpg', copies: [{ id: 'Vrac/IMG_1 (1).jpg', type: 'identique' }] },
+      photo('Vrac/IMG_1 (1).jpg', { empreinte: 'aa' }),
+      photo('BESTOF_2025/IMG_1.jpg', { empreinte: 'aa', ...bestof }),
+      photo('BESTOF_2025/IMG_2.jpg', { empreinte: 'bb', ...bestof }),
+      photo('BESTOF_2025/IMG_2 (1).jpg', { empreinte: 'bb', ...bestof }),
+    ]);
+    expect(groupes).toEqual([
+      {
+        garde: 'BESTOF_2025/IMG_1.jpg',
+        copies: [
+          { id: 'Vrac/IMG_1.jpg', type: 'identique' },
+          { id: 'Vrac/IMG_1 (1).jpg', type: 'identique' },
+        ],
+        // L'exemplaire du BESTOF et un exemplaire à trier : la photo reste dans sa sortie et dans le BESTOF.
+        aGarder: ['BESTOF_2025/IMG_1.jpg', 'Vrac/IMG_1.jpg'],
+      },
+      { garde: 'BESTOF_2025/IMG_2.jpg', copies: [{ id: 'BESTOF_2025/IMG_2 (1).jpg', type: 'identique' }], aGarder: ['BESTOF_2025/IMG_2.jpg'] },
     ]);
   });
 
@@ -65,6 +74,7 @@ describe('doublons exacts (D31)', () => {
           { id: 'Vrac/IMG-20260718-WA0003.jpg', type: 'reduite' },
           { id: 'Vrac/IMG-20260718-WA0004.jpg', type: 'reduite' },
         ],
+        aGarder: ['Vrac/20260718_113536.jpg'],
       },
     ]);
   });
@@ -86,13 +96,13 @@ describe('doublons exacts (D31)', () => {
     for (const c of cas) expect(groupesDoublonsExacts([original, photo('b.jpg', { empreinte: 'x', taille: 100, ...c })])).toEqual([]);
   });
 
-  it('une copie réduite dont l’original est gardé tel quel reste en place', () => {
+  it('une copie réduite est proposée à l’écart, même quand l’original est dans un autre dossier', () => {
     expect(
       groupesDoublonsExacts([
-        photo('BESTOF/a.jpg', { empreinte: 'o', gardeTelQuel: true }),
+        photo('BESTOF/a.jpg', { empreinte: 'o', emplacement: 'BESTOF' }),
         photo('Vrac/IMG-WA1.jpg', { empreinte: 'w', exif: false, taille: 100, dims: { l: 1600, h: 1200 } }),
       ]),
-    ).toEqual([]);
+    ).toEqual([{ garde: 'BESTOF/a.jpg', copies: [{ id: 'Vrac/IMG-WA1.jpg', type: 'reduite' }], aGarder: ['BESTOF/a.jpg'] }]);
   });
 
   it('copies identiques d’une version réduite : rattachées au même original', () => {
@@ -110,6 +120,7 @@ describe('doublons exacts (D31)', () => {
           { id: 'Vrac/IMG-WA1.jpg', type: 'reduite' },
           { id: 'Vrac/IMG-WA1 (1).jpg', type: 'reduite' },
         ],
+        aGarder: ['Vrac/IMG_5.jpg'],
       },
     ]);
   });

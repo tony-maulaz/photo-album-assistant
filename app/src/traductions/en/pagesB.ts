@@ -75,8 +75,8 @@ export const TEXTES: Record<string, string> = {
   Annuler: 'Undo',
   'environ {0} CHF': 'about {0} CHF',
   'gratuit (déjà fait)': 'free (already done)',
-  'L’application repère les photos en double : rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote/doublons », rien n’est supprimé.':
-    'The application finds duplicate photos: almost identical bursts (free), then, if you wish, the same scene photographed several times (AI). You review each group: the photos set aside go to “_mis_de_cote/doublons”, nothing is deleted.',
+  'L’application repère les photos en double : copies exactes (la même photo en plusieurs exemplaires), rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote », rien n’est supprimé.':
+    'The application finds duplicate photos: exact copies (the same photo several times), near-identical bursts (free), then, if you wish, the same scene photographed several times (AI). You review each group: the photos set aside go to “_mis_de_cote”; nothing is deleted.',
   ' Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.':
     ' As the folder is not sorted yet, the photos are compared day by day.',
   'la ressemblance et la netteté de chaque photo servent à repérer les doublons et à garder la plus nette.':
@@ -132,7 +132,6 @@ export const TEXTES: Record<string, string> = {
 
   // Organisation.tsx
   'dossier technique': 'technical folder',
-  'gardé tel quel': 'kept as is',
   'exclu à la main': 'excluded by hand',
   'dossier de mois': 'month folder',
   'plus d’un mois': 'more than a month',
@@ -313,21 +312,23 @@ export const TEXTES: Record<string, string> = {
     'The browser asks again for access to your folders at each session: it is a security measure. The “Resume” screen gathers these requests; click “Allow” for each folder.',
   'Deux façons de commencer': 'Two ways to start',
   'Trier un nouveau dossier': 'Sort a new folder',
-  ' (en vrac) : les douze étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers déjà nommés sont gardés tels quels, sauf si vous choisissez de les trier aussi (étape {0}).':
-    ' (unsorted): the twelve steps. The photos at the top level are arranged by places and outings; subfolders that already have a name are kept as is, unless you choose to sort them too (step {0}).',
+  ' (en vrac) : les treize étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers déjà nommés gardent leur place, sauf si vous choisissez de les trier aussi (étape {0}).':
+    ' (unsorted): the thirteen steps. The photos at the top level are arranged by places and outings; subfolders that already have a name keep their place, unless you choose to sort them too (step {0}).',
   'Ouvrir un dossier déjà trié': 'Open an already sorted folder',
   ' : ses sous-dossiers deviennent les dossiers de la sortie. Les dossiers « _a_supprimer », « _doublons » et les photos marquées « _doublon » des anciens scripts sont reconnus et mis de côté. Après l’inventaire, on passe aux doublons, puis aux lieux et sorties (le tri automatique et ses suites sont sautés).':
     ': its subfolders become the folders of the output. The “_a_supprimer” and “_doublons” folders and the photos marked “_doublon” by the old scripts are recognised and set aside. After the inventory come the duplicates, then places and outings (automatic sorting and the steps that follow it are skipped).',
   'Les étapes': 'The steps',
   ' : dossiers, préréglage, contexte (transmis à l’IA), budget IA.': ': folders, preset, context (sent to the AI), AI budget.',
-  ' : chiffres, sous-dossiers (trier ou garder tels quels), captures d’écran, doublons exacts (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), appareils et décalage d’horloge.':
-    ': figures, subfolders (sort or keep as is), screenshots, exact copies (the same photo several times, or a reduced WhatsApp copy), cameras and clock offset.',
+  ' : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies) se fait pendant ce temps.':
+    ': figures, dates, cameras and clock offset; the photo analysis (sharpness, similarity, copies) runs meanwhile.',
+  ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
+    ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
   ' : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».':
     ': set the tolerance; S saves a photo, X sets aside a failed photo. Nothing is set aside before “Confirm”.',
-  ' : rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un dossier en vrac, les photos sont comparées journée par journée.':
-    ': bursts found for free, then the same scene photographed several times (AI); you review each group. For an unsorted folder, the photos are compared day by day.',
-  ' : enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.':
-    ': save the places that come up often, then “Calculate the folder tree”; the AI can locate the photos without GPS.',
+  ' : copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite : vous choisissez celle à garder), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un dossier en vrac, les photos sont comparées journée par journée.':
+    ': exact copies (the same photo several times, or a reduced WhatsApp copy: you choose which one to keep), bursts found for free, then the same scene photographed several times (AI); you review each group. For an unsorted folder, the photos are compared day by day.',
+  ' : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.':
+    ': put screenshots aside, save the places that come up often, then “Calculate the folder tree”; the AI can locate the photos without GPS.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
   ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',
   ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':
@@ -371,18 +372,6 @@ export const TEXTES: Record<string, string> = {
   'Taille et date des fichiers': 'Size and date of the files',
   'Date, appareil et GPS des photos': 'Date, camera and GPS of the photos',
   'Date des vidéos': 'Date of the videos',
-  'Trier ses photos': 'Sort its photos',
-  'elles rejoignent le tri par lieux et sorties. Pour un dossier fourre-tout : « Divers », « Téléphone ».':
-    'they join the sorting by places and outings. For a catch-all folder: “Misc”, “Phone”.',
-  'Garder tel quel': 'Keep as is',
-  'recopié à l’identique ; ses photos peuvent aller dans l’album. Pour un dossier déjà bien rangé (« Anniversaire Lea »), ou un mois de petites sorties.':
-    'copied unchanged; its photos can go in the album. For a folder that is already well arranged (“Lea birthday”), or a month of small outings.',
-  'Garder tel quel, pas pour l’album': 'Keep as is, not for the album',
-  'recopié à l’identique ; ses photos ne sont pas proposées pour l’album. Pour des documents, scans, fonds d’écran.':
-    'copied unchanged; its photos are not offered for the album. For documents, scans, wallpapers.',
-  'Que faire des sous-dossiers déjà rangés ?': 'What to do with the subfolders already arranged?',
-  'Les {0} en vrac à la racine seront triés par lieux et sorties. Pour chaque sous-dossier, choisissez :':
-    'The {0} loose at the top level will be sorted by places and outings. For each subfolder, choose:',
   'élément': 'item',
   'éléments': 'items',
   'Période': 'Period',
@@ -390,28 +379,11 @@ export const TEXTES: Record<string, string> = {
   'Vidéos': 'Videos',
   'Que faire ?': 'What to do?',
   'Que faire de {0}': 'What to do with {0}',
-  'Tout trier': 'Sort all',
-  'Tout garder tel quel': 'Keep all as is',
-  'que faire des': 'what to do with the',
-  'sous-dossier déjà rangé': 'subfolder already arranged',
-  'sous-dossiers déjà rangés': 'subfolders already arranged',
-  ' ;': ';',
-  les: 'the',
   'capture d’écran trouvée': 'screenshot found',
   'captures d’écran trouvées': 'screenshots found',
-  'copie en double': 'duplicate copy',
-  'copies en double': 'duplicate copies',
   'photo sans date': 'photo without a date',
   'photos sans date': 'photos without a date',
-  ' : elles iront dans « {0} », à placer à la main ;': ': they will go to “{0}”, to be placed by hand;',
   '✓ Analyse des photos terminée.': '✓ Photo analysis finished.',
-  'Pendant ce temps, vérifiez :': 'In the meantime, check:',
-  'Vérifiez :': 'Check:',
-  'Puis « Valider et continuer », dès la fin de l’analyse.': 'Then “Confirm and continue”, as soon as the analysis is finished.',
-  'Puis « Valider et continuer ».': 'Then “Confirm and continue”.',
-  'Rien d’autre à vérifier : « Valider et continuer » dès la fin de l’analyse.':
-    'Nothing else to check: “Confirm and continue” as soon as the analysis is finished.',
-  'Rien d’autre à vérifier : « Valider et continuer ».': 'Nothing else to check: “Confirm and continue”.',
   'janv.': 'Jan',
   'févr.': 'Feb',
   mars: 'Mar',
@@ -477,8 +449,6 @@ export const TEXTES: Record<string, string> = {
   fichier: 'file',
   fichiers: 'files',
   'Refaire l’inventaire ?': 'Redo the inventory?',
-  'Le dossier à trier sera relu entièrement. Les changements faits dans l’arborescence seront perdus.':
-    'The folder to sort will be read again entirely. Changes made to the folder tree will be lost.',
   'Refaire l’inventaire': 'Redo the inventory',
 
   // Sortie.tsx
@@ -561,4 +531,42 @@ export const TEXTES: Record<string, string> = {
   'Écriture…': 'Writing…',
   'Vérifier à nouveau': 'Check again',
   'Créer / mettre à jour la sortie': 'Create / update the output',
+
+  // Dossiers.tsx (étape « Dossiers », D61)
+  Trier: 'Sort',
+  'Ses photos rejoignent le tri par lieux et sorties, comme celles de la racine. Pour un dossier fourre-tout : « Divers », « Téléphone ».':
+    'Its photos join the sorting by places and outings, like those at the top level. For a catch-all folder: “Misc”, “Phone”.',
+  'Garder, nettoyer': 'Keep, clean',
+  'Le dossier garde son nom et sa place ; ses photos floues et ses doublons vous seront proposés. Pour un dossier déjà rangé (« Anniversaire Lea ») ou un mois de petites sorties.':
+    'The folder keeps its name and its place; its blurry photos and duplicates will be proposed to you. For a folder already arranged (“Lea birthday”) or a month of small outings.',
+  'Ne pas toucher': 'Leave as is',
+  'Recopié tel quel : on n’y cherche ni photos floues ni rafales. Pour une sélection faite avec soin (« Best of »), des scans ou des documents.':
+    'Copied as is: no search for blurry photos or bursts. For a carefully made selection (“Best of”), scans or documents.',
+  'Votre dossier contient déjà des sous-dossiers. Les {0} en vrac à la racine seront triés par lieux et sorties ; pour chaque sous-dossier, choisissez ce qu’il devient. Rien n’est modifié dans le dossier d’origine.':
+    'Your folder already contains subfolders. The {0} loose at the top level will be sorted by places and outings; for each subfolder, choose what becomes of it. Nothing is changed in the original folder.',
+  'Aucun sous-dossier : rien à décider ici.': 'No subfolders: nothing to decide here.',
+  'Pour tous :': 'For all:',
+  '{0} à trier · {1} gardés et nettoyés · {2} à ne pas toucher': '{0} to sort · {1} kept and cleaned · {2} left as is',
+  'Aucun sous-dossier': 'No subfolders',
+
+  // Inventaire.tsx (informations sur la suite)
+  '{0} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.':
+    '{0}: in the next step you will choose whether to sort them, keep and clean them, or leave them as is.',
+  'sous-dossier': 'subfolder',
+  'sous-dossiers': 'subfolders',
+  '{0} (même photo en plusieurs exemplaires) : vous choisirez à l’étape « {1} » les exemplaires à garder.': '{0} (the same photo several times): in the “{1}” step you will choose which copies to keep.',
+  'copie exacte': 'exact copy',
+  'copies exactes': 'exact copies',
+  '{0} : elles iront dans « {1} », à placer à la main.': '{0}: they will go to “{1}”, to be placed by hand.',
+  '« Valider et continuer » dès la fin de l’analyse.': '“Confirm and continue” as soon as the analysis is finished.',
+  'Rien à décider ici : « Valider et continuer ».': 'Nothing to decide here: “Confirm and continue”.',
+  'Le dossier à trier sera relu entièrement et les photos analysées de nouveau (les résultats des photos inchangées sont réutilisés, sans frais). Les changements faits dans l’arborescence seront perdus et les étapes suivantes seront à refaire.':
+    'The folder to sort will be read again in full and the photos analysed again (results for unchanged photos are reused, at no cost). Changes made to the folder tree will be lost and the following steps will have to be done again.',
+
+  // Organisation.tsx
+  'dossier gardé': 'kept folder',
+
+  // Tri.tsx
+  'L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Rangez d’abord à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…), ajustez les réglages si besoin, puis calculez : vous vérifierez et corrigerez le résultat à l’étape suivante.':
+    'The application arranges the photos by place (GPS position) and by outing (the days spent at the same place). First put screenshots aside and save the places that come up often (home, grandparents…), adjust the settings if needed, then calculate: you will check and correct the result in the next step.',
 };

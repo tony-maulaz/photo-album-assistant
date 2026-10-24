@@ -3539,3 +3539,71 @@ button.bouton-ia:disabled {
   font-size: 13px;
   color: var(--discret);
 }
+
+/* Étape « Dossiers » : trois boutons côte à côte, le choix actif en couleur. */
+.choix-segmente {
+  display: inline-flex;
+  border: 1px solid var(--bord-fort);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.choix-segmente button {
+  border: 0;
+  border-radius: 0;
+  transition: none;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--texte-2);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+.choix-segmente button + button {
+  border-left: 1px solid var(--bord-fort);
+}
+
+.choix-segmente button[aria-checked='true'] {
+  background: var(--accent);
+  color: var(--accent-texte);
+}
+
+/* Copies exactes : chaque exemplaire se garde ou s'écarte d'un clic. */
+.groupe-exact .exemplaire {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 200px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+  white-space: normal;
+}
+
+.groupe-exact .exemplaire.garde {
+  border-color: var(--accent);
+}
+
+.groupe-exact .exemplaire.ecarte {
+  opacity: 0.55;
+}
+
+.legende-exemplaire {
+  overflow-wrap: anywhere;
+}
+
+/* Actions rares d'une étape, tout à droite de la ligne du titre. */
+.outils-etape {
+  float: right;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}

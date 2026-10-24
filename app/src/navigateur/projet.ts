@@ -12,6 +12,7 @@ import { ecrireCle, lireCle } from './stockage';
 const DEFINITIONS = [
   { code: 'projet', nom: aTraduire('Projet'), court: aTraduire('Projet') },
   { code: 'inventaire', nom: aTraduire('Inventaire'), court: aTraduire('Inventaire') },
+  { code: 'dossiers', nom: aTraduire('Dossiers'), court: aTraduire('Dossiers') },
   { code: 'floues', nom: aTraduire('Photos floues'), court: aTraduire('Floues') },
   { code: 'doublons', nom: aTraduire('Doublons'), court: aTraduire('Doublons') },
   { code: 'tri', nom: aTraduire('Tri automatique'), court: aTraduire('Tri automatique') },
@@ -30,28 +31,31 @@ export const CODES_ETAPES: readonly CodeEtape[] = DEFINITIONS.map((d) => d.code)
 export const ETAPES: readonly string[] = DEFINITIONS.map((d) => d.nom);
 /** Noms courts pour la frise des étapes. */
 export const ETAPES_COURTES: readonly string[] = DEFINITIONS.map((d) => d.court);
-/** Nom de l'étape `n` (1 à 12) dans la langue de l'interface. */
+/** Nom de l'étape `n` (1 à 13) dans la langue de l'interface. */
 export const nomEtape = (n: number): string => t(ETAPES[n - 1] ?? '');
-/** Nom court de l'étape `n` (1 à 12) dans la langue de l'interface. */
+/** Nom court de l'étape `n` (1 à 13) dans la langue de l'interface. */
 export const nomCourtEtape = (n: number): string => t(ETAPES_COURTES[n - 1] ?? '');
-/** Numéro (1 à 12) de chaque étape. */
+/** Numéro (1 à 13) de chaque étape. */
 export const ETAPE = Object.fromEntries(DEFINITIONS.map((d, i) => [d.code, i + 1])) as Record<CodeEtape, number>;
 
 /** Étapes sautées pour un dossier déjà trié (on peut toujours y aller par la frise). */
-const SAUTEES_SI_DEJA_TRIE: readonly CodeEtape[] = ['floues', 'tri', 'petits', 'nommage', 'consolidation'];
+const SAUTEES_SI_DEJA_TRIE: readonly CodeEtape[] = ['dossiers', 'floues', 'tri', 'petits', 'nommage', 'consolidation'];
 
-/** Étapes dans l'ordre où « Valider et continuer » les enchaîne. */
-export function parcours(mode: Projet['mode']): CodeEtape[] {
-  return CODES_ETAPES.filter((c) => mode === 'vrac' || !SAUTEES_SI_DEJA_TRIE.includes(c));
+/**
+ * Étapes dans l'ordre où « Valider et continuer » les enchaîne. `sansSousDossiers` :
+ * le dossier en vrac n'a aucun sous-dossier, l'étape « Dossiers » n'a rien à demander.
+ */
+export function parcours(mode: Projet['mode'], sansSousDossiers = false): CodeEtape[] {
+  return CODES_ETAPES.filter((c) => (mode === 'vrac' || !SAUTEES_SI_DEJA_TRIE.includes(c)) && !(c === 'dossiers' && sansSousDossiers));
 }
 
 /** Étape suivante du parcours (depuis n'importe quelle étape, même hors parcours), ou `null` après la dernière. */
-export function etapeSuivante(mode: Projet['mode'], code: CodeEtape): CodeEtape | null {
-  return parcours(mode).find((c) => ETAPE[c] > ETAPE[code]) ?? null;
+export function etapeSuivante(mode: Projet['mode'], code: CodeEtape, sansSousDossiers = false): CodeEtape | null {
+  return parcours(mode, sansSousDossiers).find((c) => ETAPE[c] > ETAPE[code]) ?? null;
 }
 
-export function etapePrecedente(mode: Projet['mode'], code: CodeEtape): CodeEtape | null {
-  return parcours(mode).filter((c) => ETAPE[c] < ETAPE[code]).at(-1) ?? null;
+export function etapePrecedente(mode: Projet['mode'], code: CodeEtape, sansSousDossiers = false): CodeEtape | null {
+  return parcours(mode, sansSousDossiers).filter((c) => ETAPE[c] < ETAPE[code]).at(-1) ?? null;
 }
 
 /**
@@ -64,20 +68,25 @@ export function arborescenceValidee(p: Pick<Projet, 'etapes'>): boolean {
   return e === 'validee' || e === 'a_revoir';
 }
 
-/** Le tri automatique n'a pas lieu d'être pour un dossier déjà trié. */
-export function etapeInutile(mode: Projet['mode'], code: CodeEtape): boolean {
-  return mode === 'deja_trie' && code === 'tri';
+/** Le tri automatique et les choix par dossier n'ont pas lieu d'être pour un dossier déjà trié, ni « Dossiers » sans sous-dossier. */
+export function etapeInutile(mode: Projet['mode'], code: CodeEtape, sansSousDossiers = false): boolean {
+  return (mode === 'deja_trie' && (code === 'tri' || code === 'dossiers')) || (code === 'dossiers' && sansSousDossiers);
 }
 
 /** Ordre des 11 étapes d'avant le 23.10.2026 : Doublons y venait après Consolidation, sans Tri automatique. */
 const ORDRE_11: readonly CodeEtape[] = ['projet', 'inventaire', 'floues', 'lieux', 'petits', 'nommage', 'consolidation', 'doublons', 'selection', 'album', 'sortie'];
+/** Ordre des 12 étapes d'avant le 24.10.2026 : les choix par sous-dossier se faisaient à l'Inventaire. */
+const ORDRE_12: readonly CodeEtape[] = ['projet', 'inventaire', 'floues', 'doublons', 'tri', 'lieux', 'petits', 'nommage', 'consolidation', 'selection', 'album', 'sortie'];
 
-/** Met l'état des étapes d'un projet commencé avant le 23.10.2026 dans le nouvel ordre ; `true` si le projet a changé. */
+/** Met l'état des étapes d'un projet commencé avec 11 ou 12 étapes dans l'ordre actuel ; `true` si le projet a changé. */
 export function migrerEtapes(p: Projet): boolean {
-  if (p.etapes.length !== ORDRE_11.length) return false;
-  const ancien = new Map(ORDRE_11.map((c, i) => [c, p.etapes[i]]));
+  const ordre = p.etapes.length === ORDRE_11.length ? ORDRE_11 : p.etapes.length === ORDRE_12.length ? ORDRE_12 : null;
+  if (!ordre) return false;
+  const ancien = new Map(ordre.map((c, i) => [c, p.etapes[i]]));
   // Le tri automatique était fait dans l'ancienne étape « Lieux et sorties » : réglages enregistrés = tri calculé.
-  ancien.set('tri', p.mode === 'vrac' && p.tri ? 'validee' : 'a_faire');
+  if (ordre === ORDRE_11) ancien.set('tri', p.mode === 'vrac' && p.tri ? 'validee' : 'a_faire');
+  // Les choix par sous-dossier faisaient partie de l'inventaire : validés avec lui.
+  ancien.set('dossiers', ancien.get('inventaire') === 'validee' ? 'validee' : 'a_faire');
   p.etapes = CODES_ETAPES.map((c) => ancien.get(c) ?? 'a_faire');
   return true;
 }
@@ -97,7 +106,7 @@ export interface Projet {
   contexte: string;
   prereglage: string;
   budget_chf: number;
-  /** État des étapes 1 à 12, dans l'ordre de `CODES_ETAPES` (indice 0 = étape 1). */
+  /** État des étapes 1 à 13, dans l'ordre de `CODES_ETAPES` (indice 0 = étape 1). */
   etapes: EtatEtape[];
   /** Seuil de netteté retenu à l'étape « Photos floues » (défaut 60). */
   seuil_flou?: number;

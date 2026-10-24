@@ -5,7 +5,7 @@
 import { casLimites, estimationCasLimites, estimationSituer, groupesSansGps, lireCasLimites, lireSituation, lotsCasLimites, requeteCasLimites, requeteSituer, voisinesDuGroupe, type PhotoLieu, type VerdictNettete } from '../../lib/aidesTri';
 import { photosConcernees } from '../../lib/floues';
 import { aTraduire, t } from '../../lib/langue';
-import { deplacerFichiers, enchainer, traitementDe, type Modification } from '../../lib/plan';
+import { deplacerFichiers, enchainer, gardeSaPlace, type Modification } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { ETAPE } from '../../navigateur/projet';
 import { executerRequete } from '../../navigateur/executeur';
@@ -95,7 +95,7 @@ export function nombreSansGps(s: Session): number {
 
 function photosLieu(s: Session): PhotoLieu[] {
   return [...s.plan.fichiers.values()]
-    .filter((f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && !['garder', 'ignorer'].includes(traitementDe(s.plan, f.dossier) ?? ''))
+    .filter((f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && !gardeSaPlace(s.plan, f.dossier))
     .map((f) => ({ id: f.id, date: f.date, gps: f.gps, dossier: f.dossier }));
 }
 

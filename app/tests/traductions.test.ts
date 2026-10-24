@@ -86,6 +86,11 @@ describe('traductions anglaises', () => {
     expect([...new Set(manquants)]).toEqual([]);
   });
 
+  it('chaque traduction sert encore (un texte changé ou retiré emporte la sienne)', () => {
+    const marques = new Set(parFichier.flatMap(({ textes }) => textes));
+    expect(Object.keys(EN).filter((cle) => !marques.has(cle))).toEqual([]);
+  });
+
   it('chaque traduction garde les mêmes valeurs {0}, {1}…', () => {
     const fausses = Object.entries(EN).filter(([fr, en]) => valeurs(fr) !== valeurs(en));
     expect(fausses).toEqual([]);

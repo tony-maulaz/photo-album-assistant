@@ -18,8 +18,17 @@ const nettete = (f: FichierPlan) => nettetes[f.id];
 describe('photos floues (étape 3)', () => {
   it('le seuil calibré du script 01 est 60', () => expect(SEUIL_FLOU).toBe(60));
 
-  it('ne touche pas aux dossiers gardés tels quels', () => {
+  it('ne touche pas aux dossiers « Ne pas toucher », mais nettoie ceux « Garder, nettoyer » (D61)', () => {
     expect(photosConcernees(plan()).map((f) => f.id).sort()).toEqual(['ancienne', 'floue', 'limite', 'nette']);
+    const p = plan();
+    p.dossiers.set('g', { ...p.dossiers.get('g')!, traitement: 'nettoyer' });
+    expect(photosConcernees(p).map((f) => f.id)).toContain('gardee');
+  });
+
+  it('une capture d’écran n’est jamais une photo floue, même pas encore rangée (D61)', () => {
+    const p = plan();
+    p.fichiers.set('capture', { id: 'capture', nom: 'Screenshot_20260718-101010.png', taille: 1, modifie: 0, categorie: 'photo', dossier: 'd1', statut: 'archive', dims: { l: 1080, h: 2340 } });
+    expect(photosConcernees(p).map((f) => f.id)).not.toContain('capture');
   });
 
   it('compte en direct et applique le seuil, en une opération annulable', () => {

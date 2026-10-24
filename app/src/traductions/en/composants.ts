@@ -172,8 +172,6 @@ export const TEXTES: Record<string, string> = {
 
   // ExtrasInventaire.tsx
   'Captures d’écran': 'Screenshots',
-  '{0} (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « Captures_ecran », hors de l’album.':
-    '{0} (file name, screen dimensions, no camera brand). Suggestion: put them in “Captures_ecran”, outside the album.',
   'capture d’écran trouvée': 'screenshot found',
   'captures d’écran trouvées': 'screenshots found',
   'Ranger les {0} captures dans « Captures_ecran »': 'Put the {0} screenshots in “Captures_ecran”',
@@ -181,11 +179,7 @@ export const TEXTES: Record<string, string> = {
   'capture rangée': 'screenshot filed',
   'captures rangées': 'screenshots filed',
   racine: 'root',
-  'Copies en double': 'Duplicate copies',
-  'La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. L’original le plus complet est gardé ; les copies vont dans « _mis_de_cote/doublons_exacts ». Rien n’est jamais retiré d’un dossier gardé tel quel.':
-    'The same photo in several copies (same content, or a smaller copy sent by WhatsApp), whatever the folder. The most complete original is kept; the copies go to “_mis_de_cote/doublons_exacts”. Nothing is ever taken out of a folder kept as is.',
   'Recherche en cours, pendant l’analyse des photos…': 'Searching, while the photos are being analysed…',
-  'Aucune copie à écarter.': 'No copies to set aside.',
   copie: 'copy',
   copies: 'copies',
   'dans {0}.': 'in {0}.',
@@ -193,10 +187,8 @@ export const TEXTES: Record<string, string> = {
   groupes: 'groups',
   'copie écartée': 'copy set aside',
   'copies écartées': 'copies set aside',
-  'Écarter les {0} copies': 'Set aside the {0} copies',
   gardée: 'kept',
   'copie réduite': 'smaller copy',
-  'copie identique': 'identical copy',
   Écarter: 'Set aside',
   '… et {0} autres groupes.': '… and {0} more groups.',
   'Choisissez d’abord le dossier de configuration (page Configuration).': 'First choose the configuration folder (Configuration page).',
@@ -271,9 +263,6 @@ export const TEXTES: Record<string, string> = {
   'nom en double': 'duplicate name',
   'Un autre dossier porte le même nom': 'Another folder has the same name',
   gardé: 'kept',
-  'Sous-dossier de la source gardé tel quel': 'Subfolder of the source kept as is',
-  'hors album': 'not in album',
-  'Gardé tel quel, hors de l’album': 'Kept as is, outside the album',
   chevauche: 'overlaps',
   'Photos entremêlées avec « {0} » : la même sortie ?': 'Photos mixed in time with “{0}”: the same outing?',
   '{0} — {1} photos, {2} vidéos': '{0} — {1} photos, {2} videos',
@@ -348,4 +337,30 @@ export const TEXTES: Record<string, string> = {
   '+ Créer le dossier « ': '+ Create the folder “',
   ' »': '”',
   '↑ ↓ pour choisir, Entrée pour déplacer, Échap pour fermer.': '↑ ↓ to choose, Enter to move, Esc to close.',
+
+  // Cadre.tsx (étape « Dossiers » sautée)
+  'rien à décider : aucun sous-dossier': 'nothing to decide: no subfolders',
+
+  // Captures.tsx
+  '{0} parmi les photos à trier (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « Captures_ecran », hors du tri et de l’album. Celles qui sont dans un dossier gardé restent à leur place.':
+    '{0} among the photos to sort (file name, screen size, no camera brand). Proposal: put them in “Captures_ecran”, outside the sorting and the album. Those in a kept folder stay where they are.',
+
+  // CopiesExactes.tsx
+  'Copies exactes': 'Exact copies',
+  'Gardez au moins un exemplaire de chaque photo.': 'Keep at least one copy of each photo.',
+  '{0}.': '{0}.',
+  'Cliquer pour garder ou écarter cet exemplaire': 'Click to keep or set aside this copy',
+  'La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « _mis_de_cote/doublons_exacts ».':
+    'The same photo several times (same content, or a reduced copy sent through WhatsApp), whatever the folder. Click a copy to keep it or set it aside; copies set aside go to “_mis_de_cote/doublons_exacts”.',
+  'copie à écarter': 'copy to set aside',
+  'copies à écarter': 'copies to set aside',
+  '{0} : toutes gardées (souvent voulu, par exemple un « Best of » fait de copies)': '{0}: all kept (often on purpose, for example a “Best of” made of copies)',
+  'photo présente dans plusieurs dossiers': 'photo found in several folders',
+  'photos présentes dans plusieurs dossiers': 'photos found in several folders',
+
+  // PanneauDossiers.tsx (choix par sous-dossier)
+  'Sous-dossier de la source gardé à sa place ; ses floues et ses doublons sont proposés': 'Source subfolder kept in its place; its blurry photos and duplicates are proposed',
+  'ne pas toucher': 'leave as is',
+  'Sous-dossier de la source recopié tel quel': 'Source subfolder copied as is',
+  'Écarter {0}': 'Set aside {0}',
 };

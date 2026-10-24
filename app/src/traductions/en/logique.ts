@@ -127,8 +127,6 @@ export const TEXTES: Record<string, string> = {
   'Ce dossier n’est pas vide.': 'This folder is not empty.',
   'Supprimer le dossier vide « {0} »': 'Delete the empty folder “{0}”',
   'À trier': 'To sort',
-  'Garder tel quel': 'Keep as is',
-  'Garder hors de l’album': 'Keep out of the album',
   dossier: 'folder',
   dossiers: 'folders',
   'Remettre à décider': 'Back to undecided',
@@ -211,4 +209,8 @@ export const TEXTES: Record<string, string> = {
 
   // tri.ts
   'Trier par lieux et sorties': 'Sort by places and outings',
+
+  // plan.ts : choix par sous-dossier (étape « Dossiers », D61)
+  'Garder et nettoyer': 'Keep and clean',
+  'Ne pas toucher': 'Leave as is',
 };

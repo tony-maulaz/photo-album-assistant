@@ -70,7 +70,7 @@ export function PageFloues() {
     appliquer(appliquerFloues(s.plan, nettete, seuil));
     s.projet.seuil_flou = seuil;
     planifierEnregistrement();
-    notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : elles iront dans « _mis_de_cote/floues » (rien n’est supprimé).`, { libelle: t`Annuler`, faire: annuler });
+    if (ecartees) notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : elles iront dans « _mis_de_cote/floues » (rien n’est supprimé).`, { libelle: t`Annuler`, faire: annuler });
     validerEtape('floues');
   };
 

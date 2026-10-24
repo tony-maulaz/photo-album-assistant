@@ -430,6 +430,30 @@ d'OpenStreetMap. Changer la langue de l'interface en cours de projet ne
 renomme donc rien. Les consignes IA restent en français, mot pour mot ; une
 seule ligne demande des réponses en anglais quand le projet est en anglais.
 
+**D61 — Étape « Dossiers », trois choix, copies et captures déplacées.**
+Avec une vraie année (59 sous-dossiers), le tableau des sous-dossiers
+occupait l'Inventaire et cachait les copies et les captures en dessous ; la
+liste déroulante de chaque ligne se confondait avec celles des lignes
+voisines. Le choix passe dans une étape à lui, juste après l'Inventaire (13
+étapes, sautée sans sous-dossier et pour un dossier déjà trié), avec trois
+boutons par ligne : **Trier**, **Garder, nettoyer** (par défaut : le dossier
+garde sa place, mais ses floues et ses doublons sont proposés — avant, un
+dossier gardé échappait à tout) et **Ne pas toucher**. Le choix « hors de
+l'album » disparaît : ces dossiers (scans, documents) prennent « Ne pas
+toucher » et ne sont simplement pas choisis à la Sélection. Les **copies
+exactes** passent en tête de l'étape Doublons, sur tous les dossiers, et
+l'utilisateur choisit les exemplaires à garder ; la proposition garde le
+meilleur exemplaire de chaque emplacement (un dossier qui garde sa place, ou
+les photos à trier), pour qu'une sélection « Best of » faite de copies reste
+entière, et propose d'écarter les copies d'un même emplacement et les
+versions réduites (WhatsApp). Une capture d'écran rangée dans un dossier y a
+été mise exprès : seules celles des photos à trier sont proposées, à l'étape
+Tri automatique ; l'étape Floues ignore toute capture (une image d'écran est
+nette mais « plate », la mesure la prenait pour floue). L'Inventaire devient
+une page d'information, avec « Refaire l'inventaire » en haut (l'analyse
+reprend, les résultats des photos inchangées sont réutilisés, les rafales
+sont recalculées et les étapes suivantes remises à faire).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

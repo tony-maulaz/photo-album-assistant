@@ -56,27 +56,29 @@ cas de doute.
 
 ## 4. Parcours utilisateur
 
-### 4.1 Les douze étapes
+### 4.1 Les treize étapes
 
-Ordre en vigueur depuis le 23.10.2026 (D54) : on nettoie (floues, doublons),
-puis on range (tri, lieux et sorties, petits dossiers, nommage,
-consolidation), puis on choisit (sélection, album). Dans le code, chaque
-étape a un code stable (`ETAPE.lieux`), indépendant de son numéro.
+Ordre en vigueur depuis le 24.10.2026 (D54, D61) : on fait l'inventaire et on
+dit ce que deviennent les sous-dossiers, on nettoie (floues, doublons), puis
+on range (tri, lieux et sorties, petits dossiers, nommage, consolidation),
+puis on choisit (sélection, album). Dans le code, chaque étape a un code
+stable (`ETAPE.lieux`), indépendant de son numéro.
 
 | # | Étape | Ce que fait l'application | Aperçu à valider | IA |
 |---|---|---|---|---|
 | 1 | **Projet** | Source, dossier de sortie, préréglage, contexte, configuration, clé, budget | Récapitulatif | — |
-| 2 | **Inventaire** | Date (EXIF, sinon nom de fichier), GPS, appareil, netteté ; doublons exacts ; captures d'écran ; vidéos et autres fichiers | Tableau de bord du contenu (§ 6.2) | — |
-| 3 | **Photos floues** | Classement par netteté | Grille des floues, curseur avec mise à jour en direct | Option : vérification IA des cas limites |
-| 4 | **Doublons** | Rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Relecture groupe par groupe | Oui |
-| 5 | **Tri automatique** | Lieux fréquents à enregistrer, réglages, regroupement GPS, sorties, voyages, noms de lieux ; inutile pour un dossier déjà trié | Résumé du tri (§ 6.4) | Option : lieu des photos sans GPS |
-| 6 | **Lieux et sorties** | Vérifier et corriger l'arborescence | **Arborescence prévue** éditable (§ 6.4) | — |
-| 7 | **Petits dossiers** | Rattachement des petits dossiers à une sortie voisine | Propositions à accepter ou refuser | Oui |
-| 8 | **Nommage** | Noms parlants (calendrier, recherche web, monuments reconnus) | Tableau des noms | Oui |
-| 9 | **Consolidation** | Fusion des dossiers couvrant la même activité | Groupes à fusionner | Oui, ou manuel |
-| 10 | **Sélection** | Boîte à outils de sélection (§ 6.9) | Album en préparation : jauge, équilibre, redondances | Nombreuses options |
-| 11 | **Album** | Ordre, sections, titres, légendes, couverture, contrôle | Aperçu paginé de l'album | Options |
-| 12 | **Création de la sortie** | Écrit l'archive triée, l'album, les éléments mis de côté, le rapport ; **bilan complet** | Arborescence finale, bilan fichier par fichier | — |
+| 2 | **Inventaire** | Date (EXIF, sinon nom de fichier), GPS, appareil ; analyse locale (netteté, ressemblance, empreintes) ; vidéos et autres fichiers | Tableau de bord du contenu, rien à décider (§ 6.2) | — |
+| 3 | **Dossiers** | Pour chaque sous-dossier d'un dossier en vrac : Trier, Garder et nettoyer, ou Ne pas toucher ; sautée sans sous-dossier et pour un dossier déjà trié | Tableau des sous-dossiers, trois boutons par ligne (§ 6.2) | — |
+| 4 | **Photos floues** | Classement par netteté | Grille des floues, curseur avec mise à jour en direct | Option : vérification IA des cas limites |
+| 5 | **Doublons** | Copies exactes, rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Relecture groupe par groupe | Oui |
+| 6 | **Tri automatique** | Captures d'écran rangées à part, lieux fréquents à enregistrer, réglages, regroupement GPS, sorties, voyages, noms de lieux ; inutile pour un dossier déjà trié | Résumé du tri (§ 6.4) | Option : lieu des photos sans GPS |
+| 7 | **Lieux et sorties** | Vérifier et corriger l'arborescence | **Arborescence prévue** éditable (§ 6.4) | — |
+| 8 | **Petits dossiers** | Rattachement des petits dossiers à une sortie voisine | Propositions à accepter ou refuser | Oui |
+| 9 | **Nommage** | Noms parlants (calendrier, recherche web, monuments reconnus) | Tableau des noms | Oui |
+| 10 | **Consolidation** | Fusion des dossiers couvrant la même activité | Groupes à fusionner | Oui, ou manuel |
+| 11 | **Sélection** | Boîte à outils de sélection (§ 6.9) | Album en préparation : jauge, équilibre, redondances | Nombreuses options |
+| 12 | **Album** | Ordre, sections, titres, légendes, couverture, contrôle | Aperçu paginé de l'album | Options |
+| 13 | **Création de la sortie** | Écrit l'archive triée, l'album, les éléments mis de côté, le rapport ; **bilan complet** | Arborescence finale, bilan fichier par fichier | — |
 
 Pour un dossier déjà trié, « Valider et continuer » enchaîne Projet,
 Inventaire, Doublons, Lieux et sorties, Sélection, Album, Sortie ; les autres
@@ -195,7 +197,7 @@ Présent dans toutes les pages où l'on voit des photos (étapes 3 à 10).
 - État de la configuration et de la clé ; **budget IA du projet** (défaut :
   50 CHF, modifiable).
 
-### 6.2 Étape 2 — Inventaire (local, gratuit)
+### 6.2 Étapes 2 et 3 — Inventaire (local, gratuit), puis Dossiers
 **Lecture** : chaque fichier est classé en photo, vidéo, capture d'écran ou
 autre fichier.
 - **Date** : EXIF DateTimeOriginal ; sinon **date tirée du nom de fichier**
@@ -209,18 +211,9 @@ autre fichier.
   vidéos (90 % des vidéos Samsung) sert au tri par lieux.
 - **Fichiers sans autre date que celle du fichier** : signalés, car la copie
   ne conserve pas la date de modification (limite du navigateur, § 12).
-- **Doublons exacts (photos)** sur tout le projet, quels que soient le
-  dossier et la date : même contenu (empreinte du fichier) ou **même photo en
-  version réduite** (WhatsApp : très semblable, dimensions plus petites, sans
-  EXIF). Proposition : garder l'original le plus complet ; dans un même
-  dossier, garder la copie au nom parlant ; le reste va dans
-  `_mis_de_cote/doublons_exacts/`. **Jamais** de retrait dans un dossier
-  « gardé tel quel » (ex. une sélection `BESTOF` faite de copies voulues) ;
-  le dossier de chaque copie est affiché. Les vidéos et autres fichiers ne
-  sont que copiés, contrôlés par leur taille.
-- **Captures d'écran** : nom de fichier, dimensions d'écran, absence de
-  marque d'appareil. Proposition : dossier `Captures_ecran/` dans l'archive,
-  exclues de l'album.
+- **Analyse locale**, toute seule après la lecture (D56) : netteté,
+  ressemblance, empreinte des photos de même taille (copies exactes, traitées
+  à l'étape Doublons, § 6.8). « Valider et continuer » attend sa fin.
 
 **Aperçu (tableau de bord)** :
 - nombre de photos, vidéos, captures, autres fichiers ; période ;
@@ -229,12 +222,22 @@ autre fichier.
   appareil nouveau ; mesure d'un **décalage d'horloge** sur une scène
   photographiée par deux appareils ;
 - photos sans GPS, sans date, à date incertaine (miniatures) ;
-- doublons exacts trouvés (paires côte à côte) ;
-- **sous-dossiers déjà présents dans la source**, chacun avec son traitement :
-  trier, garder tel quel, ignorer. Par défaut : vrac trié, dossiers nommés et
-  dossiers de mois gardés tels quels.
+- ce qui attend aux étapes suivantes (sous-dossiers, copies exactes, photos
+  sans date), sans rien à décider ici ; « Refaire l'inventaire » en haut de la
+  page relit la source, relance l'analyse (résultats des photos inchangées
+  réutilisés) et remet les étapes suivantes à faire.
 
-### 6.3 Étape 3 — Photos floues
+**Étape 3 — Dossiers** (dossier en vrac avec sous-dossiers, D61) : pour
+chaque sous-dossier déjà présent dans la source, trois boutons côte à côte :
+- **Trier** : ses photos rejoignent le tri par lieux et sorties ;
+- **Garder, nettoyer** (par défaut) : le dossier garde son nom et sa place ;
+  ses floues et ses doublons sont proposés aux étapes suivantes ;
+- **Ne pas toucher** : recopié tel quel, ni floues ni rafales cherchées (une
+  sélection « Best of », des scans).
+Le vrac de la racine est toujours trié. L'ancien choix « hors de l'album »
+n'existe plus (un projet qui l'avait le lit comme « Ne pas toucher »).
+
+### 6.3 Étape 4 — Photos floues
 - Curseur « tolérance au flou » (défaut calibré : 60). Le nombre de photos
   écartées se met à jour **en direct**.
 - Grille de la moins nette à la plus nette, valeur de netteté, visionneuse.
@@ -244,9 +247,10 @@ autre fichier.
   voulu, ou ratée ? »).
 - Les photos écartées iront dans `_mis_de_cote/floues/`.
 
-### 6.4 Étapes 5 et 6 — Tri automatique, puis Lieux et sorties (aperçu central)
-Deux pages (D54) : le **tri automatique** (lieux fréquents à enregistrer
-d'abord, réglages, calcul, résumé, photos sans GPS), puis **Lieux et
+### 6.4 Étapes 6 et 7 — Tri automatique, puis Lieux et sorties (aperçu central)
+Deux pages (D54) : le **tri automatique** (captures d'écran parmi les photos
+à trier, rangées à part dans `Captures_ecran/` hors de l'album ; lieux
+fréquents à enregistrer ; réglages, calcul, résumé, photos sans GPS), puis **Lieux et
 sorties**, la page de travail (panneau des dossiers et photos sur toute la
 hauteur, explication ouverte à la première visite seulement).
 
@@ -270,13 +274,13 @@ avant le calcul, sur la page du tri automatique.
 **IA (option)** : **situer les photos sans GPS** d'après leur contenu et les
 photos prises juste avant et après ; proposition de rattachement.
 
-### 6.5 Étape 7 — Petits dossiers (IA)
+### 6.5 Étape 8 — Petits dossiers (IA)
 Chaque petit dossier à côté du dossier proposé, avec la raison :
 « Rattacher », « Garder à part », « Rattacher à un autre… ». « Tout accepter »
 pour les propositions sûres. Sans IA : les voisins dans le temps sont
 présentés, l'utilisateur décide.
 
-### 6.6 Étape 8 — Nommage (IA)
+### 6.6 Étape 9 — Nommage (IA)
 - Tableau : miniatures, nom actuel, **nom proposé modifiable**, confiance,
   justification, événement du calendrier utilisé, **monuments ou lieux
   reconnus**.
@@ -287,19 +291,31 @@ présentés, l'utilisateur décide.
 - Convention `Theme_Lieu_JJ.MM.AA`, sans accents ni espaces, correction
   proposée.
 
-### 6.7 Étape 9 — Consolidation
+### 6.7 Étape 10 — Consolidation
 Groupes proposés à la fusion, côte à côte (nom, dates, nombre de photos,
 miniatures, nom cible modifiable). Fusion manuelle par glisser-déposer. Sans
 IA : noms proches et chevauchements présentés côte à côte.
 
-### 6.8 Étape 4 — Doublons (IA)
+### 6.8 Étape 5 — Doublons (IA)
+- **Copies exactes** en tête de page (D61), sur tout le projet, quels que
+  soient le dossier et la date : même contenu (empreinte du fichier) ou
+  **même photo en version réduite** (WhatsApp : très semblable, dimensions
+  plus petites, sans EXIF). L'utilisateur clique sur chaque exemplaire pour
+  le garder ou l'écarter. Proposition : le meilleur exemplaire de chaque
+  emplacement (un dossier qui garde sa place, ou les photos à trier) est
+  gardé, les copies d'un même emplacement et les versions réduites vont dans
+  `_mis_de_cote/doublons_exacts/`. Une photo présente dans plusieurs dossiers
+  (une sélection `BESTOF` faite de copies) reste donc entière ; ces groupes
+  sont repliés à part. Les vidéos et autres fichiers ne sont que copiés,
+  contrôlés par leur taille.
 - Réglage simple : **Prudent** (défaut, les expressions différentes sont
   gardées) ou **Strict**.
 - Algorithme du script 06 (§ 11) : rafales (local), vue d'ensemble de tout le
   dossier, scènes locales, vérification en grand format, garde-fous. Juste
   après les floues, un dossier en vrac n'est pas encore rangé : ses photos
-  sont comparées **journée par journée** (les dossiers gardés tels quels
-  restent à part) ; un dossier déjà trié, dossier par dossier.
+  sont comparées **journée par journée** (un dossier « Garder, nettoyer »
+  forme son propre lot, un dossier « Ne pas toucher » n'est pas comparé) ; un
+  dossier déjà trié, dossier par dossier.
 - **Relecture** : pour chaque groupe, la photo gardée en grand et les doublons
   à côté, avec description, raison et heure. Actions : **Garder aussi**,
   **Garder celle-ci à la place**, **Comparer** (zoom synchronisé). Vue « tout
@@ -308,7 +324,7 @@ IA : noms proches et chevauchements présentés côte à côte.
 - Aperçu : photos avant et après par dossier (ou par journée). Les doublons iront dans
   `_mis_de_cote/doublons/`.
 
-### 6.9 Étape 10 — Sélection (boîte à outils)
+### 6.9 Étape 11 — Sélection (boîte à outils)
 L'utilisateur choisit, l'application l'aide au maximum. Deux niveaux :
 **★ dans l'album**, **★★ grande photo** (pleine page, candidate à la
 couverture).
@@ -337,7 +353,7 @@ couverture).
 | **Recherche en langage naturel** | « Les enfants sur un éléphant », « coucher de soleil sur la plage » : recherche dans les descriptions (après étiquetage). |
 | **Contrôle de la sélection** | Relecture des photos retenues par sortie : redondances, moments manquants (« aucune photo de groupe à Bangkok »), photos faibles. Uniquement des remarques. |
 
-### 6.10 Étape 11 — Album
+### 6.10 Étape 12 — Album
 - **Ordre** : par journée puis par segment d'activité (défaut, cf. incident I2)
   ou chronologique strict.
 - **Sections** = sorties ; titres repris des noms de dossiers et modifiables ;
@@ -357,7 +373,7 @@ couverture).
     pages voisines, rythme, sections déséquilibrées).
 - Tous les textes sont modifiables dans un tableau.
 
-### 6.11 Étape 12 — Création de la sortie et bilan
+### 6.11 Étape 13 — Création de la sortie et bilan
 - **Aperçu** : arborescence finale, nombres et tailles par catégorie, espace
   disque nécessaire.
 - **Écriture** (synchronisation, § 4.2) de l'archive, de l'album, des éléments
@@ -721,7 +737,7 @@ Mesures de la phase 0, en bref :
 
 | Risque | Mesure |
 |---|---|
-| Ampleur du projet (douze étapes, quinze fonctions IA) | Phases livrant chacune une application utile ; IA en dernier |
+| Ampleur du projet (treize étapes, quinze fonctions IA) | Phases livrant chacune une application utile ; IA en dernier |
 | Espace disque local (la sortie double temporairement le volume) | Taille à écrire affichée avant l'étape 12 |
 | Onglet à garder ouvert pendant les longues étapes | Reprise sans perte ; appels IA courts, mis en cache au fil de l'eau |
 | Autorisations redemandées à chaque session (`file://`) | Écran « Reprendre » ; publication sur une adresse https possible plus tard sans réécriture |

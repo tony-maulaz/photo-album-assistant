@@ -8,6 +8,7 @@ import { arborescenceValidee, CODES_ETAPES, ETAPE } from '../navigateur/projet';
 import { PageAccueil, PageReprendre } from './pages/Accueil';
 import { PageAlbum } from './pages/Album';
 import { PageConfiguration } from './pages/Configuration';
+import { PageDossiers } from './pages/Dossiers';
 import { PageDoublons } from './pages/Doublons';
 import { PageFloues } from './pages/Floues';
 import { PageNommage } from './pages/Nommage';
@@ -27,6 +28,8 @@ function PageEtape({ numero }: { numero: number }) {
   if (code === 'projet') return <PageEtape1 />;
   if (code === 'inventaire' || !s.projet.inventaire) return <PageInventaire />;
   switch (code) {
+    case 'dossiers':
+      return <PageDossiers />;
     case 'floues':
       return <PageFloues />;
     case 'doublons':

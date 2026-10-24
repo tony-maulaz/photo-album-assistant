@@ -6,7 +6,7 @@ import { texteEtiquettes, type Etiquettes } from '../lib/aidesSelection';
 import { aTraduire, t } from '../lib/langue';
 import { seuilFlou, signaux, type Indicateurs, type Signal } from '../lib/indicateurs';
 import { rechercher } from '../lib/recherche';
-import { estDescendant, horsAlbum, noterAlbum, RACINE, tourner, type FichierPlan, type Plan } from '../lib/plan';
+import { estDescendant, noterAlbum, RACINE, tourner, type FichierPlan, type Plan } from '../lib/plan';
 import { piles } from '../lib/selection';
 import type { Analyses } from '../navigateur/analyses';
 import { annuler, appliquer, notifier, session } from './etat';
@@ -45,7 +45,7 @@ export const comparaison = signal<string[] | null>(null);
 /** Photos de l'archive dans un dossier et ses sous-dossiers (toutes depuis la racine). */
 export function photosVue(plan: Plan, vue: string): FichierPlan[] {
   return [...plan.fichiers.values()]
-    .filter((f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && !horsAlbum(plan, f) && (vue === RACINE || f.dossier === vue || estDescendant(plan, f.dossier, vue)))
+    .filter((f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && (vue === RACINE || f.dossier === vue || estDescendant(plan, f.dossier, vue)))
     .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || a.id.localeCompare(b.id));
 }
 

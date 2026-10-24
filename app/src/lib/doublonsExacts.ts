@@ -1,9 +1,10 @@
-// Doublons exacts de photos (SPEC § 6.2, D31) : même contenu (empreinte
+// Doublons exacts de photos (SPEC § 6.2, D31, D61) : même contenu (empreinte
 // SHA-256), ou même photo en version réduite (WhatsApp : sans EXIF, plus
-// petite, très semblable). On garde l'original le plus complet ; les autres
-// iront dans `_mis_de_cote/doublons_exacts/` si l'utilisateur valide.
-// Les dossiers « gardés tels quels » ne sont jamais touchés : leurs copies
-// sont voulues (une sélection BESTOF faite de copies, par exemple).
+// petite, très semblable). L'utilisateur choisit les exemplaires à garder ;
+// la proposition garde le meilleur exemplaire de chaque emplacement (un
+// dossier qui garde sa place, ou les photos à trier) : une sélection « Best
+// of » faite de copies reste entière. Les copies d'un même emplacement et les
+// versions réduites sont proposées pour `_mis_de_cote/doublons_exacts/`.
 
 export interface PhotoExacte {
   id: string;
@@ -19,13 +20,16 @@ export interface PhotoExacte {
   dims?: { l: number; h: number };
   /** La photo porte une date EXIF (une copie WhatsApp n'en a plus). */
   exif: boolean;
-  /** Dans un dossier gardé tel quel : jamais proposée, ni comme copie ni comme référence. */
-  gardeTelQuel: boolean;
+  /** Où est la photo : l'identifiant d'un dossier qui garde sa place, ou une même valeur pour toutes les photos à trier. */
+  emplacement: string;
 }
 
 export interface GroupeExact {
+  /** Le meilleur exemplaire (EXIF, le plus grand…). */
   garde: string;
   copies: { id: string; type: 'identique' | 'reduite' }[];
+  /** Proposition : les exemplaires à garder, le meilleur de chaque emplacement (jamais une version réduite). */
+  aGarder: string[];
 }
 
 /**
@@ -123,11 +127,9 @@ function meilleure(a: PhotoExacte, b: PhotoExacte): number {
  * deux originaux très semblables (une rafale) relèvent de l'étape « Doublons ».
  */
 export function groupesDoublonsExacts(photos: PhotoExacte[]): GroupeExact[] {
-  const actives = photos.filter((p) => !p.gardeTelQuel);
-
   // 1. Contenus identiques (même empreinte).
   const contenus = new Map<string, PhotoExacte[]>();
-  for (const p of actives) {
+  for (const p of photos) {
     const cle = p.empreinte ? `e:${p.empreinte}` : `i:${p.id}`;
     contenus.set(cle, [...(contenus.get(cle) ?? []), p]);
   }
@@ -166,9 +168,18 @@ export function groupesDoublonsExacts(photos: PhotoExacte[]): GroupeExact[] {
     if (absorbes.has(g)) continue;
     const reduites = reduitesDe(g);
     if (g.length + reduites.length < 2) continue;
+    // Le meilleur exemplaire de chaque emplacement (g est trié du meilleur au moins bon).
+    const aGarder: string[] = [];
+    const emplacements = new Set<string>();
+    for (const p of g) {
+      if (emplacements.has(p.emplacement)) continue;
+      emplacements.add(p.emplacement);
+      aGarder.push(p.id);
+    }
     resultat.push({
       garde: g[0].id,
       copies: [...g.slice(1).map((p) => ({ id: p.id, type: 'identique' as const })), ...reduites.map((p) => ({ id: p.id, type: 'reduite' as const }))],
+      aGarder,
     });
   }
   return resultat.sort((a, b) => a.garde.localeCompare(b.garde));

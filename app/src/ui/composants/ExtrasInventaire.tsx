@@ -1,151 +1,13 @@
-// Propositions de l'inventaire (étape 2, SPEC § 6.2) : captures d'écran,
-// doublons exacts (même contenu, ou copie réduite de type WhatsApp) et
-// appareils avec leur décalage d'horloge.
+// Inventaire (SPEC § 6.2) : appareils et leur décalage d'horloge. Les copies
+// exactes sont passées à l'étape « Doublons », les captures d'écran au « Tri
+// automatique » (D61).
 
-import { useMemo, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { appareilsDetectes, mesurerDecalage, type MesureDecalage } from '../../lib/appareils';
-import { groupesDoublonsExacts, type GroupeExact } from '../../lib/doublonsExacts';
-import { estCapture, extension } from '../../lib/fichiers';
 import { t } from '../../lib/langue';
-import { appliquerDecalages, ecarterDoublonsExacts, rangerCaptures } from '../../lib/inventaire';
-import { cheminDossier, traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
-import { analyseAFaire, analyseEnCours } from '../analyseDossier';
-import { annuler, appliquer, configuration, notifier, session, texteErreur, versionIA, versionPlan, type Session } from '../etat';
-import { jourCourt, nombre, pluriel } from '../format';
-import { Miniature } from './GrillePhotos';
-
-const garde = (plan: Plan, f: FichierPlan) => ['garder', 'ignorer'].includes(traitementDe(plan, f.dossier) ?? '');
-
-/** Captures d'écran proposées au rangement (pas encore rangées, hors dossiers gardés tels quels). */
-export function capturesProposees(s: Session): FichierPlan[] {
-  return [...s.plan.fichiers.values()].filter(
-    (f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && !garde(s.plan, f) && estCapture({ nom: f.nom, marque: f.marque, appareil: f.appareil, dims: f.dims, extension: extension(f.nom) }),
-  );
-}
-
-function Captures() {
-  const s = session.value!;
-  versionPlan.value;
-  const rangees = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive' && f.capture).length;
-  const candidates = capturesProposees(s);
-  if (!candidates.length && !rangees) return null;
-  return (
-    <section id="captures">
-      <h2>{t`Captures d’écran`}</h2>
-      {candidates.length > 0 ? (
-        <>
-          <p>
-            {t`${pluriel(candidates.length, 'capture d’écran trouvée', 'captures d’écran trouvées')} (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « Captures_ecran », hors de l’album.`}
-          </p>
-          <div class="bande-miniatures">
-            {candidates.slice(0, 12).map((f) => (
-              <Miniature key={f.id} f={f} taille={90} />
-            ))}
-          </div>
-          <button type="button" onClick={() => appliquer(rangerCaptures(s.plan, candidates.map((f) => f.id)))}>
-            {t`Ranger les ${nombre(candidates.length)} captures dans « Captures_ecran »`}
-          </button>
-        </>
-      ) : (
-        <p class="discret">{t`${pluriel(rangees, 'capture rangée', 'captures rangées')} dans « Captures_ecran ».`}</p>
-      )}
-    </section>
-  );
-}
-
-/**
- * Copies exactes encore à écarter, ou `null` tant que l'analyse du dossier
- * n'est pas finie (empreintes et ressemblance en viennent, D56).
- */
-export function useCopiesExactes(): { groupes: GroupeExact[]; nbCopies: number } | null {
-  const s = session.value!;
-  versionPlan.value;
-  versionIA.value;
-  const pret = !analyseEnCours.value && !analyseAFaire(s);
-  const groupes = useMemo<GroupeExact[] | null>(() => {
-    if (!pret) return null;
-    const actuelles = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive');
-    return groupesDoublonsExacts(
-      actuelles.map((f) => ({
-        id: f.id,
-        nom: f.nom,
-        dossier: f.dossier,
-        taille: f.taille,
-        empreinte: f.empreinte,
-        phash: s.analyses.get(f)?.phash,
-        dims: f.dims,
-        exif: f.origineDate === 'exif',
-        gardeTelQuel: garde(s.plan, f),
-      })),
-    );
-  }, [pret, versionPlan.value, versionIA.value]);
-  if (!groupes) return null;
-  const actifs = groupes.map((g) => ({ ...g, copies: g.copies.filter((c) => s.plan.fichiers.get(c.id)?.statut === 'archive') })).filter((g) => g.copies.length && s.plan.fichiers.has(g.garde));
-  return { groupes: actifs, nbCopies: actifs.reduce((a, g) => a + g.copies.length, 0) };
-}
-
-function DoublonsExacts() {
-  const s = session.value!;
-  const copies = useCopiesExactes();
-  const actifs = copies?.groupes ?? [];
-  const nbCopies = copies?.nbCopies ?? 0;
-  const chemin = (f: FichierPlan) => cheminDossier(s.plan, f.dossier) || t`racine`;
-
-  return (
-    <section id="copies">
-      <h2>{t`Copies en double`}</h2>
-      <p class="discret">
-        {t`La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. L’original le plus complet est gardé ; les copies vont dans « _mis_de_cote/doublons_exacts ». Rien n’est jamais retiré d’un dossier gardé tel quel.`}
-      </p>
-      {!copies && <p class="discret">{t`Recherche en cours, pendant l’analyse des photos…`}</p>}
-      {copies && !actifs.length && <p>{t`Aucune copie à écarter.`}</p>}
-      {actifs.length > 0 && (
-        <>
-          <p>
-            <strong>{pluriel(nbCopies, 'copie', 'copies')}</strong> {t`dans ${pluriel(actifs.length, 'groupe')}.`}{' '}
-            <button type="button" class="principal" onClick={() => (appliquer(ecarterDoublonsExacts(s.plan, actifs)), notifier('ok', `${pluriel(nbCopies, 'copie écartée', 'copies écartées')}.`, { libelle: t`Annuler`, faire: annuler }))}>
-              {t`Écarter les ${nombre(nbCopies)} copies`}
-            </button>
-          </p>
-          <div class="groupes-exacts">
-            {actifs.slice(0, 40).map((g) => {
-              const o = s.plan.fichiers.get(g.garde)!;
-              return (
-                <div key={g.garde} class="groupe-exact">
-                  <figure>
-                    <Miniature f={o} taille={110} />
-                    <figcaption>
-                      <strong>{t`gardée`}</strong> {o.nom}
-                      <br />
-                      <span class="discret">{chemin(o)}</span>
-                    </figcaption>
-                  </figure>
-                  {g.copies.map((c) => {
-                    const f = s.plan.fichiers.get(c.id)!;
-                    return (
-                      <figure key={c.id}>
-                        <Miniature f={f} taille={110} />
-                        <figcaption>
-                          {c.type === 'reduite' ? t`copie réduite` : t`copie identique`} {f.nom}
-                          <br />
-                          <span class="discret">{chemin(f)}</span>
-                        </figcaption>
-                      </figure>
-                    );
-                  })}
-                  <button type="button" onClick={() => appliquer(ecarterDoublonsExacts(s.plan, [g]))}>
-                    {t`Écarter`}
-                  </button>
-                </div>
-              );
-            })}
-            {actifs.length > 40 && <p class="discret">{t`… et ${actifs.length - 40} autres groupes.`}</p>}
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
+import { appliquerDecalages } from '../../lib/inventaire';
+import { appliquer, configuration, notifier, session, texteErreur, versionPlan } from '../etat';
+import { jourCourt, nombre } from '../format';
 
 function Appareils() {
   const s = session.value!;
@@ -254,11 +116,5 @@ function Appareils() {
 }
 
 export function ExtrasInventaire() {
-  return (
-    <>
-      <Captures />
-      <DoublonsExacts />
-      <Appareils />
-    </>
-  );
+  return <Appareils />;
 }

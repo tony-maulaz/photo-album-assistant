@@ -5,10 +5,19 @@ import type { Analyses } from '../src/navigateur/analyses';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, etapeInutile, etapePrecedente, etapeSuivante, migrerEtapes, nouveauProjet, parcours } from '../src/navigateur/projet';
 
 describe('étapes (D54)', () => {
-  it('douze étapes : les doublons après les floues, le tri automatique séparé des lieux et sorties', () => {
-    expect(CODES_ETAPES).toEqual(['projet', 'inventaire', 'floues', 'doublons', 'tri', 'lieux', 'petits', 'nommage', 'consolidation', 'selection', 'album', 'sortie']);
-    expect(ETAPE.doublons).toBe(4);
-    expect(ETAPE.sortie).toBe(12);
+  it('treize étapes : « Dossiers » après l’inventaire, les doublons après les floues, le tri automatique séparé des lieux et sorties (D61)', () => {
+    expect(CODES_ETAPES).toEqual(['projet', 'inventaire', 'dossiers', 'floues', 'doublons', 'tri', 'lieux', 'petits', 'nommage', 'consolidation', 'selection', 'album', 'sortie']);
+    expect(ETAPE.doublons).toBe(5);
+    expect(ETAPE.sortie).toBe(13);
+  });
+
+  it('« Dossiers » est sautée sans sous-dossier, et pour un dossier déjà trié', () => {
+    expect(etapeSuivante('vrac', 'inventaire')).toBe('dossiers');
+    expect(etapeSuivante('vrac', 'inventaire', true)).toBe('floues');
+    expect(etapePrecedente('vrac', 'floues', true)).toBe('inventaire');
+    expect(etapeInutile('vrac', 'dossiers', true)).toBe(true);
+    expect(etapeInutile('vrac', 'dossiers')).toBe(false);
+    expect(etapeInutile('deja_trie', 'dossiers')).toBe(true);
   });
 
   it('« Valider et continuer » suit le parcours du mode', () => {
@@ -53,19 +62,29 @@ describe('étapes (D54)', () => {
     p.etapes = ['validee', 'validee', 'validee', 'validee', 'validee', 'en_cours', 'a_faire', 'a_revoir', 'a_faire', 'a_faire', 'a_faire'];
     p.tri = { rayonKm: 2 };
     expect(migrerEtapes(p)).toBe(true);
-    expect(p.etapes).toEqual(['validee', 'validee', 'validee', 'a_revoir', 'validee', 'validee', 'validee', 'en_cours', 'a_faire', 'a_faire', 'a_faire', 'a_faire']);
+    expect(p.etapes).toEqual(['validee', 'validee', 'validee', 'validee', 'a_revoir', 'validee', 'validee', 'validee', 'en_cours', 'a_faire', 'a_faire', 'a_faire', 'a_faire']);
     expect(migrerEtapes(p)).toBe(false);
     const d = nouveauProjet('Trié', 'deja_trie', { nom: 'source', fichiers: 0, octets: 0 }, 50);
     d.etapes = d.etapes.slice(0, 11);
     migrerEtapes(d);
     expect(d.etapes[ETAPE.tri - 1]).toBe('a_faire');
   });
+
+  it('un projet à douze étapes reçoit l’étape « Dossiers », validée avec l’inventaire', () => {
+    const p = nouveauProjet('Essai', 'vrac', { nom: 'source', fichiers: 0, octets: 0 }, 50);
+    // Ordre du 23.10.2026 : projet, inventaire, floues, doublons, tri, lieux, petits, nommage, consolidation, sélection, album, sortie.
+    p.etapes = ['validee', 'validee', 'validee', 'en_cours', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire'];
+    expect(migrerEtapes(p)).toBe(true);
+    expect(p.etapes).toEqual(['validee', 'validee', 'validee', 'validee', 'en_cours', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire', 'a_faire']);
+    expect(migrerEtapes(p)).toBe(false);
+  });
 });
 
 describe('lots des doublons', () => {
   function plan(): Plan {
     const p = planVide();
-    p.dossiers.set('g', { id: 'g', nom: 'BESTOF', parent: 'racine', origine: 'source', traitement: 'garder' });
+    p.dossiers.set('g', { id: 'g', nom: 'Anniversaire', parent: 'racine', origine: 'source', traitement: 'nettoyer' });
+    p.dossiers.set('n', { id: 'n', nom: 'BESTOF', parent: 'racine', origine: 'source', traitement: 'garder' });
     p.dossiers.set('s', { id: 's', nom: 'Plage', parent: 'racine', origine: 'tri' });
     const photo = (id: string, dossier: string, date: string | undefined, extra: Partial<FichierPlan> = {}): FichierPlan => ({
       id, nom: `${id}.jpg`, taille: 1, modifie: 0, categorie: 'photo', date, origineDate: 'exif', dossier, statut: 'archive', ...extra,
@@ -77,6 +96,8 @@ describe('lots des doublons', () => {
       photo('d', 'racine', '2026-07-19T09:00:00'),
       photo('e', 'g', '2026-07-18T11:00:00'),
       photo('f', 'g', '2026-07-19T11:00:00'),
+      photo('h', 'n', '2026-07-18T11:00:00'),
+      photo('i', 'n', '2026-07-18T11:00:01'),
       photo('capture', 'racine', '2026-07-18T12:00:00', { capture: true }),
       photo('ecartee', 'racine', '2026-07-18T13:00:00', { statut: 'mis_de_cote' }),
       photo('copie1', 'racine', '2026-10-01T09:00:00', { origineDate: 'fichier' }),
@@ -87,12 +108,12 @@ describe('lots des doublons', () => {
   }
   const analyses = { get: () => undefined } as unknown as Analyses;
 
-  it('dossier en vrac : par journée, tous dossiers à trier confondus ; les dossiers gardés à part', () => {
+  it('dossier en vrac : par journée, tous dossiers à trier confondus ; « Garder, nettoyer » à part, « Ne pas toucher » jamais comparé', () => {
     const p = plan();
     expect(lotsDoublons(p, true)).toEqual([
       { id: 'jour:2026-07-18', nom: '18.07.26' },
       { id: 'jour:sans', nom: 'Sans date' },
-      { id: 'g', nom: 'BESTOF' },
+      { id: 'g', nom: 'Anniversaire' },
     ]);
     expect(photosLot(p, 'jour:sans', analyses).map((x) => x.id)).toEqual(['copie1', 'copie2']);
     expect(photosLot(p, 'jour:2026-07-18', analyses).map((x) => x.id)).toEqual(['a', 'b', 'c']);

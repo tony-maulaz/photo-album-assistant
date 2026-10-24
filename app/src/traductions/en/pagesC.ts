@@ -272,8 +272,6 @@ export const TEXTES: Record<string, string> = {
     'This folder is already sorted: its subfolders are the outings, there is nothing to calculate. You can rearrange them in the next step.',
   'Aller aux lieux et sorties': 'Go to places and outings',
   'Tri automatique par lieux et sorties': 'Automatic sorting by places and outings',
-  'L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Enregistrez d’abord les lieux qui reviennent souvent (maison, grands-parents…), ajustez les réglages si besoin, puis calculez : vous vérifierez et corrigerez le résultat à l’étape suivante.':
-    'The application arranges the photos by place (GPS position) and by outing (the days spent in the same place). First save the places that come up often (home, grandparents…), adjust the settings if needed, then calculate: you will check and correct the result in the next step.',
   'dossier proposé': 'folder proposed',
   'dossiers proposés': 'folders proposed',
   ' pour {0}{1}. Vérifiez-les et corrigez-les à l’étape suivante, en glissant les photos d’un dossier à l’autre.':

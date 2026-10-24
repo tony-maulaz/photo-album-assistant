@@ -18,6 +18,7 @@ import { analyseEnCours } from '../analyseDossier';
 import { enregistrerAide } from './AidesIA';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Comparateur } from '../composants/Comparateur';
+import { CopiesExactes } from '../composants/CopiesExactes';
 import { confirmer } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { allerEtape, annuler, appliquer, changerEtape, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
@@ -297,11 +298,13 @@ export function PageDoublons() {
   return (
     <div class="page large avec-barre page-doublons">
       <TeteEtape numero={ETAPE.doublons} titre={nomEtape(ETAPE.doublons)} cle="doublons">
-        {t`L’application repère les photos en double : rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote/doublons », rien n’est supprimé.`}
+        {t`L’application repère les photos en double : copies exactes (la même photo en plusieurs exemplaires), rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote », rien n’est supprimé.`}
         {s.projet.mode === 'vrac' && t` Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.`}
       </TeteEtape>
 
       <EncartAnalyse photos={toutes} pourquoi={t`la ressemblance et la netteté de chaque photo servent à repérer les doublons et à garder la plus nette.`} />
+
+      <CopiesExactes />
 
       {/* L'analyse IA est facultative : elle vient en complément des rafales, repérées toutes seules. */}
       <details class="avances encart-ia">

@@ -121,8 +121,8 @@ export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<
     if (d.nom === 'Sans_lieu' || /^Lieu_\d+/.test(d.nom)) ajouter(d.id, [aTraduire('lieu ?'), t`Lieu inconnu : photos sans GPS ou lieu sans nom`]);
     if (sansDate.get(d.id)) ajouter(d.id, [aTraduire('sans date'), t`${sansDate.get(d.id)} photo(s) sans autre date que celle du fichier`]);
     if ((parNom.get(cleNom(d.nom))?.length ?? 0) > 1) ajouter(d.id, [aTraduire('nom en double'), t`Un autre dossier porte le même nom`]);
-    if (d.traitement === 'garder') ajouter(d.id, [aTraduire('gardé'), t`Sous-dossier de la source gardé tel quel`]);
-    if (d.traitement === 'ignorer') ajouter(d.id, [aTraduire('hors album'), t`Gardé tel quel, hors de l’album`]);
+    if (d.traitement === 'nettoyer') ajouter(d.id, [aTraduire('gardé'), t`Sous-dossier de la source gardé à sa place ; ses floues et ses doublons sont proposés`]);
+    if (d.traitement === 'garder' || d.traitement === 'ignorer') ajouter(d.id, [aTraduire('ne pas toucher'), t`Sous-dossier de la source recopié tel quel`]);
   }
   // Chevauchement : deux dossiers voisins dont les photos s'entremêlent dans le temps (A, puis B, puis
   // de nouveau A) : sans doute la même sortie coupée en deux. Deux sorties le même jour, l'une après
@@ -271,7 +271,7 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
             )}
             {total === 0 && d.parent !== null && <span class="badge vide">{t`vide`}</span>}
             {(arbre.alertes.get(d.id) ?? []).map(([texte, aide]) => (
-              <span key={texte} class={`badge alerte-dossier ${texte === 'gardé' || texte === 'hors album' ? 'info' : ''}`} title={aide}>
+              <span key={texte} class={`badge alerte-dossier ${texte === 'gardé' || texte === 'ne pas toucher' ? 'info' : ''}`} title={aide}>
                 {t(texte)}
               </span>
             ))}
@@ -344,7 +344,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
     if (seulementAlertes) {
       const avec = new Set([RACINE]);
       for (const d of s.plan.dossiers.values()) {
-        const a = alertes.get(d.id)?.filter(([code]) => code !== 'gardé' && code !== 'hors album') ?? [];
+        const a = alertes.get(d.id)?.filter(([code]) => code !== 'gardé' && code !== 'ne pas toucher') ?? [];
         const x = r.get(d.id)!;
         const petit = d.parent !== null && x.photos + x.videos > 0 && x.photos + x.videos < SEUIL_PETIT;
         if (!a.length && !petit) continue;

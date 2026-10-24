@@ -1,17 +1,18 @@
 // Étape 2 — Inventaire (SPEC § 6.2, version de la phase 1).
 
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { changerTraitement, estDescendant, RACINE, resumes, type FichierPlan, type Plan, type TraitementDossier } from '../../lib/plan';
+import { RACINE, resumes } from '../../lib/plan';
 import type { Progression } from '../../navigateur/inventaire';
 import { ETAPE, nomEtape, type CodeEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { ProgressionAnalyse } from '../composants/Analyse';
-import { capturesProposees, ExtrasInventaire, useCopiesExactes } from '../composants/ExtrasInventaire';
+import { copiesProposees, useCopiesExactes } from '../composants/CopiesExactes';
+import { ExtrasInventaire } from '../composants/ExtrasInventaire';
 import { Miniature } from '../composants/GrillePhotos';
-import { allerEtape, appliquer, changerEtape, notifier, session, texteErreur, validerEtape, versionPlan, versionProjet } from '../etat';
-import { duree, jourCourt, nombre, periode, pluriel, taille } from '../format';
+import { allerEtape, changerEtape, notifier, session, texteErreur, validerEtape, versionPlan, versionProjet } from '../etat';
+import { duree, jourCourt, nombre, pluriel, taille } from '../format';
 import { construirePlan } from '../projets';
 import { analyseAFaire, analyseEnCours, lancerAnalyseDossier } from '../analyseDossier';
 import { DOSSIER_SANS_DATE } from '../../lib/tri';
@@ -23,151 +24,31 @@ const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
   videos: aTraduire('Date des vidéos'),
 };
 
-const TRAITEMENTS: [TraitementDossier, string, string][] = [
-  ['trier', aTraduire('Trier ses photos'), aTraduire('elles rejoignent le tri par lieux et sorties. Pour un dossier fourre-tout : « Divers », « Téléphone ».')],
-  [
-    'garder',
-    aTraduire('Garder tel quel'),
-    aTraduire('recopié à l’identique ; ses photos peuvent aller dans l’album. Pour un dossier déjà bien rangé (« Anniversaire Lea »), ou un mois de petites sorties.'),
-  ],
-  ['ignorer', aTraduire('Garder tel quel, pas pour l’album'), aTraduire('recopié à l’identique ; ses photos ne sont pas proposées pour l’album. Pour des documents, scans, fonds d’écran.')],
-];
-
-/** Trois photos réparties dans un dossier (et ses sous-dossiers), pour le reconnaître d'un coup d'œil. */
-function apercuDossier(plan: Plan, dossier: string): FichierPlan[] {
-  const photos = [...plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive' && (f.dossier === dossier || estDescendant(plan, f.dossier, dossier)));
-  if (photos.length <= 3) return photos;
-  return [photos[0], photos[Math.floor(photos.length / 2)], photos.at(-1)!];
-}
-
-/** Sous-dossiers déjà présents dans un dossier en vrac (§ 6.2) : trier, garder tel quel, ou hors album. */
-function SousDossiers() {
-  const s = session.value!;
-  const r = resumes(s.plan);
-  const dossiers = [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { numeric: true }));
-  const racine = r.get(RACINE)!;
-  if (!dossiers.length) return null;
-  return (
-    <section id="sous-dossiers">
-      <h2>{t`Que faire des sous-dossiers déjà rangés ?`}</h2>
-      <p class="discret">
-        {t`Les ${pluriel(racine.photos + racine.videos, 'élément')} en vrac à la racine seront triés par lieux et sorties. Pour chaque sous-dossier, choisissez :`}
-      </p>
-      <dl class="choix-traitement">
-        {TRAITEMENTS.map(([v, libelle, explication]) => (
-          <div key={v}>
-            <dt>{t(libelle)}</dt>
-            <dd>{t(explication)}</dd>
-          </div>
-        ))}
-      </dl>
-      <table class="tableau sous-dossiers">
-        <thead>
-          <tr>
-            <th>{t`Dossier`}</th>
-            <th>{t`Période`}</th>
-            <th class="n">{t`Photos`}</th>
-            <th class="n">{t`Vidéos`}</th>
-            <th>{t`Que faire ?`}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dossiers.map((d) => {
-            const x = r.get(d.id)!;
-            return (
-              <tr key={d.id}>
-                <td>
-                  <div class="dossier-apercu">
-                    <span class="miniatures-dossier">
-                      {apercuDossier(s.plan, d.id).map((f) => (
-                        <Miniature key={f.id} f={f} taille={44} />
-                      ))}
-                    </span>
-                    {d.nom}
-                  </div>
-                </td>
-                <td>{periode(x.duTotal, x.auTotal)}</td>
-                <td class="n">{nombre(x.photosTotal)}</td>
-                <td class="n">{nombre(x.videosTotal)}</td>
-                <td>
-                  <select value={d.traitement ?? 'garder'} onChange={(e) => appliquer(changerTraitement(s.plan, [d.id], e.currentTarget.value as TraitementDossier))} aria-label={t`Que faire de ${d.nom}`}>
-                    {TRAITEMENTS.map(([v, l]) => (
-                      <option key={v} value={v}>
-                        {t(l)}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <p class="actions">
-        <button type="button" onClick={() => appliquer(changerTraitement(s.plan, dossiers.map((d) => d.id), 'trier'))}>
-          {t`Tout trier`}
-        </button>
-        <button type="button" onClick={() => appliquer(changerTraitement(s.plan, dossiers.map((d) => d.id), 'garder'))}>
-          {t`Tout garder tel quel`}
-        </button>
-      </p>
-    </section>
-  );
-}
-
-/** En haut de l'inventaire : l'analyse en cours, et ce qu'il faut vérifier pendant ce temps. */
+/** En haut de l'inventaire : l'analyse en cours, et ce qui attend aux étapes suivantes. */
 function AVerifier() {
   const s = session.value!;
   versionPlan.value;
   const copies = useCopiesExactes();
   const enCours = !!analyseEnCours.value || analyseAFaire(s);
   const sousDossiers = s.projet.mode === 'vrac' ? [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').length : 0;
-  const captures = capturesProposees(s).length;
+  const nbCopies = copies ? copiesProposees(copies) : 0;
   const sansDate = [...s.plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && f.statut === 'archive' && f.origineDate === 'fichier').length;
   const points = [
-    sousDossiers > 0 && (
-      <>
-        {t`que faire des`} <strong>{pluriel(sousDossiers, 'sous-dossier déjà rangé', 'sous-dossiers déjà rangés')}</strong>
-        {t` ;`}
-      </>
-    ),
-    captures > 0 && (
-      <>
-        {t`les`} <strong>{pluriel(captures, 'capture d’écran trouvée', 'captures d’écran trouvées')}</strong>
-        {t` ;`}
-      </>
-    ),
-    copies && copies.nbCopies > 0 && (
-      <>
-        {t`les`} <strong>{pluriel(copies.nbCopies, 'copie en double', 'copies en double')}</strong>
-        {t` ;`}
-      </>
-    ),
-    sansDate > 0 && s.projet.mode === 'vrac' && (
-      <>
-        {t`les`} <strong>{pluriel(sansDate, 'photo sans date', 'photos sans date')}</strong>
-        {t` : elles iront dans « ${DOSSIER_SANS_DATE} », à placer à la main ;`}
-      </>
-    ),
-  ].filter(Boolean);
+    sousDossiers > 0 && t`${pluriel(sousDossiers, 'sous-dossier', 'sous-dossiers')} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.`,
+    nbCopies > 0 && t`${pluriel(nbCopies, 'copie exacte', 'copies exactes')} (même photo en plusieurs exemplaires) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » les exemplaires à garder.`,
+    sansDate > 0 && s.projet.mode === 'vrac' && t`${pluriel(sansDate, 'photo sans date', 'photos sans date')} : elles iront dans « ${DOSSIER_SANS_DATE} », à placer à la main.`,
+  ].filter((x): x is string => !!x);
   return (
     <div class="encart a-verifier">
       {enCours ? <ProgressionAnalyse /> : <p class="ok">{t`✓ Analyse des photos terminée.`}</p>}
-      {points.length > 0 ? (
-        <>
-          <p>
-            <strong>{enCours ? t`Pendant ce temps, vérifiez :` : t`Vérifiez :`}</strong>
-          </p>
-          <ol>
-            {points.map((x, i) => (
-              <li key={i}>{x}</li>
-            ))}
-          </ol>
-          <p class="discret">{enCours ? t`Puis « Valider et continuer », dès la fin de l’analyse.` : t`Puis « Valider et continuer ».`}</p>
-        </>
-      ) : (
-        <p class="discret">{enCours ? t`Rien d’autre à vérifier : « Valider et continuer » dès la fin de l’analyse.` : t`Rien d’autre à vérifier : « Valider et continuer ».`}</p>
+      {points.length > 0 && (
+        <ul>
+          {points.map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
       )}
+      <p class="discret">{enCours ? t`« Valider et continuer » dès la fin de l’analyse.` : t`Rien à décider ici : « Valider et continuer ».`}</p>
     </div>
   );
 }
@@ -206,6 +87,26 @@ export function PageInventaire() {
     } finally {
       setProgression(null);
     }
+  };
+
+  // Tout repart de la source : inventaire, analyse des photos (les résultats des photos inchangées sont
+  // réutilisés), rafales recalculées à l'étape « Doublons », étapes suivantes à refaire.
+  const refaire = async () => {
+    if (
+      !(await confirmer(
+        t`Refaire l’inventaire ?`,
+        t`Le dossier à trier sera relu entièrement et les photos analysées de nouveau (les résultats des photos inchangées sont réutilisés, sans frais). Les changements faits dans l’arborescence seront perdus et les étapes suivantes seront à refaire.`,
+        t`Refaire l’inventaire`,
+        true,
+      ))
+    )
+      return;
+    s.projet.inventaire = undefined;
+    s.doublons = undefined;
+    await s.etat.ecrire('doublons.json', null).catch(() => undefined);
+    for (let n = ETAPE.inventaire + 1; n <= s.projet.etapes.length; n++) changerEtape(n, 'a_faire');
+    versionProjet.value++;
+    void lancer();
   };
 
   // Projet tout neuf : l'inventaire part tout seul, puis l'analyse des photos (D56).
@@ -252,11 +153,13 @@ export function PageInventaire() {
   const videos = archive.filter((f) => f.categorie === 'video');
   const autres = fichiers.filter((f) => f.categorie === 'autre');
   const misDeCote = fichiers.filter((f) => f.statut === 'mis_de_cote');
-  const dates = archive.map((f) => f.date).filter((d): d is string => !!d).sort();
+  // La date du fichier (photo sans date) est souvent celle d'une copie : ni dans la période, ni dans l'histogramme.
+  const datees = archive.filter((f) => f.origineDate !== 'fichier');
+  const dates = datees.map((f) => f.date).filter((d): d is string => !!d).sort();
   const origines = { exif: 0, nom: 0, video: 0, fichier: 0 };
   for (const f of archive) origines[f.origineDate ?? 'fichier']++;
   const parMois = new Map<string, number>();
-  for (const f of photos) if (f.date) parMois.set(f.date.slice(0, 7), (parMois.get(f.date.slice(0, 7)) ?? 0) + 1);
+  for (const f of datees) if (f.categorie === 'photo' && f.date) parMois.set(f.date.slice(0, 7), (parMois.get(f.date.slice(0, 7)) ?? 0) + 1);
   const mois = [...parMois].sort((a, b) => a[0].localeCompare(b[0]));
   const maxMois = Math.max(1, ...mois.map(([, n]) => n));
   const r = resumes(plan);
@@ -270,7 +173,15 @@ export function PageInventaire() {
 
   return (
     <div class="page avec-barre">
-      <TeteEtape numero={ETAPE.inventaire} titre={nomEtape(ETAPE.inventaire)}>
+      <TeteEtape
+        numero={ETAPE.inventaire}
+        titre={nomEtape(ETAPE.inventaire)}
+        outils={
+          <button type="button" class="lien" onClick={() => void refaire()}>
+            {t`Refaire l’inventaire`}
+          </button>
+        }
+      >
         {t`Voici ce que contient « ${s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.`}
       </TeteEtape>
       <AVerifier />
@@ -316,7 +227,6 @@ export function PageInventaire() {
         <li class={origines.fichier ? 'attention' : ''}>{t`${nombre(origines.fichier)} sans date (ni l’appareil, ni le nom du fichier ne la donnent).`}</li>
       </ul>
 
-      {s.projet.mode === 'vrac' && <SousDossiers />}
       {s.projet.mode === 'deja_trie' && (
         <div class="encart">
           <p>{t`Ce dossier est déjà trié : vous pouvez chercher les doublons puis réorganiser les dossiers, ou commencer directement là où vous en avez besoin.`}</p>
@@ -395,21 +305,6 @@ export function PageInventaire() {
         // Les étapes suivantes ont besoin de l'analyse : on attend qu'elle soit finie.
         validerActif={!analyseEnCours.value && !analyseAFaire(s)}
       />
-      <p class="discret pied">
-        <button
-          type="button"
-          class="lien"
-          onClick={async () => {
-            if (await confirmer(t`Refaire l’inventaire ?`, t`Le dossier à trier sera relu entièrement. Les changements faits dans l’arborescence seront perdus.`, t`Refaire l’inventaire`, true)) {
-              s.projet.inventaire = undefined;
-              versionProjet.value++;
-              void lancer();
-            }
-          }}
-        >
-          {t`Refaire l’inventaire`}
-        </button>
-      </p>
     </div>
   );
 }

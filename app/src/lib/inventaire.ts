@@ -6,11 +6,17 @@ import { pluriel } from '../ui/format';
 import { appliquerDecalage, decalageAppareil, minutesDecalage, texteDecalage } from './appareils';
 import type { GroupeExact } from './doublonsExacts';
 import { t } from './langue';
-import { combiner, deplacerFichiers, mettreDeCote, RACINE, Transaction, type Modification, type Plan } from './plan';
+import { estCapture, extension } from './fichiers';
+import { combiner, deplacerFichiers, mettreDeCote, RACINE, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
 import { cleNom } from './noms';
 
 /** Dossier des captures d'écran dans l'archive (§ 12). */
 export const DOSSIER_CAPTURES = 'Captures_ecran';
+
+/** La photo ressemble-t-elle à une capture d'écran (nom, dimensions d'écran, pas de marque d'appareil) ? */
+export function ressembleACapture(f: FichierPlan): boolean {
+  return f.categorie === 'photo' && estCapture({ nom: f.nom, marque: f.marque, appareil: f.appareil, dims: f.dims, extension: extension(f.nom) });
+}
 
 /** Range les captures dans `Photos/Captures_ecran/` (créé au besoin) ; elles sont exclues de l'album. */
 export function rangerCaptures(plan: Plan, ids: string[]): Modification | null {
@@ -28,10 +34,19 @@ export function rangerCaptures(plan: Plan, ids: string[]): Modification | null {
   return combiner(t`Ranger ${pluriel(ids.length, 'capture d’écran', 'captures d’écran')}`, tx.terminer(''), deplacerFichiers(plan, ids, dossier.id));
 }
 
-/** Met de côté les copies des groupes de doublons exacts (`_mis_de_cote/doublons_exacts/`). */
-export function ecarterDoublonsExacts(plan: Plan, groupes: GroupeExact[]): Modification | null {
-  const ids = groupes.flatMap((g) => g.copies.map((c) => c.id)).filter((id) => plan.fichiers.get(id)?.statut === 'archive');
-  return ids.length ? mettreDeCote(plan, ids, 'doublons_exacts') : null;
+/**
+ * Met de côté les exemplaires des groupes de doublons exacts qui ne sont pas dans
+ * `aGarder` (`_mis_de_cote/doublons_exacts/`) ; un groupe garde toujours au moins
+ * un exemplaire (son meilleur, si on n'en a gardé aucun).
+ */
+export function ecarterDoublonsExacts(plan: Plan, groupes: GroupeExact[], aGarder: ReadonlySet<string>): Modification | null {
+  const ids = groupes.flatMap((g) => {
+    const membres = [g.garde, ...g.copies.map((c) => c.id)];
+    const gardes = membres.some((id) => aGarder.has(id)) ? aGarder : new Set([g.garde]);
+    return membres.filter((id) => !gardes.has(id));
+  });
+  const aEcarter = ids.filter((id) => plan.fichiers.get(id)?.statut === 'archive');
+  return aEcarter.length ? mettreDeCote(plan, aEcarter, 'doublons_exacts') : null;
 }
 
 /**

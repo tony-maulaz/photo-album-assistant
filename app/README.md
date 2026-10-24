@@ -1,6 +1,6 @@
 # Application « Album photos »
 
-Spécification : `../docs/SPEC_APP.md`. État actuel : les douze étapes et les
+Spécification : `../docs/SPEC_APP.md`. État actuel : les treize étapes et les
 aides IA sont livrées. Présentation générale et contribution (en anglais) :
 `../README.md`, `../CONTRIBUTING.md`.
 

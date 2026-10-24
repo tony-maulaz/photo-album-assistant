@@ -5,9 +5,8 @@
 // d'or 7) ; les décisions de l'utilisateur, elles, sont dans le plan.
 
 import { analyserDossier, cleVue, etatDoublon, consigneSysteme, estimationDoublons, etageRafales, SCHEMA_VERIF, SCHEMA_VUE, type OutilsIA, type PhotoDoublon, type ResultatDossier } from '../lib/doublons';
-import { dansDossierGarde } from '../lib/floues';
 import { t } from '../lib/langue';
-import { cheminDossier, contenu, horsAlbum, type FichierPlan, type Plan } from '../lib/plan';
+import { cheminDossier, contenu, gardeSaPlace, nePasToucher, type FichierPlan, type Plan } from '../lib/plan';
 import { coutUSD, modele as infoModele } from '../lib/tarifs';
 import { cleAnalyse, type Analyses } from './analyses';
 import { BudgetAtteint, type ServiceIA } from './ia';
@@ -36,7 +35,8 @@ export interface LotDoublons {
 const PREFIXE_JOUR = 'jour:';
 
 function comparable(plan: Plan, f: FichierPlan): boolean {
-  return f.statut === 'archive' && f.categorie === 'photo' && !f.capture && !horsAlbum(plan, f);
+  // « Ne pas toucher » : ses photos ne sont pas comparées (D61).
+  return f.statut === 'archive' && f.categorie === 'photo' && !f.capture && !nePasToucher(plan, f.dossier);
 }
 
 /** Journée d'une photo ; « sans » si elle n'a pas de vraie date (date du fichier seulement). */
@@ -56,13 +56,14 @@ export function nomLot(plan: Plan, lot: string): string {
 /**
  * Lots à analyser : les dossiers d'au moins deux photos ; `parJour`, pour un
  * dossier en vrac (une seule grande pile avant le tri), les photos à trier
- * regroupées par journée, les dossiers gardés tels quels restant à part.
+ * regroupées par journée ; un dossier qui garde sa place forme son propre lot,
+ * un dossier « Ne pas toucher » n'est pas comparé.
  */
 export function lotsDoublons(plan: Plan, parJour: boolean): LotDoublons[] {
   const comptes = new Map<string, number>();
   for (const f of plan.fichiers.values()) {
     if (!comparable(plan, f)) continue;
-    const lot = parJour && !dansDossierGarde(plan, f.dossier) ? `${PREFIXE_JOUR}${jourDe(f)}` : f.dossier;
+    const lot = parJour && !gardeSaPlace(plan, f.dossier) ? `${PREFIXE_JOUR}${jourDe(f)}` : f.dossier;
     comptes.set(lot, (comptes.get(lot) ?? 0) + 1);
   }
   return [...comptes]
@@ -80,7 +81,7 @@ export async function lireDoublons(etat: EtatProjet): Promise<EtatDoublons | und
 export function photosLot(plan: Plan, lot: string, analyses: Analyses): PhotoDoublon[] {
   const fichiers = lot.startsWith(PREFIXE_JOUR)
     ? [...plan.fichiers.values()]
-        .filter((f) => comparable(plan, f) && !dansDossierGarde(plan, f.dossier) && jourDe(f) === lot.slice(PREFIXE_JOUR.length))
+        .filter((f) => comparable(plan, f) && !gardeSaPlace(plan, f.dossier) && jourDe(f) === lot.slice(PREFIXE_JOUR.length))
         .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || a.id.localeCompare(b.id))
     : contenu(plan, lot).filter((f) => comparable(plan, f));
   return fichiers.map((f) => {

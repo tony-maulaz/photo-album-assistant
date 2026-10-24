@@ -8,7 +8,7 @@ import type { ConfigAlbum } from '../lib/album';
 import type { EvenementCalendrier } from '../lib/ics';
 import { evenementsCalendriers } from '../navigateur/calendriers';
 import type { ContexteExecution } from '../navigateur/executeur';
-import { Historique, versJson, type Modification, type Plan } from '../lib/plan';
+import { Historique, RACINE, versJson, type Modification, type Plan } from '../lib/plan';
 import type { EtatSortie } from '../lib/sortie';
 import type { ResultatsAides } from '../navigateur/aides';
 import type { Analyses } from '../navigateur/analyses';
@@ -219,10 +219,15 @@ export function allerEtape(code: CodeEtape | null) {
   if (code) page.value = { nom: 'etape', numero: ETAPE[code] };
 }
 
+/** Dossier en vrac sans aucun sous-dossier (inventaire fait) : l'étape « Dossiers » n'a rien à demander. */
+export function sansSousDossiers(s: Session): boolean {
+  return !!s.projet.inventaire && ![...s.plan.dossiers.values()].some((d) => d.parent === RACINE && d.origine === 'source');
+}
+
 /** « Revenir » : l'étape précédente du parcours (un dossier déjà trié saute le tri et ses suites). */
 export function revenirDe(code: CodeEtape) {
   const s = session.value;
-  if (s) allerEtape(etapePrecedente(s.projet.mode, code));
+  if (s) allerEtape(etapePrecedente(s.projet.mode, code, sansSousDossiers(s)));
 }
 
 /** « Valider et continuer » : l'étape est validée, la suivante du parcours s'ouvre (en cours si elle ne l'était pas). */
@@ -230,7 +235,7 @@ export function validerEtape(code: CodeEtape) {
   const s = session.value;
   if (!s) return;
   changerEtape(ETAPE[code], 'validee');
-  const suivante = etapeSuivante(s.projet.mode, code);
+  const suivante = etapeSuivante(s.projet.mode, code, sansSousDossiers(s));
   if (!suivante) return;
   if (s.projet.etapes[ETAPE[suivante] - 1] !== 'validee') changerEtape(ETAPE[suivante], 'en_cours');
   allerEtape(suivante);

@@ -13,9 +13,9 @@ Git), ils servent uniquement de référence (consignes IA, seuils calibrés,
 algorithmes) ; ne pas les modifier.
 
 Un utilisateur de la famille, non informaticien : choix du dossier à trier et
-d'un dossier de sortie, puis douze étapes guidées (inventaire, floues,
-doublons, tri automatique, lieux et sorties, petits dossiers, nommage,
-consolidation, sélection, album, création de la sortie), chacune avec un
+d'un dossier de sortie, puis treize étapes guidées (inventaire, dossiers,
+floues, doublons, tri automatique, lieux et sorties, petits dossiers,
+nommage, consolidation, sélection, album, création de la sortie), chacune avec un
 **aperçu modifiable** avant validation. Pas de sélection automatique : une
 boîte à outils et des **aides IA à la carte**, dont le coût est affiché avant
 lancement.
@@ -113,6 +113,6 @@ lancement.
 
 ## État
 
-Toutes les phases de `docs/SPEC_APP.md` § 15 sont livrées : les douze étapes
+Toutes les phases de `docs/SPEC_APP.md` § 15 sont livrées : les treize étapes
 et les aides IA. La suite : corrections et améliorations d'après les essais
 sur de vraies photos.

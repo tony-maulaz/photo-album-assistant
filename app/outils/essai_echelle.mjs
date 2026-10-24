@@ -116,12 +116,17 @@ try {
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_inventaire.png'), fullPage: true });
 
   if (VRAC) {
-    await page.getByRole('button', { name: 'Tout trier' }).click();
     debut = performance.now();
     // Analyse des photos et des copies exactes : toute seule après l'inventaire (D56).
     await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
-    noter(`analyse locale et copies exactes en ${duree(debut)} : ${(await page.locator('#copies').innerText()).split('\n').slice(1, 3).join(' ')}`);
+    noter(`analyse locale et copies exactes en ${duree(debut)} : ${(await page.locator('.a-verifier').innerText()).split('\n').slice(1, 4).join(' ')}`);
     await page.getByRole('button', { name: 'Valider et continuer' }).click();
+    // Étape « Dossiers » : tout est retrié par lieux (s'il y a des sous-dossiers).
+    await page.getByRole('heading', { name: /Dossiers|Photos floues/ }).first().waitFor();
+    if (await page.locator('.choix-segmente').count()) {
+      await page.locator('p.actions').getByRole('button', { name: 'Trier', exact: true }).click();
+      await page.getByRole('button', { name: 'Valider et continuer' }).click();
+    }
     await page.getByRole('heading', { name: /Photos floues/ }).waitFor();
     noter(`floues : ${await page.locator('.compteur-floues').innerText()}`);
     await page.getByRole('button', { name: 'Valider et continuer' }).click();
@@ -148,7 +153,7 @@ try {
       noter(`étape ${numero} affichée en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
       if (CAPTURES) await page.screenshot({ path: join(CAPTURES, `echelle_etape${numero}.png`) });
     }
-    await page.locator('.bandeau .etape', { hasText: /^.?12Sortie$/ }).click();
+    await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
     await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).waitFor({ timeout: 120_000 });
     debut = performance.now();
     await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
@@ -201,7 +206,7 @@ try {
   // Sortie (dossier déjà trié : « Lieux et sorties » validée mène à la sélection ; on passe à la création de la sortie).
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.locator('.page-selection').waitFor();
-  await page.locator('.bandeau .etape', { hasText: /^.?12Sortie$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).waitFor({ timeout: 120_000 });
   debut = performance.now();
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
@@ -217,7 +222,7 @@ try {
   noter(`mémoire JavaScript : ${(memoire / 2 ** 20).toFixed(0)} Mo`);
 
   // Phase 2 : analyse locale, rafales, sélection, album.
-  await page.locator('.bandeau .etape', { hasText: /^.?4Doublons$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Doublons$/ }).click();
   debut = performance.now();
   // Rafales repérées toutes seules à l'ouverture (l'analyse locale a été faite à l'inventaire).
   await page.locator('.apercu-lots > summary').waitFor({ timeout: 3_600_000 });
@@ -232,7 +237,7 @@ try {
     noter(`doublons écartés en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
   }
 
-  await page.locator('.bandeau .etape', { hasText: /^.?9Sélection$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
   debut = performance.now();
   await page.waitForFunction(() => document.querySelectorAll('.page-selection .tuile img').length >= 20, null, { timeout: 120_000 });
   noter(`sélection : toutes les photos affichées, 20 miniatures en ${duree(debut)}`);
@@ -251,13 +256,13 @@ try {
   noter(`piles calculées en ${duree(debut)} : ${await page.locator('.badge-pile:not(.dans-pile)').count()} piles visibles`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_selection.png') });
 
-  await page.locator('.bandeau .etape', { hasText: /^.?10Album$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Album$/ }).click();
   debut = performance.now();
   await page.locator('.section-album').first().waitFor({ timeout: 120_000 });
   noter(`aperçu de l’album en ${duree(debut)} : ${await page.locator('.onglets .discret').innerText()}`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_album.png') });
 
-  await page.locator('.bandeau .etape', { hasText: /^.?11Sortie$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).waitFor({ timeout: 120_000 });
   noter(`aperçu de la sortie : ${(await page.locator('.encart').first().innerText()).replace(/\s+/g, ' ')}`);
   debut = performance.now();

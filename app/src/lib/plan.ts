@@ -21,13 +21,20 @@ export interface DossierPlan {
   parent: string | null;
   /** Sous-dossier de la source, créé à la main, ou proposé par le tri par lieux (étape « Tri automatique »). */
   origine: 'source' | 'cree' | 'tri';
-  /** Sous-dossier de la source (étape 2) : à trier, gardé tel quel, ou gardé hors de l'album. */
+  /** Sous-dossier de la source (étape « Dossiers ») : à trier, gardé et nettoyé, ou laissé tel quel. */
   traitement?: TraitementDossier;
   /** Comment le tri par lieux a formé ce dossier (étape « Tri automatique »). */
   tri?: InfoTri;
 }
 
-export type TraitementDossier = 'trier' | 'garder' | 'ignorer';
+/**
+ * Que faire d'un sous-dossier de la source (étape « Dossiers », D61) :
+ * - `trier` : ses photos rejoignent le tri par lieux et sorties ;
+ * - `nettoyer` : le dossier garde sa place, mais ses floues et ses doublons sont proposés ;
+ * - `garder` : « Ne pas toucher », recopié tel quel (seules les copies exactes en sont retirées) ;
+ * - `ignorer` : ancienne valeur (« hors de l'album »), traitée comme `garder`.
+ */
+export type TraitementDossier = 'trier' | 'nettoyer' | 'garder' | 'ignorer';
 
 export interface InfoTri {
   origine: 'lieu_connu' | 'gps' | 'voyage' | 'etape' | 'sans_lieu';
@@ -520,25 +527,31 @@ export function combiner(libelle: string, ...modifications: (Modification | null
   };
 }
 
-/** Traitement effectif d'un dossier : le sien, ou celui du parent le plus proche qui en a un. */
+/** Traitement effectif d'un dossier : le sien, ou celui du parent le plus proche qui en a un (`ignorer` vaut `garder`). */
 export function traitementDe(plan: Plan, dossier: string): TraitementDossier | undefined {
-  for (let d = plan.dossiers.get(dossier); d; d = d.parent ? plan.dossiers.get(d.parent) : undefined) if (d.traitement) return d.traitement;
+  for (let d = plan.dossiers.get(dossier); d; d = d.parent ? plan.dossiers.get(d.parent) : undefined) if (d.traitement) return d.traitement === 'ignorer' ? 'garder' : d.traitement;
   return undefined;
 }
 
-/** Photo d'un dossier gardé hors de l'album (étape 2) : ni doublons, ni sélection. */
-export function horsAlbum(plan: Plan, f: FichierPlan): boolean {
-  return traitementDe(plan, f.dossier) === 'ignorer';
+/** Dossier qui garde sa place (« Garder, nettoyer » ou « Ne pas toucher ») : le tri automatique ne le défait pas. */
+export function gardeSaPlace(plan: Plan, dossier: string): boolean {
+  const tr = traitementDe(plan, dossier);
+  return tr === 'nettoyer' || tr === 'garder';
 }
 
-/** Traitement d'un sous-dossier de la source (étape 2) : à trier, gardé tel quel, ou gardé hors de l'album. */
+/** Dossier « Ne pas toucher » : ni floues, ni doublons (seules les copies exactes peuvent en être retirées). */
+export function nePasToucher(plan: Plan, dossier: string): boolean {
+  return traitementDe(plan, dossier) === 'garder';
+}
+
+/** Traitement d'un sous-dossier de la source (étape « Dossiers ») : à trier, gardé et nettoyé, ou laissé tel quel. */
 export function changerTraitement(plan: Plan, ids: string[], traitement: TraitementDossier): Modification | null {
   const tx = new Transaction(plan);
   for (const id of ids) {
     const d = plan.dossiers.get(id);
     if (d && d.parent !== null && d.traitement !== traitement) tx.dossier({ ...d, traitement });
   }
-  const libelles = { trier: aTraduire('À trier'), garder: aTraduire('Garder tel quel'), ignorer: aTraduire('Garder hors de l’album') } as const;
+  const libelles = { trier: aTraduire('À trier'), nettoyer: aTraduire('Garder et nettoyer'), garder: aTraduire('Ne pas toucher'), ignorer: aTraduire('Ne pas toucher') } as const;
   return tx.terminer(`${t(libelles[traitement])} (${pluriel(ids.length, 'dossier')})`);
 }
 

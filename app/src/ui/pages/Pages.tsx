@@ -318,7 +318,7 @@ export function PageAide() {
       <ul>
         <li>
           <strong>{t`Trier un nouveau dossier`}</strong>
-          {t` (en vrac) : les douze étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers déjà nommés sont gardés tels quels, sauf si vous choisissez de les trier aussi (étape ${ETAPE.inventaire}).`}
+          {t` (en vrac) : les treize étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers déjà nommés gardent leur place, sauf si vous choisissez de les trier aussi (étape ${ETAPE.dossiers}).`}
         </li>
         <li>
           <strong>{t`Ouvrir un dossier déjà trié`}</strong>
@@ -334,7 +334,11 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.inventaire)}</strong>
-          {t` : chiffres, sous-dossiers (trier ou garder tels quels), captures d’écran, doublons exacts (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), appareils et décalage d’horloge.`}
+          {t` : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies) se fait pendant ce temps.`}
+        </li>
+        <li>
+          <strong>{nomEtape(ETAPE.dossiers)}</strong>
+          {t` : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.floues)}</strong>
@@ -342,11 +346,11 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.doublons)}</strong>
-          {t` : rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un dossier en vrac, les photos sont comparées journée par journée.`}
+          {t` : copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite : vous choisissez celle à garder), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un dossier en vrac, les photos sont comparées journée par journée.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
-          {t` : enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.`}
+          {t` : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.lieux)}</strong>
