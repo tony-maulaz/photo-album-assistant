@@ -4,7 +4,7 @@ import { useState } from 'preact/hooks';
 import { choisirDossier } from '../../navigateur/dossiers';
 import { ETAPE, type Projet } from '../../navigateur/projet';
 import { cleApi } from '../../navigateur/cle';
-import { t } from '../../lib/langue';
+import { langue, LANGUES, t, type Langue } from '../../lib/langue';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { RappelDossierDepart } from '../composants/DossierDepart';
@@ -53,6 +53,8 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
   // Le préréglage du tri se choisit à l'étape « Tri automatique » ; « Année » par défaut pour un dossier en vrac.
   const prereglage = mode === 'vrac' ? 'annee' : '';
   const [budget, setBudget] = useState(reglages.value.budgetDefautChf);
+  // Langue de ce qui est écrit dans la sortie (D60) : celle de l'interface, sauf choix contraire.
+  const [langueProjet, setLangueProjet] = useState<Langue>(langue());
   const [erreur, setErreur] = useState<string | null>(null);
   const [encours, setEncours] = useState(false);
 
@@ -94,7 +96,7 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         ))
       )
         return;
-      await creerProjet({ source, sortie, nom, mode, contexte, prereglage, budget });
+      await creerProjet({ source, sortie, nom, mode, contexte, prereglage, budget, langue: langueProjet });
     } catch (err) {
       notifier('erreur', texteErreur(err));
     } finally {
@@ -147,6 +149,17 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
             <input id="budget" type="number" min="0" step="5" class="court" value={budget} onInput={(e) => setBudget(Number(e.currentTarget.value) || 0)} />
           </label>
           <p class="discret">{t`Les aides IA s’arrêtent avant de dépasser ce montant. Il se change aussi plus tard, à l’étape Projet.`}</p>
+          <label for="langue-projet">
+            {t`Langue des dossiers et des textes écrits`}{' '}
+            <select id="langue-projet" value={langueProjet} onChange={(e) => setLangueProjet(e.currentTarget.value as Langue)}>
+              {(Object.entries(LANGUES) as [Langue, string][]).map(([code, nomLangue]) => (
+                <option key={code} value={code}>
+                  {nomLangue}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p class="discret">{t`Noms des dossiers créés (« _mis_de_cote » ou « _set_aside »…), rapport, propositions de l’IA et noms de lieux. Fixée à la création : changer la langue de l’interface ensuite ne renomme rien.`}</p>
         </details>
 
         <p class="discret">
@@ -191,6 +204,8 @@ export function PageEtape1() {
         <textarea id="contexte" rows={3} value={p.contexte} onChange={(e) => changer({ contexte: e.currentTarget.value })} />
         <label for="budget">{t`Budget IA du projet (CHF)`}</label>
         <input id="budget" type="number" min="0" step="5" class="court" value={p.budget_chf} onChange={(e) => changer({ budget_chf: Number(e.currentTarget.value) || 0 })} />
+        <label>{t`Langue des dossiers et des textes écrits`}</label>
+        <span>{t`${LANGUES[p.langue ?? 'fr']} (choisie à la création du projet)`}</span>
       </div>
       <BarreValidation resume={t`Créé le ${new Date(p.cree_le).toLocaleDateString('fr-CH')}`} valider={() => allerEtape('inventaire')} libelleValider={t`Continuer`} />
     </div>

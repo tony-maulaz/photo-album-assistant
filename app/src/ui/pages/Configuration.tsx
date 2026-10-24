@@ -16,7 +16,7 @@ import { TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { chargerEvenements, configuration, notifier, reglages, session, texteErreur } from '../etat';
 import { chargerConfiguration } from '../projets';
-import { t } from '../../lib/langue';
+import { langue, t } from '../../lib/langue';
 
 type Onglet = 'lieux' | 'appareils' | 'calendriers' | 'prereglages';
 
@@ -160,7 +160,7 @@ export function PageConfiguration() {
   const chercherAdresse = async () => {
     if (!adresse.trim()) return;
     try {
-      setResultats((await rechercher(adresse.trim(), 'fr', reglages.value.emailNominatim || undefined)).donnees);
+      setResultats((await rechercher(adresse.trim(), langue(), reglages.value.emailNominatim || undefined)).donnees);
     } catch (err) {
       notifier('erreur', t`Recherche impossible : ${texteErreur(err)}`);
     }

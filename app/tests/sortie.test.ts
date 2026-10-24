@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { creerDossier, deplacerFichiers, mettreDeCote, renommerDossier, type Plan } from '../src/lib/plan';
 import { genererRapport, phraseBilan } from '../src/lib/rapport';
-import { bilan, cheminSortie, cleChemin, etatVide, octetsACopier, planifierSynchro, type ActionSynchro, type EtatSortie, type ListingSortie } from '../src/lib/sortie';
+import { bilan, cheminSortie, cleChemin, definirLangueSortie, etatVide, octetsACopier, planifierSynchro, type ActionSynchro, type EtatSortie, type ListingSortie } from '../src/lib/sortie';
 import { planInitial, type ElementSource } from '../src/lib/source';
 
 function element(chemin: string, taille: number): ElementSource {
@@ -44,6 +44,15 @@ describe('chemins dans la sortie', () => {
     expect(cheminSortie(plan, plan.fichiers.get('Paleo/IMG_1.jpg')!)).toBe('Photos/Paleo/IMG_1.jpg');
     expect(cheminSortie(plan, plan.fichiers.get('_doublons/Paleo/IMG_9.jpg')!)).toBe('_mis_de_cote/doublons/_doublons/Paleo/IMG_9.jpg');
     expect(cheminSortie(plan, plan.fichiers.get('notes/liste.txt')!)).toBe('_autres_fichiers/notes/liste.txt');
+    // Projet en anglais (D60) : mêmes chemins, noms des dossiers techniques en anglais.
+    definirLangueSortie('en');
+    try {
+      expect(cheminSortie(plan, plan.fichiers.get('Paleo/IMG_3.jpg')!)).toBe('_set_aside/duplicates/Paleo/IMG_3.jpg');
+      expect(cheminSortie(plan, plan.fichiers.get('notes/liste.txt')!)).toBe('_other_files/notes/liste.txt');
+      expect(cheminSortie(plan, plan.fichiers.get('Paleo/IMG_1.jpg')!)).toBe('Photos/Paleo/IMG_1.jpg');
+    } finally {
+      definirLangueSortie('fr');
+    }
   });
 });
 

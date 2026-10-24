@@ -20,7 +20,11 @@ export function cleGeocodage(lat: number, lon: number): string {
 export class Geocodage {
   private cache: Record<string, Entree> = {};
   private adresses: Record<string, string | null> = {};
-  constructor(private etat: EtatProjet) {}
+  /** `langue` : celle du projet (D60), pour les noms de lieux et les adresses. */
+  constructor(
+    private etat: EtatProjet,
+    private langue: string,
+  ) {}
 
   async charger(): Promise<void> {
     this.cache = (await this.etat.lire<Record<string, Entree>>(FICHIER).catch(() => undefined)) ?? {};
@@ -34,7 +38,7 @@ export class Geocodage {
       const cle = cleGeocodage(p.lat, p.lon);
       if (!(cle in this.adresses)) {
         if (arreter()) throw new DOMException('Géocodage arrêté', 'AbortError');
-        const r = await inverse(Number(p.lat.toFixed(4)), Number(p.lon.toFixed(4)), 'fr', email || undefined, 18);
+        const r = await inverse(Number(p.lat.toFixed(4)), Number(p.lon.toFixed(4)), this.langue, email || undefined, 18);
         this.adresses[cle] = adresseCourte(r.donnees);
         await this.etat.ecrire(FICHIER_ADRESSES, this.adresses);
       }
@@ -61,7 +65,7 @@ export class Geocodage {
       const cle = cleGeocodage(p.lat, p.lon);
       if (!(cle in this.cache)) {
         if (arreter()) throw new DOMException('Géocodage arrêté', 'AbortError');
-        const r = await nomDeLieu(Number(p.lat.toFixed(4)), Number(p.lon.toFixed(4)), email || undefined);
+        const r = await nomDeLieu(Number(p.lat.toFixed(4)), Number(p.lon.toFixed(4)), email || undefined, this.langue);
         this.cache[cle] = { nom: r.nom, precis: r.precis, langue: r.langue };
         await this.etat.ecrire(FICHIER, this.cache);
         progres(++faits, total);

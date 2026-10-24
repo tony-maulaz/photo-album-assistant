@@ -170,12 +170,12 @@ export function periodeHeures(du?: string, au?: string): string {
 // Dossiers à nommer
 // ---------------------------------------------------------------------------
 
-/** Dossiers produits automatiquement (script 01) : Lieu_AAAA-MM-JJ, Lieu_AAAA-MM, suffixes _b/_c, ou Lieu_00. */
-export const MOTIF_AUTO = /_(\d{4}-\d{2}(-\d{2})?)(_[b-z])?$|^Lieu_\d+$/;
+/** Dossiers produits automatiquement (script 01) : Lieu_AAAA-MM-JJ, Lieu_AAAA-MM, suffixes _b/_c, ou Lieu_00 (Place_00 en anglais). */
+export const MOTIF_AUTO = /_(\d{4}-\d{2}(-\d{2})?)(_[b-z])?$|^(Lieu|Place)_\d+$/;
 /** Sous-dossiers nommés uniquement par une date (dans Maison/, Voyage_.../...). */
 export const MOTIF_DATE_SEULE = /^\d{4}-\d{2}(-\d{2})?(_[b-z])?$/;
 /** Dossiers jamais nommés (script 04). */
-export const IGNORES_NOMMAGE = new Set(['_a_supprimer', '_autres', 'Sans_lieu']);
+export const IGNORES_NOMMAGE = new Set(['_a_supprimer', '_autres', 'Sans_lieu', 'No_place']);
 
 export function estNomAutomatique(nom: string): boolean {
   return MOTIF_AUTO.test(nom) || MOTIF_DATE_SEULE.test(nom);

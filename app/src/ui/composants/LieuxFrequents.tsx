@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { nomAscii, nouvelIdLieu } from '../../lib/noms';
+import { nomsSortie } from '../../lib/sortie';
 import { lieuxFrequents } from '../../lib/tri';
 import { configuration, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { dateHeure, nombre, pluriel } from '../format';
@@ -49,7 +50,7 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
 
   const enregistrer = async (lat: number, lon: number, cle: string) => {
     const estDomicile = sansDomicile && domicile === cle;
-    const nom = nomAscii(noms[cle] || (estDomicile ? 'Maison' : '')).replace(/^_+|_+$/g, '');
+    const nom = nomAscii(noms[cle] || (estDomicile ? nomsSortie().maison : '')).replace(/^_+|_+$/g, '');
     if (!nom) {
       notifier('erreur', t`Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).`);
       return;

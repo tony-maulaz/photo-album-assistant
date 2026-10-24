@@ -3,6 +3,7 @@
 // exprès : c'est une photo comme une autre. Celles qui restent à trier sont
 // proposées au rangement dans « Captures_ecran », hors du tri et de l'album.
 
+import { nomsSortie } from '../../lib/sortie';
 import { t } from '../../lib/langue';
 import { rangerCaptures, ressembleACapture } from '../../lib/inventaire';
 import { gardeSaPlace, type FichierPlan } from '../../lib/plan';
@@ -28,7 +29,7 @@ export function Captures() {
       {candidates.length > 0 ? (
         <>
           <p>
-            {t`${pluriel(candidates.length, 'capture d’écran trouvée', 'captures d’écran trouvées')} parmi les photos à trier (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « Captures_ecran », hors du tri et de l’album. Celles qui sont dans un dossier gardé restent à leur place.`}
+            {t`${pluriel(candidates.length, 'capture d’écran trouvée', 'captures d’écran trouvées')} parmi les photos à trier (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « ${nomsSortie().captures} », hors du tri et de l’album. Celles qui sont dans un dossier gardé restent à leur place.`}
           </p>
           <div class="bande-miniatures">
             {candidates.slice(0, 12).map((f) => (
@@ -36,11 +37,11 @@ export function Captures() {
             ))}
           </div>
           <button type="button" onClick={() => appliquer(rangerCaptures(s.plan, candidates.map((f) => f.id)))}>
-            {t`Ranger les ${nombre(candidates.length)} captures dans « Captures_ecran »`}
+            {t`Ranger les ${nombre(candidates.length)} captures dans « ${nomsSortie().captures} »`}
           </button>
         </>
       ) : (
-        <p class="discret">{t`${pluriel(rangees, 'capture rangée', 'captures rangées')} dans « Captures_ecran ».`}</p>
+        <p class="discret">{t`${pluriel(rangees, 'capture rangée', 'captures rangées')} dans « ${nomsSortie().captures} ».`}</p>
       )}
     </section>
   );

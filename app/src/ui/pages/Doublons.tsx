@@ -4,6 +4,7 @@
 // gardée, ses doublons, pourquoi ; rien n'est écarté sans action de
 // l'utilisateur (règle d'or 3).
 
+import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { accepterProposition, ecarterDuGroupe, etatDoublon, gardeeActuelle, garderALaPlace, type Proposition } from '../../lib/doublons';
 import { cheminDossier, combiner, garderAussi, type FichierPlan } from '../../lib/plan';
@@ -287,7 +288,7 @@ export function PageDoublons() {
   const toutAccepter = async () => {
     const aAccepter = visibles.filter((g) => g.p.doublons.some((d) => etatDoublon(fichier(d.id)) === 'propose'));
     const n = aAccepter.reduce((a, g) => a + g.p.doublons.filter((d) => etatDoublon(fichier(d.id)) === 'propose').length, 0);
-    if (!n || !(await confirmer(t`Écarter tous les doublons affichés ?`, t`${pluriel(n, 'photo')} iront dans « _mis_de_cote/doublons » (rien n’est supprimé, Ctrl+Z annule).`, t`Écarter`))) return;
+    if (!n || !(await confirmer(t`Écarter tous les doublons affichés ?`, t`${pluriel(n, 'photo')} iront dans « ${dossierMisDeCote('doublons')} » (rien n’est supprimé, Ctrl+Z annule).`, t`Écarter`))) return;
     appliquer(combiner(t`Écarter ${n} doublons`, ...aAccepter.map((g) => accepterProposition(plan, g.p, gardeeActuelle(g.p, fichier)))));
     notifier('ok', `${pluriel(n, 'doublon écarté', 'doublons écartés')}.`, { libelle: t`Annuler`, faire: annuler });
   };
@@ -298,7 +299,7 @@ export function PageDoublons() {
   return (
     <div class="page large avec-barre page-doublons">
       <TeteEtape numero={ETAPE.doublons} titre={nomEtape(ETAPE.doublons)} cle="doublons">
-        {t`L’application repère les photos en double : copies exactes (la même photo en plusieurs exemplaires), rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote », rien n’est supprimé.`}
+        {t`L’application repère les photos en double : copies exactes (la même photo en plusieurs exemplaires), rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « ${nomsSortie().misDeCote} », rien n’est supprimé.`}
         {s.projet.mode === 'vrac' && t` Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.`}
       </TeteEtape>
 

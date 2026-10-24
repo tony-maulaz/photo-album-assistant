@@ -2,10 +2,10 @@
 // chaque proposition est montrée à côté des dossiers concernés, avec sa
 // raison ; rien n'est fusionné sans « Rattacher » ou « Fusionner ».
 
+import { estNomDeSortie } from '../../lib/sortie';
 import { useMemo } from 'preact/hooks';
 import { estimationConsolidation, groupesDeFreres, lireConsolidation, rapprochementsLocaux, requeteConsolidation, type Consolidation, type DossierInfo, type FusionProposee, type GroupeFreres } from '../../lib/consolidation';
 import { estimationFragments, fragments, lireFragment, requeteFragment, type DecisionFragment, type Fragment } from '../../lib/fragments';
-import { DOSSIER_CAPTURES } from '../../lib/inventaire';
 import { estDossierMois } from '../../lib/tri';
 import { creerDossier, enchainer, fusionnerDossiers, gardeSaPlace, renommerDossier, type Modification, type Plan } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
@@ -24,7 +24,7 @@ export const DUREE_MAX_SORTIE_JOURS = 31;
 
 /** Pourquoi un dossier n'entre pas dans la consolidation (petits dossiers et consolidation), ou `null` s'il y entre. */
 export function raisonExclusion(plan: Plan, d: DossierInfo, exclus: ReadonlySet<string>): string | null {
-  if (d.nom.startsWith('_') || d.nom === DOSSIER_CAPTURES) return aTraduire('dossier technique');
+  if (d.nom.startsWith('_') || estNomDeSortie('captures', d.nom)) return aTraduire('dossier technique');
   if (gardeSaPlace(plan, d.id)) return aTraduire('dossier gardé');
   if (exclus.has(d.id)) return aTraduire('exclu à la main');
   if (estDossierMois(d.nom)) return aTraduire('dossier de mois');

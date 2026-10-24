@@ -1,5 +1,6 @@
 // Étape 2 — Inventaire (SPEC § 6.2, version de la phase 1).
 
+import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { RACINE, resumes } from '../../lib/plan';
 import type { Progression } from '../../navigateur/inventaire';
@@ -15,7 +16,6 @@ import { allerEtape, changerEtape, notifier, session, texteErreur, validerEtape,
 import { duree, jourCourt, nombre, pluriel, taille } from '../format';
 import { construirePlan } from '../projets';
 import { analyseAFaire, analyseEnCours, lancerAnalyseDossier } from '../analyseDossier';
-import { DOSSIER_SANS_DATE } from '../../lib/tri';
 
 const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
   parcours: aTraduire('Parcours des dossiers'),
@@ -36,7 +36,7 @@ function AVerifier() {
   const points = [
     sousDossiers > 0 && t`${pluriel(sousDossiers, 'sous-dossier', 'sous-dossiers')} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.`,
     nbCopies > 0 && t`${pluriel(nbCopies, 'copie exacte', 'copies exactes')} (même photo en plusieurs exemplaires) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » les exemplaires à garder.`,
-    sansDate > 0 && s.projet.mode === 'vrac' && t`${pluriel(sansDate, 'photo sans date', 'photos sans date')} : elles iront dans « ${DOSSIER_SANS_DATE} », à placer à la main.`,
+    sansDate > 0 && s.projet.mode === 'vrac' && t`${pluriel(sansDate, 'photo sans date', 'photos sans date')} : elles iront dans « ${nomsSortie().sansDate} », à placer à la main.`,
   ].filter((x): x is string => !!x);
   return (
     <div class="encart a-verifier">
@@ -272,7 +272,7 @@ export function PageInventaire() {
                 <p class="attention" id="sans-date">
                   {t`${pluriel(incertaines.length, 'photo sans date', 'photos sans date')} : la date du fichier est souvent celle d’une copie, elle n’est donc pas utilisée.`}{' '}
                   {s.projet.mode === 'vrac'
-                    ? t`Le tri automatique les mettra dans « ${DOSSIER_SANS_DATE} », pour que vous les placiez à la main.`
+                    ? t`Le tri automatique les mettra dans « ${nomsSortie().sansDate} », pour que vous les placiez à la main.`
                     : t`Elles restent dans leurs dossiers ; dans l’album, elles se placent à la fin de leur sortie.`}
                 </p>
                 <div class="bande-miniatures">
@@ -292,7 +292,7 @@ export function PageInventaire() {
       <ul>
         {racine.photos + racine.videos > 0 && <li>{t`${pluriel(racine.photos + racine.videos, 'élément')} directement à la racine du dossier (pas dans un sous-dossier).`}</li>}
         {petits.length > 0 && <li>{t`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.`}</li>}
-        {misDeCote.length > 0 && <li>{t`${nombre(misDeCote.length)} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « _mis_de_cote ».`}</li>}
+        {misDeCote.length > 0 && <li>{t`${nombre(misDeCote.length)} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « ${nomsSortie().misDeCote} ».`}</li>}
         {inv.ignores.length > 0 && <li>{t`${pluriel(inv.ignores.length, 'fichier ignoré', 'fichiers ignorés')} : l’état d’un ancien projet (dossier « .album »).`}</li>}
         <li>{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont pas vus : Windows les recrée.`}</li>
       </ul>

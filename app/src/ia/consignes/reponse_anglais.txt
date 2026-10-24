@@ -1,0 +1,1 @@
+Langue des réponses : écris en anglais tout le texte destiné à l'utilisateur (noms de dossiers, titres, introductions, légendes, descriptions, justifications, remarques). Garde exactement tels quels les noms des champs JSON et les valeurs imposées par la consigne (codes, listes de choix, étiquettes).

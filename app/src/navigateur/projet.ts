@@ -1,7 +1,7 @@
 // État du projet dans le dossier de sortie (`.album/`, SPEC § 12) et liste des
 // projets récents de cet ordinateur (IndexedDB).
 
-import { aTraduire, t } from '../lib/langue';
+import { aTraduire, t, type Langue } from '../lib/langue';
 import { DOSSIER_ETAT } from '../lib/sortie';
 import { ecrireCle, lireCle } from './stockage';
 
@@ -106,6 +106,8 @@ export interface Projet {
   contexte: string;
   prereglage: string;
   budget_chf: number;
+  /** Langue de ce que l'application écrit (noms de dossiers, rapport, réponses de l'IA), choisie à la création (D60) ; absente : français. */
+  langue?: Langue;
   /** État des étapes 1 à 13, dans l'ordre de `CODES_ETAPES` (indice 0 = étape 1). */
   etapes: EtatEtape[];
   /** Seuil de netteté retenu à l'étape « Photos floues » (défaut 60). */
@@ -202,7 +204,7 @@ export class EtatProjet {
   }
 }
 
-export function nouveauProjet(nom: string, mode: Projet['mode'], source: Projet['source'], budget: number): Projet {
+export function nouveauProjet(nom: string, mode: Projet['mode'], source: Projet['source'], budget: number, langue: Langue = 'fr'): Projet {
   const maintenant = new Date().toISOString();
   return {
     version: 1,
@@ -215,6 +217,7 @@ export function nouveauProjet(nom: string, mode: Projet['mode'], source: Projet[
     contexte: '',
     prereglage: mode === 'vrac' ? 'annee' : '',
     budget_chf: budget,
+    langue,
     etapes: ETAPES.map((_, i) => (i === 0 ? 'en_cours' : 'a_faire')),
   };
 }

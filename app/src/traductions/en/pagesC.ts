@@ -112,8 +112,8 @@ export const TEXTES: Record<string, string> = {
   'Vers « {0} » (touche {1})': 'To “{0}” (key {1})',
   'Tout désélectionner (Échap)': 'Deselect all (Esc)',
   'Tout désélectionner': 'Deselect all',
-  'Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « _autres_fichiers », avec leur chemin d’origine.':
-    'These files are neither photos nor videos. They will be copied to “_autres_fichiers”, with their original path.',
+  'Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « {0} », avec leur chemin d’origine.':
+    'These files are neither photos nor videos. They will be copied to “{0}”, with their original path.',
   dossier: 'folder',
   dossiers: 'folders',
   ' · {0} mis de côté': ' · {0} set aside',
@@ -205,12 +205,13 @@ export const TEXTES: Record<string, string> = {
   propositions: 'suggestions',
 
   // Floues.tsx
-  '{0} : elles iront dans « _mis_de_cote/floues » (rien n’est supprimé).': '{0}: they will go to “_mis_de_cote/floues” (nothing is deleted).',
+  '{0} : elles iront dans « {1} » (rien n’est supprimé).':
+    '{0}: they will go to “{1}” (nothing is deleted).',
   'photo écartée': 'photo set aside',
   'photos écartées': 'photos set aside',
   'Photos floues': 'Blurry photos',
-  'Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « _mis_de_cote/floues ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.':
-    'The photos are ordered from least sharp to sharpest. Set the tolerance: photos below the threshold will be set aside in “_mis_de_cote/floues”. Keep the ones you like anyway (intended blur, movement), set aside a sharp photo that did not turn out well.',
+  'Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « {0} ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.':
+    'The photos are ordered from least sharp to sharpest. Set the tolerance: photos below the threshold will be set aside in “{0}”. Keep the ones you like anyway (intended blur, movement), set aside a sharp photo that did not turn out well.',
   'il faut mesurer la netteté de chaque photo.': 'the sharpness of each photo has to be measured.',
   'Seuil de netteté : {0} (conseillé : {1})': 'Sharpness threshold: {0} (recommended: {1})',
   'Plus tolérant': 'More tolerant',
@@ -313,7 +314,8 @@ export const TEXTES: Record<string, string> = {
   '{0} vers « {1} ».': '{0} to “{1}”.',
   'élément déplacé': 'item moved',
   'éléments déplacés': 'items moved',
-  '{0} mis de côté (rien n’est supprimé : ils iront dans « _mis_de_cote »).': '{0} set aside (nothing is deleted: they will go to “_mis_de_cote”).',
+  '{0} mis de côté (rien n’est supprimé : ils iront dans « {1} »).':
+    '{0} set aside (nothing is deleted: they will go to “{1}”).',
   '{0} remis dans leur dossier.': '{0} put back in their folder.',
   'Le dossier sera créé dans « {0} » et recevra {1}.': 'The folder will be created in “{0}” and will receive {1}.',
   'Le dossier sera créé dans « {0} ».': 'The folder will be created in “{0}”.',
@@ -335,4 +337,10 @@ export const TEXTES: Record<string, string> = {
   'photo n’a pas pu être lue': 'photo could not be read',
   'photos n’ont pas pu être lues': 'photos could not be read',
   'Analyse interrompue : {0}': 'Analysis interrupted: {0}',
+
+  // Projet.tsx : langue du projet (D60)
+  'Langue des dossiers et des textes écrits': 'Language of the folders and texts written',
+  'Noms des dossiers créés (« _mis_de_cote » ou « _set_aside »…), rapport, propositions de l’IA et noms de lieux. Fixée à la création : changer la langue de l’interface ensuite ne renomme rien.':
+    'Names of the folders created (“_mis_de_cote” or “_set_aside”…), report, AI proposals and place names. Set when the project is created: changing the interface language later renames nothing.',
+  '{0} (choisie à la création du projet)': '{0} (chosen when the project was created)',
 };

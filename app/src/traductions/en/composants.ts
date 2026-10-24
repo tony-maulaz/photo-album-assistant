@@ -23,8 +23,8 @@ export const TEXTES: Record<string, string> = {
   'Coché : un séjour de 4 jours au même endroit donne 4 dossiers, un par jour (pratique pour un voyage). Décoché : les jours qui se suivent au même endroit forment une seule sortie (pratique pour une année).':
     'Ticked: a 4-day stay in the same place gives 4 folders, one per day (handy for a trip). Unticked: consecutive days in the same place form a single outing (handy for a whole year).',
   'Regrouper les voyages': 'Group trips',
-  'Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « Voyage_… », avec une sortie par étape.':
-    'Outings far from home that follow one another without going back home are gathered in a “Voyage_…” folder, with one outing per stage.',
+  'Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « {0}_… », avec une sortie par étape.':
+    'Outings far from home that follow one another without going back home are gathered in a “{0}_…” folder, with one outing per stage.',
   'Sans effet pour l’instant : cochez « C’est notre domicile » sur un lieu ci-dessus, ou indiquez-le dans la Configuration.':
     'No effect for now: tick “This is our home” on a place above, or set it in the Configuration.',
   'Utiliser les lieux connus ({0})': 'Use known places ({0})',
@@ -36,7 +36,8 @@ export const TEXTES: Record<string, string> = {
   'Durée maximale d’une sortie (jours)': 'Maximum length of an outing (days)',
   'Coupe en plusieurs sorties un lieu photographié très souvent, comme la maison.': 'Splits a very often photographed place, such as home, into several outings.',
   'Un dossier par mois': 'One folder per month',
-  'Un dossier par lieu et par mois (Lieu_AAAA-MM), sans chercher les sorties.': 'One folder per place and per month (Place_YYYY-MM), without looking for outings.',
+  'Un dossier par lieu et par mois ({0}_AAAA-MM), sans chercher les sorties.':
+    'One folder per place and per month ({0}_YYYY-MM), without looking for outings.',
   'Un seul dossier par lieu': 'A single folder per place',
   'Toutes les photos d’un lieu ensemble, sans découpage en sorties ni date.': 'All the photos of a place together, not split into outings and without a date.',
   'Voyage au-delà de (km du domicile)': 'Trip beyond (km from home)',
@@ -174,8 +175,10 @@ export const TEXTES: Record<string, string> = {
   'Captures d’écran': 'Screenshots',
   'capture d’écran trouvée': 'screenshot found',
   'captures d’écran trouvées': 'screenshots found',
-  'Ranger les {0} captures dans « Captures_ecran »': 'Put the {0} screenshots in “Captures_ecran”',
-  '{0} dans « Captures_ecran ».': '{0} in “Captures_ecran”.',
+  'Ranger les {0} captures dans « {1} »':
+    'Put the {0} screenshots in “{1}”',
+  '{0} dans « {1} ».':
+    '{0} in “{1}”.',
   'capture rangée': 'screenshot filed',
   'captures rangées': 'screenshots filed',
   racine: 'root',
@@ -277,10 +280,11 @@ export const TEXTES: Record<string, string> = {
     'The {0} photos and videos of “{1}” (with its subfolders) move into “{2}”, then “{3}” disappears. Ctrl+Z undoes.',
   Fusionner: 'Merge',
   '« {0} » fusionné dans « {1} ».': '“{0}” merged into “{1}”.',
-  'Ce qui est écarté va dans « _mis_de_cote » : rien n’est supprimé': 'What is set aside goes to “_mis_de_cote”: nothing is deleted',
+  'Ce qui est écarté va dans « {0} » : rien n’est supprimé':
+    'What is set aside goes to “{0}”: nothing is deleted',
   'Mis de côté': 'Set aside',
-  'Ni photo ni vidéo : copiés dans « _autres_fichiers » avec leur chemin d’origine':
-    'Neither photos nor videos: copied to “_autres_fichiers” with their original path',
+  'Ni photo ni vidéo : copiés dans « {0} » avec leur chemin d’origine':
+    'Neither photos nor videos: copied to “{0}” with their original path',
   'Autres fichiers': 'Other files',
   Dossiers: 'Folders',
   'Tirer pour élargir le panneau (double-clic : largeur d’origine)': 'Drag to widen the panel (double-click: original width)',
@@ -342,16 +346,16 @@ export const TEXTES: Record<string, string> = {
   'rien à décider : aucun sous-dossier': 'nothing to decide: no subfolders',
 
   // Captures.tsx
-  '{0} parmi les photos à trier (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « Captures_ecran », hors du tri et de l’album. Celles qui sont dans un dossier gardé restent à leur place.':
-    '{0} among the photos to sort (file name, screen size, no camera brand). Proposal: put them in “Captures_ecran”, outside the sorting and the album. Those in a kept folder stay where they are.',
+  '{0} parmi les photos à trier (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « {1} », hors du tri et de l’album. Celles qui sont dans un dossier gardé restent à leur place.':
+    '{0} among the photos to sort (file name, screen size, no camera brand). Proposal: put them in “{1}”, outside the sorting and the album. Those in a kept folder stay where they are.',
 
   // CopiesExactes.tsx
   'Copies exactes': 'Exact copies',
   'Gardez au moins un exemplaire de chaque photo.': 'Keep at least one copy of each photo.',
   '{0}.': '{0}.',
   'Cliquer pour garder ou écarter cet exemplaire': 'Click to keep or set aside this copy',
-  'La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « _mis_de_cote/doublons_exacts ».':
-    'The same photo several times (same content, or a reduced copy sent through WhatsApp), whatever the folder. Click a copy to keep it or set it aside; copies set aside go to “_mis_de_cote/doublons_exacts”.',
+  'La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « {0} ».':
+    'The same photo several times (same content, or a reduced copy sent through WhatsApp), whatever the folder. Click a copy to keep it or set it aside; copies set aside go to “{0}”.',
   'copie à écarter': 'copy to set aside',
   'copies à écarter': 'copies to set aside',
   '{0} : toutes gardées (souvent voulu, par exemple un « Best of » fait de copies)': '{0}: all kept (often on purpose, for example a “Best of” made of copies)',

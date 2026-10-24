@@ -2,12 +2,9 @@
 // exécute les actions de `planifierSynchro`, puis fait le bilan.
 
 import type { Plan } from '../lib/plan';
-import { bilan, cleChemin, DOSSIER_ETAT, planifierSynchro, type ActionSynchro, type Bilan, type EtatSortie, type ListingSortie } from '../lib/sortie';
+import { bilan, cleChemin, DOSSIER_ETAT, nomsSortie, planifierSynchro, type ActionSynchro, type Bilan, type EtatSortie, type ListingSortie } from '../lib/sortie';
 import { AccesDossier } from './dossiers';
 import { enParallele } from './workers';
-
-/** Fichier du rapport, écrit à la racine de la sortie (hors bilan). */
-export const NOM_RAPPORT = 'Rapport.html';
 
 /** Tous les fichiers de la sortie, hors `.album/` et rapport. */
 export async function listerSortie(sortie: FileSystemDirectoryHandle): Promise<ListingSortie> {
@@ -18,7 +15,7 @@ export async function listerSortie(sortie: FileSystemDirectoryHandle): Promise<L
       if (h.kind === 'directory') {
         if (!prefixe && nom === DOSSIER_ETAT) continue;
         await parcourir(h as FileSystemDirectoryHandle, chemin);
-      } else if (prefixe || nom !== NOM_RAPPORT) {
+      } else if (prefixe || nom !== nomsSortie().rapport) {
         fichiers.push({ chemin, poignee: h as FileSystemFileHandle });
       }
     }

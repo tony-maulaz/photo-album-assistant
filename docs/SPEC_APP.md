@@ -614,6 +614,7 @@ applique l'orientation EXIF (incident I14) ; photos à l'endroit partout.
 │   ├── album.json               réglages de l'album (ordre, sections, titres, cible, couverture)
 │   ├── aides.json               propositions et remarques des aides IA (noms, étiquettes, textes…)
 │   ├── geocodage.json           cache Nominatim
+│   ├── adresses.json            adresses précises des lieux fréquents
 │   └── journal.jsonl            activité, coûts, alertes
 ├── Photos/                      l'ARCHIVE triée : remplace la source
 │   ├── <sorties>/               photos et vidéos de chaque sortie
@@ -638,6 +639,13 @@ applique l'orientation EXIF (incident I14) ; photos à l'endroit partout.
   remettre une photo.
 - La numérotation de `Album/` garantit l'ordre à l'import. Les légendes sont
   fournies dans `textes_album.md` (copier-coller dans ifolor).
+- **Projet en anglais** (D60) : mêmes emplacements, noms anglais pour ce que
+  l'application crée : `_set_aside/` (`blurry/`, `duplicates/`,
+  `exact_duplicates/`, `other/`), `_other_files/`, `Photos/Screenshots/`,
+  `_no_date/`, `No_place/`, `Trip_…`, `Place_03`, `_unsorted_videos/`,
+  `Album/album_texts.md`, `Album/0000_Cover`, `Report.html`. `Photos/`,
+  `Album/` et `.album/` ne changent pas. La langue est fixée à la création du
+  projet : changer la langue de l'interface ne renomme rien.
 
 ## 13. Exigences non fonctionnelles
 

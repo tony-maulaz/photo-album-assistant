@@ -9,9 +9,8 @@ import { t } from './langue';
 import { estCapture, extension } from './fichiers';
 import { combiner, deplacerFichiers, mettreDeCote, RACINE, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
 import { cleNom } from './noms';
+import { nomsSortie } from './sortie';
 
-/** Dossier des captures d'écran dans l'archive (§ 12). */
-export const DOSSIER_CAPTURES = 'Captures_ecran';
 
 /** La photo ressemble-t-elle à une capture d'écran (nom, dimensions d'écran, pas de marque d'appareil) ? */
 export function ressembleACapture(f: FichierPlan): boolean {
@@ -22,9 +21,11 @@ export function ressembleACapture(f: FichierPlan): boolean {
 export function rangerCaptures(plan: Plan, ids: string[]): Modification | null {
   if (!ids.length) return null;
   const tx = new Transaction(plan);
-  let dossier = [...plan.dossiers.values()].find((d) => d.parent === RACINE && cleNom(d.nom) === cleNom(DOSSIER_CAPTURES));
+  // Dossier des captures d'écran dans l'archive (§ 12), au nom de la langue du projet.
+  const nom = nomsSortie().captures;
+  let dossier = [...plan.dossiers.values()].find((d) => d.parent === RACINE && cleNom(d.nom) === cleNom(nom));
   if (!dossier) {
-    dossier = { id: `c${plan.prochainId++}`, nom: DOSSIER_CAPTURES, parent: RACINE, origine: 'cree' };
+    dossier = { id: `c${plan.prochainId++}`, nom, parent: RACINE, origine: 'cree' };
     tx.dossier(dossier);
   }
   for (const id of ids) {

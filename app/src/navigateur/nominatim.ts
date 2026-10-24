@@ -61,11 +61,14 @@ export interface NomLieu {
   requetes: ReponseNominatim<Adresse>[];
 }
 
-/** Nom de lieu comme le script 01 : français d'abord, anglais si le nom n'est pas en écriture latine (I3). */
-export async function nomDeLieu(lat: number, lon: number, email?: string): Promise<NomLieu> {
+/**
+ * Nom de lieu comme le script 01 : dans la langue du projet d'abord, puis en
+ * anglais si le nom n'est pas en écriture latine (I3).
+ */
+export async function nomDeLieu(lat: number, lon: number, email?: string, langueProjet: string = 'fr'): Promise<NomLieu> {
   const requetes: ReponseNominatim<Adresse>[] = [];
   let large: { nom: string; langue: string } | null = null;
-  for (const langue of ['fr', 'en']) {
+  for (const langue of [...new Set([langueProjet, 'en'])]) {
     const r = await inverse(lat, lon, langue, email);
     requetes.push(r);
     const trouve = r.donnees.address ? nomDepuisAdresse(r.donnees.address) : null;

@@ -21,6 +21,11 @@ const PORT = 5183;
 const BIBLIOTHEQUES = join(homedir(), '.cache/ms-playwright/bibliotheques/racine/usr/lib/x86_64-linux-gnu');
 const env = existsSync(BIBLIOTHEQUES) ? { ...process.env, LD_LIBRARY_PATH: [BIBLIOTHEQUES, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':') } : process.env;
 const CAPTURES = process.env.CAPTURES;
+// PROJET_EN=1 : le projet est créé en anglais (D60) ; interface en français, noms de la sortie et réponses IA en anglais.
+const PROJET_EN = process.env.PROJET_EN === '1';
+const N = PROJET_EN
+  ? { captures: 'Screenshots', copies: '_set_aside/exact_duplicates', rapport: 'Report.html' }
+  : { captures: 'Captures_ecran', copies: '_mis_de_cote/doublons_exacts', rapport: 'Rapport.html' };
 const capturer = async (page, nom) => CAPTURES && page.screenshot({ path: join(CAPTURES, `${nom}.png`) });
 
 let etape = 0;
@@ -59,13 +64,15 @@ try {
     await route.fulfill({ status: 200, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify({ address: { town: nom, country: 'Pays' }, display_name: nom }) });
   });
   // API Claude simulée (aucun appel réseau) : une réponse plausible selon la consigne.
-  const appelsIA = { nommage: 0, fragments: 0, consolidation: 0, monumentsDemandes: 0 };
+  const appelsIA = { nommage: 0, fragments: 0, consolidation: 0, monumentsDemandes: 0, enAnglais: 0, total: 0 };
   const entetes = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
   await contexte.route('https://api.anthropic.com/**', async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: entetes });
     const corps = req.postDataJSON();
     const texte = corps.messages[0].content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+    appelsIA.total++;
+    if (String(corps.system ?? '').includes('écris en anglais')) appelsIA.enAnglais++;
     let reponse = {};
     if (texte.includes('"fusions"')) {
       appelsIA.consolidation++;
@@ -141,6 +148,10 @@ try {
   await choisir.nth(1).click();
   await page.getByText('« selecteur_sortie »').first().waitFor();
   await page.fill('#nom-projet', 'Essai vrac');
+  if (PROJET_EN) {
+    await page.locator('details.avances > summary', { hasText: 'Réglages avancés' }).first().click();
+    await page.selectOption('#langue-projet', 'en');
+  }
   await page.getByRole('button', { name: 'Créer le projet' }).click();
 
   // Étape 2 : inventaire, des informations seulement ; l'analyse des photos se fait toute seule (D56).
@@ -197,7 +208,7 @@ try {
   await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
   await page.getByRole('button', { name: /Ranger les 1 captures/ }).click();
   await page.getByText('1 capture rangée').waitFor();
-  verifier(true, 'capture d’écran rangée dans Captures_ecran, depuis le tri automatique');
+  verifier(true, `capture d’écran rangée dans ${N.captures}, depuis le tri automatique`);
   await page.getByRole('button', { name: 'Calculer l’arborescence' }).click();
   await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 60_000 });
   const resume = await page.locator('.resume-tri').innerText();
@@ -218,7 +229,7 @@ try {
   const noms = await page.locator('.ligne-dossier .nom-dossier').allInnerTexts();
   await capturer(page, 'v3a_lieux');
   verifier(noms.some((n) => n.startsWith('Ko_Samui')) && noms.some((n) => n.startsWith('Annecy')), `dossiers nommés d’après les lieux : ${noms.filter((n) => !['Photos (racine)', 'Mis de côté', 'Autres fichiers'].includes(n)).join(', ')}`);
-  verifier(noms.includes('BESTOF') && noms.includes('janvier') && noms.includes('Captures_ecran'), 'dossiers gardés tels quels et captures conservés');
+  verifier(noms.includes('BESTOF') && noms.includes('janvier') && noms.includes(N.captures), 'dossiers gardés tels quels et captures conservés');
   verifier((await page.locator('.tete-organiser').count()) === 1, 'première visite : l’explication de l’étape est ouverte');
   await page.locator('.replier-entete').click();
   verifier((await page.locator('.tete-organiser').count()) === 0 && (await page.locator('.tete-vue').getByRole('button', { name: /^Aide/ }).count()) === 1, 'repliée, l’explication laisse un bouton « Aide » au bout de la ligne du titre');
@@ -279,8 +290,15 @@ try {
     };
     return (await lister(await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie'), '')).sort();
   });
-  verifier(sortie.includes('Photos/Captures_ecran/Screenshot_20260718-101010.png'), `capture dans Photos/Captures_ecran (${sortie.filter((p) => p.includes('Screenshot')).join(', ')})`);
-  verifier(sortie.includes('_mis_de_cote/doublons_exacts/copie de 0140.jpg'), 'copie exacte dans _mis_de_cote/doublons_exacts');
+  verifier(sortie.includes(`Photos/${N.captures}/Screenshot_20260718-101010.png`), `capture dans Photos/${N.captures} (${sortie.filter((p) => p.includes('Screenshot')).join(', ')})`);
+  verifier(sortie.includes(`${N.copies}/copie de 0140.jpg`), `copie exacte dans ${N.copies}`);
+  const racineSortie = await page.evaluate(async () => {
+    const noms = [];
+    for await (const nom of (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).keys()) noms.push(nom);
+    return noms;
+  });
+  verifier(racineSortie.includes(N.rapport), `rapport écrit : ${N.rapport}`);
+  verifier(PROJET_EN ? appelsIA.enAnglais === appelsIA.total && appelsIA.total > 0 : appelsIA.enAnglais === 0, `réponses de l’IA demandées en anglais : ${appelsIA.enAnglais} appel(s) sur ${appelsIA.total}`);
   verifier(sortie.includes('Photos/BESTOF/0141_best.jpg') && sortie.includes('Photos/janvier/0141_janvier.jpg'), 'dossiers gardés tels quels recopiés à l’identique');
   verifier(sortie.some((p) => /^Photos\/Sortie_Essai_\d+_18\.07\.26\/[^/]+\.jpg$/.test(p)), 'dossiers renommés d’après les noms proposés par l’IA');
 

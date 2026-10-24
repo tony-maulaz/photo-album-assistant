@@ -327,7 +327,8 @@ export const TEXTES: Record<string, string> = {
   'Photos par page': 'Photos per page',
   'Chaque section commence sur une nouvelle page': 'Each section starts on a new page',
   'Un sous-dossier par section dans « Album » (sinon tout dans un seul dossier, numéroté)': 'One subfolder per section in “Album” (otherwise everything in a single numbered folder)',
-  'Couverture : {0} (copiée en tête de « Album » sous le nom « 0000_Couverture »).': 'Cover: {0} (copied at the start of “Album” under the name “0000_Couverture”).',
+  'Couverture : {0} (copiée en tête de « Album » sous le nom « {1} »).':
+    'Cover: {0} (copied at the start of “Album” under the name “{1}”).',
   retirer: 'remove',
   'Aucune photo retenue pour l’album : choisissez-les à l’étape {0}.': 'No photo selected for the album: choose them in step {0}.',
   'Aller à la sélection': 'Go to the selection',

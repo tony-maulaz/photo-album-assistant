@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { appliquerDecalages, DOSSIER_CAPTURES, ecarterDoublonsExacts, rangerCaptures } from '../src/lib/inventaire';
+import { appliquerDecalages, ecarterDoublonsExacts, rangerCaptures } from '../src/lib/inventaire';
+import { definirLangueSortie, nomsSortie } from '../src/lib/sortie';
 import { Historique, planVide, type FichierPlan, type Plan } from '../src/lib/plan';
 
 function plan(): Plan {
@@ -16,10 +17,21 @@ describe('propositions de l’inventaire (étape 2)', () => {
     h.enregistrer(rangerCaptures(p, ['Screenshot_1.png']));
     const f = p.fichiers.get('Screenshot_1.png')!;
     expect(f.capture).toBe(true);
-    expect(p.dossiers.get(f.dossier)!.nom).toBe(DOSSIER_CAPTURES);
+    expect(p.dossiers.get(f.dossier)!.nom).toBe(nomsSortie().captures);
     h.annuler(p);
     expect(p.fichiers.get('Screenshot_1.png')!.capture).toBeUndefined();
-    expect([...p.dossiers.values()].some((d) => d.nom === DOSSIER_CAPTURES)).toBe(false);
+    expect([...p.dossiers.values()].some((d) => d.nom === nomsSortie().captures)).toBe(false);
+  });
+
+  it('dans un projet en anglais, les captures vont dans « Screenshots » (D60)', () => {
+    definirLangueSortie('en');
+    try {
+      const p = plan();
+      rangerCaptures(p, ['Screenshot_1.png']);
+      expect(p.dossiers.get(p.fichiers.get('Screenshot_1.png')!.dossier)!.nom).toBe('Screenshots');
+    } finally {
+      definirLangueSortie('fr');
+    }
   });
 
   it('met de côté les copies exactes que l’utilisateur n’a pas gardées', () => {

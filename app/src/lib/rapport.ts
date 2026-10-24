@@ -3,7 +3,7 @@
 import { nombre, pluriel } from '../ui/format';
 import { aTraduire, langue, t } from './langue';
 import { cheminDossier, resumes, type Plan } from './plan';
-import type { Bilan } from './sortie';
+import { dossierMisDeCote, nomsSortie, type Bilan } from './sortie';
 
 /** Raison de mise de côté : [singulier, pluriel]. */
 const RAISONS: Record<string, [string, string]> = {
@@ -114,7 +114,7 @@ ${lignesDossiers}
 ${
   album && album.photos
     ? `<h2>${t`Album`}</h2>
-<p>${t`${pluriel(album.photos, 'photo')} dans ${code('Album/')}, numérotées dans l’ordre de l’album (${pluriel(album.sections, 'section')}, environ ${pluriel(album.pages, 'page')}) : importez-les dans ifolor dans cet ordre.`} ${t`Titres, introductions et légendes : ${code('Album/textes_album.md')}.`}${
+<p>${t`${pluriel(album.photos, 'photo')} dans ${code('Album/')}, numérotées dans l’ordre de l’album (${pluriel(album.sections, 'section')}, environ ${pluriel(album.pages, 'page')}) : importez-les dans ifolor dans cet ordre.`} ${t`Titres, introductions et légendes : ${code(`Album/${nomsSortie().textesAlbum}`)}.`}${
         album.manquantes
           ? ` <strong class="echec">${
               album.manquantes > 1
@@ -129,9 +129,9 @@ ${
 <h2>${t`Mis de côté et autres fichiers`}</h2>
 <ul>
 ${Object.entries(b.categories.misDeCote)
-  .map(([r, n]) => `<li>${t`${raison(r, n)}, dans ${code(`_mis_de_cote/${echapper(r)}/`)}`}</li>`)
+  .map(([r, n]) => `<li>${t`${raison(r, n)}, dans ${code(`${echapper(dossierMisDeCote(r))}/`)}`}</li>`)
   .join('\n')}
-<li>${t`${pluriel(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans ${code('_autres_fichiers/')} avec leur chemin d’origine`}</li>
+<li>${t`${pluriel(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans ${code(`${nomsSortie().autres}/`)} avec leur chemin d’origine`}</li>
 </ul>
 ${liste(t`Autres fichiers`, autres)}
 

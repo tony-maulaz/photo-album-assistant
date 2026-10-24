@@ -1,6 +1,7 @@
 // Panneau des dossiers (SPEC § 5.3) : arborescence avec nombres et dates,
 // dépôt des photos glissées, fusion, renommage, création.
 
+import { estNomDeSortie, nomsSortie } from '../../lib/sortie';
 import { signal } from '@preact/signals';
 import { Fragment } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
@@ -118,7 +119,7 @@ export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<
     const x = r.get(d.id)!;
     const direct = x.photos + x.videos;
     if (direct > SEUIL_GRAND) ajouter(d.id, [aTraduire('grand'), t`Très grand dossier : plus de ${SEUIL_GRAND} photos, peut-être plusieurs sorties`]);
-    if (d.nom === 'Sans_lieu' || /^Lieu_\d+/.test(d.nom)) ajouter(d.id, [aTraduire('lieu ?'), t`Lieu inconnu : photos sans GPS ou lieu sans nom`]);
+    if (estNomDeSortie('sansLieu', d.nom) || /^(Lieu|Place)_\d+/.test(d.nom)) ajouter(d.id, [aTraduire('lieu ?'), t`Lieu inconnu : photos sans GPS ou lieu sans nom`]);
     if (sansDate.get(d.id)) ajouter(d.id, [aTraduire('sans date'), t`${sansDate.get(d.id)} photo(s) sans autre date que celle du fichier`]);
     if ((parNom.get(cleNom(d.nom))?.length ?? 0) > 1) ajouter(d.id, [aTraduire('nom en double'), t`Un autre dossier porte le même nom`]);
     if (d.traitement === 'nettoyer') ajouter(d.id, [aTraduire('gardé'), t`Sous-dossier de la source gardé à sa place ; ses floues et ses doublons sont proposés`]);
@@ -383,14 +384,14 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
           class={`ligne-dossier speciale${vue.value === VUE_MIS_DE_COTE ? ' actif' : ''}${deCote.survol ? ' cible' : ''}`}
           {...deCote.props}
           onClick={() => choisirVue(VUE_MIS_DE_COTE)}
-          title={t`Ce qui est écarté va dans « _mis_de_cote » : rien n’est supprimé`}
+          title={t`Ce qui est écarté va dans « ${nomsSortie().misDeCote} » : rien n’est supprimé`}
         >
           <span class="nom-dossier">{t`Mis de côté`}</span>
           <span class="nombre-dossier">{nombre(nbMisDeCote)}</span>
         </div>
       </li>
       <li>
-        <div class={`ligne-dossier speciale${vue.value === VUE_AUTRES ? ' actif' : ''}`} onClick={() => choisirVue(VUE_AUTRES)} title={t`Ni photo ni vidéo : copiés dans « _autres_fichiers » avec leur chemin d’origine`}>
+        <div class={`ligne-dossier speciale${vue.value === VUE_AUTRES ? ' actif' : ''}`} onClick={() => choisirVue(VUE_AUTRES)} title={t`Ni photo ni vidéo : copiés dans « ${nomsSortie().autres} » avec leur chemin d’origine`}>
           <span class="nom-dossier">{t`Autres fichiers`}</span>
           <span class="nombre-dossier">{nombre(nbAutres)}</span>
         </div>

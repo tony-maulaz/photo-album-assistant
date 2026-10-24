@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { ordreAlbum, paginer, photosAlbum, sections, type ActionAlbum } from '../../lib/album';
 import { resumes } from '../../lib/plan';
 import { genererRapport, phraseBilan } from '../../lib/rapport';
-import { octetsACopier, planifierSynchro, type ActionSynchro, type EtatSortie } from '../../lib/sortie';
+import { type ActionSynchro, type EtatSortie, langueDeLaSortie, nomsSortie, octetsACopier, planifierSynchro } from '../../lib/sortie';
 import { actionsAlbum, synchroniserAlbum, titreDossier, type ResultatAlbum } from '../../navigateur/album';
-import { listerSortie, NOM_RAPPORT, synchroniser, type ProgressionSynchro, type ResultatSynchro } from '../../navigateur/synchro';
+import { listerSortie, synchroniser, type ProgressionSynchro, type ResultatSynchro } from '../../navigateur/synchro';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
-import { t } from '../../lib/langue';
+import { avecLangue, t } from '../../lib/langue';
 import { duree, nombre, pluriel, taille } from '../format';
 
 interface Apercu {
@@ -110,8 +110,9 @@ export function PageSortie() {
       const ordre = ordreAlbum(photosAlbum(s.plan), s.album.ordre);
       const secs = sections(ordre, (d) => titreDossier(s.plan, d), s.album);
       const album = { photos: ordre.length, sections: secs.length, pages: paginer(ordre, secs, s.album).length, manquantes: ra.conflits.length + ra.erreurs.length };
-      const html = genererRapport({ projet: s.projet.nom, source: s.source.racine.name, sortie: s.sortie.racine.name, date: new Date(), album }, s.plan, r.bilan);
-      await s.etat.ecrireTexte(s.sortie.racine, NOM_RAPPORT, html);
+      // Le rapport est écrit dans la sortie : dans la langue du projet (D60).
+      const html = avecLangue(langueDeLaSortie(), () => genererRapport({ projet: s.projet.nom, source: s.source.racine.name, sortie: s.sortie.racine.name, date: new Date(), album }, s.plan, r.bilan));
+      await s.etat.ecrireTexte(s.sortie.racine, nomsSortie().rapport, html);
       const lecture = configuration.value?.lecture;
       if (lecture?.config) await s.etat.ecrire('config_utilisee.json', lecture.config);
       setRapport(html);
@@ -190,18 +191,18 @@ export function PageSortie() {
             <td>Album/</td>
             <td>
               {albumPhotos
-                ? t`${pluriel(albumPhotos, 'photo')} de l’album, numérotées dans l’ordre pour ifolor, et les textes (textes_album.md)`
+                ? t`${pluriel(albumPhotos, 'photo')} de l’album, numérotées dans l’ordre pour ifolor, et les textes (${nomsSortie().textesAlbum})`
                 : t`rien : aucune photo retenue à l’étape ${ETAPE.selection}`}
             </td>
             <td class="n">{albumPhotos ? taille(albumOctets) : ''}</td>
           </tr>
           <tr>
-            <td>_mis_de_cote/</td>
+            <td>{nomsSortie().misDeCote}/</td>
             <td>{t`${pluriel(deCote.n, 'élément')} écartés (rien n’est supprimé)`}</td>
             <td class="n">{taille(deCote.octets)}</td>
           </tr>
           <tr>
-            <td>_autres_fichiers/</td>
+            <td>{nomsSortie().autres}/</td>
             <td>
               {autres.n > 1
                 ? t`${pluriel(autres.n, 'fichier')} ni photo ni vidéo, avec leur chemin d’origine`
@@ -210,7 +211,7 @@ export function PageSortie() {
             <td class="n">{taille(autres.octets)}</td>
           </tr>
           <tr>
-            <td>Rapport.html</td>
+            <td>{nomsSortie().rapport}</td>
             <td>{t`le bilan, lisible dans un navigateur`}</td>
             <td class="n" />
           </tr>

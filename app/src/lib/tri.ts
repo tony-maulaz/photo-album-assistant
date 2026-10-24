@@ -8,6 +8,7 @@ import type { LieuConnu } from './config';
 import { t } from './langue';
 import { cleNom, nomAscii, nomLibre } from './noms';
 import { combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type InfoTri, type Modification, type Plan } from './plan';
+import { nomsSortie } from './sortie';
 
 /** Options du script 01 (SPEC § 10). */
 export interface OptionsTri {
@@ -98,7 +99,7 @@ export function distanceM(lat1: number, lon1: number, lat2: number, lon2: number
 
 /** `sanitize` du script 01 : `nomAscii`, ou « Lieu_inconnu » s'il ne reste rien. */
 export function sanitize(nom: string): string {
-  return nomAscii(nom) || 'Lieu_inconnu';
+  return nomAscii(nom) || nomsSortie().lieuInconnu;
 }
 
 /** Noms générés par les appareils et applications : ils ne décrivent rien (script 01). */
@@ -181,9 +182,13 @@ export function nomDominant(nomsFichiers: string[]): string | null {
   return meilleur?.[0] ?? null;
 }
 
-const MOIS = new Set(['janvier', 'fevrier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'août', 'septembre', 'octobre', 'novembre', 'decembre', 'décembre']);
+/** Noms de mois, en français et en anglais (dossiers d'un utilisateur anglophone, D60). */
+const MOIS = new Set([
+  ...['janvier', 'fevrier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'août', 'septembre', 'octobre', 'novembre', 'decembre', 'décembre'],
+  ...['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'],
+]);
 
-/** Dossier de mois (« 01_janvier », « 2025-01 janvier ») ou nom listé dans `extra`. */
+/** Dossier de mois (« 01_janvier », « 2025-01 janvier », « 03 March ») ou nom listé dans `extra`. */
 export function estDossierMois(nom: string, extra: string[] = []): boolean {
   const n = nom.trim().toLowerCase();
   if (extra.some((x) => x.trim().toLowerCase() === n)) return true;
@@ -415,7 +420,7 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
   const destination = new Map<string, { chemin: string[]; info: InfoTri; infoParent?: InfoTri }>();
   const nomGroupe = (index: number) => {
     const n = noms.get(index);
-    return n ? sanitize(n) : `Lieu_${deux(index)}`;
+    return n ? sanitize(n) : `${nomsSortie().lieu}_${deux(index)}`;
   };
   const infoGroupe = (index: number, origine: InfoTri['origine'] = 'gps'): InfoTri => ({ origine, lieu: nomGroupe(index), lat: g.groupes[index].lat, lon: g.groupes[index].lon });
 
@@ -531,7 +536,7 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
         if (n > max) [principal, max] = [nom, n];
       }
       const suffixe = suffixeDate([voyage[0].photos[0], voyage.at(-1)!.photos.at(-1)!]);
-      const parent = nomUnique(`Voyage_${principal}_${suffixe}`, parents);
+      const parent = nomUnique(`${nomsSortie().voyage}_${principal}_${suffixe}`, parents);
       const infoParent: InfoTri = { origine: 'voyage', lieu: principal };
       for (const ev of voyage) {
         for (const p of ev.photos) destination.set(p.id, { chemin: [parent, ev.nom], info: infoGroupe(ev.index, 'etape'), infoParent });
@@ -542,7 +547,7 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
   // Regroupe par chemin, dans l'ordre des photos ; le reste va dans Sans_lieu.
   const dossiers = new Map<string, DossierPropose>();
   for (const p of g.photos) {
-    const d = destination.get(p.id) ?? { chemin: ['Sans_lieu'], info: { origine: 'sans_lieu' as const } };
+    const d = destination.get(p.id) ?? { chemin: [nomsSortie().sansLieu], info: { origine: 'sans_lieu' as const } };
     const cle = d.chemin.join('/');
     const x = dossiers.get(cle) ?? { chemin: d.chemin, photos: [], info: d.info, ...(d.infoParent ? { infoParent: d.infoParent } : {}) };
     x.photos.push(p.id);
@@ -658,12 +663,9 @@ export function rangerVideos(dossiers: DossierPropose[], datesPhotos: Map<string
       nonClassees.set(mois, [...(nonClassees.get(mois) ?? []), v.id]);
     }
   }
-  for (const [mois, ids] of [...nonClassees].sort()) resultat.push({ chemin: ['_videos_non_classees', mois], photos: ids, info: { origine: 'sans_lieu' } });
+  for (const [mois, ids] of [...nonClassees].sort()) resultat.push({ chemin: [nomsSortie().videosNonClassees, mois], photos: ids, info: { origine: 'sans_lieu' } });
   return resultat;
 }
-
-/** Dossier des photos et vidéos sans vraie date (date du fichier seulement) : à placer à la main. */
-export const DOSSIER_SANS_DATE = '_sans_date';
 
 /**
  * Photos et vidéos sans date ni dans les données de l'appareil ni dans le nom
@@ -677,7 +679,7 @@ export function separerSansDate<T extends { id: string; origineDate?: string }>(
 
 /** Ajoute le dossier `_sans_date` aux dossiers proposés, s'il y a lieu. */
 export function avecSansDate(dossiers: DossierPropose[], sansDate: string[]): DossierPropose[] {
-  return sansDate.length ? [...dossiers, { chemin: [DOSSIER_SANS_DATE], photos: [...sansDate], info: { origine: 'sans_lieu' } }] : dossiers;
+  return sansDate.length ? [...dossiers, { chemin: [nomsSortie().sansDate], photos: [...sansDate], info: { origine: 'sans_lieu' } }] : dossiers;
 }
 
 export interface LieuFrequent {

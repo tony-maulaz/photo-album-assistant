@@ -64,6 +64,7 @@ describe('briques du script 01', () => {
   it('dossiers de mois', () => {
     expect(estDossierMois('01_janvier')).toBe(true);
     expect(estDossierMois('2025-08 Août')).toBe(true);
+    expect(estDossierMois('03 March')).toBe(true);
     expect(estDossierMois('Vacances')).toBe(false);
     expect(estDossierMois('Vacances', ['vacances'])).toBe(true);
   });
@@ -336,7 +337,8 @@ describe('suggestion de lieux connus (§ 6.4)', () => {
 
 describe('photos sans date (date du fichier seulement)', () => {
   it('ne sont pas rangées d’après la date du fichier : elles vont dans « _sans_date »', async () => {
-    const { separerSansDate, avecSansDate, DOSSIER_SANS_DATE } = await import('../src/lib/tri');
+    const { separerSansDate, avecSansDate } = await import('../src/lib/tri');
+    const { nomsSortie } = await import('../src/lib/sortie');
     const f = [
       { id: 'a', origineDate: 'exif' },
       { id: 'b', origineDate: 'fichier' },
@@ -345,7 +347,7 @@ describe('photos sans date (date du fichier seulement)', () => {
     const { datees, sansDate } = separerSansDate(f);
     expect(datees.map((x) => x.id)).toEqual(['a', 'c']);
     expect(sansDate.map((x) => x.id)).toEqual(['b']);
-    expect(avecSansDate([], ['b'])).toEqual([{ chemin: [DOSSIER_SANS_DATE], photos: ['b'], info: { origine: 'sans_lieu' } }]);
+    expect(avecSansDate([], ['b'])).toEqual([{ chemin: [nomsSortie().sansDate], photos: ['b'], info: { origine: 'sans_lieu' } }]);
     expect(avecSansDate([], [])).toEqual([]);
   });
 });

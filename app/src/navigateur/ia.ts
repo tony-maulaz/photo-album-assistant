@@ -4,6 +4,7 @@
 // simultanés au plus. Les réponses sont réparées puis rendues telles quelles :
 // la validation de structure revient à l'appelant (règle d'or 6).
 
+import consigneAnglais from '../ia/consignes/reponse_anglais.txt?raw';
 import Anthropic from '@anthropic-ai/sdk';
 import { extraireJson } from '../lib/doublons';
 import { langue, t } from '../lib/langue';
@@ -193,7 +194,8 @@ export class ServiceIA {
           {
             model: a.modele,
             max_tokens: a.maxTokens ?? 16000,
-            system: a.systeme,
+            // Projet en anglais (D60) : les consignes restent celles calibrées, une ligne demande des réponses en anglais.
+            system: this.projet.langue === 'en' ? `${a.systeme}\n\n${consigneAnglais.trim()}` : a.systeme,
             messages,
             ...(outils.length ? { tools: outils } : {}),
             ...(format || (a.effort && infoModele(a.modele)?.effort)

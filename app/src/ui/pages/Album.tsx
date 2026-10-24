@@ -2,6 +2,7 @@
 // segments d'activité, I2), sections modifiables, légendes manuelles et
 // aperçu paginé, tels qu'ils seront écrits dans `Album/` à l'étape « Création de la sortie ».
 
+import { nomsSortie } from '../../lib/sortie';
 import { useState } from 'preact/hooks';
 import { ordreAlbum, paginer, photosAlbum, sections, type Page, type Section } from '../../lib/album';
 import { changerLegende, combiner, noterAlbum, tourner, type FichierPlan } from '../../lib/plan';
@@ -356,7 +357,7 @@ export function PageAlbum() {
       {ordre.length > 0 && <AidesAlbum choisirCouverture={(id) => changerAlbum({ couverture: s.album.couverture === id ? undefined : id })} />}
       {s.album.couverture && s.plan.fichiers.get(s.album.couverture) && (
         <p class="discret">
-          {t`Couverture : ${s.plan.fichiers.get(s.album.couverture)!.nom} (copiée en tête de « Album » sous le nom « 0000_Couverture »).`}{' '}
+          {t`Couverture : ${s.plan.fichiers.get(s.album.couverture)!.nom} (copiée en tête de « Album » sous le nom « ${nomsSortie().couverture} »).`}{' '}
           <button type="button" class="lien" onClick={() => changerAlbum({ couverture: undefined })}>
             {t`retirer`}
           </button>

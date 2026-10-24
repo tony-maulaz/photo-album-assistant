@@ -1,9 +1,9 @@
 // Actions de projet : créer, construire le plan, rouvrir, autorisations à reprendre.
 
 import { configAlbumDefaut, type ConfigAlbum } from '../lib/album';
-import { t } from '../lib/langue';
+import { t, type Langue } from '../lib/langue';
 import { depuisJson, Historique, planVide, RACINE, versJson, type PlanJson } from '../lib/plan';
-import { etatVide, type EtatSortie } from '../lib/sortie';
+import { definirLangueSortie, etatVide, type EtatSortie } from '../lib/sortie';
 import { planInitial } from '../lib/source';
 import { ResultatsAides } from '../navigateur/aides';
 import { Analyses } from '../navigateur/analyses';
@@ -30,7 +30,7 @@ async function services(etat: EtatProjet, projet: Projet) {
     },
     journal,
   );
-  const geocodage = new Geocodage(etat);
+  const geocodage = new Geocodage(etat, projet.langue ?? 'fr');
   const aides = new ResultatsAides(etat);
   await Promise.all([analyses.charger(), ia.charger(), geocodage.charger(), aides.charger()]);
   const album = { ...configAlbumDefaut(), ...((await etat.lire<Partial<ConfigAlbum>>('album.json').catch(() => undefined)) ?? {}) };
@@ -45,6 +45,7 @@ export interface NouveauProjet {
   contexte: string;
   prereglage: string;
   budget: number;
+  langue: Langue;
 }
 
 /** Message d'erreur si le couple source / sortie est refusé (§ 6.1), sinon `null`. */
@@ -67,7 +68,8 @@ export async function creerProjet(o: NouveauProjet): Promise<void> {
   if (erreur) throw new Error(erreur);
   const etat = new EtatProjet(o.sortie);
   if (await etat.existe()) throw new Error(t`Ce dossier de sortie contient déjà un projet : ouvrez-le avec « Reprendre un projet ».`);
-  const projet = nouveauProjet(o.nom.trim() || o.source.name, o.mode, { nom: o.source.name, fichiers: 0, octets: 0 }, o.budget);
+  const projet = nouveauProjet(o.nom.trim() || o.source.name, o.mode, { nom: o.source.name, fichiers: 0, octets: 0 }, o.budget, o.langue);
+  definirLangueSortie(projet.langue ?? 'fr');
   projet.contexte = o.contexte;
   projet.prereglage = o.prereglage;
   await etat.ecrire('projet.json', projet);
@@ -139,6 +141,8 @@ export async function ouvrirProjet(source: FileSystemDirectoryHandle, sortie: Fi
   if (!projet) throw new Error(t`Ce dossier ne contient pas de projet (pas de .album/projet.json).`);
   // Projet commencé avec l'ancien ordre des étapes (11 étapes) : converti, puis enregistré.
   if (migrerEtapes(projet)) await etat.ecrire('projet.json', projet);
+  // Noms écrits dans la sortie : ceux de la langue du projet (D60), un projet d'avant étant en français.
+  definirLangueSortie(projet.langue ?? 'fr');
   const planJson = await etat.lire<PlanJson>('plan.json');
   const etatSortie = (await etat.lire<EtatSortie>('etat_sortie.json')) ?? etatVide();
   session.value = {

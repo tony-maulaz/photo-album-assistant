@@ -2,6 +2,7 @@
 // l'arborescence (celle du tri automatique, ou celle d'un dossier déjà trié)
 // avant de créer la sortie.
 
+import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useState } from 'preact/hooks';
 import { resumes, RACINE } from '../../lib/plan';
 import { BarreValidation } from '../composants/Cadre';
@@ -220,7 +221,7 @@ export function PageOrganiser() {
           <LigneDeTemps ouvrir={() => setTemps(false)} />
         ) : enAutres ? (
           <div class="liste-autres">
-            <p class="discret">{t`Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « _autres_fichiers », avec leur chemin d’origine.`}</p>
+            <p class="discret">{t`Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « ${nomsSortie().autres} », avec leur chemin d’origine.`}</p>
             <ul>
               {elements.map((f) => (
                 <li key={f.id}>{f.id}</li>

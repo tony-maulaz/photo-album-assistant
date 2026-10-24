@@ -3,20 +3,103 @@
 
 import type { EtatAlbum } from './album';
 import { cleNom } from './noms';
-import { cheminDossier, type FichierPlan, type Plan } from './plan';
+import type { Langue } from './langue';
+import { cheminDossier, type FichierPlan, type Plan, type RaisonMiseDeCote } from './plan';
 
 export const DOSSIER_PHOTOS = 'Photos';
-export const DOSSIER_MIS_DE_COTE = '_mis_de_cote';
-export const DOSSIER_AUTRES = '_autres_fichiers';
 export const DOSSIER_ETAT = '.album';
 /** La sélection prête pour ifolor : copies dérivées, entièrement gérées par l'application. */
 export const DOSSIER_ALBUM = 'Album';
 
+/** Noms que l'application écrit dans la sortie (dossiers, fichiers) ; `Photos`, `Album` et `.album` sont les mêmes partout. */
+export interface NomsSortie {
+  misDeCote: string;
+  autres: string;
+  /** Sous-dossiers de `misDeCote`, par raison (`floues`, `doublons`…). */
+  raisons: Record<RaisonMiseDeCote, string>;
+  captures: string;
+  sansDate: string;
+  sansLieu: string;
+  videosNonClassees: string;
+  /** Préfixe des dossiers de voyage (`Voyage_<lieu>_<date>`). */
+  voyage: string;
+  /** Préfixe des lieux sans nom (`Lieu_03`). */
+  lieu: string;
+  lieuInconnu: string;
+  rapport: string;
+  textesAlbum: string;
+  couverture: string;
+  /** Nom proposé pour le domicile. */
+  maison: string;
+}
+
+/** Dans la langue du projet, choisie à sa création (D60) : changer la langue de l'interface ne renomme rien. */
+export const NOMS_SORTIE: Record<Langue, NomsSortie> = {
+  fr: {
+    misDeCote: '_mis_de_cote',
+    autres: '_autres_fichiers',
+    raisons: { floues: 'floues', doublons: 'doublons', doublons_exacts: 'doublons_exacts', autres: 'autres' },
+    captures: 'Captures_ecran',
+    sansDate: '_sans_date',
+    sansLieu: 'Sans_lieu',
+    videosNonClassees: '_videos_non_classees',
+    voyage: 'Voyage',
+    lieu: 'Lieu',
+    lieuInconnu: 'Lieu_inconnu',
+    rapport: 'Rapport.html',
+    textesAlbum: 'textes_album.md',
+    couverture: '0000_Couverture',
+    maison: 'Maison',
+  },
+  en: {
+    misDeCote: '_set_aside',
+    autres: '_other_files',
+    raisons: { floues: 'blurry', doublons: 'duplicates', doublons_exacts: 'exact_duplicates', autres: 'other' },
+    captures: 'Screenshots',
+    sansDate: '_no_date',
+    sansLieu: 'No_place',
+    videosNonClassees: '_unsorted_videos',
+    voyage: 'Trip',
+    lieu: 'Place',
+    lieuInconnu: 'Unknown_place',
+    rapport: 'Report.html',
+    textesAlbum: 'album_texts.md',
+    couverture: '0000_Cover',
+    maison: 'Home',
+  },
+};
+
+let langueSortie: Langue = 'fr';
+
+/** Langue du projet ouvert (`fr` pour un projet d'avant D60). */
+export function definirLangueSortie(l: Langue): void {
+  langueSortie = l;
+}
+
+export function langueDeLaSortie(): Langue {
+  return langueSortie;
+}
+
+export function nomsSortie(): NomsSortie {
+  return NOMS_SORTIE[langueSortie];
+}
+
+/** Le nom est-il celui d'un dossier créé par l'application, dans l'une ou l'autre langue ? */
+export function estNomDeSortie(cle: 'captures' | 'sansLieu' | 'sansDate', nom: string): boolean {
+  return Object.values(NOMS_SORTIE).some((n) => n[cle] === nom);
+}
+
+/** Chemin d'un dossier de photos mises de côté pour cette raison (`_mis_de_cote/floues`). */
+export function dossierMisDeCote(raison: string): string {
+  const n = nomsSortie();
+  return `${n.misDeCote}/${n.raisons[raison as RaisonMiseDeCote] ?? raison}`;
+}
+
 /** Chemin du fichier dans la sortie, relatif à sa racine. */
 export function cheminSortie(plan: Plan, f: FichierPlan): string {
-  if (f.categorie === 'autre') return `${DOSSIER_AUTRES}/${f.id}`;
+  if (f.categorie === 'autre') return `${nomsSortie().autres}/${f.id}`;
   // Chemin d'origine conservé (unique, et facile à remettre à la main).
-  if (f.statut === 'mis_de_cote') return `${DOSSIER_MIS_DE_COTE}/${f.raison ?? 'autres'}/${f.id}`;
+  if (f.statut === 'mis_de_cote') return `${dossierMisDeCote(f.raison ?? 'autres')}/${f.id}`;
   const dossier = cheminDossier(plan, f.dossier);
   return `${DOSSIER_PHOTOS}/${dossier ? `${dossier}/` : ''}${f.nom}`;
 }

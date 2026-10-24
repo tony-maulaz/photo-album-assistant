@@ -2,6 +2,7 @@
 // en vrac : réglages simples et avancés, noms des lieux par OpenStreetMap,
 // puis l'arborescence proposée remplace le vrac dans le plan (annulable).
 
+import { nomsSortie } from '../../lib/sortie';
 import type { ComponentChildren } from 'preact';
 import { useRef, useState } from 'preact/hooks';
 import { gardeSaPlace, type FichierPlan, type Plan } from '../../lib/plan';
@@ -119,7 +120,7 @@ export function TriAuto() {
           'voyages',
           t`Regrouper les voyages`,
           <>
-            {t`Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « Voyage_… », avec une sortie par étape.`}
+            {t`Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « ${nomsSortie().voyage}_… », avec une sortie par étape.`}
             {!domicile && <strong> {t`Sans effet pour l’instant : cochez « C’est notre domicile » sur un lieu ci-dessus, ou indiquez-le dans la Configuration.`}</strong>}
           </>,
         )}
@@ -134,7 +135,7 @@ export function TriAuto() {
         <div class="options-tri">
           {nombreCase('gapJours', t`Nouvelle sortie après (jours sans photo)`, 1, 1, t`Au même lieu, si plus de jours passent sans photo, une nouvelle sortie commence.`)}
           {nombreCase('dureeMaxJours', t`Durée maximale d’une sortie (jours)`, 1, 1, t`Coupe en plusieurs sorties un lieu photographié très souvent, comme la maison.`)}
-          {caseACocher('parMois', t`Un dossier par mois`, t`Un dossier par lieu et par mois (Lieu_AAAA-MM), sans chercher les sorties.`)}
+          {caseACocher('parMois', t`Un dossier par mois`, t`Un dossier par lieu et par mois (${nomsSortie().lieu}_AAAA-MM), sans chercher les sorties.`)}
           {caseACocher('sansEvenement', t`Un seul dossier par lieu`, t`Toutes les photos d’un lieu ensemble, sans découpage en sorties ni date.`)}
           {nombreCase('distanceVoyageKm', t`Voyage au-delà de (km du domicile)`, 1, 1, t`Une sortie plus loin que cette distance de la maison compte comme un voyage.`)}
           {nombreCase('gapVoyage', t`Étapes d’un voyage : écart maximal (jours)`, 0, 1, t`Deux sorties lointaines séparées de plus de jours que cela forment deux voyages.`)}

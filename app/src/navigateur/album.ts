@@ -7,10 +7,9 @@ import { fichiersAlbum, ordreAlbum, photosAlbum, planifierAlbum, sections, texte
 import { changerOrientation, orientationApresRotation, orientationJpeg } from '../lib/jpeg';
 import { t } from '../lib/langue';
 import type { Plan } from '../lib/plan';
-import { DOSSIER_ALBUM, type EtatSortie } from '../lib/sortie';
+import { avecLangue } from '../lib/langue';
+import { DOSSIER_ALBUM, langueDeLaSortie, nomsSortie, type EtatSortie } from '../lib/sortie';
 import type { AccesDossier } from './dossiers';
-
-export const NOM_TEXTES = 'textes_album.md';
 
 /** Titre de section par défaut : le nom du dossier, sans soulignés (script 03). */
 export function titreDossier(plan: Plan, id: string): string {
@@ -26,10 +25,12 @@ export function contenuAlbum(plan: Plan, config: ConfigAlbum, nomProjet: string)
   const couverture = config.couverture ? plan.fichiers.get(config.couverture) : undefined;
   if (couverture && couverture.statut === 'archive') {
     const ext = couverture.nom.includes('.') ? couverture.nom.slice(couverture.nom.lastIndexOf('.')).toLowerCase() : '.jpg';
-    voulus.unshift({ id: couverture.id, chemin: `0000_Couverture${ext}`, rotation: couverture.rotation ?? 0, taille: couverture.taille });
+    voulus.unshift({ id: couverture.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: couverture.rotation ?? 0, taille: couverture.taille });
   }
   const legendes = new Map(ordre.filter((f) => f.legende).map((f) => [f.id, f.legende!]));
-  return { voulus, textes: textesAlbum(nomProjet, secs, voulus.filter((v) => !v.chemin.startsWith('0000_')), legendes, config) };
+  // Les textes sont écrits dans la sortie : dans la langue du projet (D60).
+  const textes = avecLangue(langueDeLaSortie(), () => textesAlbum(nomProjet, secs, voulus.filter((v) => !v.chemin.startsWith('0000_')), legendes, config));
+  return { voulus, textes };
 }
 
 /** Fichiers présents dans `Album/` (chemin relatif → taille). */
@@ -45,7 +46,7 @@ export async function listerAlbum(sortie: FileSystemDirectoryHandle): Promise<Ma
     for await (const [nom, h] of d.entries()) {
       const chemin = prefixe ? `${prefixe}/${nom}` : nom;
       if (h.kind === 'directory') await parcourir(h as FileSystemDirectoryHandle, chemin);
-      else if (chemin !== NOM_TEXTES) presents.set(chemin, (await (h as FileSystemFileHandle).getFile()).size);
+      else if (chemin !== nomsSortie().textesAlbum) presents.set(chemin, (await (h as FileSystemFileHandle).getFile()).size);
     }
   };
   await parcourir(racine, '');
@@ -188,13 +189,13 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
   }
   // 5. Textes pour ifolor (toujours réécrits : ils ne coûtent rien), retirés si l'album est vide.
   if (voulus.length) {
-    const w = await (await o.sortie.poignee(album(NOM_TEXTES), true)).createWritable();
+    const w = await (await o.sortie.poignee(album(nomsSortie().textesAlbum), true)).createWritable();
     await w.write(textes);
     await w.close();
   } else {
     await o.sortie
       .dossier(DOSSIER_ALBUM)
-      .then((d) => d.removeEntry(NOM_TEXTES))
+      .then((d) => d.removeEntry(nomsSortie().textesAlbum))
       .catch(() => undefined);
   }
   await o.enregistrerEtat(o.etat);

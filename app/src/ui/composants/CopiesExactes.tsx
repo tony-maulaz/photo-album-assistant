@@ -4,6 +4,7 @@
 // proposition garde le meilleur de chaque emplacement (un dossier qui garde sa
 // place, ou les photos à trier), et met de côté les autres.
 
+import { dossierMisDeCote } from '../../lib/sortie';
 import { useMemo, useState } from 'preact/hooks';
 import { groupesDoublonsExacts, type GroupeExact } from '../../lib/doublonsExacts';
 import { t } from '../../lib/langue';
@@ -120,7 +121,7 @@ export function CopiesExactes() {
     <section id="copies">
       <h2>{t`Copies exactes`}</h2>
       <p class="discret">
-        {t`La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « _mis_de_cote/doublons_exacts ».`}
+        {t`La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « ${dossierMisDeCote('doublons_exacts')} ».`}
       </p>
       {aDecider.length > 0 && (
         <>

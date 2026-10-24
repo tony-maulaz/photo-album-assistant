@@ -26,6 +26,17 @@ export function definirLangue(l: Langue): void {
   courante = l;
 }
 
+/** Exécute `f` dans la langue `l`, puis revient à celle de l'interface (textes écrits dans la sortie, D60). */
+export function avecLangue<T>(l: Langue, f: () => T): T {
+  const avant = courante;
+  courante = l;
+  try {
+    return f();
+  } finally {
+    courante = avant;
+  }
+}
+
 /** Langue du navigateur, si l'utilisateur n'en a pas choisi : français pour fr-*, anglais sinon. */
 export function langueDuNavigateur(langues: readonly string[]): Langue {
   return langues[0]?.toLowerCase().startsWith('fr') ? 'fr' : 'en';

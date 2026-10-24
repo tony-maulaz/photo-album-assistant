@@ -67,16 +67,16 @@ export const TEXTES: Record<string, string> = {
   'doublons proposés': 'proposed duplicates',
   'Analyse interrompue : {0}': 'Analysis interrupted: {0}',
   'Écarter tous les doublons affichés ?': 'Set aside all the duplicates shown?',
-  '{0} iront dans « _mis_de_cote/doublons » (rien n’est supprimé, Ctrl+Z annule).':
-    '{0} will go to “_mis_de_cote/doublons” (nothing is deleted, Ctrl+Z undoes).',
+  '{0} iront dans « {1} » (rien n’est supprimé, Ctrl+Z annule).':
+    '{0} will go to “{1}” (nothing is deleted, Ctrl+Z undoes).',
   'Écarter {0} doublons': 'Set aside {0} duplicates',
   'doublon écarté': 'duplicate set aside',
   'doublons écartés': 'duplicates set aside',
   Annuler: 'Undo',
   'environ {0} CHF': 'about {0} CHF',
   'gratuit (déjà fait)': 'free (already done)',
-  'L’application repère les photos en double : copies exactes (la même photo en plusieurs exemplaires), rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote », rien n’est supprimé.':
-    'The application finds duplicate photos: exact copies (the same photo several times), near-identical bursts (free), then, if you wish, the same scene photographed several times (AI). You review each group: the photos set aside go to “_mis_de_cote”; nothing is deleted.',
+  'L’application repère les photos en double : copies exactes (la même photo en plusieurs exemplaires), rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois (IA). Vous relisez chaque groupe : les photos écartées vont dans « {0} », rien n’est supprimé.':
+    'The application finds duplicate photos: exact copies (the same photo several times), near-identical bursts (free), then, if you wish, the same scene photographed several times (AI). You review each group: the photos set aside go to “{0}”; nothing is deleted.',
   ' Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.':
     ' As the folder is not sorted yet, the photos are compared day by day.',
   'la ressemblance et la netteté de chaque photo servent à repérer les doublons et à garder la plus nette.':
@@ -354,15 +354,15 @@ export const TEXTES: Record<string, string> = {
     'Drag a folder onto another to merge them; double-click a name (or F2) to rename it; “Split by day” cuts a folder into days.',
   'Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, photos entremêlées avec un autre dossier.':
     'The badges point out what deserves a look: small folder, very large, unknown place, no date, duplicate name, photos mixed up with another folder.',
-  'Suppr met de côté (rien n’est supprimé : les éléments iront dans « _mis_de_cote ») ; dans « Mis de côté », Suppr les remet.':
-    'Delete sets aside (nothing is deleted: the items will go to “_mis_de_cote”); in “Set aside”, Delete puts them back.',
+  'Suppr met de côté (rien n’est supprimé : les éléments iront dans « {0} ») ; dans « Mis de côté », Suppr les remet.':
+    'Delete sets aside (nothing is deleted: the items will go to “{0}”); in “Set aside”, Delete puts them back.',
   'Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.': 'Double-click or Enter: the photo shown large; ← → to go to the next one.',
   'Ctrl+Z annule, Ctrl+Y rétablit.': 'Ctrl+Z undoes, Ctrl+Y redoes.',
   'Créer la sortie (étape {0})': 'Creating the output (step {0})',
   'Le bouton écrit ce qui manque et déplace ce qui a changé de dossier ; relancé, il ne recopie jamais un fichier déjà en place. Le bilan dit si chaque fichier d’origine est dans la sortie. Seulement dans ce cas, vous pouvez copier la sortie sur le NAS, la vérifier, puis supprimer vous-même le dossier d’origine.':
     'The button writes what is missing and moves what has changed folder; run again, it never copies a file that is already in place. The summary says whether every original file is in the output. Only then can you copy the output to the NAS, check it, and delete the original folder yourself.',
-  'La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « Rapport.html ».':
-    'The copy has today’s date: the browser cannot keep the modification date. Almost all photos have their date from the camera (EXIF); for the others, the original date is noted in “Rapport.html”.',
+  'La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « {0} ».':
+    'The copy has today’s date: the browser cannot keep the modification date. Almost all photos have their date from the camera (EXIF); for the others, the original date is noted in “{0}”.',
   'Configuration et clé API': 'Configuration and API key',
   'Le dossier « config » contient les lieux connus (dont le domicile), les appareils et les calendriers : ne le publiez jamais. La clé API n’y est jamais écrite ; elle reste dans le navigateur, le temps de la session sauf si vous cochez « se souvenir ».':
     'The “config” folder contains the known places (including home), the cameras and the calendars: never publish it. The API key is never written there; it stays in the browser, for the session only unless you tick “remember”.',
@@ -437,8 +437,8 @@ export const TEXTES: Record<string, string> = {
   'À savoir': 'Good to know',
   '{0} directement à la racine du dossier (pas dans un sous-dossier).': '{0} directly at the top level of the folder (not in a subfolder).',
   '{0} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.': '{0} (1 or 2 photos): to attach elsewhere in the next step if needed.',
-  '{0} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « _mis_de_cote ».':
-    '{0} item(s) already set aside by the old scripts (blurry, duplicates): they will go to “_mis_de_cote”.',
+  '{0} élément(s) déjà mis de côté par les anciens scripts (floues, doublons) : ils iront dans « {1} ».':
+    '{0} item(s) already set aside by the old scripts (blurry, duplicates): they will go to “{1}”.',
   '{0} : l’état d’un ancien projet (dossier « .album »).': '{0}: the state of an earlier project (“.album” folder).',
   'fichier ignoré': 'file ignored',
   'fichiers ignorés': 'files ignored',
@@ -466,8 +466,8 @@ export const TEXTES: Record<string, string> = {
   Contenu: 'Contents',
   Taille: 'Size',
   'vidéo': 'video',
-  '{0} de l’album, numérotées dans l’ordre pour ifolor, et les textes (textes_album.md)':
-    '{0} from the album, numbered in order for ifolor, and the texts (textes_album.md)',
+  '{0} de l’album, numérotées dans l’ordre pour ifolor, et les textes ({1})':
+    '{0} from the album, numbered in order for ifolor, and the texts ({1})',
   'rien : aucune photo retenue à l’étape {0}': 'nothing: no photos selected in step {0}',
   '{0} écartés (rien n’est supprimé)': '{0} set aside (nothing is deleted)',
   '{0} ni photo ni vidéo, avec leur chemin d’origine': '{0} neither photo nor video, with their original path',

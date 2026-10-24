@@ -2,6 +2,7 @@
 // en direct, grille de la moins nette à la plus nette, « Sauver » et « Écarter ».
 // Rien n'est écarté avant « Valider » : le seuil s'applique alors au plan.
 
+import { dossierMisDeCote } from '../../lib/sortie';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { appliquerFloues, compterFloues, deciderFlou, estFloue, photosConcernees, SEUIL_FLOU } from '../../lib/floues';
 import { t } from '../../lib/langue';
@@ -70,14 +71,14 @@ export function PageFloues() {
     appliquer(appliquerFloues(s.plan, nettete, seuil));
     s.projet.seuil_flou = seuil;
     planifierEnregistrement();
-    if (ecartees) notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : elles iront dans « _mis_de_cote/floues » (rien n’est supprimé).`, { libelle: t`Annuler`, faire: annuler });
+    if (ecartees) notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : elles iront dans « ${dossierMisDeCote('floues')} » (rien n’est supprimé).`, { libelle: t`Annuler`, faire: annuler });
     validerEtape('floues');
   };
 
   return (
     <div class="page large avec-barre page-floues">
       <TeteEtape numero={ETAPE.floues} titre={t`Photos floues`} cle="floues">
-        {t`Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « _mis_de_cote/floues ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.`}
+        {t`Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « ${dossierMisDeCote('floues')} ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.`}
       </TeteEtape>
       <EncartAnalyse photos={concernees} pourquoi={t`il faut mesurer la netteté de chaque photo.`} />
       <div class="reglages-etape ligne">

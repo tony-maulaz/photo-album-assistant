@@ -1,5 +1,6 @@
 // Pages Réglages, Journal, Aide et Fonctions IA (SPEC § 5.1, § 7.1, § 9).
 
+import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useState } from 'preact/hooks';
 import { MODELES } from '../../lib/tarifs';
 import { client, expliquerErreur } from '../../navigateur/claude';
@@ -397,7 +398,7 @@ export function PageAide() {
         </li>
         <li>{t`Glissez un dossier sur un autre pour les fusionner ; double-cliquez sur un nom (ou F2) pour le renommer ; « Scinder par jour » coupe un dossier en journées.`}</li>
         <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, photos entremêlées avec un autre dossier.`}</li>
-        <li>{t`Suppr met de côté (rien n’est supprimé : les éléments iront dans « _mis_de_cote ») ; dans « Mis de côté », Suppr les remet.`}</li>
+        <li>{t`Suppr met de côté (rien n’est supprimé : les éléments iront dans « ${nomsSortie().misDeCote} ») ; dans « Mis de côté », Suppr les remet.`}</li>
         <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>
         <li>{t`Ctrl+Z annule, Ctrl+Y rétablit.`}</li>
       </ul>
@@ -407,7 +408,7 @@ export function PageAide() {
         {t`Le bouton écrit ce qui manque et déplace ce qui a changé de dossier ; relancé, il ne recopie jamais un fichier déjà en place. Le bilan dit si chaque fichier d’origine est dans la sortie. Seulement dans ce cas, vous pouvez copier la sortie sur le NAS, la vérifier, puis supprimer vous-même le dossier d’origine.`}
       </p>
       <p>
-        {t`La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « Rapport.html ».`}
+        {t`La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « ${nomsSortie().rapport} ».`}
       </p>
 
       <h2>{t`Configuration et clé API`}</h2>
