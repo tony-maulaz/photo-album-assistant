@@ -121,6 +121,15 @@ export const TEXTES: Record<string, string> = {
   'Rafales cherchées en {0} s : {1}': 'Bursts looked for in {0} s: {1}',
   'Recherche des rafales (photos quasi identiques)': 'Looking for bursts (nearly identical photos)',
 
+  // Regroupement de la liste de gauche ; rafales annoncées à l'inventaire
+  Grouper: 'Group',
+  'par journée': 'by day',
+  'par mois': 'by month',
+  'par dossier': 'by folder',
+  rafale: 'burst',
+  '{0} (photos quasi identiques prises à quelques secondes) : vous choisirez à l’étape « {1} » celles à garder.':
+    '{0} (nearly identical photos taken a few seconds apart): you will choose which to keep at the “{1}” step.',
+
   // Raccourcis.tsx
   'J et K (ou ↓ ↑)': 'J and K (or ↓ ↑)',
   'Groupe suivant, groupe précédent': 'Next group, previous group',

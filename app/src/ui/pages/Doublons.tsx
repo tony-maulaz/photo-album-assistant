@@ -41,7 +41,7 @@ import { EncartAnalyse } from '../composants/Analyse';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Comparateur } from '../composants/Comparateur';
 import { confirmer } from '../composants/Dialogues';
-import { Miniature } from '../composants/GrillePhotos';
+import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
 import { useCopiesExactes } from '../copiesExactes';
 import { allerEtape, annuler, appliquer, changerEtape, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { nombre, nomJour, nomMois, pluriel, taille as texteTaille } from '../format';
@@ -50,10 +50,12 @@ import { enregistrerAide } from './AidesIA';
 type Onglet = Sorte | 'mis_de_cote';
 type Filtre = 'a_relire' | 'relus' | 'tous';
 type Ordre = 'heure' | 'taille';
+type Groupement = 'jour' | 'mois' | 'dossier';
 
 /** Onglet (par projet) et section affichés : gardés le temps de la session, d'une visite de l'étape à l'autre. */
 const ongletsChoisis = signal<Record<string, Onglet>>({});
 const sectionsChoisies = signal<Partial<Record<Onglet, string>>>({});
+const groupementsChoisis = signal<Partial<Record<Onglet, Groupement>>>({});
 const choisirOnglet = (projet: string, o: Onglet) => (ongletsChoisis.value = { ...ongletsChoisis.value, [projet]: o });
 
 /** Lots comparés : les dossiers, ou les journées tant que le dossier à trier est en vrac (D54). */
@@ -112,20 +114,38 @@ function texteEcartees(n: number, raison: 'doublons' | 'doublons_exacts'): strin
 }
 
 // ---------------------------------------------------------------------------
-// Sections : les journées (ou les mois), puis les dossiers gardés, puis les photos sans date
+// Sections de la liste de gauche : par journée, par mois ou par dossier (au choix)
 // ---------------------------------------------------------------------------
 
-/**
- * Au-delà de 20 journées et dossiers (une année), la liste de gauche passe aux
- * mois, dans l'ordre du temps : une journée ou un dossier n'a souvent qu'un
- * groupe. Chaque carte dit alors sa journée et son dossier.
- */
-const SECTIONS_MAX = 20;
+/** Au-delà de 20 journées (une année), on groupe par mois par défaut : une journée n'a souvent qu'un groupe. */
+const JOURNEES_MAX = 20;
 
-/** Section d'affichage d'un élément : la sienne, ou le mois de sa date quand il y en a trop. */
-function regroupement(elements: { section: string; date?: string }[]): (e: { section: string; date?: string }) => string {
-  const parMois = new Set(elements.map((e) => e.section)).size > SECTIONS_MAX;
-  return (e) => (parMois && e.section !== 'sans' && e.date ? `mois:${e.date.slice(0, 7)}` : e.section);
+/** Section d'une photo selon le regroupement : sa journée, son mois, ou son dossier ; « sans » sans date sûre. */
+function sectionSelon(groupement: Groupement, f: FichierPlan | undefined): string {
+  if (groupement === 'dossier') return f ? `dossier:${f.dossier}` : 'sans';
+  const jour = sectionJour(f);
+  return groupement === 'mois' && jour !== 'sans' ? `mois:${jour.slice(5, 12)}` : jour;
+}
+
+/** Regroupement choisi pour l'onglet, sinon par journée (par mois au-delà de 20 journées). */
+function useGroupement(onglet: Onglet, fichiers: (FichierPlan | undefined)[]): [Groupement, (g: Groupement) => void] {
+  const choisi = groupementsChoisis.value[onglet];
+  const parDefaut = choisi ?? (new Set(fichiers.map(sectionJour).filter((x) => x !== 'sans')).size > JOURNEES_MAX ? 'mois' : 'jour');
+  return [parDefaut, (g) => (groupementsChoisis.value = { ...groupementsChoisis.value, [onglet]: g })];
+}
+
+/** Menu « Grouper : par journée, par mois, par dossier ». */
+function ChoixGroupement({ valeur, choisir }: { valeur: Groupement; choisir: (g: Groupement) => void }) {
+  return (
+    <label class="discret">
+      {t`Grouper`}{' '}
+      <select value={valeur} onChange={(e) => choisir(e.currentTarget.value as Groupement)}>
+        <option value="jour">{t`par journée`}</option>
+        <option value="mois">{t`par mois`}</option>
+        <option value="dossier">{t`par dossier`}</option>
+      </select>
+    </label>
+  );
 }
 
 interface Section {
@@ -138,7 +158,7 @@ interface Section {
   debut: string;
 }
 
-function sections(elements: { section: string; date?: string; aRelire: boolean }[], plan: Plan): Section[] {
+function sections(elements: { section: string; date?: string; aRelire: boolean }[], plan: Plan, vrac: boolean): Section[] {
   const parCle = new Map<string, Section>();
   for (const e of elements) {
     const x = parCle.get(e.section) ?? { cle: e.section, nom: '', titre: '', total: 0, aRelire: 0, debut: '9999' };
@@ -154,7 +174,9 @@ function sections(elements: { section: string; date?: string; aRelire: boolean }
       x.nom = nomJour(x.cle.slice(5), false, annees.size > 1);
       x.titre = nomJour(x.cle.slice(5), true);
     } else if (x.cle.startsWith('mois:')) x.nom = x.titre = nomMois(x.cle.slice(5));
-    else if (x.cle.startsWith('dossier:')) x.nom = x.titre = cheminDossier(plan, x.cle.slice(8)) || t`Photos (racine)`;
+    else if (x.cle.startsWith('dossier:'))
+      // Avant le tri, les photos en vrac à la racine n'ont pas encore de dossier.
+      x.nom = x.titre = x.cle.slice(8) === RACINE ? (vrac ? t`Photos à trier` : t`Photos (racine)`) : cheminDossier(plan, x.cle.slice(8));
     else x.nom = x.titre = t`Photos sans date`;
   }
   const rang = (x: Section) => (x.cle.startsWith('jour:') || x.cle.startsWith('mois:') ? 0 : x.cle.startsWith('dossier:') ? 1 : 2);
@@ -373,7 +395,7 @@ function CarteGroupe({
       {g.sorte === 'ia' && g.scene && <p class="scene-doublons">{g.scene}</p>}
       <div class="photos-doublons">
         {photos.map((x) => (
-          <TuileDoublon key={x.m.id} g={g} x={x} cote={copie ? 120 : 168} agir={agir} />
+          <TuileDoublon key={x.m.id} g={g} x={x} cote={reglages.value.tailleMiniatures} agir={agir} />
         ))}
       </div>
       {gardees === 0 && <p class="alerte-doublons">{t`Aucune photo gardée : tout le groupe ira dans « ${dossierMisDeCote(raisonDe(g))} ».`}</p>}
@@ -414,12 +436,22 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
   const [comparee, setComparee] = useState<string | null>(null);
   const zone = useRef<HTMLDivElement>(null);
 
-  const bruts = groupes.map((g) => ({ g, section: g.section, relire: aRelire(g, fichier), date: fichier(g.etoile)?.date }));
-  const regrouper = regroupement(bruts);
-  const elements = bruts.map((e) => ({ ...e, section: regrouper(e) }));
+  const [groupement, choisirGroupement] = useGroupement(
+    onglet,
+    groupes.map((g) => fichier(g.etoile)),
+  );
+  const copies = onglet === 'copies' || onglet === 'dossiers';
+  // Par dossier, une copie se range sous chacun des dossiers où elle a un exemplaire.
+  const elements = groupes.flatMap((g) => {
+    const etoile = fichier(g.etoile);
+    const base = { g, relire: aRelire(g, fichier), date: etoile?.date };
+    if (groupement === 'dossier' && copies) return [...new Set(photosDuGroupe(g, fichier).map((x) => x.f.dossier))].map((d) => ({ ...base, section: `dossier:${d}` }));
+    return [{ ...base, section: sectionSelon(groupement, etoile) }];
+  });
   const liste = sections(
     elements.map((e) => ({ section: e.section, date: e.date, aRelire: e.relire })),
     plan,
+    s.projet.mode === 'vrac',
   );
   const [section, choisir] = useSection(onglet, liste);
   const signature = groupes.map((g) => g.cle).join('|');
@@ -431,10 +463,10 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
   );
   const relusAuDepart = useMemo(() => new Set(elements.filter((e) => e.section === section?.cle && !e.relire).map((e) => e.g.cle)), [section?.cle, signature]);
   const parDate = (a: (typeof elements)[number], b: (typeof elements)[number]) => (a.date ?? '').localeCompare(b.date ?? '') || a.g.cle.localeCompare(b.g.cle);
-  const visibles = elements.filter((e) => montres.has(e.g.cle)).sort((a, b) => (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b)));
+  const visibles = elements.filter((e) => e.section === section?.cle && montres.has(e.g.cle)).sort((a, b) => (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b)));
   const enAttente = visibles.filter((e) => aRelire(e.g, fichier)).map((e) => e.g);
   // Copies : quand toute la journée est tout l'onglet, le bouton de l'encart (« Accepter les N propositions ») suffit.
-  const commeLOnglet = onglet === 'copies' && enAttente.length === elements.filter((e) => e.relire).length;
+  const commeLOnglet = onglet === 'copies' && enAttente.length === groupes.filter((g) => aRelire(g, fichier)).length;
   const { relus, total } = avancementGroupes(groupes, fichier);
   const ouverte = (cle: string) => rouvertes.has(cle) || !(fermees.has(cle) || relusAuDepart.has(cle));
 
@@ -523,6 +555,8 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
             </button>
           ))}
         </div>
+        <ChoixGroupement valeur={groupement} choisir={choisirGroupement} />
+        <CurseurTaille />
         <label class="discret">
           {t`Classer`}{' '}
           <select value={ordre} onChange={(e) => setOrdre(e.currentTarget.value as Ordre)}>
@@ -573,7 +607,7 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
               key={g.cle}
               g={g}
               ouverte={ouverte(g.cle)}
-              avecJour={!!section?.cle.startsWith('mois:')}
+              avecJour={!!section && !section.cle.startsWith('jour:')}
               agir={appliquer}
               agirGroupe={(m, message) => agirGroupe([g.cle], m, message)}
               rouvrir={() => setRouvertes(new Set([...rouvertes, g.cle]))}
@@ -642,15 +676,18 @@ function MisDeCote() {
       .filter((f) => f.statut === 'mis_de_cote' && (f.raison === 'doublons' || f.raison === 'doublons_exacts'))
       .map((f) => ({ id: f.id, raison: f.raison as 'doublons' | 'doublons_exacts', doublon: f.doublon as InfoDoublon | undefined })),
   );
-  const bruts = ecartees.flatMap((x) => {
+  const [groupement, choisirGroupement] = useGroupement(
+    'mis_de_cote',
+    ecartees.map((x) => plan.fichiers.get(x.id)),
+  );
+  const elements = ecartees.flatMap((x) => {
     const f = plan.fichiers.get(x.id);
-    return f ? [{ ...x, f, section: sectionJour(f), date: f.date }] : [];
+    return f ? [{ ...x, f, section: sectionSelon(groupement, f) }] : [];
   });
-  const regrouper = regroupement(bruts);
-  const elements = bruts.map((e) => ({ ...e, section: regrouper(e) }));
   const liste = sections(
     elements.map((e) => ({ section: e.section, date: e.f.date, aRelire: false })),
     plan,
+    s.projet.mode === 'vrac',
   );
   const [section, choisir] = useSection('mis_de_cote', liste);
   if (!elements.length) return <p class="encart">{t`Aucune photo mise de côté à cette étape.`}</p>;
@@ -659,9 +696,14 @@ function MisDeCote() {
   const basculerPhoto = (e: (typeof dans)[number]) =>
     appliquer(e.f.statut === 'mis_de_cote' ? garderAussi(plan, [e.id]) : ecarterDoublons(plan, [{ id: e.id, raison: e.raison, doublon: e.doublon }]));
   const heureDe = (id: string) => plan.fichiers.get(id)?.date?.slice(11, 16) ?? '';
+  const cote = reglages.value.tailleMiniatures;
 
   return (
     <>
+      <div class="outils-doublons">
+        <ChoixGroupement valeur={groupement} choisir={choisirGroupement} />
+        <CurseurTaille />
+      </div>
       <p class="discret aide-doublons">{t`Les photos écartées à cette étape. Un clic remet une photo à sa place, un second l’écarte de nouveau.`}</p>
       <div class="corps-doublons">
         <ListeSections liste={liste} choisie={section?.cle} choisir={choisir} avancement={false} />
@@ -678,7 +720,7 @@ function MisDeCote() {
             {dans.map((e) => {
               const etat = e.f.statut === 'mis_de_cote' ? 'ecartee' : 'gardee';
               return (
-                <div key={e.id} class="photo-doublon" style={{ width: '150px' }}>
+                <div key={e.id} class="photo-doublon" style={{ width: `${cote}px` }}>
                   <button
                     type="button"
                     class={`tuile-doublon ${etat}`}
@@ -687,13 +729,13 @@ function MisDeCote() {
                     title={etat === 'gardee' ? t`Cliquer pour l’écarter de nouveau` : t`Cliquer pour la remettre à sa place`}
                     onClick={() => basculerPhoto(e)}
                   >
-                    <span class="cadre-tuile" style={{ width: '150px', height: '150px' }}>
-                      <Miniature f={e.f} taille={150} rotation={e.f.rotation} />
+                    <span class="cadre-tuile" style={{ width: `${cote}px`, height: `${cote}px` }}>
+                      <Miniature f={e.f} taille={cote} rotation={e.f.rotation} />
                     </span>
                     <span class={`etat-photo ${etat}`}>{etat === 'gardee' ? t`Remise` : t`Écartée`}</span>
                   </button>
                   <span class="legende-doublon">
-                    {section?.cle.startsWith('mois:') && e.f.date ? `${nomJour(e.f.date.slice(0, 10))} · ` : ''}
+                    {section && !section.cle.startsWith('jour:') && e.f.date ? `${nomJour(e.f.date.slice(0, 10))} · ` : ''}
                     {e.f.date && e.f.date.length > 10 ? `${e.f.date.slice(11, 16)} · ` : ''}
                     {e.raison === 'doublons_exacts' ? t`copie exacte` : e.doublon?.garde ? t`doublon de la photo de ${heureDe(e.doublon.garde)}` : t`doublon`}
                   </span>

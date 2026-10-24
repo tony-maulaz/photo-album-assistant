@@ -318,7 +318,10 @@ IA : noms proches et chevauchements présentés côte à côte.
   Relus, Tous), Classer, l'avancement et « Accepter les propositions » de la
   journée affichée. À gauche, la liste des journées (puis des dossiers
   gardés, puis des photos sans date) ; on relit une journée à la fois.
-  Au-delà de 20 entrées (une année), la liste passe aux mois.
+  « Grouper » : par journée, par mois ou par dossier (par défaut par
+  journée, par mois au-delà de 20 journées) ; par dossier, une copie se
+  range sous chaque dossier où elle a un exemplaire. Un curseur règle la
+  taille des photos (le même réglage qu'à la Sélection).
 - **Un groupe par carte** : heure, sorte, emplacement, proposition. Chaque
   photo a une proposition (garder ou écarter) et un état lu dans le plan :
   gardée, écartée, ou « à écarter » tant que la proposition n'est pas

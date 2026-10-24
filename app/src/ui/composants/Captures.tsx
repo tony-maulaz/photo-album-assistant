@@ -10,7 +10,7 @@ import { nomsSortie } from '../../lib/sortie';
 import { t } from '../../lib/langue';
 import { rangerCaptures, ressembleACapture } from '../../lib/inventaire';
 import { gardeSaPlace, type FichierPlan } from '../../lib/plan';
-import { appliquer, session, versionPlan, type Session } from '../etat';
+import { appliquer, reglages, session, versionPlan, type Session } from '../etat';
 import { pluriel } from '../format';
 import { visionneuse } from '../organiser';
 import { Miniature } from './GrillePhotos';
@@ -48,6 +48,8 @@ export function Captures() {
     );
     setDecochees(new Set());
   };
+  // À l'échelle du curseur de taille : 112 px au réglage par défaut (160).
+  const cote = Math.round(reglages.value.tailleMiniatures * 0.7);
   return (
     <section id="captures" class="encart">
       <h2>{t`Captures d’écran`}</h2>
@@ -61,9 +63,15 @@ export function Captures() {
             {montrees.map((f) => {
               const cochee = !decochees.has(f.id);
               return (
-                <li key={f.id} class={cochee ? '' : 'decochee'}>
-                  <button type="button" class="image-capture" title={t`Agrandir « ${f.nom} »`} onClick={() => (visionneuse.value = candidates.indexOf(f))}>
-                    <Miniature f={f} taille={110} />
+                <li key={f.id} class={cochee ? '' : 'decochee'} style={{ width: `${cote + 12}px` }}>
+                  <button
+                    type="button"
+                    class="image-capture"
+                    style={{ width: `${cote + 6}px`, height: `${cote + 6}px` }}
+                    title={t`Agrandir « ${f.nom} »`}
+                    onClick={() => (visionneuse.value = candidates.indexOf(f))}
+                  >
+                    <Miniature f={f} taille={cote} />
                   </button>
                   <label class="case" title={f.id}>
                     <input type="checkbox" checked={cochee} onChange={() => basculer(f.id)} />

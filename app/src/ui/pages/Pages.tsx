@@ -407,7 +407,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.inventaire)}</strong>
-          {t` : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies) se fait pendant ce temps.`}
+          {t` : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies, rafales) se fait pendant ce temps.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.dossiers)}</strong>

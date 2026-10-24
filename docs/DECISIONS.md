@@ -716,6 +716,19 @@ plan, ne se perdent pas ; les scènes de l'IA d'un lot sont gardées. L'arrivée
 sur la page complète encore ce qui manquerait (recherche arrêtée en route,
 nouvelles photos).
 
+**D82 — Doublons : grouper au choix, photos à la taille voulue.** La liste de
+gauche de l'étape « Doublons » se groupe par journée, par mois ou par dossier,
+au choix de l'utilisateur (par défaut par journée, par mois au-delà de 20
+journées). Par dossier, une copie exacte se range sous chacun des dossiers où
+elle a un exemplaire : en ouvrant un « Best of », on voit toutes ses copies ;
+avant le tri, les photos en vrac de la racine forment « Photos à trier ». Un
+curseur règle la taille des photos jusqu'à 600 px, pour comparer sans ouvrir
+le comparateur ; c'est le réglage de la Sélection (`tailleMiniatures`), réglé
+une fois pour toutes les pages. Le Tri automatique a le même curseur : ses
+captures d'écran et les photos des lieux fréquents, plus petites, en suivent
+l'échelle. L'inventaire annonce aussi les rafales à relire, comme les copies
+exactes.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

@@ -13,9 +13,10 @@ import { aTraduire, t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { arrivees, jourArrivee } from '../../lib/selection';
 import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../../navigateur/miniatures';
-import { reglages, serviceMiniatures, session, versionPlan } from '../etat';
+import { changerReglages, reglages, serviceMiniatures, session, versionPlan } from '../etat';
 import { dateHeure, jourCourt, pluriel } from '../format';
 import { ancre, glisse, selection, visionneuse, vue, VUE_MIS_DE_COTE } from '../organiser';
+import { Icone } from './Icones';
 
 const MARGE = 20;
 const ESPACE = 14;
@@ -31,6 +32,28 @@ const RAISONS: Record<string, string> = { floues: aTraduire('floue'), doublons: 
 function texteRaison(f: FichierPlan): string {
   const r = RAISONS[f.raison ?? 'autres'];
   return r ? t(r) : '';
+}
+
+/**
+ * Curseur de la taille des photos (réglage `tailleMiniatures`, 100 à 600 px) :
+ * le même pour toutes les pages, réglé une fois. Une page aux miniatures plus
+ * petites (Tri automatique) les met à l'échelle de ce réglage.
+ */
+export function CurseurTaille() {
+  return (
+    <label class="curseur" title={t`Taille des photos (jusqu’à 600 px)`}>
+      <Icone nom="loupe" taille={16} />
+      <input
+        type="range"
+        min="100"
+        max="600"
+        step="20"
+        aria-label={t`Taille des photos (jusqu’à 600 px)`}
+        value={reglages.value.tailleMiniatures}
+        onInput={(e) => changerReglages({ ...reglages.value, tailleMiniatures: Number(e.currentTarget.value) })}
+      />
+    </label>
+  );
 }
 
 /** Miniature d'une photo ; avec `recadrage`, telle qu'elle sera dans l'album (D62). */

@@ -139,7 +139,7 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
               <div class="bande-miniatures">
                 {(toutes ? photos.slice(0, 120) : unParJour(photos, 8)).map((f) => (
                   <span key={f.id} title={`${f.nom} — ${dateHeure(f.date)}`}>
-                    <Miniature f={f} taille={toutes ? 96 : 80} />
+                    <Miniature f={f} taille={Math.round(reglages.value.tailleMiniatures * (toutes ? 0.6 : 0.5))} />
                   </span>
                 ))}
               </div>

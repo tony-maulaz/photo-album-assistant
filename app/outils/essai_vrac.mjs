@@ -218,7 +218,13 @@ try {
   await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
   await page.locator('.tuile-doublon.ecartee').first().waitFor();
   verifier((await page.locator('.tuile-doublon.ecartee').count()) === 2, 'onglet « Mis de côté » : les 2 copies écartées, prêtes à être remises');
-  // Les rafales se repèrent toutes seules à l'ouverture de la page.
+  // Grouper par dossier : une copie se range sous chacun des dossiers où elle a un exemplaire.
+  await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
+  await page.getByRole('radio', { name: 'Tous' }).click();
+  await page.locator('.outils-doublons select').first().selectOption('dossier');
+  const sectionsDossiers = (await page.locator('.section-doublons').allInnerTexts()).map((x) => x.split('\n')[0]);
+  verifier(['Photos à trier', 'BESTOF', 'janvier'].every((n) => sectionsDossiers.includes(n)), `copies groupées par dossier : ${sectionsDossiers.join(', ')}`);
+  // Les rafales sont cherchées avec l'analyse (D81) : elles sont déjà là.
   await page.locator('.onglet-doublons', { hasText: 'Rafales' }).click();
   await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 60_000 });
   verifier(true, 'dossier en vrac : rafales repérées toutes seules, journée par journée');

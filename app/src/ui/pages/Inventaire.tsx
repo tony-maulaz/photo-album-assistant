@@ -2,6 +2,7 @@
 
 import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { aRelire, groupesScenes, groupeVisible } from '../../lib/groupesDoublons';
 import { resumeSource } from '../../lib/inventaire';
 import { RACINE } from '../../lib/plan';
 import { heureLocale } from '../../lib/source';
@@ -15,7 +16,7 @@ import { copiesProposees, useCopiesExactes } from '../copiesExactes';
 import { miseAJourDemandee } from '../composants/BandeauSource';
 import { ExtrasInventaire } from '../composants/ExtrasInventaire';
 import { Miniature } from '../composants/GrillePhotos';
-import { allerEtape, changementsSource, changerEtape, notifier, session, texteErreur, validerEtape, versionPlan, versionProjet } from '../etat';
+import { allerEtape, changementsSource, changerEtape, notifier, session, texteErreur, validerEtape, versionIA, versionPlan, versionProjet } from '../etat';
 import { dateHeure, duree, jourCourt, nombre, pluriel, taille } from '../format';
 import { construirePlan, mettreAJourInventaire } from '../projets';
 import { analyseAFaire, analyseEnCours, lancerAnalyseDossier } from '../analyseDossier';
@@ -31,15 +32,20 @@ const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
 function AVerifier() {
   const s = session.value!;
   versionPlan.value;
+  versionIA.value;
   const copies = useCopiesExactes();
   const enCours = !!analyseEnCours.value || analyseAFaire(s);
   const sousDossiers = s.projet.mode === 'vrac' ? [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').length : 0;
   const nbCopies = copies ? copiesProposees(copies, s.plan) : 0;
+  // Rafales cherchées avec l'analyse (D81) : celles qui restent à relire.
+  const fichier = (id: string) => s.plan.fichiers.get(id);
+  const nbRafales = s.doublons ? groupesScenes(s.doublons.dossiers, fichier).filter((g) => g.sorte === 'rafales' && groupeVisible(g, fichier) && aRelire(g, fichier)).length : 0;
   const sansDate = [...s.plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && f.statut === 'archive' && f.origineDate === 'fichier').length;
   const derniere = s.projet.mises_a_jour?.at(-1);
   const points = [
     sousDossiers > 0 && t`${pluriel(sousDossiers, 'sous-dossier', 'sous-dossiers')} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.`,
     nbCopies > 0 && t`${pluriel(nbCopies, 'copie exacte', 'copies exactes')} (même photo en plusieurs exemplaires) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » les exemplaires à garder.`,
+    nbRafales > 0 && t`${pluriel(nbRafales, 'rafale', 'rafales')} (photos quasi identiques prises à quelques secondes) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » celles à garder.`,
     sansDate > 0 && s.projet.mode === 'vrac' && t`${pluriel(sansDate, 'photo sans date', 'photos sans date')} : elles iront dans « ${nomsSortie().sansDate} », à placer à la main.`,
   ].filter((x): x is string => !!x);
   return (
@@ -215,7 +221,7 @@ export function PageInventaire() {
           </button>
         }
       >
-        {t`Voici ce que contient « ${s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.`}
+        {t`Voici ce que contient « ${s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies, rafales) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.`}
       </TeteEtape>
       <AVerifier />
 

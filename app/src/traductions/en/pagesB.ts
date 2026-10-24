@@ -259,8 +259,8 @@ export const TEXTES: Record<string, string> = {
     ': its subfolders become the folders of the output. The “_a_supprimer” and “_doublons” folders and the photos marked “_doublon” by the old scripts are recognised and set aside. After the inventory come the duplicates, then places and outings (automatic sorting and the steps that follow it are skipped).',
   'Les étapes': 'The steps',
   ' : dossiers, préréglage, contexte (transmis à l’IA), budget IA.': ': folders, preset, context (sent to the AI), AI budget.',
-  ' : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies) se fait pendant ce temps.':
-    ': figures, dates, cameras and clock offset; the photo analysis (sharpness, similarity, copies) runs meanwhile.',
+  ' : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies, rafales) se fait pendant ce temps.':
+    ': figures, dates, cameras and clock offset; the photo analysis (sharpness, similarity, copies, bursts) runs meanwhile.',
   ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
   ' : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».':
@@ -341,8 +341,8 @@ export const TEXTES: Record<string, string> = {
   '{0} : {1}{2} — {3}': '{0}: {1}{2} — {3}',
   'Arrêter': 'Stop',
   'Lancer l’inventaire': 'Start the inventory',
-  'Voici ce que contient « {0} ». L’application analyse maintenant les photos (netteté, ressemblance, copies) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.':
-    'Here is what “{0}” contains. The application is now analysing the photos (sharpness, similarity, copies): it is free, it happens on this computer and changes nothing.',
+  'Voici ce que contient « {0} ». L’application analyse maintenant les photos (netteté, ressemblance, copies, rafales) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.':
+    'Here is what “{0}” contains. The application is now analysing the photos (sharpness, similarity, copies, bursts): it is free, it happens on this computer and changes nothing.',
   'vidéos': 'videos',
   'autres fichiers': 'other files',
   'au total': 'in total',

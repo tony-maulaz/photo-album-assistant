@@ -9,6 +9,7 @@ import { ETAPE } from '../../navigateur/projet';
 import { SansGps } from '../composants/AidesTri';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Captures } from '../composants/Captures';
+import { CurseurTaille } from '../composants/GrillePhotos';
 import { LieuxFrequents } from '../composants/LieuxFrequents';
 import { SEUIL_PETIT } from '../composants/PanneauDossiers';
 import { dossiersProposes, fichiersARanger, TriAuto } from '../composants/TriAuto';
@@ -40,7 +41,7 @@ export function PageTri() {
 
   return (
     <div class="page etroite avec-barre">
-      <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique par lieux et sorties`}>
+      <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique par lieux et sorties`} outils={<CurseurTaille />}>
         {t`L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Rangez d’abord à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…), ajustez les réglages si besoin, puis calculez : vous vérifierez et corrigerez le résultat à l’étape suivante.`}
       </TeteEtape>
       <Captures />
