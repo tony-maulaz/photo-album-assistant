@@ -4,7 +4,7 @@ import { signal } from '@preact/signals';
 import { useEffect, useState } from 'preact/hooks';
 import { choisirDossier, demanderAutorisation, etatAutorisation } from '../../navigateur/dossiers';
 import { cleApi } from '../../navigateur/cle';
-import { ETAPES_COURTES, oublierProjetRecent, projetsRecents, type ProjetRecent } from '../../navigateur/projet';
+import { nomCourtEtape, oublierProjetRecent, projetsRecents, type ProjetRecent } from '../../navigateur/projet';
 import { t } from '../../lib/langue';
 import { ChoixLangue } from '../composants/ChoixLangue';
 import { confirmer } from '../composants/Dialogues';
@@ -138,7 +138,7 @@ function avancement(p: ProjetRecent): { texte: string; part: number } {
   const validees = etapes.filter((e) => e === 'validee').length;
   if (validees === etapes.length) return { texte: 'Terminé · sortie créée', part: 1 };
   const i = etapes.findIndex((e) => e !== 'validee');
-  return { texte: `Étape ${i + 1} sur ${etapes.length} · ${ETAPES_COURTES[i]}`, part: validees / etapes.length };
+  return { texte: `Étape ${i + 1} sur ${etapes.length} · ${nomCourtEtape(i + 1)}`, part: validees / etapes.length };
 }
 
 function CarteProjet({ p, retirer }: { p: ProjetRecent; retirer: () => void }) {

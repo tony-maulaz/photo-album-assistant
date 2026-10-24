@@ -1,6 +1,7 @@
 // État du projet dans le dossier de sortie (`.album/`, SPEC § 12) et liste des
 // projets récents de cet ordinateur (IndexedDB).
 
+import { aTraduire, t } from '../lib/langue';
 import { DOSSIER_ETAT } from '../lib/sortie';
 import { ecrireCle, lireCle } from './stockage';
 
@@ -9,18 +10,18 @@ import { ecrireCle, lireCle } from './stockage';
  * le reste de l'application ne parle que de codes (`ETAPE.selection`).
  */
 const DEFINITIONS = [
-  { code: 'projet', nom: 'Projet', court: 'Projet' },
-  { code: 'inventaire', nom: 'Inventaire', court: 'Inventaire' },
-  { code: 'floues', nom: 'Photos floues', court: 'Floues' },
-  { code: 'doublons', nom: 'Doublons', court: 'Doublons' },
-  { code: 'tri', nom: 'Tri automatique', court: 'Tri automatique' },
-  { code: 'lieux', nom: 'Lieux et sorties', court: 'Lieux et sorties' },
-  { code: 'petits', nom: 'Petits dossiers', court: 'Petits dossiers' },
-  { code: 'nommage', nom: 'Nommage', court: 'Nommage' },
-  { code: 'consolidation', nom: 'Consolidation', court: 'Consolidation' },
-  { code: 'selection', nom: 'Sélection', court: 'Sélection' },
-  { code: 'album', nom: 'Album', court: 'Album' },
-  { code: 'sortie', nom: 'Création de la sortie', court: 'Sortie' },
+  { code: 'projet', nom: aTraduire('Projet'), court: aTraduire('Projet') },
+  { code: 'inventaire', nom: aTraduire('Inventaire'), court: aTraduire('Inventaire') },
+  { code: 'floues', nom: aTraduire('Photos floues'), court: aTraduire('Floues') },
+  { code: 'doublons', nom: aTraduire('Doublons'), court: aTraduire('Doublons') },
+  { code: 'tri', nom: aTraduire('Tri automatique'), court: aTraduire('Tri automatique') },
+  { code: 'lieux', nom: aTraduire('Lieux et sorties'), court: aTraduire('Lieux et sorties') },
+  { code: 'petits', nom: aTraduire('Petits dossiers'), court: aTraduire('Petits dossiers') },
+  { code: 'nommage', nom: aTraduire('Nommage'), court: aTraduire('Nommage') },
+  { code: 'consolidation', nom: aTraduire('Consolidation'), court: aTraduire('Consolidation') },
+  { code: 'selection', nom: aTraduire('Sélection'), court: aTraduire('Sélection') },
+  { code: 'album', nom: aTraduire('Album'), court: aTraduire('Album') },
+  { code: 'sortie', nom: aTraduire('Création de la sortie'), court: aTraduire('Sortie') },
 ] as const;
 
 export type CodeEtape = (typeof DEFINITIONS)[number]['code'];
@@ -29,6 +30,10 @@ export const CODES_ETAPES: readonly CodeEtape[] = DEFINITIONS.map((d) => d.code)
 export const ETAPES: readonly string[] = DEFINITIONS.map((d) => d.nom);
 /** Noms courts pour la frise des étapes. */
 export const ETAPES_COURTES: readonly string[] = DEFINITIONS.map((d) => d.court);
+/** Nom de l'étape `n` (1 à 12) dans la langue de l'interface. */
+export const nomEtape = (n: number): string => t(ETAPES[n - 1] ?? '');
+/** Nom court de l'étape `n` (1 à 12) dans la langue de l'interface. */
+export const nomCourtEtape = (n: number): string => t(ETAPES_COURTES[n - 1] ?? '');
 /** Numéro (1 à 12) de chaque étape. */
 export const ETAPE = Object.fromEntries(DEFINITIONS.map((d, i) => [d.code, i + 1])) as Record<CodeEtape, number>;
 

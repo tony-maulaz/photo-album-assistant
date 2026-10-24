@@ -2,7 +2,7 @@
 
 import type { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, ETAPES_COURTES, etapeInutile } from '../../navigateur/projet';
+import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCourtEtape, nomEtape } from '../../navigateur/projet';
 import { messages, page, reglages, session, versionIA, versionProjet, type Page } from '../etat';
 import { nombre } from '../format';
 import { fermerProjet } from '../projets';
@@ -45,8 +45,9 @@ function Avancement() {
   const [ouvert, basculer, zone] = useDeroulant();
   const courante = p.nom === 'etape' ? p.numero : 0;
   const etats = s.projet.etapes;
-  const etapes = ETAPES.map((nom, i) => {
+  const etapes = ETAPES.map((_, i) => {
     const n = i + 1;
+    const nom = nomEtape(n);
     const code = CODES_ETAPES[i];
     // La création de la sortie suppose l'arborescence validée (§ 4.2).
     const verrouillee = code === 'sortie' && !arborescenceValidee(s.projet);
@@ -55,7 +56,7 @@ function Avancement() {
     const detail = inutile ? 'inutile pour un dossier déjà trié' : verrouillee ? `validez d’abord l’étape ${ETAPE.lieux} (Lieux et sorties)` : LIBELLES[etat];
     const symbole = inutile ? '–' : verrouillee ? '' : SYMBOLES[etat];
     const classe = `etape ${etat}${n === courante ? ' courante' : ''}${inutile ? ' inutile' : ''}${verrouillee ? ' verrouillee' : ''}`;
-    return { n, nom, court: ETAPES_COURTES[i], etat, detail, symbole, classe };
+    return { n, nom, court: nomCourtEtape(n), etat, detail, symbole, classe };
   });
   const aller = (n: number) => {
     page.value = { nom: 'etape', numero: n };
@@ -80,7 +81,7 @@ function Avancement() {
       <button type="button" class="etape-courante" aria-expanded={ouvert} aria-haspopup="menu" onClick={() => basculer()} title="Toutes les étapes">
         {courante ? (
           <>
-            Étape {courante} sur {ETAPES.length} · <strong>{ETAPES_COURTES[courante - 1]}</strong>
+            Étape {courante} sur {ETAPES.length} · <strong>{nomCourtEtape(courante)}</strong>
           </>
         ) : (
           'Étapes'
