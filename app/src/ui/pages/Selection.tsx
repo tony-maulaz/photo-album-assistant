@@ -126,7 +126,7 @@ function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: st
 function Cible({ photos }: { photos: FichierPlan[] }) {
   const s = session.value!;
   const c = s.album.cible;
-  const a = avancement(photos, { mode: c.mode, nombre: c.nombre, photosParPage: s.album.photosParPage });
+  const a = avancement(photos, { ...s.album, mode: c.mode, nombre: c.nombre, photosParPage: s.album.photosParPage });
   const unite = c.mode === 'pages' ? t`pages` : t`photos`;
   return (
     <section class="outil">
