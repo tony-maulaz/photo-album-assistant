@@ -213,4 +213,8 @@ export const TEXTES: Record<string, string> = {
   // plan.ts : choix par sous-dossier (étape « Dossiers », D61)
   'Garder et nettoyer': 'Keep and clean',
   'Ne pas toucher': 'Leave as is',
+
+  // plan.ts : recadrage (D62)
+  'Recadrer {0}': 'Crop {0}',
+  'Enlever le recadrage de {0}': 'Remove the crop of {0}',
 };

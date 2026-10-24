@@ -341,4 +341,9 @@ export const TEXTES: Record<string, string> = {
   légendes: 'captions',
   page: 'page',
   '{0} pages de plus que la cible': '{0} pages more than the target',
+
+  // Selection.tsx : recadrage (D62)
+  'Recadrée pour l’album (touche K pour changer)': 'Cropped for the album (K to change)',
+  'Recadrer ou redresser la copie de l’album (touche K)': 'Crop or straighten the album copy (K key)',
+  'Recadrer…': 'Crop…',
 };

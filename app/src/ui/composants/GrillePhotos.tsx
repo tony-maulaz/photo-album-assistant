@@ -2,6 +2,7 @@
 // existent. Sélection au clic, Ctrl+clic, Maj+clic et rectangle ; glisser
 // la sélection sur un dossier du panneau.
 
+import { dessinerRecadrage, recadrageUtile, tailleRecadree, type Recadrage } from '../../lib/recadrage';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { aTraduire, t } from '../../lib/langue';
@@ -25,7 +26,8 @@ function texteRaison(f: FichierPlan): string {
   return r ? t(r) : '';
 }
 
-export function Miniature({ f, taille, rotation = 0 }: { f: FichierPlan; taille: number; rotation?: number }) {
+/** Miniature d'une photo ; avec `recadrage`, telle qu'elle sera dans l'album (D62). */
+export function Miniature({ f, taille, rotation = 0, recadrage }: { f: FichierPlan; taille: number; rotation?: number; recadrage?: Recadrage }) {
   const [url, setUrl] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (f.categorie !== 'photo') {
@@ -47,8 +49,29 @@ export function Miniature({ f, taille, rotation = 0 }: { f: FichierPlan; taille:
     };
   }, [f.id, f.taille, f.modifie, taille > HAUTEUR_MINIATURE]);
 
+  if (url && recadrageUtile(recadrage)) return <MiniatureRecadree url={url} taille={taille} rotation={rotation} recadrage={recadrage} />;
   if (url) return <img src={url} alt="" draggable={false} style={{ maxWidth: `${taille}px`, maxHeight: `${taille}px`, ...(rotation ? { transform: `rotate(${rotation}deg)` } : {}) }} />;
   return <div class={`sans-miniature${url === undefined ? ' chargement' : ''}`}>{f.categorie === 'video' ? t`▶ vidéo` : url === null ? t`aperçu indisponible` : ''}</div>;
+}
+
+/** La miniature dessinée avec le recadrage, par le même calcul que la copie de l'album. */
+function MiniatureRecadree({ url, taille, rotation, recadrage }: { url: string; taille: number; rotation: number; recadrage: Recadrage }) {
+  const toile = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const el = toile.current;
+      if (!el) return;
+      const dim = tailleRecadree(img.naturalWidth, img.naturalHeight, rotation, recadrage);
+      const facteur = Math.min(1, taille / Math.max(dim.l, dim.h)) * (window.devicePixelRatio || 1);
+      el.width = Math.max(1, Math.round(dim.l * facteur));
+      el.height = Math.max(1, Math.round(dim.h * facteur));
+      el.style.width = `${el.width / (window.devicePixelRatio || 1)}px`;
+      dessinerRecadrage(el.getContext('2d')!, img, img.naturalWidth, img.naturalHeight, rotation, recadrage, facteur);
+    };
+    img.src = url;
+  }, [url, taille, rotation, recadrage.x, recadrage.y, recadrage.l, recadrage.h, recadrage.angle]);
+  return <canvas ref={toile} class="miniature-recadree" />;
 }
 
 /** Petite étiquette « 12 photos » qui suit la souris pendant le glisser. */
@@ -227,7 +250,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         title={[`${f.nom}`, `${dateHeure(f.date)}${f.origineDate === 'fichier' ? t` (date du fichier)` : ''}`, ...(options.infobulle?.(f) ?? [])].join('\n')}
       >
         <div class="cadre-miniature" style={{ height: `${taille}px` }}>
-          <Miniature f={f} taille={taille} rotation={options.badges ? f.rotation : 0} />
+          <Miniature f={f} taille={taille} rotation={options.badges ? f.rotation : 0} recadrage={options.badges ? f.recadrage : undefined} />
           {f.categorie === 'video' && <span class="badge video">{t`vidéo`}</span>}
           {enMisDeCote && !options.badges && <span class="badge raison">{texteRaison(f)}</span>}
           {options.badges?.(f)}

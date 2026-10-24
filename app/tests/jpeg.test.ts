@@ -81,3 +81,25 @@ describe('balise Orientation (rotation sans recompression, P13)', () => {
     expect(changerOrientation(Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]), 6)).toBeNull();
   });
 });
+
+describe('EXIF reporté sur une copie recadrée (D62)', () => {
+  // JPEG minimal : EXIF (en-tête TIFF « MM », une balise Orientation = 6), puis des données.
+  const exif = [0xff, 0xe1, 0x00, 0x22, 0x45, 0x78, 0x69, 0x66, 0, 0, 0x4d, 0x4d, 0, 0x2a, 0, 0, 0, 8, 0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0];
+  const original = Uint8Array.from([0xff, 0xd8, ...exif, 0xff, 0xda, 1, 2, 3, 0xff, 0xd9]);
+  // JPEG produit par le navigateur : en-tête JFIF, puis l'image.
+  const jfif = [0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0];
+  const nouveau = Uint8Array.from([0xff, 0xd8, ...jfif, 0xff, 0xdb, 9, 9, 0xff, 0xd9]);
+
+  it('reprend l’EXIF de l’original, orientation remise à 1', async () => {
+    const { avecExif, orientationJpeg, segmentExif } = await import('../src/lib/jpeg');
+    const segment = segmentExif(original)!;
+    expect([...segment.slice(0, 2)]).toEqual([0xff, 0xe1]);
+    const copie = avecExif(nouveau, segment);
+    expect(orientationJpeg(copie)).toBe(1);
+    expect([...copie.slice(0, 4)]).toEqual([0xff, 0xd8, 0xff, 0xe1]);
+    // L'image du navigateur suit, sans son en-tête JFIF.
+    expect([...copie.slice(2 + segment.length)]).toEqual([0xff, 0xdb, 9, 9, 0xff, 0xd9]);
+    expect(segmentExif(Uint8Array.from([0xff, 0xd8, 0xff, 0xda, 0xff, 0xd9]))).toBeNull();
+  });
+});
+

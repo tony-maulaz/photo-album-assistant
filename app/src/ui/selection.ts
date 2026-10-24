@@ -34,6 +34,8 @@ export interface ResultatsIA {
 }
 
 export const filtres = signal<Filtres>(FILTRES_DEFAUT);
+/** Photo en cours de recadrage (D62), ou `null`. */
+export const recadrageOuvert = signal<string | null>(null);
 /** Les photos semblables sont empilées (une seule visible par pile). */
 export const empiler = signal(false);
 /** Piles dépliées (par identifiant de leur première photo). */

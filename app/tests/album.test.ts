@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { signatureRecadrage } from '../src/lib/recadrage';
 import { configAlbumDefaut, fichiersAlbum, ordreAlbum, paginer, partieNom, planifierAlbum, sections, textesAlbum, type EtatAlbum } from '../src/lib/album';
 import type { FichierPlan } from '../src/lib/plan';
 import { avancement, equilibre, minutes, piles, redondances } from '../src/lib/selection';
@@ -132,11 +133,25 @@ describe('synchronisation de Album/', () => {
       }
       if (a.type === 'copier') {
         presents.set(a.chemin, 10);
-        etat[a.chemin] = { id: a.id, taille: 10, rotation: a.rotation };
+        etat[a.chemin] = { id: a.id, taille: 10, rotation: a.rotation, ...(a.recadrage ? { recadrage: signatureRecadrage(a.recadrage) } : {}) };
       }
     }
   };
   const types = (a: ReturnType<typeof planifierAlbum>) => a.map((x) => x.type).sort().join(',');
+
+  it('une photo recadrée autrement est recopiée ; le même recadrage garde la copie (D62)', () => {
+    const presents = new Map<string, number>();
+    const etat: EtatAlbum = {};
+    const carre = { x: 0.125, y: 0, l: 0.75, h: 1, angle: 0 };
+    const avec = (r?: typeof carre) => voulus(['a']).map((v) => (r ? { ...v, recadrage: r } : v));
+    appliquer(planifierAlbum(avec(), presents, etat), presents, etat);
+    const recadree = planifierAlbum(avec(carre), presents, etat);
+    expect(recadree.map((x) => x.type).sort()).toEqual(['copier', 'retirer']);
+    expect(recadree.find((x) => x.type === 'copier')).toMatchObject({ recadrage: carre });
+    appliquer(recadree, presents, etat);
+    expect(types(planifierAlbum(avec(carre), presents, etat))).toBe('garder');
+    expect(types(planifierAlbum(avec({ ...carre, angle: 2 }), presents, etat))).toBe('copier,retirer');
+  });
 
   it('copie, puis garde, renomme si l’ordre change, retire les anciennes copies (I1)', () => {
     const presents = new Map<string, number>();

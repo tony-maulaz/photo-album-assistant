@@ -569,4 +569,10 @@ export const TEXTES: Record<string, string> = {
   // Tri.tsx
   'L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Rangez d’abord à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…), ajustez les réglages si besoin, puis calculez : vous vérifierez et corrigerez le résultat à l’étape suivante.':
     'The application arranges the photos by place (GPS position) and by outing (the days spent at the same place). First put screenshots aside and save the places that come up often (home, grandparents…), adjust the settings if needed, then calculate: you will check and correct the result in the next step.',
+
+  // Sortie.tsx : recadrage (D62)
+  '{0} photos recadrées ont été copiées entières (format que le navigateur ne sait pas lire) : recadrez-les dans ifolor.':
+    '{0} cropped photos were copied whole (a format the browser cannot read): crop them in ifolor.',
+  '{0} photo recadrée a été copiée entière (format que le navigateur ne sait pas lire) : recadrez-la dans ifolor.':
+    '{0} cropped photo was copied whole (a format the browser cannot read): crop it in ifolor.',
 };

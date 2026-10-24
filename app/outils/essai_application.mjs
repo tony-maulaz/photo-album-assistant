@@ -377,6 +377,16 @@ try {
   await page.waitForTimeout(200);
   verifier((await page.locator('.page-selection .tuile').nth(0).locator('.etoiles').innerText()) === '★★', 'touche 2 : grande photo ★★');
   verifier((await page.locator('.page-selection .tuile').nth(2).locator('.badge.rotation').count()) === 1, 'touche R : photo tournée');
+  // Recadrage (D62) : touche K, format carré, la miniature montre la photo recadrée.
+  await page.locator('.page-selection .tuile').nth(3).click();
+  await page.keyboard.press('k');
+  await page.locator('.recadreur .cadre-recadrage').waitFor({ timeout: 20_000 });
+  await page.locator('.recadreur').getByRole('radio', { name: 'Carré' }).click();
+  await page.locator('.recadreur input[type=range]').fill('3');
+  await capturer(page, '12b_recadrage');
+  await page.getByRole('button', { name: 'Valider le recadrage' }).click();
+  await page.locator('.page-selection .tuile').nth(3).locator('.miniature-recadree').waitFor({ timeout: 20_000 });
+  verifier((await page.locator('.page-selection .tuile').nth(3).getByText('✂').count()) === 1, 'touche K : photo recadrée en carré et redressée, miniature recadrée');
   await page.keyboard.press('t');
   await page.locator('.tri-rapide').waitFor();
   await page.locator('.tri-rapide img').waitFor({ timeout: 20_000 });
@@ -496,6 +506,20 @@ try {
   const attendues = Number(/(\d+) photos? retenues?/.exec(retenuesTexte)[1]) - 1;
   verifier(album.length === attendues, `Album/ contient les ${attendues} photos retenues`);
   verifier(album.every((p, i) => p.startsWith(`Album/${String(i + 1).padStart(4, '0')}_`)), 'numérotation continue 0001, 0002…');
+  // La copie recadrée est carrée, et garde la date et l'appareil de l'original (EXIF).
+  const carrees = await page.evaluate(async (chemins) => {
+    let d = await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie');
+    d = await d.getDirectoryHandle('Album');
+    const resultat = [];
+    for (const c of chemins) {
+      const fichier = await (await d.getFileHandle(c.slice('Album/'.length))).getFile();
+      const image = await createImageBitmap(fichier);
+      if (image.width === image.height) resultat.push({ c, exif: [...new Uint8Array(await fichier.slice(0, 4).arrayBuffer())].join(',') === '255,216,255,225' });
+      image.close();
+    }
+    return resultat;
+  }, album.filter((p) => !p.slice('Album/'.length).includes('/')));
+  verifier(carrees.length === 1 && carrees[0].exif, `Album/ : une copie recadrée en carré, avec son EXIF (${carrees.map((x) => x.c).join(', ')})`);
   const jours = album.map((p) => p.split('_')[1]);
   verifier(jours.every((j, i) => i === 0 || j >= jours[i - 1]), 'ordre de l’album par journée');
   const textes = await page.evaluate(async () => {

@@ -454,6 +454,20 @@ une page d'information, avec « Refaire l'inventaire » en haut (l'analyse
 reprend, les résultats des photos inchangées sont réutilisés, les rafales
 sont recalculées et les étapes suivantes remises à faire).
 
+**D62 — Recadrage pour l'album, la seule copie réencodée.** À l'étape
+Sélection, une photo se recadre (bouton « Recadrer… » ou touche K) : un cadre
+à tirer, des formats tout faits (libre, 3:2, 4:3, carré, en portrait ou en
+paysage) et un redressement de ±15° ; l'image est agrandie juste assez pour
+qu'aucun coin vide n'apparaisse. Le recadrage est une décision du plan,
+annulable comme la rotation, et ne touche que la copie dans `Album/` :
+l'archive et la source restent entières. Contrairement à la rotation (balise
+Orientation, sans recompression, P13), un recadrage oblige à réencoder : la
+copie est écrite en JPEG qualité 0,95 (aucune perte visible à l'impression),
+avec la date et l'appareil de l'original (EXIF repris, orientation remise à
+1). Le même calcul dessine l'aperçu et la copie : ce qu'on voit est ce qui
+est imprimé. Un format que le navigateur ne sait pas décoder est copié entier,
+et la page Sortie le signale.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

@@ -4,10 +4,10 @@
 // Une photo tournée n'est pas recompressée : seule sa balise Orientation change.
 
 import { fichiersAlbum, ordreAlbum, photosAlbum, planifierAlbum, sections, textesAlbum, type ActionAlbum, type ConfigAlbum, type EtatAlbum, type FichierAlbum } from '../lib/album';
-import { changerOrientation, orientationApresRotation, orientationJpeg } from '../lib/jpeg';
-import { t } from '../lib/langue';
+import { avecExif, changerOrientation, orientationApresRotation, orientationJpeg, segmentExif } from '../lib/jpeg';
+import { avecLangue, t } from '../lib/langue';
 import type { Plan } from '../lib/plan';
-import { avecLangue } from '../lib/langue';
+import { dessinerRecadrage, signatureRecadrage, tailleRecadree, type Recadrage } from '../lib/recadrage';
 import { DOSSIER_ALBUM, langueDeLaSortie, nomsSortie, type EtatSortie } from '../lib/sortie';
 import type { AccesDossier } from './dossiers';
 
@@ -61,6 +61,8 @@ export interface ResultatAlbum {
   conflits: string[];
   /** Photos tournées copiées sans rotation (pas de balise Orientation à modifier). */
   sansRotation: string[];
+  /** Photos recadrées copiées entières (format que le navigateur ne sait pas décoder). */
+  sansRecadrage: string[];
   erreurs: { id: string; message: string }[];
 }
 
@@ -81,6 +83,9 @@ function separer(chemin: string): [string, string] {
   return [i < 0 ? '' : chemin.slice(0, i), chemin.slice(i + 1)];
 }
 
+/** Qualité JPEG d'une copie recadrée : sans perte visible à l'impression. */
+const QUALITE_RECADRAGE = 0.95;
+
 export async function actionsAlbum(o: Pick<OptionsAlbum, 'plan' | 'config' | 'nomProjet' | 'sortie' | 'etat'>): Promise<{ actions: ActionAlbum[]; voulus: FichierAlbum[]; textes: string }> {
   const { voulus, textes } = contenuAlbum(o.plan, o.config, o.nomProjet);
   const presents = await listerAlbum(o.sortie.racine);
@@ -95,7 +100,7 @@ export async function actionsAlbum(o: Pick<OptionsAlbum, 'plan' | 'config' | 'no
 export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum> {
   const { actions, voulus, textes } = await actionsAlbum(o);
   const etat: EtatAlbum = (o.etat.album ??= {});
-  const r: ResultatAlbum = { copies: 0, renommes: 0, retires: 0, gardes: 0, conflits: [], sansRotation: [], erreurs: [] };
+  const r: ResultatAlbum = { copies: 0, renommes: 0, retires: 0, gardes: 0, conflits: [], sansRotation: [], sansRecadrage: [], erreurs: [] };
   const album = (chemin: string) => (chemin ? `${DOSSIER_ALBUM}/${chemin}` : DOSSIER_ALBUM);
   const travail = actions.filter((a) => a.type !== 'garder' && a.type !== 'conflit').length;
   let faits = 0;
@@ -161,14 +166,17 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
   }
   await o.enregistrerEtat(o.etat);
 
-  // 4. Copies, avec la rotation demandée appliquée à la balise Orientation.
+  // 4. Copies, avec la rotation demandée appliquée à la balise Orientation ; une photo recadrée est réencodée (D62).
   let derniere = performance.now();
   for (const a of actions) {
     if (a.type !== 'copier' || o.arreter()) continue;
     try {
       const original = await o.source.fichier(a.id);
       let contenu: Blob = original;
-      if (a.rotation) {
+      const recadree = a.recadrage ? await copieRecadree(original, a.rotation, a.recadrage).catch(() => null) : null;
+      if (a.recadrage && !recadree) r.sansRecadrage.push(a.chemin);
+      if (recadree) contenu = recadree;
+      else if (a.rotation) {
         const octets = new Uint8Array(await original.arrayBuffer());
         const tournee = changerOrientation(octets, orientationApresRotation(orientationJpeg(octets) ?? 1, a.rotation));
         if (tournee) contenu = new Blob([tournee as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' });
@@ -176,7 +184,7 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
       }
       const flux = await (await o.sortie.poignee(album(a.chemin), true)).createWritable();
       await contenu.stream().pipeTo(flux);
-      etat[a.chemin] = { id: a.id, taille: contenu.size, rotation: a.rotation };
+      etat[a.chemin] = { id: a.id, taille: contenu.size, rotation: a.rotation, ...(recadree ? { recadrage: signatureRecadrage(a.recadrage) } : {}) };
       r.copies++;
     } catch (err) {
       r.erreurs.push({ id: a.id, message: String(err) });
@@ -200,4 +208,23 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
   }
   await o.enregistrerEtat(o.etat);
   return r;
+}
+
+/**
+ * Copie recadrée (D62) : la photo est décodée à l'endroit, tournée, redressée,
+ * recadrée, puis réencodée en JPEG de haute qualité ; la date et l'appareil
+ * (EXIF) de l'original sont repris. L'archive garde l'original intact.
+ */
+async function copieRecadree(original: Blob, rotation: number, recadrage: Recadrage): Promise<Blob> {
+  const image = await createImageBitmap(original, { imageOrientation: 'from-image' });
+  try {
+    const { l, h } = tailleRecadree(image.width, image.height, rotation, recadrage);
+    const toile = new OffscreenCanvas(l, h);
+    dessinerRecadrage(toile.getContext('2d')!, image, image.width, image.height, rotation, recadrage);
+    const jpeg = new Uint8Array(await (await toile.convertToBlob({ type: 'image/jpeg', quality: QUALITE_RECADRAGE })).arrayBuffer());
+    const exif = segmentExif(new Uint8Array(await original.arrayBuffer()));
+    return new Blob([(exif ? avecExif(jpeg, exif) : jpeg) as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' });
+  } finally {
+    image.close();
+  }
 }

@@ -33,12 +33,14 @@ import {
   pilesOuvertes,
   pilesParPhoto,
   photosVue,
+  recadrageOuvert,
   tournerPhotos,
   triRapide,
   type Filtres,
   type InfoPhoto,
   type ResultatsIA,
 } from '../selection';
+import { Recadreur } from '../composants/Recadreur';
 import { AidesSelection, lignesIA, resultatsSelection } from './AidesPhotos';
 
 function estChampDeSaisie(e: KeyboardEvent): boolean {
@@ -89,6 +91,11 @@ function Badges({ f, info, pile, ouverte, note, choixIA }: { f: FichierPlan; inf
         </span>
       )}
       {f.rotation ? <span class="badge rotation">↻ {f.rotation}°</span> : null}
+      {f.recadrage ? (
+        <span class="badge rotation" title={t`Recadrée pour l’album (touche K pour changer)`}>
+          ✂
+        </span>
+      ) : null}
     </>
   );
 }
@@ -359,7 +366,7 @@ export function PageSelection() {
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
-      if (estChampDeSaisie(e) || deplacerOuvert.value || triRapide.value || comparaison.value) return;
+      if (estChampDeSaisie(e) || deplacerOuvert.value || triRapide.value || comparaison.value || recadrageOuvert.value) return;
       const ctrl = e.ctrlKey || e.metaKey;
       const ids = [...selection.value];
       const k = e.key;
@@ -372,6 +379,7 @@ export function PageSelection() {
       else if (k.toLowerCase() === 'x' && ids.length) choisir(ids, 0);
       else if ((k === 'Backspace' || k === 'Delete') && ids.length) choisir(ids, undefined);
       else if (k.toLowerCase() === 'r' && ids.length) tournerPhotos(ids, e.shiftKey ? -90 : 90);
+      else if (k.toLowerCase() === 'k' && ids.length === 1) recadrageOuvert.value = ids[0];
       else if (k.toLowerCase() === 'm' && ids.length) deplacerOuvert.value = true;
       else if (k.toLowerCase() === 'c' && ids.length >= 2) comparaison.value = ids.slice(0, 4);
       else if (k === 'Enter' || k.toLowerCase() === 't') ouvrirTri();
@@ -463,6 +471,11 @@ export function PageSelection() {
             <button type="button" onClick={() => tournerPhotos([...choisis], 90)} title={t`Tourner d’un quart de tour (touche R ; Maj+R : dans l’autre sens)`} aria-label={t`Tourner`}>
               ↻
             </button>
+            {choisis.size === 1 && (
+              <button type="button" onClick={() => (recadrageOuvert.value = [...choisis][0])} title={t`Recadrer ou redresser la copie de l’album (touche K)`}>
+                {t`Recadrer…`}
+              </button>
+            )}
             {choisis.size >= 2 && choisis.size <= 4 && (
               <button type="button" onClick={() => (comparaison.value = [...choisis].slice(0, 4))} title={t`Touche C : 2 à 4 photos`}>
                 {t`Comparer`}
@@ -521,6 +534,7 @@ export function PageSelection() {
         valider={() => validerEtape('selection')}
       />
       {deplacerOuvert.value && <DialogueDeplacer />}
+      {recadrageOuvert.value && plan.fichiers.get(recadrageOuvert.value) && <Recadreur f={plan.fichiers.get(recadrageOuvert.value)!} fermer={() => (recadrageOuvert.value = null)} />}
       {triRapide.value && <TriRapide infos={infos} />}
       {comparees.length >= 2 && (
         <Comparateur

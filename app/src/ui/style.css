@@ -3607,3 +3607,147 @@ button.bouton-ia:disabled {
   font-size: 14px;
   font-weight: 500;
 }
+
+/* Recadrage pour l'album (D62) : la photo en grand, le cadre à tirer, les formats et le redressement. */
+.recadreur {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #0c0d0f;
+  color: #f2f2ee;
+  overflow: auto;
+}
+
+.tete-recadreur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+
+.tete-recadreur .discret {
+  color: #b9bcc2;
+}
+
+.scene-recadrage {
+  position: relative;
+  flex: 0 0 auto;
+  /* L'ombre qui assombrit le hors-cadre reste sur la photo, sans couvrir les boutons. */
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+}
+
+.scene-recadrage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cadre-recadrage {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.55);
+  cursor: move;
+  /* Tiers de l'image, pour placer le sujet. */
+  background-image:
+    linear-gradient(to right, transparent calc(33.33% - 0.5px), rgb(255 255 255 / 0.45) calc(33.33% - 0.5px), rgb(255 255 255 / 0.45) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px), transparent calc(66.66% - 0.5px), rgb(255 255 255 / 0.45) calc(66.66% - 0.5px), rgb(255 255 255 / 0.45) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(33.33% - 0.5px), rgb(255 255 255 / 0.45) calc(33.33% - 0.5px), rgb(255 255 255 / 0.45) calc(33.33% + 0.5px), transparent calc(33.33% + 0.5px), transparent calc(66.66% - 0.5px), rgb(255 255 255 / 0.45) calc(66.66% - 0.5px), rgb(255 255 255 / 0.45) calc(66.66% + 0.5px), transparent calc(66.66% + 0.5px));
+}
+
+.cadre-recadrage .poignee {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  background: transparent;
+}
+
+.cadre-recadrage .no {
+  left: -5px;
+  top: -5px;
+  border-right: 0;
+  border-bottom: 0;
+  cursor: nwse-resize;
+}
+
+.cadre-recadrage .ne {
+  right: -5px;
+  top: -5px;
+  border-left: 0;
+  border-bottom: 0;
+  cursor: nesw-resize;
+}
+
+.cadre-recadrage .so {
+  left: -5px;
+  bottom: -5px;
+  border-right: 0;
+  border-top: 0;
+  cursor: nesw-resize;
+}
+
+.cadre-recadrage .se {
+  right: -5px;
+  bottom: -5px;
+  border-left: 0;
+  border-top: 0;
+  cursor: nwse-resize;
+}
+
+.outils-recadrage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+}
+
+.outils-recadrage .formats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.outils-recadrage .formats button {
+  transition: none;
+}
+
+.outils-recadrage .formats button[aria-checked='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-texte);
+}
+
+.outils-recadrage .redresser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.outils-recadrage .redresser input {
+  width: 220px;
+}
+
+.outils-recadrage .lien,
+.outils-recadrage .discret {
+  color: #d6d8dc;
+}
+
+.actions-recadrage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(900px, 100%);
+}
+
+.miniature-recadree {
+  display: block;
+  max-width: 100%;
+}
+

@@ -101,3 +101,35 @@ export function orientationApresRotation(orientation: number, degres: number): n
   }
   return orientation;
 }
+
+// ---------------------------------------------------------------------------
+// Données EXIF reportées sur une copie réencodée (recadrage, D62)
+// ---------------------------------------------------------------------------
+
+/**
+ * Segment APP1 EXIF complet (marqueur compris), orientation remise à 1 : la
+ * copie réencodée est déjà à l'endroit. `null` sans EXIF.
+ */
+export function segmentExif(o: Uint8Array): Uint8Array | null {
+  if (o[0] !== 0xff || o[1] !== 0xd8) return null;
+  const source = changerOrientation(o, 1) ?? o;
+  let i = 2;
+  while (i + 4 <= source.length && source[i] === 0xff) {
+    const marqueur = source[i + 1];
+    const longueur = (source[i + 2] << 8) + source[i + 3];
+    if (marqueur === 0xda || marqueur === 0xd9) return null;
+    if (marqueur === 0xe1 && source[i + 4] === 0x45 && source[i + 5] === 0x78 && source[i + 6] === 0x69 && source[i + 7] === 0x66) return source.slice(i, i + 2 + longueur);
+    i += 2 + longueur;
+  }
+  return null;
+}
+
+/** Le JPEG `nouveau` avec le segment EXIF `exif` juste après le début de l'image, à la place de l'en-tête JFIF du navigateur. */
+export function avecExif(nouveau: Uint8Array, exif: Uint8Array): Uint8Array {
+  const suite = nouveau[2] === 0xff && nouveau[3] === 0xe0 ? 4 + (nouveau[4] << 8) + nouveau[5] : 2;
+  const r = new Uint8Array(2 + exif.length + nouveau.length - suite);
+  r.set(nouveau.subarray(0, 2), 0);
+  r.set(exif, 2);
+  r.set(nouveau.subarray(suite), 2 + exif.length);
+  return r;
+}

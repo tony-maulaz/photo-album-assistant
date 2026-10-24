@@ -3,6 +3,7 @@
 // Les objets du plan ne sont jamais modifiés sur place : chaque opération les
 // remplace, ce qui rend l'annulation (Ctrl+Z) simple et sûre.
 
+import { normaliser, recadrageUtile, type Recadrage } from './recadrage';
 import { pluriel } from '../ui/format';
 import type { Categorie } from './fichiers';
 import { aTraduire, t } from './langue';
@@ -80,6 +81,8 @@ export interface FichierPlan {
   album?: 0 | 1 | 2;
   /** Rotation à appliquer à la copie dans Album/ (degrés, sens horaire). */
   rotation?: Rotation;
+  /** Recadrage de la copie dans Album/ (étape « Sélection », D62), après la rotation. */
+  recadrage?: Recadrage;
   /** Légende de la photo dans l'album (étape « Album »). */
   legende?: string;
   /** Doublon écarté à l'étape « Doublons » : la photo gardée à sa place, et pourquoi. */
@@ -583,6 +586,16 @@ export function tourner(plan: Plan, ids: string[], sens: 90 | -90): Modification
     tx.fichier(r === 0 ? reste : { ...reste, rotation: r });
   }
   return tx.terminer(t`Tourner ${pluriel(ids.length, 'photo')}`);
+}
+
+/** Recadre la copie de la photo dans Album/ (D62) ; `undefined` ou un recadrage qui ne coupe rien l'enlève. */
+export function recadrer(plan: Plan, id: string, recadrage: Recadrage | undefined): Modification | null {
+  const f = plan.fichiers.get(id);
+  if (!f || f.categorie !== 'photo') return null;
+  const { recadrage: _ancien, ...reste } = f;
+  const tx = new Transaction(plan);
+  tx.fichier(recadrageUtile(recadrage) ? { ...reste, recadrage: normaliser(recadrage) } : reste);
+  return tx.terminer(recadrageUtile(recadrage) ? t`Recadrer ${f.nom}` : t`Enlever le recadrage de ${f.nom}`);
 }
 
 export function changerLegende(plan: Plan, id: string, legende: string): Modification | null {

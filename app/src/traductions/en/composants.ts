@@ -367,4 +367,19 @@ export const TEXTES: Record<string, string> = {
   'ne pas toucher': 'leave as is',
   'Sous-dossier de la source recopié tel quel': 'Source subfolder copied as is',
   'Écarter {0}': 'Set aside {0}',
+
+  // Recadreur.tsx (D62)
+  Libre: 'Free',
+  Carré: 'Square',
+  'Recadrer la photo': 'Crop the photo',
+  'Recadrer « {0} »': 'Crop “{0}”',
+  'Seule la copie de l’album est recadrée : la photo de l’archive reste entière.': 'Only the album copy is cropped: the photo in the archive stays whole.',
+  'Cette photo ne peut pas être affichée ici ({0}).': 'This photo cannot be shown here ({0}).',
+  Format: 'Format',
+  'En paysage': 'Landscape',
+  'En portrait': 'Portrait',
+  'Redresser : {0}°': 'Straighten: {0}°',
+  '{0} × {1} pixels': '{0} × {1} pixels',
+  'Tout reprendre': 'Start over',
+  'Valider le recadrage': 'Apply the crop',
 };

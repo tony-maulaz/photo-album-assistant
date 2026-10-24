@@ -313,6 +313,13 @@ export function PageSortie() {
                 : t`${nombre(resultatAlbum.sansRotation.length)} photo tournée n’a pas pu être tournée sans recompression (pas de balise d’orientation) : tournez-la dans ifolor.`}
             </p>
           )}
+          {resultatAlbum && resultatAlbum.sansRecadrage.length > 0 && (
+            <p class="discret">
+              {resultatAlbum.sansRecadrage.length > 1
+                ? t`${nombre(resultatAlbum.sansRecadrage.length)} photos recadrées ont été copiées entières (format que le navigateur ne sait pas lire) : recadrez-les dans ifolor.`
+                : t`${nombre(resultatAlbum.sansRecadrage.length)} photo recadrée a été copiée entière (format que le navigateur ne sait pas lire) : recadrez-la dans ifolor.`}
+            </p>
+          )}
           {b.enTrop.length > 0 && <p class="discret">{t`${pluriel(b.enTrop.length, 'fichier')} de la sortie hors du plan (laissés tels quels, listés dans le rapport).`}</p>}
           {b.datesFichierSeulement.length > 0 && (
             <p class="discret">{t`${pluriel(b.datesFichierSeulement.length, 'photo ou vidéo', 'photos ou vidéos')} sans autre date que celle du fichier : leur date d’origine est dans le rapport.`}</p>

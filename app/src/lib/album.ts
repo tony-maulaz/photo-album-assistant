@@ -1,6 +1,7 @@
 // Album (SPEC § 6.10, § 12) : ordre (D8, I2), sections, pages simulées, noms
 // numérotés de `Album/`, textes pour ifolor, et synchronisation de `Album/`.
 
+import { recadrageUtile, signatureRecadrage, type Recadrage } from './recadrage';
 import { t } from './langue';
 import { nomAscii } from './noms';
 import type { FichierPlan, Plan } from './plan';
@@ -157,6 +158,8 @@ export interface FichierAlbum {
   /** Chemin dans `Album/`, numéroté pour garder l'ordre à l'import (D7). */
   chemin: string;
   rotation: number;
+  /** Recadrage demandé (D62) : la copie est alors réencodée. */
+  recadrage?: Recadrage;
   taille: number;
 }
 
@@ -171,7 +174,7 @@ export function fichiersAlbum(ordre: FichierPlan[], secs: Section[], config: Con
     const jour = (f.date ?? '').slice(0, 10).replace(/-/g, '') || '00000000';
     const nom = `${String(i + 1).padStart(4, '0')}_${jour}_${partieNom(s.titre)}${extension(f.nom)}`;
     const dossier = config.sousDossiers ? `${String(sectionDe[i] + 1).padStart(2, '0')}_${partieNom(s.titre)}/` : '';
-    return { id: f.id, chemin: `${dossier}${nom}`, rotation: f.rotation ?? 0, taille: f.taille };
+    return { id: f.id, chemin: `${dossier}${nom}`, rotation: f.rotation ?? 0, ...(recadrageUtile(f.recadrage) ? { recadrage: f.recadrage } : {}), taille: f.taille };
   });
 }
 
@@ -202,13 +205,13 @@ export function textesAlbum(nomProjet: string, secs: Section[], fichiers: Fichie
 // Synchronisation de Album/ : copies dérivées, entièrement gérées par l'application
 // ---------------------------------------------------------------------------
 
-/** Ce que l'application a écrit dans `Album/` : chemin → photo et rotation. */
-export type EtatAlbum = Record<string, { id: string; taille: number; rotation: number }>;
+/** Ce que l'application a écrit dans `Album/` : chemin → photo, rotation et recadrage (sa signature). */
+export type EtatAlbum = Record<string, { id: string; taille: number; rotation: number; recadrage?: string }>;
 
 export type ActionAlbum =
   | { type: 'garder'; chemin: string; id: string }
   | { type: 'renommer'; depuis: string; chemin: string; id: string }
-  | { type: 'copier'; chemin: string; id: string; rotation: number }
+  | { type: 'copier'; chemin: string; id: string; rotation: number; recadrage?: Recadrage }
   /** Ancienne copie de l'album qui n'a plus sa place (jamais un fichier de l'utilisateur). */
   | { type: 'retirer'; chemin: string }
   /** La place est occupée par un fichier que l'application n'a pas écrit : on n'y touche pas. */
@@ -228,18 +231,20 @@ export function planifierAlbum(voulus: FichierAlbum[], presents: Map<string, num
   const actions: ActionAlbum[] = [];
   const reutilises = new Set<string>();
 
-  // Copies réutilisables, par photo et rotation.
+  // Copies réutilisables, par photo, rotation et recadrage.
+  const version = (x: { id: string; rotation: number }, recadrage: string | undefined) => `${x.id}|${x.rotation}|${recadrage ?? ''}`;
   const parPhoto = new Map<string, string[]>();
-  for (const [c, e] of nos) parPhoto.set(`${e.id}|${e.rotation}`, [...(parPhoto.get(`${e.id}|${e.rotation}`) ?? []), c]);
+  for (const [c, e] of nos) parPhoto.set(version(e, e.recadrage), [...(parPhoto.get(version(e, e.recadrage)) ?? []), c]);
 
   for (const v of voulus) {
+    const voulue = version(v, signatureRecadrage(v.recadrage));
     const e = nos.get(v.chemin) ?? [...nos].find(([c]) => cle(c) === cle(v.chemin))?.[1];
-    if (e && e.id === v.id && e.rotation === v.rotation) {
+    if (e && version(e, e.recadrage) === voulue) {
       actions.push({ type: 'garder', chemin: v.chemin, id: v.id });
       reutilises.add(cle(v.chemin));
       continue;
     }
-    const candidats = (parPhoto.get(`${v.id}|${v.rotation}`) ?? []).filter((c) => !reutilises.has(cle(c)) && !voulusCle.has(cle(c)));
+    const candidats = (parPhoto.get(voulue) ?? []).filter((c) => !reutilises.has(cle(c)) && !voulusCle.has(cle(c)));
     if (candidats.length) {
       actions.push({ type: 'renommer', depuis: candidats[0], chemin: v.chemin, id: v.id });
       reutilises.add(cle(candidats[0]));
@@ -249,7 +254,7 @@ export function planifierAlbum(voulus: FichierAlbum[], presents: Map<string, num
       actions.push({ type: 'conflit', chemin: v.chemin, id: v.id });
       continue;
     }
-    actions.push({ type: 'copier', chemin: v.chemin, id: v.id, rotation: v.rotation });
+    actions.push({ type: 'copier', chemin: v.chemin, id: v.id, rotation: v.rotation, ...(v.recadrage ? { recadrage: v.recadrage } : {}) });
   }
   // Nos anciennes copies qui ne servent plus, ou dont la place est reprise par une autre photo.
   for (const c of nos.keys()) {

@@ -39,7 +39,7 @@ function planches(pages: Page[], numero: Map<Page, number>): Page[][] {
 function MiniaturePage({ f, grande, seule, choisie, choisir }: { f: FichierPlan; grande: boolean; seule: boolean; choisie: boolean; choisir: () => void }) {
   return (
     <button type="button" class={`photo-page${grande ? ' grande' : ''}${choisie ? ' choisie' : ''}`} onClick={choisir} title={f.legende ? t`Légende : ${f.legende}` : f.nom}>
-      <Miniature f={f} taille={grande || seule ? 208 : 100} rotation={f.rotation} />
+      <Miniature f={f} taille={grande || seule ? 208 : 100} rotation={f.rotation} recadrage={f.recadrage} />
       {f.legende && <span class="a-legende" title={f.legende}>✎</span>}
     </button>
   );
@@ -171,7 +171,7 @@ function PanneauPhoto({ f, fermer }: { f: FichierPlan; fermer: () => void }) {
   return (
     <div class="panneau-photo">
       <div class="apercu">
-        <Miniature f={f} taille={240} rotation={f.rotation} />
+        <Miniature f={f} taille={240} rotation={f.rotation} recadrage={f.recadrage} />
       </div>
       <div class="details">
         <strong>{f.nom}</strong>
@@ -277,7 +277,7 @@ function TableauTextes({ secs, ordre }: { secs: Section[]; ordre: FichierPlan[] 
           ordre.slice(sec.debut, sec.fin + 1).map((f, i) => (
             <tr key={f.id}>
               <td class="mini">
-                <Miniature f={f} taille={64} rotation={f.rotation} />
+                <Miniature f={f} taille={64} rotation={f.rotation} recadrage={f.recadrage} />
               </td>
               <td>{i === 0 ? <strong>{`${k + 1}. ${sec.titre}`}</strong> : <span class="discret">{f.date?.slice(11, 16)}</span>}</td>
               <td>

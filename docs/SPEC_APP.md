@@ -353,6 +353,13 @@ couverture).
 | **Recherche en langage naturel** | « Les enfants sur un éléphant », « coucher de soleil sur la plage » : recherche dans les descriptions (après étiquetage). |
 | **Contrôle de la sélection** | Relecture des photos retenues par sortie : redondances, moments manquants (« aucune photo de groupe à Bangkok »), photos faibles. Uniquement des remarques. |
 
+**Recadrage** (D62) : « Recadrer… » ou la touche K sur une photo retenue
+ouvre la photo en grand avec un cadre à tirer, des formats (libre, 3:2, 4:3,
+carré, portrait ou paysage) et un curseur « Redresser » (±15°). Seule la
+copie dans `Album/` est recadrée, réencodée en haute qualité avec l'EXIF de
+l'original ; la miniature et l'aperçu de l'album montrent la photo recadrée,
+un badge ✂ la signale.
+
 ### 6.10 Étape 12 — Album
 - **Ordre** : par journée puis par segment d'activité (défaut, cf. incident I2)
   ou chronologique strict.
