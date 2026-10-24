@@ -1,6 +1,7 @@
 // Album (SPEC § 6.10, § 12) : ordre (D8, I2), sections, pages simulées, noms
 // numérotés de `Album/`, textes pour ifolor, et synchronisation de `Album/`.
 
+import { t } from './langue';
 import { nomAscii } from './noms';
 import type { FichierPlan, Plan } from './plan';
 
@@ -177,21 +178,21 @@ export function fichiersAlbum(ordre: FichierPlan[], secs: Section[], config: Con
 /** `textes_album.md` : titres, introductions et légendes à recopier dans ifolor (script 03). */
 export function textesAlbum(nomProjet: string, secs: Section[], fichiers: FichierAlbum[], legendes: Map<string, string>, config: ConfigAlbum): string {
   const lignes = [
-    `# Textes de l'album — ${nomProjet}`,
+    `# ${t`Textes de l'album — ${nomProjet}`}`,
     '',
-    'Titres de sections, introductions et légendes à recopier dans ifolor.',
-    'Le titre se place sur la page où commence la photo indiquée.',
+    t`Titres de sections, introductions et légendes à recopier dans ifolor.`,
+    t`Le titre se place sur la page où commence la photo indiquée.`,
     '',
   ];
   for (const s of secs) {
     const premier = fichiers[s.debut];
-    lignes.push(`\n## ${s.titre}${s.suite ? ' (suite)' : ''}`);
+    lignes.push(`\n## ${s.titre}${s.suite ? t` (suite)` : ''}`);
     const intro = !s.suite ? config.intros[s.dossier] : undefined;
     if (intro) lignes.push(`*${intro}*`);
-    lignes.push(`(section démarrant à \`${premier.chemin.split('/').pop()}\`)\n`);
+    lignes.push(`${t`(section démarrant à \`${premier.chemin.split('/').pop()}\`)`}\n`);
     for (let i = s.debut; i <= s.fin; i++) {
       const legende = legendes.get(fichiers[i].id);
-      if (legende) lignes.push(`- \`${fichiers[i].chemin.split('/').pop()}\` : ${legende}`);
+      if (legende) lignes.push(t`- \`${fichiers[i].chemin.split('/').pop()}\` : ${legende}`);
     }
   }
   return `${lignes.join('\n')}\n`;

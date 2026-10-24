@@ -3,7 +3,9 @@
 // Les objets du plan ne sont jamais modifiés sur place : chaque opération les
 // remplace, ce qui rend l'annulation (Ctrl+Z) simple et sûre.
 
+import { pluriel } from '../ui/format';
 import type { Categorie } from './fichiers';
+import { aTraduire, t } from './langue';
 import { cleNom, nomLibre, verifierNomDossier } from './noms';
 
 /** Dossier racine : `Photos/` dans la sortie. */
@@ -119,9 +121,9 @@ export function versJson(plan: Plan): PlanJson {
 }
 
 export function depuisJson(j: PlanJson): Plan {
-  if (j?.version !== 1 || !Array.isArray(j.dossiers) || !Array.isArray(j.fichiers)) throw new ErreurPlan('plan.json illisible ou d’une version inconnue.');
+  if (j?.version !== 1 || !Array.isArray(j.dossiers) || !Array.isArray(j.fichiers)) throw new ErreurPlan(t`plan.json illisible ou d’une version inconnue.`);
   const plan: Plan = { dossiers: new Map(j.dossiers.map((d) => [d.id, d])), fichiers: new Map(j.fichiers.map((f) => [f.id, f])), prochainId: j.prochainId };
-  if (!plan.dossiers.has(RACINE)) throw new ErreurPlan('plan.json sans dossier racine.');
+  if (!plan.dossiers.has(RACINE)) throw new ErreurPlan(t`plan.json sans dossier racine.`);
   return plan;
 }
 
@@ -321,12 +323,12 @@ export class Historique {
 
 function dossierExistant(plan: Plan, id: string): DossierPlan {
   const d = plan.dossiers.get(id);
-  if (!d) throw new ErreurPlan('Ce dossier n’existe plus.');
+  if (!d) throw new ErreurPlan(t`Ce dossier n’existe plus.`);
   return d;
 }
 
-/** Range des fichiers dans `t`, avec un nom libre dans le dossier cible. */
-function ranger(plan: Plan, t: Transaction, ids: string[], cible: string) {
+/** Range des fichiers dans `tx`, avec un nom libre dans le dossier cible. */
+function ranger(plan: Plan, tx: Transaction, ids: string[], cible: string) {
   const deplaces = new Set(ids);
   const pris = nomsPris(plan, cible, deplaces);
   for (const id of ids) {
@@ -338,30 +340,30 @@ function ranger(plan: Plan, t: Transaction, ids: string[], cible: string) {
     }
     const nom = nomLibre(f.nom, pris);
     pris.add(cleNom(nom));
-    t.fichier({ ...f, dossier: cible, statut: 'archive', raison: undefined, nom });
+    tx.fichier({ ...f, dossier: cible, statut: 'archive', raison: undefined, nom });
   }
 }
 
 /** Déplace des photos ou vidéos vers un dossier (et les remet si elles étaient mises de côté). */
 export function deplacerFichiers(plan: Plan, ids: string[], cible: string): Modification | null {
   const d = dossierExistant(plan, cible);
-  const t = new Transaction(plan);
-  ranger(plan, t, ids, cible);
-  return t.terminer(`Déplacer ${ids.length} élément${ids.length > 1 ? 's' : ''} vers « ${d.nom} »`);
+  const tx = new Transaction(plan);
+  ranger(plan, tx, ids, cible);
+  return tx.terminer(t`Déplacer ${pluriel(ids.length, 'élément')} vers « ${d.nom} »`);
 }
 
 export function mettreDeCote(plan: Plan, ids: string[], raison: RaisonMiseDeCote = 'autres'): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   for (const id of ids) {
     const f = plan.fichiers.get(id);
-    if (f && f.categorie !== 'autre' && f.statut !== 'mis_de_cote') t.fichier({ ...f, statut: 'mis_de_cote', raison });
+    if (f && f.categorie !== 'autre' && f.statut !== 'mis_de_cote') tx.fichier({ ...f, statut: 'mis_de_cote', raison });
   }
-  return t.terminer(`Mettre de côté ${ids.length} élément${ids.length > 1 ? 's' : ''}`);
+  return tx.terminer(t`Mettre de côté ${pluriel(ids.length, 'élément')}`);
 }
 
 /** Remet des éléments mis de côté dans leur dossier d'origine (ou la racine s'il a disparu). */
 export function remettre(plan: Plan, ids: string[]): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const parDossier = new Map<string, string[]>();
   for (const id of ids) {
     const f = plan.fichiers.get(id);
@@ -369,14 +371,14 @@ export function remettre(plan: Plan, ids: string[]): Modification | null {
     const d = plan.dossiers.has(f.dossier) ? f.dossier : RACINE;
     parDossier.set(d, [...(parDossier.get(d) ?? []), id]);
   }
-  for (const [d, liste] of parDossier) ranger(plan, t, liste, d);
-  return t.terminer(`Remettre ${ids.length} élément${ids.length > 1 ? 's' : ''}`);
+  for (const [d, liste] of parDossier) ranger(plan, tx, liste, d);
+  return tx.terminer(t`Remettre ${pluriel(ids.length, 'élément')}`);
 }
 
 function verifierFrere(plan: Plan, parent: string, nom: string, sauf?: string) {
   const cle = cleNom(nom);
   const existant = [...plan.dossiers.values()].find((d) => d.parent === parent && d.id !== sauf && cleNom(d.nom) === cle);
-  if (existant) throw new ErreurPlan(`Un dossier « ${existant.nom} » existe déjà à cet endroit.`);
+  if (existant) throw new ErreurPlan(t`Un dossier « ${existant.nom} » existe déjà à cet endroit.`);
 }
 
 export function creerDossier(plan: Plan, nom: string, parent = RACINE): { id: string; modification: Modification } {
@@ -385,23 +387,23 @@ export function creerDossier(plan: Plan, nom: string, parent = RACINE): { id: st
   if (erreur) throw new ErreurPlan(erreur);
   dossierExistant(plan, parent);
   verifierFrere(plan, parent, propre);
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const id = `n${plan.prochainId++}`;
-  t.dossier({ id, nom: propre, parent, origine: 'cree' });
-  return { id, modification: t.terminer(`Créer le dossier « ${propre} »`)! };
+  tx.dossier({ id, nom: propre, parent, origine: 'cree' });
+  return { id, modification: tx.terminer(t`Créer le dossier « ${propre} »`)! };
 }
 
 export function renommerDossier(plan: Plan, id: string, nom: string): Modification | null {
   const d = dossierExistant(plan, id);
-  if (d.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être renommé.');
+  if (d.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être renommé.`);
   const propre = nom.trim();
   if (propre === d.nom) return null;
   const erreur = verifierNomDossier(propre);
   if (erreur) throw new ErreurPlan(erreur);
   verifierFrere(plan, d.parent, propre, id);
-  const t = new Transaction(plan);
-  t.dossier({ ...d, nom: propre });
-  return t.terminer(`Renommer « ${d.nom} » en « ${propre} »`);
+  const tx = new Transaction(plan);
+  tx.dossier({ ...d, nom: propre });
+  return tx.terminer(t`Renommer « ${d.nom} » en « ${propre} »`);
 }
 
 /**
@@ -412,27 +414,27 @@ export function renommerDossier(plan: Plan, id: string, nom: string): Modificati
 export function fusionnerDossiers(plan: Plan, source: string, cible: string): Modification | null {
   const s = dossierExistant(plan, source);
   const c = dossierExistant(plan, cible);
-  if (s.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être fusionné dans un autre.');
+  if (s.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être fusionné dans un autre.`);
   if (source === cible) return null;
-  if (estDescendant(plan, cible, source)) throw new ErreurPlan('Impossible de fusionner un dossier dans un de ses sous-dossiers.');
-  const t = new Transaction(plan);
+  if (estDescendant(plan, cible, source)) throw new ErreurPlan(t`Impossible de fusionner un dossier dans un de ses sous-dossiers.`);
+  const tx = new Transaction(plan);
   const fusionner = (de: string, vers: string) => {
     const archives: string[] = [];
     for (const f of plan.fichiers.values()) {
       if (f.dossier !== de) continue;
       if (f.statut === 'archive') archives.push(f.id);
-      else t.fichier({ ...f, dossier: vers });
+      else tx.fichier({ ...f, dossier: vers });
     }
-    ranger(plan, t, archives, vers);
+    ranger(plan, tx, archives, vers);
     for (const e of enfants(plan, de)) {
       const homonyme = enfants(plan, vers).find((x) => cleNom(x.nom) === cleNom(e.nom));
       if (homonyme) fusionner(e.id, homonyme.id);
-      else t.dossier({ ...e, parent: vers });
+      else tx.dossier({ ...e, parent: vers });
     }
-    t.supprimerDossier(de);
+    tx.supprimerDossier(de);
   };
   fusionner(source, cible);
-  return t.terminer(`Fusionner « ${s.nom} » dans « ${c.nom} »`);
+  return tx.terminer(t`Fusionner « ${s.nom} » dans « ${c.nom} »`);
 }
 
 /**
@@ -442,7 +444,7 @@ export function fusionnerDossiers(plan: Plan, source: string, cible: string): Mo
  */
 export function scinderParJour(plan: Plan, id: string): Modification | null {
   const d = dossierExistant(plan, id);
-  if (d.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être scindé.');
+  if (d.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être scindé.`);
   const parJour = new Map<string, string[]>();
   for (const f of plan.fichiers.values()) {
     if (f.dossier !== id || f.categorie === 'autre' || !f.date) continue;
@@ -450,30 +452,30 @@ export function scinderParJour(plan: Plan, id: string): Modification | null {
   }
   if (parJour.size < 2) return null;
   const base = d.nom.replace(/[_ -]+(\d{4}-\d{2}(-\d{2})?|\d{2}([.-]\d{2})?\.\d{2}\.\d{2,4})$/, '') || d.nom;
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const pris = new Set([...plan.dossiers.values()].filter((x) => x.parent === d.parent).map((x) => cleNom(x.nom)));
   for (const [jour, ids] of [...parJour].sort()) {
     const nom = nomLibre(`${base}_${jour}`, pris);
     pris.add(cleNom(nom));
     // Les journées gardent ce qu'était le dossier : origine du tri et traitement (gardé tel quel, hors de l'album).
     const nouveau: DossierPlan = { id: `c${plan.prochainId++}`, nom, parent: d.parent, origine: 'cree', ...(d.tri ? { tri: d.tri } : {}), ...(d.traitement ? { traitement: d.traitement } : {}) };
-    t.dossier(nouveau);
-    for (const fid of ids) t.fichier({ ...plan.fichiers.get(fid)!, dossier: nouveau.id });
+    tx.dossier(nouveau);
+    for (const fid of ids) tx.fichier({ ...plan.fichiers.get(fid)!, dossier: nouveau.id });
   }
   const reste = [...plan.fichiers.values()].some((f) => f.dossier === id) || enfants(plan, id).length > 0;
-  if (!reste) t.supprimerDossier(id);
-  return t.terminer(`Scinder « ${d.nom} » par jour (${parJour.size} jours)`);
+  if (!reste) tx.supprimerDossier(id);
+  return tx.terminer(t`Scinder « ${d.nom} » par jour (${parJour.size} jours)`);
 }
 
 /** Supprime un dossier vide (sans fichier, même mis de côté, ni sous-dossier). */
 export function supprimerDossierVide(plan: Plan, id: string): Modification | null {
   const d = dossierExistant(plan, id);
-  if (d.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être supprimé.');
-  if (enfants(plan, id).length) throw new ErreurPlan('Ce dossier contient des sous-dossiers.');
-  if ([...plan.fichiers.values()].some((f) => f.dossier === id && f.categorie !== 'autre')) throw new ErreurPlan('Ce dossier n’est pas vide.');
-  const t = new Transaction(plan);
-  t.supprimerDossier(id);
-  return t.terminer(`Supprimer le dossier vide « ${d.nom} »`);
+  if (d.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être supprimé.`);
+  if (enfants(plan, id).length) throw new ErreurPlan(t`Ce dossier contient des sous-dossiers.`);
+  if ([...plan.fichiers.values()].some((f) => f.dossier === id && f.categorie !== 'autre')) throw new ErreurPlan(t`Ce dossier n’est pas vide.`);
+  const tx = new Transaction(plan);
+  tx.supprimerDossier(id);
+  return tx.terminer(t`Supprimer le dossier vide « ${d.nom} »`);
 }
 
 /**
@@ -531,13 +533,13 @@ export function horsAlbum(plan: Plan, f: FichierPlan): boolean {
 
 /** Traitement d'un sous-dossier de la source (étape 2) : à trier, gardé tel quel, ou gardé hors de l'album. */
 export function changerTraitement(plan: Plan, ids: string[], traitement: TraitementDossier): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   for (const id of ids) {
     const d = plan.dossiers.get(id);
-    if (d && d.parent !== null && d.traitement !== traitement) t.dossier({ ...d, traitement });
+    if (d && d.parent !== null && d.traitement !== traitement) tx.dossier({ ...d, traitement });
   }
-  const libelles = { trier: 'À trier', garder: 'Garder tel quel', ignorer: 'Garder hors de l’album' } as const;
-  return t.terminer(`${libelles[traitement]} (${ids.length} dossier${ids.length > 1 ? 's' : ''})`);
+  const libelles = { trier: aTraduire('À trier'), garder: aTraduire('Garder tel quel'), ignorer: aTraduire('Garder hors de l’album') } as const;
+  return tx.terminer(`${t(libelles[traitement])} (${pluriel(ids.length, 'dossier')})`);
 }
 
 // ---------------------------------------------------------------------------
@@ -546,38 +548,38 @@ export function changerTraitement(plan: Plan, ids: string[], traitement: Traitem
 
 /** Choix pour l'album : 1 = ★, 2 = ★★, 0 = non, `undefined` = à décider (étape « Sélection »). */
 export function noterAlbum(plan: Plan, ids: string[], valeur: 0 | 1 | 2 | undefined): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f || f.categorie === 'autre' || f.album === valeur) continue;
     const { album: _ancien, ...reste } = f;
-    t.fichier(valeur === undefined ? reste : { ...reste, album: valeur });
+    tx.fichier(valeur === undefined ? reste : { ...reste, album: valeur });
   }
-  const libelle = valeur === undefined ? 'Remettre à décider' : valeur === 0 ? 'Pas dans l’album' : valeur === 1 ? 'Dans l’album ★' : 'Grande photo ★★';
-  return t.terminer(`${libelle} (${ids.length})`);
+  const libelle = valeur === undefined ? t`Remettre à décider` : valeur === 0 ? t`Pas dans l’album` : valeur === 1 ? t`Dans l’album ★` : t`Grande photo ★★`;
+  return tx.terminer(`${libelle} (${ids.length})`);
 }
 
 /** Tourne d'un quart de tour (sens horaire si `sens` = 90) ; appliqué à la copie dans Album/. */
 export function tourner(plan: Plan, ids: string[], sens: 90 | -90): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f || f.categorie !== 'photo') continue;
     const r = (((f.rotation ?? 0) + sens + 360) % 360) as Rotation;
     const { rotation: _ancienne, ...reste } = f;
-    t.fichier(r === 0 ? reste : { ...reste, rotation: r });
+    tx.fichier(r === 0 ? reste : { ...reste, rotation: r });
   }
-  return t.terminer(`Tourner ${ids.length} photo${ids.length > 1 ? 's' : ''}`);
+  return tx.terminer(t`Tourner ${pluriel(ids.length, 'photo')}`);
 }
 
 export function changerLegende(plan: Plan, id: string, legende: string): Modification | null {
   const f = plan.fichiers.get(id);
   const propre = legende.trim();
   if (!f || (f.legende ?? '') === propre) return null;
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const { legende: _ancienne, ...reste } = f;
-  t.fichier(propre ? { ...reste, legende: propre } : reste);
-  return t.terminer('Changer la légende');
+  tx.fichier(propre ? { ...reste, legende: propre } : reste);
+  return tx.terminer(t`Changer la légende`);
 }
 
 export interface DecisionDoublon extends InfoDoublon {
@@ -586,24 +588,24 @@ export interface DecisionDoublon extends InfoDoublon {
 
 /** Met de côté des doublons validés (étape « Doublons »), sauf les photos protégées. */
 export function marquerDoublons(plan: Plan, decisions: DecisionDoublon[]): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   for (const { id, ...info } of decisions) {
     const f = plan.fichiers.get(id);
     if (!f || f.protegee || f.categorie !== 'photo' || f.statut !== 'archive') continue;
-    t.fichier({ ...f, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+    tx.fichier({ ...f, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
   }
-  return t.terminer(`Écarter ${decisions.length} doublon${decisions.length > 1 ? 's' : ''}`);
+  return tx.terminer(t`Écarter ${pluriel(decisions.length, 'doublon')}`);
 }
 
 /** « Garder aussi » : le doublon revient dans son dossier et ne sera plus jamais proposé (I10). */
 export function garderAussi(plan: Plan, ids: string[]): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const aRanger: string[] = [];
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f) continue;
     const { doublon: _d, ...reste } = f;
-    t.fichier({ ...reste, protegee: true });
+    tx.fichier({ ...reste, protegee: true });
     if (f.statut === 'mis_de_cote') aRanger.push(id);
   }
   const parDossier = new Map<string, string[]>();
@@ -612,8 +614,8 @@ export function garderAussi(plan: Plan, ids: string[]): Modification | null {
     const d = plan.dossiers.has(f.dossier) ? f.dossier : RACINE;
     parDossier.set(d, [...(parDossier.get(d) ?? []), id]);
   }
-  for (const [d, liste] of parDossier) ranger(plan, t, liste, d);
-  return t.terminer(`Garder ${ids.length} photo${ids.length > 1 ? 's' : ''}`);
+  for (const [d, liste] of parDossier) ranger(plan, tx, liste, d);
+  return tx.terminer(t`Garder ${pluriel(ids.length, 'photo')}`);
 }
 
 /**
@@ -626,27 +628,27 @@ export function echangerGardee(plan: Plan, groupe: string[], actuelle: string, n
   const n = plan.fichiers.get(nouvelle);
   const a = plan.fichiers.get(actuelle);
   if (!n || !a || nouvelle === actuelle) return null;
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const { doublon: _d, ...reste } = n;
-  t.fichier({ ...reste, protegee: true });
-  if (n.statut === 'mis_de_cote') ranger(plan, t, [nouvelle], plan.dossiers.has(n.dossier) ? n.dossier : RACINE);
+  tx.fichier({ ...reste, protegee: true });
+  if (n.statut === 'mis_de_cote') ranger(plan, tx, [nouvelle], plan.dossiers.has(n.dossier) ? n.dossier : RACINE);
   if (a.statut === 'archive') {
     const { protegee: _p, ...ra } = a;
-    t.fichier({ ...ra, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+    tx.fichier({ ...ra, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
   }
   for (const id of groupe) {
     const f = plan.fichiers.get(id);
-    if (f && id !== nouvelle && id !== actuelle && f.statut === 'mis_de_cote' && f.doublon) t.fichier({ ...f, doublon: { ...f.doublon, garde: nouvelle } });
+    if (f && id !== nouvelle && id !== actuelle && f.statut === 'mis_de_cote' && f.doublon) tx.fichier({ ...f, doublon: { ...f.doublon, garde: nouvelle } });
   }
-  return t.terminer('Garder une autre photo à la place');
+  return tx.terminer(t`Garder une autre photo à la place`);
 }
 
 /** Changer d'avis sur une photo « gardée aussi » : elle n'est plus protégée et rejoint les doublons écartés. */
 export function ecarterGardee(plan: Plan, id: string, info: InfoDoublon): Modification | null {
   const f = plan.fichiers.get(id);
   if (!f || f.categorie !== 'photo' || f.statut !== 'archive') return null;
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   const { protegee: _p, ...reste } = f;
-  t.fichier({ ...reste, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
-  return t.terminer('Écarter une photo gardée');
+  tx.fichier({ ...reste, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+  return tx.terminer(t`Écarter une photo gardée`);
 }

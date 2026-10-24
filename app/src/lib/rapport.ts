@@ -1,30 +1,28 @@
 // Rapport.html : bilan lisible dans un navigateur, écrit à la racine de la sortie (SPEC § 12).
 
+import { nombre, pluriel } from '../ui/format';
+import { aTraduire, langue, t } from './langue';
 import { cheminDossier, resumes, type Plan } from './plan';
 import type { Bilan } from './sortie';
 
 /** Raison de mise de côté : [singulier, pluriel]. */
 const RAISONS: Record<string, [string, string]> = {
-  floues: ['photo floue', 'photos floues'],
-  doublons: ['doublon', 'doublons'],
-  doublons_exacts: ['doublon exact', 'doublons exacts'],
-  autres: ['écartée à la main', 'écartées à la main'],
+  floues: [aTraduire('photo floue'), aTraduire('photos floues')],
+  doublons: [aTraduire('doublon'), aTraduire('doublons')],
+  doublons_exacts: [aTraduire('doublon exact'), aTraduire('doublons exacts')],
+  autres: [aTraduire('écartée à la main'), aTraduire('écartées à la main')],
 };
 
-function echapper(t: string): string {
-  return t.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+function echapper(texte: string): string {
+  return texte.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
-const nombre = (n: number) => new Intl.NumberFormat('fr-CH').format(n);
+const code = (texte: string) => `<code>${texte}</code>`;
 
-/** « 0 vidéo », « 1 vidéo », « 3 vidéos ». */
-function compte(n: number, singulier: string, pluriel: string): string {
-  return `${nombre(n)} ${n > 1 ? pluriel : singulier}`;
-}
-
+/** « 1 photo floue », « 3 doublons » ; une raison inconnue est montrée telle quelle. */
 function raison(r: string, n: number): string {
-  const [s, p] = RAISONS[r] ?? [r, r];
-  return compte(n, s, p);
+  const libelles = RAISONS[r];
+  return libelles ? pluriel(n, libelles[0], libelles[1]) : `${nombre(n)} ${r}`;
 }
 
 function jour(d?: string): string {
@@ -35,10 +33,10 @@ function jour(d?: string): string {
 
 /** Phrase de bilan du § 6.11 : « 5123 fichiers dans la source → 5123 dans la sortie : … ». */
 export function phraseBilan(b: Bilan): string {
-  const parties = [compte(b.categories.photos, 'photo triée', 'photos triées'), compte(b.categories.videos, 'vidéo', 'vidéos')];
+  const parties = [pluriel(b.categories.photos, 'photo triée', 'photos triées'), pluriel(b.categories.videos, 'vidéo')];
   for (const [r, n] of Object.entries(b.categories.misDeCote)) parties.push(raison(r, n));
-  parties.push(compte(b.categories.autres, 'autre fichier', 'autres fichiers'));
-  return `${compte(b.total, 'fichier', 'fichiers')} dans la source → ${nombre(b.presents)} dans la sortie : ${parties.join(', ')}.`;
+  parties.push(pluriel(b.categories.autres, 'autre fichier', 'autres fichiers'));
+  return t`${pluriel(b.total, 'fichier')} dans la source → ${nombre(b.presents)} dans la sortie : ${parties.join(', ')}.`;
 }
 
 export interface InfosRapport {
@@ -60,7 +58,9 @@ export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): strin
   const racine = r.get('racine');
   const complet = b.manquants.length === 0;
   const autres = [...plan.fichiers.values()].filter((f) => f.categorie === 'autre').map((f) => f.id).sort();
-  const quand = infos.date.toLocaleString('fr-CH', { dateStyle: 'long', timeStyle: 'short' });
+  const locale = langue() === 'en' ? 'en-GB' : 'fr-CH';
+  const quand = infos.date.toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short' });
+  const album = infos.album;
 
   const lignesDossiers = dossiers
     .map((x) => `<tr><td>${echapper(x.chemin)}</td><td>${jour(x.s.du)} – ${jour(x.s.au)}</td><td class="n">${nombre(x.s.photos)}</td><td class="n">${nombre(x.s.videos)}</td></tr>`)
@@ -70,15 +70,15 @@ export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): strin
       ? `<details><summary>${titre} (${nombre(elements.length)})</summary><ul>${elements
           .slice(0, max)
           .map((e) => `<li>${echapper(e)}</li>`)
-          .join('')}${elements.length > max ? `<li>… et ${nombre(elements.length - max)} autres</li>` : ''}</ul></details>`
+          .join('')}${elements.length > max ? `<li>${t`… et ${nombre(elements.length - max)} autres`}</li>` : ''}</ul></details>`
       : '';
 
   return `<!doctype html>
-<html lang="fr">
+<html lang="${langue()}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rapport — ${echapper(infos.projet)}</title>
+<title>${t`Rapport — ${echapper(infos.projet)}`}</title>
 <style>
 :root { color-scheme: light dark; --fond: #fbfaf7; --texte: #1f2328; --discret: #5f6670; --bord: #d9d6cf; --ok: #1d7a3a; --echec: #b42318; }
 @media (prefers-color-scheme: dark) { :root { --fond: #17191c; --texte: #e6e6e3; --discret: #a0a6ad; --bord: #383c42; --ok: #5cc27a; --echec: #f07a6e; } }
@@ -92,55 +92,61 @@ summary { cursor: pointer; } ul { margin: 6px 0; padding-left: 20px; } li { over
 </head>
 <body>
 <h1>${echapper(infos.projet)}</h1>
-<p class="discret">Rapport du ${echapper(quand)} — source « ${echapper(infos.source)} », sortie « ${echapper(infos.sortie)} ».</p>
+<p class="discret">${t`Rapport du ${echapper(quand)} — source « ${echapper(infos.source)} », sortie « ${echapper(infos.sortie)} ».`}</p>
 <p class="bilan">${echapper(phraseBilan(b))}<br>
 ${
   complet
-    ? '<strong class="ok">Tout est dans le dossier de sortie.</strong> Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.'
-    : `<strong class="echec">${nombre(b.manquants.length)} fichier(s) manquent dans la sortie : ne supprimez pas la source.</strong>`
+    ? `<strong class="ok">${t`Tout est dans le dossier de sortie.`}</strong> ${t`Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.`}`
+    : `<strong class="echec">${t`${nombre(b.manquants.length)} fichier(s) manquent dans la sortie : ne supprimez pas la source.`}</strong>`
 }</p>
-${liste('Fichiers manquants', b.manquants.map((m) => `${m.id} → ${m.cible}`))}
-<p class="discret">Les fichiers système masqués par le navigateur (comme <code>Thumbs.db</code>, le cache de miniatures de Windows) ne sont ni comptés ni copiés : Windows les recrée.</p>
+${liste(t`Fichiers manquants`, b.manquants.map((m) => `${m.id} → ${m.cible}`))}
+<p class="discret">${t`Les fichiers système masqués par le navigateur (comme ${code('Thumbs.db')}, le cache de miniatures de Windows) ne sont ni comptés ni copiés : Windows les recrée.`}</p>
 
-<h2>Dossiers (${nombre(dossiers.length + (racine && racine.photos + racine.videos ? 1 : 0))})</h2>
+<h2>${t`Dossiers (${nombre(dossiers.length + (racine && racine.photos + racine.videos ? 1 : 0))})`}</h2>
 <table>
-<thead><tr><th>Dossier dans Photos/</th><th>Dates</th><th>Photos</th><th>Vidéos</th></tr></thead>
+<thead><tr><th>${t`Dossier dans Photos/`}</th><th>${t`Dates`}</th><th>${t`Photos`}</th><th>${t`Vidéos`}</th></tr></thead>
 <tbody>
-${racine && racine.photos + racine.videos ? `<tr><td>(à la racine de Photos/)</td><td>${jour(racine.du)} – ${jour(racine.au)}</td><td class="n">${nombre(racine.photos)}</td><td class="n">${nombre(racine.videos)}</td></tr>` : ''}
+${racine && racine.photos + racine.videos ? `<tr><td>${t`(à la racine de Photos/)`}</td><td>${jour(racine.du)} – ${jour(racine.au)}</td><td class="n">${nombre(racine.photos)}</td><td class="n">${nombre(racine.videos)}</td></tr>` : ''}
 ${lignesDossiers}
 </tbody>
 </table>
 
 ${
-  infos.album && infos.album.photos
-    ? `<h2>Album</h2>
-<p>${compte(infos.album.photos, 'photo', 'photos')} dans <code>Album/</code>, numérotées dans l’ordre de l’album (${compte(infos.album.sections, 'section', 'sections')}, environ ${compte(infos.album.pages, 'page', 'pages')}) : importez-les dans ifolor dans cet ordre. Titres, introductions et légendes : <code>Album/textes_album.md</code>.${
-        infos.album.manquantes ? ` <strong class="echec">${compte(infos.album.manquantes, 'copie n’a', 'copies n’ont')} pas pu être écrite(s) : relancez la création de la sortie.</strong>` : ''
+  album && album.photos
+    ? `<h2>${t`Album`}</h2>
+<p>${t`${pluriel(album.photos, 'photo')} dans ${code('Album/')}, numérotées dans l’ordre de l’album (${pluriel(album.sections, 'section')}, environ ${pluriel(album.pages, 'page')}) : importez-les dans ifolor dans cet ordre.`} ${t`Titres, introductions et légendes : ${code('Album/textes_album.md')}.`}${
+        album.manquantes
+          ? ` <strong class="echec">${
+              album.manquantes > 1
+                ? t`${nombre(album.manquantes)} copies n’ont pas pu être écrite(s) : relancez la création de la sortie.`
+                : t`${nombre(album.manquantes)} copie n’a pas pu être écrite(s) : relancez la création de la sortie.`
+            }</strong>`
+          : ''
       }</p>`
     : ''
 }
 
-<h2>Mis de côté et autres fichiers</h2>
+<h2>${t`Mis de côté et autres fichiers`}</h2>
 <ul>
 ${Object.entries(b.categories.misDeCote)
-  .map(([r, n]) => `<li>${raison(r, n)}, dans <code>_mis_de_cote/${echapper(r)}/</code></li>`)
+  .map(([r, n]) => `<li>${t`${raison(r, n)}, dans ${code(`_mis_de_cote/${echapper(r)}/`)}`}</li>`)
   .join('\n')}
-<li>${compte(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans <code>_autres_fichiers/</code> avec leur chemin d’origine</li>
+<li>${t`${pluriel(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans ${code('_autres_fichiers/')} avec leur chemin d’origine`}</li>
 </ul>
-${liste('Autres fichiers', autres)}
+${liste(t`Autres fichiers`, autres)}
 
-<h2>Dates des fichiers</h2>
-<p>La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification d’origine. Celle de chaque fichier est enregistrée dans <code>.album/plan.json</code>.
+<h2>${t`Dates des fichiers`}</h2>
+<p>${t`La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification d’origine.`} ${t`Celle de chaque fichier est enregistrée dans ${code('.album/plan.json')}.`}
 ${
   b.datesFichierSeulement.length
-    ? `Les photos et vidéos ci-dessous n’ont <strong>aucune autre date</strong> (ni EXIF, ni nom daté) : voici leur date d’origine.`
-    : 'Toutes les photos et vidéos ont une date de prise de vue (EXIF, nom ou date interne).'
+    ? t`Les photos et vidéos ci-dessous n’ont ${`<strong>${t`aucune autre date`}</strong>`} (ni EXIF, ni nom daté) : voici leur date d’origine.`
+    : t`Toutes les photos et vidéos ont une date de prise de vue (EXIF, nom ou date interne).`
 }</p>
 ${liste(
-  'Photos et vidéos sans autre date que celle du fichier',
-  b.datesFichierSeulement.map((f) => `${f.id} — modifié le ${new Date(f.modifie).toLocaleString('fr-CH')}`),
+  t`Photos et vidéos sans autre date que celle du fichier`,
+  b.datesFichierSeulement.map((f) => t`${f.id} — modifié le ${new Date(f.modifie).toLocaleString(locale)}`),
 )}
-${b.enTrop.length ? `<h2>Fichiers de la sortie hors du plan</h2><p>Présents dans la sortie mais absents du plan (déposés à la main, ou anciennes copies) : ils n’ont pas été touchés.</p>${liste('Fichiers', b.enTrop)}` : ''}
+${b.enTrop.length ? `<h2>${t`Fichiers de la sortie hors du plan`}</h2><p>${t`Présents dans la sortie mais absents du plan (déposés à la main, ou anciennes copies) : ils n’ont pas été touchés.`}</p>${liste(t`Fichiers`, b.enTrop)}` : ''}
 </body>
 </html>
 `;

@@ -3,6 +3,8 @@
 // seuil, sauf si l'utilisateur l'a sauvée ; il peut aussi en écarter une nette
 // mais ratée. Les décisions s'appliquent au plan en une opération annulable.
 
+import { pluriel } from '../ui/format';
+import { t } from './langue';
 import { combiner, mettreDeCote, remettre, traitementDe, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
 
 /** Seuil calibré du script 01 (variance du Laplacien à 1024 px). */
@@ -52,7 +54,7 @@ export function appliquerFloues(plan: Plan, nettete: (f: FichierPlan) => number 
     }
   }
   return combiner(
-    `Photos floues : ${aEcarter.length} écartée${aEcarter.length > 1 ? 's' : ''}, ${aRemettre.length} remise${aRemettre.length > 1 ? 's' : ''}`,
+    t`Photos floues : ${pluriel(aEcarter.length, 'écartée')}, ${pluriel(aRemettre.length, 'remise')}`,
     marques.terminer(''),
     aEcarter.length ? mettreDeCote(plan, aEcarter, 'floues') : null,
     aRemettre.length ? remettre(plan, aRemettre) : null,
@@ -66,16 +68,16 @@ export function appliquerFloues(plan: Plan, nettete: (f: FichierPlan) => number 
  * photo écartée par un ancien script, qui ne revient que si on la sauve).
  */
 export function deciderFlou(plan: Plan, ids: string[], decision: 'sauvee' | 'ecartee' | undefined): Modification | null {
-  const t = new Transaction(plan);
+  const tx = new Transaction(plan);
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f || f.categorie !== 'photo') continue;
     const voulu = decision ?? (f.statut === 'mis_de_cote' && f.raison === 'floues' ? 'auto' : undefined);
     if (f.flou === voulu) continue;
     const { flou: _f, ...reste } = f;
-    t.fichier(voulu ? { ...reste, flou: voulu } : reste);
+    tx.fichier(voulu ? { ...reste, flou: voulu } : reste);
   }
-  return t.terminer(decision === 'sauvee' ? 'Sauver' : decision === 'ecartee' ? 'Écarter' : 'Revenir au seuil');
+  return tx.terminer(decision === 'sauvee' ? t`Sauver` : decision === 'ecartee' ? t`Écarter` : t`Revenir au seuil`);
 }
 
 /** Nombre de photos écartées au seuil donné (compteur en direct du curseur). */

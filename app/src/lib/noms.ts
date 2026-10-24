@@ -1,5 +1,7 @@
 // Noms de dossiers et noms de lieux (scripts 01 et 05).
 
+import { t } from './langue';
+
 /** Nom ASCII sans espaces ni caractères spéciaux (`sanitize` du script 01), ou chaîne vide. */
 export function nomAscii(nom: string): string {
   return nom
@@ -71,12 +73,12 @@ const RESERVES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
 /** Message d'erreur si le nom ne peut pas servir de nom de dossier (Windows compris), sinon `null`. */
 export function verifierNomDossier(nom: string): string | null {
-  if (!nom.trim()) return 'Le nom est vide.';
-  if (nom.length > 120) return 'Le nom est trop long (120 caractères au plus).';
+  if (!nom.trim()) return t`Le nom est vide.`;
+  if (nom.length > 120) return t`Le nom est trop long (120 caractères au plus).`;
   const interdit = nom.match(/[<>:"/\\|?*\u0000-\u001f]/);
-  if (interdit) return `Le caractère « ${interdit[0]} » n’est pas permis dans un nom de dossier.`;
-  if (/[. ]$/.test(nom)) return 'Le nom ne peut pas finir par un point ou une espace.';
-  if (nom === '.' || nom === '..' || RESERVES.test(nom)) return `« ${nom} » est un nom réservé par Windows.`;
+  if (interdit) return t`Le caractère « ${interdit[0]} » n’est pas permis dans un nom de dossier.`;
+  if (/[. ]$/.test(nom)) return t`Le nom ne peut pas finir par un point ou une espace.`;
+  if (nom === '.' || nom === '..' || RESERVES.test(nom)) return t`« ${nom} » est un nom réservé par Windows.`;
   return null;
 }
 
