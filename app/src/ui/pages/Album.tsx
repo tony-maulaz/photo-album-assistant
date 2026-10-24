@@ -10,7 +10,8 @@ import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { demander } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { allerEtape, annuler, appliquer, changerAlbum, notifier, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
-import { ETAPE } from '../../navigateur/projet';
+import { ETAPE, nomEtape } from '../../navigateur/projet';
+import { t } from '../../lib/langue';
 import { AidesAlbum, textesProposes } from './AidesPhotos';
 import { jourCourt, nombre, periode, pluriel } from '../format';
 
@@ -36,7 +37,7 @@ function planches(pages: Page[], numero: Map<Page, number>): Page[][] {
 
 function MiniaturePage({ f, grande, seule, choisie, choisir }: { f: FichierPlan; grande: boolean; seule: boolean; choisie: boolean; choisir: () => void }) {
   return (
-    <button type="button" class={`photo-page${grande ? ' grande' : ''}${choisie ? ' choisie' : ''}`} onClick={choisir} title={f.legende ? `Légende : ${f.legende}` : f.nom}>
+    <button type="button" class={`photo-page${grande ? ' grande' : ''}${choisie ? ' choisie' : ''}`} onClick={choisir} title={f.legende ? t`Légende : ${f.legende}` : f.nom}>
       <Miniature f={f} taille={grande || seule ? 208 : 100} rotation={f.rotation} />
       {f.legende && <span class="a-legende" title={f.legende}>✎</span>}
     </button>
@@ -64,20 +65,20 @@ function EnteteSection({ sec, index }: { sec: Section; index: number }) {
     <header class="entete-section">
       <div class="ligne-titre">
         <span class="numero-section">{index + 1}</span>
-        <input class="titre-section" value={titre} onChange={(e) => changerTitre(e.currentTarget.value)} aria-label="Titre de la section" disabled={sec.suite && !coupure} />
-        {sec.suite && <span class="discret">(suite)</span>}
+        <input class="titre-section" value={titre} onChange={(e) => changerTitre(e.currentTarget.value)} aria-label={t`Titre de la section`} disabled={sec.suite && !coupure} />
+        {sec.suite && <span class="discret">{t`(suite)`}</span>}
         <span class="discret">
           {periode(ordreCourant[sec.debut].date?.slice(0, 10), ordreCourant[sec.fin].date?.slice(0, 10))} · {pluriel(sec.fin - sec.debut + 1, 'photo')}
         </span>
         <span class="espace" />
         {coupure ? (
-          <button type="button" onClick={() => changerAlbum({ coupures: retirerCle(config.coupures, premiere.id) })} title="Remettre ces photos dans la section précédente">
-            Supprimer ce découpage
+          <button type="button" onClick={() => changerAlbum({ coupures: retirerCle(config.coupures, premiere.id) })} title={t`Remettre ces photos dans la section précédente`}>
+            {t`Supprimer ce découpage`}
           </button>
         ) : (
           rattachable && (
-            <button type="button" onClick={() => changerAlbum({ rattachements: [...config.rattachements, premiere.id] })} title="Une seule section avec la précédente">
-              Regrouper avec la précédente
+            <button type="button" onClick={() => changerAlbum({ rattachements: [...config.rattachements, premiere.id] })} title={t`Une seule section avec la précédente`}>
+              {t`Regrouper avec la précédente`}
             </button>
           )
         )}
@@ -86,7 +87,7 @@ function EnteteSection({ sec, index }: { sec: Section; index: number }) {
         <textarea
           class="intro-section"
           rows={1}
-          placeholder="Introduction de la section (facultative)"
+          placeholder={t`Introduction de la section (facultative)`}
           value={config.intros[sec.dossier] ?? ''}
           onChange={(e) => {
             const t = e.currentTarget.value.trim();
@@ -97,10 +98,10 @@ function EnteteSection({ sec, index }: { sec: Section; index: number }) {
       <PropositionsSection sec={sec} premiere={premiere.id} coupure={coupure} />
       {rattaches.length > 0 && (
         <p class="discret">
-          Comprend {pluriel(rattaches.length, 'bloc regroupé', 'blocs regroupés')} :{' '}
+          {t`Comprend ${pluriel(rattaches.length, 'bloc regroupé', 'blocs regroupés')} :`}{' '}
           {rattaches.map((id) => (
             <button key={id} type="button" class="lien" onClick={() => changerAlbum({ rattachements: config.rattachements.filter((x) => x !== id) })}>
-              séparer « {s.plan.dossiers.get(ordreCourant.find((f) => f.id === id)!.dossier)?.nom} » ({jourCourt(ordreCourant.find((f) => f.id === id)!.date)})
+              {t`séparer « ${s.plan.dossiers.get(ordreCourant.find((f) => f.id === id)!.dossier)?.nom ?? ''} » (${jourCourt(ordreCourant.find((f) => f.id === id)!.date)})`}
             </button>
           ))}
         </p>
@@ -121,7 +122,7 @@ function PropositionsSection({ sec, premiere, coupure }: { sec: Section; premier
     <div class="proposition-texte">
       {titres.titre && titres.titre !== titreActuel && (
         <div>
-          <span class="source ia">IA</span> Titre : « {titres.titre} »{' '}
+          <span class="source ia">{t`IA`}</span> {t`Titre : « ${titres.titre} »`}{' '}
           <button
             type="button"
             class="lien"
@@ -129,21 +130,21 @@ function PropositionsSection({ sec, premiere, coupure }: { sec: Section; premier
               coupure ? changerAlbum({ coupures: { ...config.coupures, [premiere]: titres.titre } }) : changerAlbum({ titres: { ...config.titres, [sec.dossier]: titres.titre } })
             }
           >
-            utiliser
+            {t`utiliser`}
           </button>
         </div>
       )}
       {titres.introduction && titres.introduction !== introActuelle && !coupure && (
         <div>
-          <span class="source ia">IA</span> Introduction : « {titres.introduction} »{' '}
+          <span class="source ia">{t`IA`}</span> {t`Introduction : « ${titres.introduction} »`}{' '}
           <button type="button" class="lien" onClick={() => changerAlbum({ intros: { ...config.intros, [sec.dossier]: titres.introduction } })}>
-            utiliser
+            {t`utiliser`}
           </button>
         </div>
       )}
       {titres.references.length > 0 && (
         <div class="discret">
-          Sources : {titres.references.map((r) => r.source).filter(Boolean).slice(0, 3).join(' · ')}
+          {t`Sources : ${titres.references.map((r) => r.source).filter(Boolean).slice(0, 3).join(' · ')}`}
         </div>
       )}
     </div>
@@ -178,51 +179,51 @@ function PanneauPhoto({ f, fermer }: { f: FichierPlan; fermer: () => void }) {
         </span>
         {legendesProposees().get(f.id) && legendesProposees().get(f.id) !== legende && (
           <div class="proposition-texte">
-            <span class="source ia">IA</span> « {legendesProposees().get(f.id)} »{' '}
+            <span class="source ia">{t`IA`}</span> {t`« ${legendesProposees().get(f.id)} »`}{' '}
             <button type="button" class="lien" onClick={() => (setLegende(legendesProposees().get(f.id)!), appliquer(changerLegende(s.plan, f.id, legendesProposees().get(f.id)!)))}>
-              utiliser
+              {t`utiliser`}
             </button>
           </div>
         )}
         <label>
-          Légende
+          {t`Légende`}
           <textarea
             rows={2}
             value={legende}
             onInput={(e) => setLegende(e.currentTarget.value)}
             onBlur={() => appliquer(changerLegende(s.plan, f.id, legende))}
-            placeholder="Texte à recopier dans ifolor sous la photo"
+            placeholder={t`Texte à recopier dans ifolor sous la photo`}
           />
         </label>
         <div class="actions">
           <button type="button" onClick={() => appliquer(changerLegende(s.plan, f.id, legende))}>
-            Enregistrer la légende
+            {t`Enregistrer la légende`}
           </button>
           {f.album === 2 ? (
             <button type="button" onClick={() => appliquer(noterAlbum(s.plan, [f.id], 1))}>
-              Petite photo ★
+              {t`Petite photo ★`}
             </button>
           ) : (
             <button type="button" onClick={() => appliquer(noterAlbum(s.plan, [f.id], 2))}>
-              Grande photo ★★
+              {t`Grande photo ★★`}
             </button>
           )}
           <button type="button" onClick={() => appliquer(tourner(s.plan, [f.id], 90))}>
-            ↻ Tourner
+            ↻ {t`Tourner`}
           </button>
           {coupure === undefined ? (
             <button
               type="button"
               onClick={async () => {
-                const t = await demander('Nouvelle section', 'La section commencera à cette photo. Son titre :', s.plan.dossiers.get(f.dossier)?.nom.replace(/_/g, ' ') ?? '', (v) => (v.trim() ? null : 'Donnez un titre.'), 'Créer');
-                if (t) changerAlbum({ coupures: { ...config.coupures, [f.id]: t.trim() } });
+                const titre = await demander(t`Nouvelle section`, t`La section commencera à cette photo. Son titre :`, s.plan.dossiers.get(f.dossier)?.nom.replace(/_/g, ' ') ?? '', (v) => (v.trim() ? null : t`Donnez un titre.`), t`Créer`);
+                if (titre) changerAlbum({ coupures: { ...config.coupures, [f.id]: titre.trim() } });
               }}
             >
-              Nouvelle section à partir d’ici
+              {t`Nouvelle section à partir d’ici`}
             </button>
           ) : (
             <button type="button" onClick={() => changerAlbum({ coupures: retirerCle(config.coupures, f.id) })}>
-              Supprimer la section qui commence ici
+              {t`Supprimer la section qui commence ici`}
             </button>
           )}
           <button
@@ -232,10 +233,10 @@ function PanneauPhoto({ f, fermer }: { f: FichierPlan; fermer: () => void }) {
               fermer();
             }}
           >
-            Retirer de l’album
+            {t`Retirer de l’album`}
           </button>
           <button type="button" onClick={fermer}>
-            Fermer
+            {t`Fermer`}
           </button>
         </div>
       </div>
@@ -254,20 +255,20 @@ function TableauTextes({ secs, ordre }: { secs: Section[]; ordre: FichierPlan[] 
         <button
           type="button"
           onClick={() => {
-            appliquer(combiner(`Reprendre ${aReprendre.length} légendes proposées`, ...aReprendre.map((f) => changerLegende(s.plan, f.id, proposees.get(f.id)!))));
-            notifier('ok', `${aReprendre.length} légende(s) reprise(s) : modifiez-les à volonté.`, { libelle: 'Annuler', faire: annuler });
+            appliquer(combiner(t`Reprendre ${aReprendre.length} légendes proposées`, ...aReprendre.map((f) => changerLegende(s.plan, f.id, proposees.get(f.id)!))));
+            notifier('ok', t`${aReprendre.length} légende(s) reprise(s) : modifiez-les à volonté.`, { libelle: t`Annuler`, faire: annuler });
           }}
         >
-          Reprendre les {aReprendre.length} légendes proposées par l’IA (sans toucher aux légendes déjà écrites)
+          {t`Reprendre les ${aReprendre.length} légendes proposées par l’IA (sans toucher aux légendes déjà écrites)`}
         </button>
       </p>
     )}
     <table class="tableau textes-album">
       <thead>
         <tr>
-          <th>Photo</th>
-          <th>Section</th>
-          <th>Légende</th>
+          <th>{t`Photo`}</th>
+          <th>{t`Section`}</th>
+          <th>{t`Légende`}</th>
         </tr>
       </thead>
       <tbody>
@@ -279,7 +280,7 @@ function TableauTextes({ secs, ordre }: { secs: Section[]; ordre: FichierPlan[] 
               </td>
               <td>{i === 0 ? <strong>{`${k + 1}. ${sec.titre}`}</strong> : <span class="discret">{f.date?.slice(11, 16)}</span>}</td>
               <td>
-                <input class="large" value={f.legende ?? ''} placeholder={proposees.get(f.id) ? `IA : ${proposees.get(f.id)}` : '(sans légende)'} onChange={(e) => appliquer(changerLegende(s.plan, f.id, e.currentTarget.value))} />
+                <input class="large" value={f.legende ?? ''} placeholder={proposees.get(f.id) ? t`IA : ${proposees.get(f.id)}` : t`(sans légende)`} onChange={(e) => appliquer(changerLegende(s.plan, f.id, e.currentTarget.value))} />
               </td>
             </tr>
           )),
@@ -316,21 +317,20 @@ export function PageAlbum() {
 
   return (
     <div class="page large avec-barre page-album">
-      <TeteEtape numero={ETAPE.album} titre="Album" cle="album">
-        Voici l’album tel qu’il sera préparé pour ifolor : les photos retenues dans l’ordre des journées, regroupées en sections. Modifiez les titres, ajoutez des
-        légendes, découpez ou regroupez les sections ; cliquez une photo pour la modifier.
+      <TeteEtape numero={ETAPE.album} titre={nomEtape(ETAPE.album)} cle="album">
+        {t`Voici l’album tel qu’il sera préparé pour ifolor : les photos retenues dans l’ordre des journées, regroupées en sections. Modifiez les titres, ajoutez des légendes, découpez ou regroupez les sections ; cliquez une photo pour la modifier.`}
       </TeteEtape>
 
       <div class="reglages-etape ligne">
         <label>
-          Ordre{' '}
+          {t`Ordre`}{' '}
           <select value={config.ordre} onChange={(e) => changerAlbum({ ordre: e.currentTarget.value as 'segments' | 'chrono' })}>
-            <option value="segments">Par journée, puis par sortie (conseillé)</option>
-            <option value="chrono">Strictement chronologique</option>
+            <option value="segments">{t`Par journée, puis par sortie (conseillé)`}</option>
+            <option value="chrono">{t`Strictement chronologique`}</option>
           </select>
         </label>
         <label>
-          Photos par page{' '}
+          {t`Photos par page`}{' '}
           <input
             type="number"
             class="tres-court"
@@ -341,14 +341,14 @@ export function PageAlbum() {
           />
         </label>
         <label class="case">
-          <input type="checkbox" checked={config.nouvellePageParSection} onChange={(e) => changerAlbum({ nouvellePageParSection: e.currentTarget.checked })} /> Chaque section
-          commence sur une nouvelle page
+          <input type="checkbox" checked={config.nouvellePageParSection} onChange={(e) => changerAlbum({ nouvellePageParSection: e.currentTarget.checked })} />{' '}
+          {t`Chaque section commence sur une nouvelle page`}
         </label>
         <details class="avances">
-          <summary>Réglages avancés</summary>
+          <summary>{t`Réglages avancés`}</summary>
           <label class="case">
-            <input type="checkbox" checked={config.sousDossiers} onChange={(e) => changerAlbum({ sousDossiers: e.currentTarget.checked })} /> Un sous-dossier par section
-            dans « Album » (sinon tout dans un seul dossier, numéroté)
+            <input type="checkbox" checked={config.sousDossiers} onChange={(e) => changerAlbum({ sousDossiers: e.currentTarget.checked })} />{' '}
+            {t`Un sous-dossier par section dans « Album » (sinon tout dans un seul dossier, numéroté)`}
           </label>
         </details>
       </div>
@@ -356,30 +356,30 @@ export function PageAlbum() {
       {ordre.length > 0 && <AidesAlbum choisirCouverture={(id) => changerAlbum({ couverture: s.album.couverture === id ? undefined : id })} />}
       {s.album.couverture && s.plan.fichiers.get(s.album.couverture) && (
         <p class="discret">
-          Couverture : {s.plan.fichiers.get(s.album.couverture)!.nom} (copiée en tête de « Album » sous le nom « 0000_Couverture »).{' '}
+          {t`Couverture : ${s.plan.fichiers.get(s.album.couverture)!.nom} (copiée en tête de « Album » sous le nom « 0000_Couverture »).`}{' '}
           <button type="button" class="lien" onClick={() => changerAlbum({ couverture: undefined })}>
-            retirer
+            {t`retirer`}
           </button>
         </p>
       )}
       {ordre.length === 0 ? (
         <div class="encart">
-          <p>Aucune photo retenue pour l’album : choisissez-les à l’étape {ETAPE.selection}.</p>
+          <p>{t`Aucune photo retenue pour l’album : choisissez-les à l’étape ${ETAPE.selection}.`}</p>
           <button type="button" class="principal" onClick={() => allerEtape('selection')}>
-            Aller à la sélection
+            {t`Aller à la sélection`}
           </button>
         </div>
       ) : (
         <>
           <div class="onglets">
             <button type="button" class={onglet === 'pages' ? 'actif' : ''} onClick={() => setOnglet('pages')}>
-              Aperçu des pages
+              {t`Aperçu des pages`}
             </button>
             <button type="button" class={onglet === 'textes' ? 'actif' : ''} onClick={() => setOnglet('textes')}>
-              Tous les textes
+              {t`Tous les textes`}
             </button>
             <span class="discret">
-              {pluriel(ordre.length, 'photo')} · {pluriel(secs.length, 'section')} · {pluriel(pages.length, 'page')} simulée{pages.length > 1 ? 's' : ''} (cible : {nombre(cible)}) ·{' '}
+              {pluriel(ordre.length, 'photo')} · {pluriel(secs.length, 'section')} · {pluriel(pages.length, 'page simulée', 'pages simulées')} {t`(cible : ${nombre(cible)})`} ·{' '}
               {pluriel(legendes, 'légende')}
             </span>
           </div>
@@ -423,7 +423,7 @@ export function PageAlbum() {
 
       <BarreValidation
         resume={`${pluriel(ordre.length, 'photo')} · ${pluriel(secs.length, 'section')} · ${pluriel(pages.length, 'page')}`}
-        alertes={pages.length > cible * 1.1 ? [`${nombre(pages.length - cible)} pages de plus que la cible`] : []}
+        alertes={pages.length > cible * 1.1 ? [t`${nombre(pages.length - cible)} pages de plus que la cible`] : []}
         revenir={() => revenirDe('album')}
         valider={() => validerEtape('album')}
         validerActif={ordre.length > 0}

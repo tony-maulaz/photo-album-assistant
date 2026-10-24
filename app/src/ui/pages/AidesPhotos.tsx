@@ -18,6 +18,7 @@ import { pluriel } from '../format';
 import { selection, vue } from '../organiser';
 import { photosVue } from '../selection';
 import { ETAPE } from '../../navigateur/projet';
+import { aTraduire, t } from '../../lib/langue';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs, type Usage } from './AidesIA';
 
 // ---------------------------------------------------------------------------
@@ -74,7 +75,7 @@ function photosDeLaVue(s: Session): FichierPlan[] {
 }
 
 function nomVue(s: Session): string {
-  return vue.value === RACINE ? 'tout le projet' : `« ${cheminDossier(s.plan, vue.value)} »`;
+  return vue.value === RACINE ? t`tout le projet` : t`« ${cheminDossier(s.plan, vue.value)} »`;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,10 +84,10 @@ function nomVue(s: Session): string {
 
 enregistrerAide({
   id: 'IA8',
-  nom: 'Étiqueter les photos avec l’IA',
+  nom: aTraduire('Étiqueter les photos avec l’IA'),
   etape: ETAPE.selection,
-  description: 'Pour chaque photo : personnes, type, défauts éventuels et courte description. Tout sert de filtre et à la recherche en langage naturel.',
-  envoi: 'chaque photo réduite à 768 px, 10 par appel',
+  description: aTraduire('Pour chaque photo : personnes, type, défauts éventuels et courte description. Tout sert de filtre et à la recherche en langage naturel.'),
+  envoi: aTraduire('chaque photo réduite à 768 px, 10 par appel'),
   web: false,
   usage: 'rapide',
   estimer: (s) => {
@@ -94,7 +95,7 @@ enregistrerAide({
     const photos = photosDeLaVue(s).filter((f) => !deja[f.id]);
     if (!photos.length) return null;
     const e = estimer(s, demandesEtiquettes(photos.map((f) => photoIA(s, f)), { contexte: s.projet.contexte }));
-    return e && { ...e, detail: `${pluriel(photos.length, 'photo')} de ${nomVue(s)}` };
+    return e && { ...e, detail: t`${pluriel(photos.length, 'photo')} de ${nomVue(s)}` };
   },
   lancer: async (s, l) => {
     const deja = s.aides.get<Record<string, Etiquettes>>('IA8') ?? {};
@@ -108,16 +109,16 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA8', ajouts);
     }
-    return `${pluriel(Object.keys(ajouts).length, 'photo étiquetée', 'photos étiquetées')} : filtres et recherche disponibles.${texteEchecs(bilan)}`;
+    return t`${pluriel(Object.keys(ajouts).length, 'photo étiquetée', 'photos étiquetées')} : filtres et recherche disponibles.${texteEchecs(bilan)}`;
   },
 });
 
 enregistrerAide({
   id: 'IA9',
-  nom: 'Apprécier les photos avec l’IA',
+  nom: aTraduire('Apprécier les photos avec l’IA'),
   etape: ETAPE.selection,
-  description: 'Note indicative de qualité (composition, expressions, lumière), avec une phrase. Sert à trier, jamais à cocher.',
-  envoi: 'les photos en 1024 px, 6 par appel',
+  description: aTraduire('Note indicative de qualité (composition, expressions, lumière), avec une phrase. Sert à trier, jamais à cocher.'),
+  envoi: aTraduire('les photos en 1024 px, 6 par appel'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -125,7 +126,7 @@ enregistrerAide({
     const photos = photosDeLaVue(s).filter((f) => !deja[f.id]);
     if (!photos.length) return null;
     const e = estimer(s, demandesAppreciation(photos.map((f) => photoIA(s, f)), { contexte: s.projet.contexte }));
-    return e && { ...e, detail: `${pluriel(photos.length, 'photo')} de ${nomVue(s)}` };
+    return e && { ...e, detail: t`${pluriel(photos.length, 'photo')} de ${nomVue(s)}` };
   },
   lancer: async (s, l) => {
     const deja = s.aides.get<Record<string, Appreciation>>('IA9') ?? {};
@@ -139,7 +140,7 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA9', ajouts);
     }
-    return `${pluriel(Object.keys(ajouts).length, 'photo appréciée', 'photos appréciées')} : triez « par appréciation ».${texteEchecs(bilan)}`;
+    return t`${pluriel(Object.keys(ajouts).length, 'photo appréciée', 'photos appréciées')} : triez « par appréciation ».${texteEchecs(bilan)}`;
   },
 });
 
@@ -151,12 +152,12 @@ function pileChoisie(s: Session): FichierPlan[] {
 
 enregistrerAide({
   id: 'IA10',
-  nom: 'Meilleure de la sélection (IA)',
+  nom: aTraduire('Meilleure de la sélection (IA)'),
   etape: ETAPE.selection,
-  description: 'Parmi 2 à 12 photos semblables sélectionnées (une pile), l’IA indique celle qu’elle préférerait et pourquoi ; vous gardez la main.',
-  siRien: 'sélectionnez 2 à 12 photos semblables',
+  description: aTraduire('Parmi 2 à 12 photos semblables sélectionnées (une pile), l’IA indique celle qu’elle préférerait et pourquoi ; vous gardez la main.'),
+  siRien: aTraduire('sélectionnez 2 à 12 photos semblables'),
   selectionDependante: true,
-  envoi: 'les photos de la pile en 1024 px',
+  envoi: aTraduire('les photos de la pile en 1024 px'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -181,21 +182,21 @@ enregistrerAide({
       }
       candidates = pile.filter((p) => gagnantes.some((g) => g.id === p.id));
     }
-    if (!finale) return `Réponse inexploitable : rien à proposer.${texteEchecs(bilan)}`;
+    if (!finale) return t`Réponse inexploitable : rien à proposer.${texteEchecs(bilan)}`;
     await s.aides.fusionner('IA10', { [finale.id]: { justification: finale.justification, pile: pile.map((p) => p.id) } });
     selection.value = new Set([finale.id]);
     const f = s.plan.fichiers.get(finale.id);
-    return `L’IA préfère ${f?.nom ?? 'cette photo'} (sélectionnée) : ${finale.justification}`;
+    return t`L’IA préfère ${f?.nom ?? t`cette photo`} (sélectionnée) : ${finale.justification}`;
   },
 });
 
 enregistrerAide({
   id: 'IA11',
-  nom: 'Contrôler la sélection de cette sortie (IA)',
+  nom: aTraduire('Contrôler la sélection de cette sortie (IA)'),
   etape: ETAPE.selection,
-  description: 'Relecture des photos retenues d’une sortie : redondances, moments manquants, photos faibles. Uniquement des remarques.',
-  siRien: 'choisissez une sortie avec des photos retenues',
-  envoi: 'planches des photos retenues et des autres photos de la sortie',
+  description: aTraduire('Relecture des photos retenues d’une sortie : redondances, moments manquants, photos faibles. Uniquement des remarques.'),
+  siRien: aTraduire('choisissez une sortie avec des photos retenues'),
+  envoi: aTraduire('planches des photos retenues et des autres photos de la sortie'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -208,13 +209,13 @@ enregistrerAide({
     const sortie = vue.value;
     const nom = nomVue(s);
     const d = demandeControle(s, sortie);
-    if (!d) return 'Aucune photo retenue dans cette sortie.';
+    if (!d) return t`Aucune photo retenue dans cette sortie.`;
     // Nombre de photos retenues réellement envoyées (48 au plus) : les numéros suivants sont des « autres ».
     const k = d.ids.filter((id) => (s.plan.fichiers.get(id)?.album ?? 0) > 0).length;
     const bilan: BilanEchecs = { echecs: 0 };
     const [res] = await executer(s, [d], (r) => lireControleSelection(r, d.ids, k), l, bilan);
     if (res) await s.aides.fusionner('IA11', { [sortie]: res.r });
-    return `${pluriel(res?.r.length ?? 0, 'remarque')} sur la sélection de ${nom}.${texteEchecs(bilan)}`;
+    return t`${pluriel(res?.r.length ?? 0, 'remarque')} sur la sélection de ${nom}.${texteEchecs(bilan)}`;
   },
 });
 
@@ -243,14 +244,14 @@ export function lignesIA(s: Session, id: string): string[] {
   const lignes: string[] = [];
   const e = r.etiquettes[id];
   if (e) {
-    if (e.description) lignes.push(`« ${e.description} »`);
-    const details = [e.personnes ? LIBELLES_PERSONNES[e.personnes] : '', e.type ? LIBELLES_TYPES[e.type] : '', ...e.defauts.map((d) => LIBELLES_DEFAUTS[d])].filter(Boolean);
+    if (e.description) lignes.push(t`« ${e.description} »`);
+    const details = [e.personnes ? t(LIBELLES_PERSONNES[e.personnes]) : '', e.type ? t(LIBELLES_TYPES[e.type]) : '', ...e.defauts.map((d) => t(LIBELLES_DEFAUTS[d]))].filter(Boolean);
     if (details.length) lignes.push(details.join(' · '));
   }
   const a = r.appreciations[id];
-  if (a) lignes.push(`Appréciation IA : ${a.note}/10${a.pleinePage ? ' (grande photo)' : ''} — ${a.justification}`);
+  if (a) lignes.push(t`Appréciation IA : ${a.note}/10${a.pleinePage ? t` (grande photo)` : ''} — ${a.justification}`);
   const m = r.meilleures[id];
-  if (m) lignes.push(`Meilleure de sa pile selon l’IA : ${m.justification}`);
+  if (m) lignes.push(t`Meilleure de sa pile selon l’IA : ${m.justification}`);
   return lignes;
 }
 
@@ -261,20 +262,20 @@ export function AidesSelection() {
   const remarques = resultatsSelection(s).controles[vue.value] ?? [];
   return (
     <section class="outil">
-      <h3>Aides IA</h3>
+      <h3>{t`Aides IA`}</h3>
       <AideIA fonction="IA8" />
       <AideIA fonction="IA9" />
       <AideIA fonction="IA10" />
       <AideIA fonction="IA11" />
-      {vue.value === RACINE && <p class="discret">Choisissez une sortie dans le panneau pour la faire contrôler.</p>}
+      {vue.value === RACINE && <p class="discret">{t`Choisissez une sortie dans le panneau pour la faire contrôler.`}</p>}
       {remarques.length > 0 && (
         <ul class="liste-courte remarques">
           {remarques.map((r, i) => (
             <li key={i}>
-              <strong>{r.type === 'redondance' ? 'Redondance' : r.type === 'manque' ? 'Manque' : r.type === 'faible' ? 'Photo faible' : 'Remarque'} :</strong> {r.texte}{' '}
+              <strong>{r.type === 'redondance' ? t`Redondance :` : r.type === 'manque' ? t`Manque :` : r.type === 'faible' ? t`Photo faible :` : t`Remarque :`}</strong> {r.texte}{' '}
               {r.photos.length > 0 && (
                 <button type="button" class="lien" onClick={() => (selection.value = new Set(r.photos))}>
-                  voir ({r.photos.length})
+                  {t`voir (${r.photos.length})`}
                 </button>
               )}
             </li>
@@ -322,12 +323,12 @@ export interface TextesProposes {
 function aideTextes(id: 'IA12' | 'IA13', legendes: boolean) {
   enregistrerAide({
     id,
-    nom: legendes ? 'Proposer des légendes (IA)' : 'Proposer titres et introductions (IA)',
+    nom: legendes ? aTraduire('Proposer des légendes (IA)') : aTraduire('Proposer titres et introductions (IA)'),
     etape: ETAPE.album,
     description: legendes
-      ? 'Légendes pour une part des photos de chaque section (15 % par défaut), dans le ton choisi.'
-      : 'Titre et texte d’introduction de chaque section, d’après les photos, le nom de la sortie, le calendrier et le contexte ; recherche web en option.',
-    envoi: 'jusqu’à 12 photos par section (1024 px), le nom de la section, le calendrier et le contexte',
+      ? aTraduire('Légendes pour une part des photos de chaque section (15 % par défaut), dans le ton choisi.')
+      : aTraduire('Titre et texte d’introduction de chaque section, d’après les photos, le nom de la sortie, le calendrier et le contexte ; recherche web en option.'),
+    envoi: aTraduire('jusqu’à 12 photos par section (1024 px), le nom de la section, le calendrier et le contexte'),
     web: !legendes,
     usage: 'avance',
     estimer: (s) => {
@@ -348,7 +349,7 @@ function aideTextes(id: 'IA12' | 'IA13', legendes: boolean) {
       } finally {
         await s.aides.fusionner(id, ajouts);
       }
-      return `${pluriel(Object.keys(ajouts).length, 'section')} : propositions à relire dans l’aperçu et dans « Tous les textes ».${texteEchecs(bilan)}`;
+      return t`${pluriel(Object.keys(ajouts).length, 'section')} : propositions à relire dans l’aperçu et dans « Tous les textes ».${texteEchecs(bilan)}`;
     },
   });
 }
@@ -374,11 +375,11 @@ export function couverturesProposees(s: Session): { id: string; raison: string }
 
 enregistrerAide({
   id: 'IA14',
-  nom: 'Suggérer une couverture (IA)',
+  nom: aTraduire('Suggérer une couverture (IA)'),
   etape: ETAPE.album,
-  description: '5 candidates parmi les grandes photos ★★, avec la raison.',
-  siRien: 'il faut au moins 2 grandes photos ★★',
-  envoi: 'les grandes photos ★★ (planches puis 1024 px)',
+  description: aTraduire('5 candidates parmi les grandes photos ★★, avec la raison.'),
+  siRien: aTraduire('il faut au moins 2 grandes photos ★★'),
+  envoi: aTraduire('les grandes photos ★★ (planches puis 1024 px)'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -403,7 +404,7 @@ enregistrerAide({
       if (!finalistes.length) finalistes = grandes.slice(0, 6);
     }
     const d = demandeCouverture(finalistes, { album: s.projet.nom, contexte: s.projet.contexte });
-    if (!d) return 'Pas assez de grandes photos ★★.';
+    if (!d) return t`Pas assez de grandes photos ★★.`;
     const [r] = await executer(s, [d], (x, dd) => lireCouverture(x, dd.ids), l, bilan);
     if (r) await s.aides.set('IA14', { grandes: signature, propositions: r.r } satisfies CouverturesIA14);
     return `${pluriel(r?.r.length ?? 0, 'couverture proposée', 'couvertures proposées')}.${texteEchecs(bilan)}`;
@@ -418,10 +419,10 @@ function demandesControle(s: Session) {
 
 enregistrerAide({
   id: 'IA15',
-  nom: 'Relire l’album (IA)',
+  nom: aTraduire('Relire l’album (IA)'),
   etape: ETAPE.album,
-  description: 'Relecture des pages simulées : redondances entre pages voisines, rythme, sections déséquilibrées. Uniquement des remarques.',
-  envoi: 'planches de l’album dans l’ordre, avec le numéro de page',
+  description: aTraduire('Relecture des pages simulées : redondances entre pages voisines, rythme, sections déséquilibrées. Uniquement des remarques.'),
+  envoi: aTraduire('planches de l’album dans l’ordre, avec le numéro de page'),
   web: false,
   usage: 'standard',
   estimer: (s) => {
@@ -433,7 +434,7 @@ enregistrerAide({
     const res = await executer(s, demandesControle(s), (r, d) => lireControleAlbum(r, d), l, bilan);
     const remarques = res.flatMap((x) => x.r);
     if (res.length) await s.aides.set('IA15', remarques);
-    return `${pluriel(remarques.length, 'remarque')} sur l’album.${texteEchecs(bilan)}`;
+    return t`${pluriel(remarques.length, 'remarque')} sur l’album.${texteEchecs(bilan)}`;
   },
 });
 
@@ -452,25 +453,26 @@ export function AidesAlbum({ choisirCouverture }: { choisirCouverture: (id: stri
   return (
     <details class="aides-album">
       <summary>
-        <strong>Aides IA</strong> : titres, légendes, couverture, relecture
+        <strong>{t`Aides IA`}</strong>
+        {t` : titres, légendes, couverture, relecture`}
       </summary>
       <div class="reglages-etape ligne">
         <label>
-          Ton{' '}
+          {t`Ton`}{' '}
           <select value={ton} onChange={(e) => setTon(e.currentTarget.value as Ton)}>
-            {(Object.keys(LIBELLES_TONS) as Ton[]).map((t) => (
-              <option key={t} value={t}>
-                {LIBELLES_TONS[t]}
+            {(Object.keys(LIBELLES_TONS) as Ton[]).map((x) => (
+              <option key={x} value={x}>
+                {t(LIBELLES_TONS[x])}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Part des photos légendées{' '}
+          {t`Part des photos légendées`}{' '}
           <input type="number" class="tres-court" min="0" max="100" step="5" value={Math.round(part * 100)} onChange={(e) => setPart(Math.max(0, Math.min(100, Number(e.currentTarget.value) || 0)) / 100)} /> %
         </label>
-        <label class="case" title="Monument, histoire d’un lieu, fait marquant d’une course… (plus cher)">
-          <input type="checkbox" checked={web} onChange={(e) => setWeb(e.currentTarget.checked)} /> Informations trouvées sur internet
+        <label class="case" title={t`Monument, histoire d’un lieu, fait marquant d’une course… (plus cher)`}>
+          <input type="checkbox" checked={web} onChange={(e) => setWeb(e.currentTarget.checked)} /> {t`Informations trouvées sur internet`}
         </label>
       </div>
       <AideIA fonction="IA12" />
@@ -484,7 +486,7 @@ export function AidesAlbum({ choisirCouverture }: { choisirCouverture: (id: stri
               <li key={c.id}>
                 {s.plan.fichiers.get(c.id)!.nom} — {c.raison}{' '}
                 <button type="button" class="lien" onClick={() => choisirCouverture(c.id)}>
-                  {s.album.couverture === c.id ? 'couverture choisie ✓' : 'choisir comme couverture'}
+                  {s.album.couverture === c.id ? t`couverture choisie ✓` : t`choisir comme couverture`}
                 </button>
               </li>
             ))}
@@ -495,7 +497,7 @@ export function AidesAlbum({ choisirCouverture }: { choisirCouverture: (id: stri
         <ul class="liste-courte remarques">
           {remarques.map((r, i) => (
             <li key={i}>
-              {r.pages.length > 0 && <strong>p. {r.pages.join(', ')} : </strong>}
+              {r.pages.length > 0 && <strong>{t`p. ${r.pages.join(', ')} : `}</strong>}
               {r.texte}
             </li>
           ))}
