@@ -6,6 +6,7 @@
 
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { session } from '../etat';
 import { dateHeure } from '../format';
@@ -58,7 +59,7 @@ function Volet({
 }) {
   const url = useOriginal(f);
   return (
-    <div class="volet" onDblClick={agrandir} title={agrandir ? 'Double-clic : cette photo seule, en grand' : undefined}>
+    <div class="volet" onDblClick={agrandir} title={agrandir ? t`Double-clic : cette photo seule, en grand` : undefined}>
       <div class="volet-entete">
         <strong>{f.date ? dateHeure(f.date) : f.nom}</strong>
         <span class="discret">{f.nom}</span>
@@ -73,7 +74,7 @@ function Volet({
             style={{ transform: `translate(-50%, -50%) translate(${vue.x}px, ${vue.y}px) scale(${vue.zoom}) rotate(${rotation}deg)` }}
           />
         ) : (
-          <p class="discret">Chargement…</p>
+          <p class="discret">{t`Chargement…`}</p>
         )}
       </div>
       {actions && <div class="volet-actions">{actions}</div>}
@@ -86,7 +87,7 @@ export function Comparateur({
   fermer,
   actions,
   entete,
-  titre = 'Comparer',
+  titre = t`Comparer`,
 }: {
   photos: FichierPlan[];
   fermer: () => void;
@@ -154,31 +155,31 @@ export function Comparateur({
   return (
     <div class="comparateur" role="dialog" aria-label={titre}>
       <div class="comparateur-tete">
-        <h2>{seule === null ? titre : `Photo ${seule + 1} sur ${n}`}</h2>
+        <h2>{seule === null ? titre : t`Photo ${seule + 1} sur ${n}`}</h2>
         <span class="discret">
           {seule === null
-            ? 'Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer'
-            : '← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte'}
+            ? t`Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer`
+            : t`← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte`}
         </span>
         <span class="espace" />
         {seule !== null && (
           <>
-            <button type="button" onClick={() => setSeule((seule - 1 + n) % n)} aria-label="Photo précédente" title="Flèche gauche">
+            <button type="button" onClick={() => setSeule((seule - 1 + n) % n)} aria-label={t`Photo précédente`} title={t`Flèche gauche`}>
               ←
             </button>
-            <button type="button" onClick={() => setSeule((seule + 1) % n)} aria-label="Photo suivante" title="Flèche droite">
+            <button type="button" onClick={() => setSeule((seule + 1) % n)} aria-label={t`Photo suivante`} title={t`Flèche droite`}>
               →
             </button>
             <button type="button" onClick={() => setSeule(null)}>
-              Côte à côte
+              {t`Côte à côte`}
             </button>
           </>
         )}
         <button type="button" onClick={() => setVue({ zoom: 1, x: 0, y: 0 })} disabled={vue.zoom === 1}>
-          Taille normale
+          {t`Taille normale`}
         </button>
         <button type="button" class="fermer-comparateur" onClick={fermer}>
-          Fermer
+          {t`Fermer`}
         </button>
       </div>
       <div class={`volets n${seule === null ? Math.min(4, n) : 1}`} ref={zone} onMouseDown={glisser}>
@@ -190,7 +191,7 @@ export function Comparateur({
           <Volet key={photos[seule].id} f={photos[seule]} vue={vue} rotation={photos[seule].rotation ?? 0} actions={actions?.(photos[seule])} entete={entete?.(photos[seule])} />
         )}
       </div>
-      {seule === null && n > 4 && <p class="discret plus-de-photos">{n - 4} autres photos : double-clic ou Entrée pour les voir une à une.</p>}
+      {seule === null && n > 4 && <p class="discret plus-de-photos">{t`${n - 4} autres photos : double-clic ou Entrée pour les voir une à une.`}</p>}
     </div>
   );
 }

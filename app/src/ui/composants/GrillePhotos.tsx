@@ -4,10 +4,11 @@
 
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { aTraduire, t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../../navigateur/miniatures';
 import { reglages, serviceMiniatures, session } from '../etat';
-import { dateHeure } from '../format';
+import { dateHeure, pluriel } from '../format';
 import { ancre, glisse, selection, visionneuse, vue, VUE_MIS_DE_COTE } from '../organiser';
 
 const MARGE = 20;
@@ -16,7 +17,13 @@ const LEGENDE = 22;
 /** Place libre sous la dernière ligne, pour la barre d'action flottante. */
 const PIED = 72;
 
-const RAISONS: Record<string, string> = { floues: 'floue', doublons: 'doublon', doublons_exacts: 'doublon exact', autres: 'écartée' };
+const RAISONS: Record<string, string> = { floues: aTraduire('floue'), doublons: aTraduire('doublon'), doublons_exacts: aTraduire('doublon exact'), autres: aTraduire('écartée') };
+
+/** Raison de la mise de côté, dans la langue de l'interface. */
+function texteRaison(f: FichierPlan): string {
+  const r = RAISONS[f.raison ?? 'autres'];
+  return r ? t(r) : '';
+}
 
 export function Miniature({ f, taille, rotation = 0 }: { f: FichierPlan; taille: number; rotation?: number }) {
   const [url, setUrl] = useState<string | null | undefined>(undefined);
@@ -41,14 +48,14 @@ export function Miniature({ f, taille, rotation = 0 }: { f: FichierPlan; taille:
   }, [f.id, f.taille, f.modifie, taille > HAUTEUR_MINIATURE]);
 
   if (url) return <img src={url} alt="" draggable={false} style={{ maxWidth: `${taille}px`, maxHeight: `${taille}px`, ...(rotation ? { transform: `rotate(${rotation}deg)` } : {}) }} />;
-  return <div class={`sans-miniature${url === undefined ? ' chargement' : ''}`}>{f.categorie === 'video' ? '▶ vidéo' : url === null ? 'aperçu indisponible' : ''}</div>;
+  return <div class={`sans-miniature${url === undefined ? ' chargement' : ''}`}>{f.categorie === 'video' ? t`▶ vidéo` : url === null ? t`aperçu indisponible` : ''}</div>;
 }
 
 /** Petite étiquette « 12 photos » qui suit la souris pendant le glisser. */
 function etiquetteGlisse(n: number): HTMLElement {
   const e = document.createElement('div');
   e.className = 'etiquette-glisse';
-  e.textContent = `${n} élément${n > 1 ? 's' : ''}`;
+  e.textContent = pluriel(n, 'élément');
   document.body.appendChild(e);
   setTimeout(() => e.remove(), 0);
   return e;
@@ -103,8 +110,8 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
       if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
-      const t = e.target as HTMLElement;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable) return;
+      const cible = e.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(cible.tagName) || cible.isContentEditable) return;
       if (document.querySelector('.visionneuse, .tri-rapide, .comparateur, .voile') || !elements.length) return;
       const actuel = elements.findIndex((f) => f.id === ancre.value);
       const pas = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' ? -colonnes : colonnes;
@@ -217,12 +224,12 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         onDblClick={() => (options.ouvrir ? options.ouvrir(i) : (visionneuse.value = i))}
         onDragStart={(e) => commencerGlisse(e, i)}
         onDragEnd={glisse.finir}
-        title={[`${f.nom}`, `${dateHeure(f.date)}${f.origineDate === 'fichier' ? ' (date du fichier)' : ''}`, ...(options.infobulle?.(f) ?? [])].join('\n')}
+        title={[`${f.nom}`, `${dateHeure(f.date)}${f.origineDate === 'fichier' ? t` (date du fichier)` : ''}`, ...(options.infobulle?.(f) ?? [])].join('\n')}
       >
         <div class="cadre-miniature" style={{ height: `${taille}px` }}>
           <Miniature f={f} taille={taille} rotation={options.badges ? f.rotation : 0} />
-          {f.categorie === 'video' && <span class="badge video">vidéo</span>}
-          {enMisDeCote && !options.badges && <span class="badge raison">{RAISONS[f.raison ?? 'autres']}</span>}
+          {f.categorie === 'video' && <span class="badge video">{t`vidéo`}</span>}
+          {enMisDeCote && !options.badges && <span class="badge raison">{texteRaison(f)}</span>}
           {options.badges?.(f)}
         </div>
         <div class="legende">{options.legende ? options.legende(f) : enMisDeCote ? dateHeure(f.date) : f.date && f.date.length > 10 ? f.date.slice(11, 16) : f.nom}</div>
@@ -237,13 +244,13 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
       tabIndex={0}
       onScroll={(e) => setDefile(e.currentTarget.scrollTop)}
       onMouseDown={commencerRectangle}
-      aria-label="Photos du dossier"
+      aria-label={t`Photos du dossier`}
     >
       <div class="plateau" style={{ height: `${lignes * hauteurCase + 2 * MARGE + PIED}px` }}>
         {cases}
         {rect && <div class="rectangle" style={{ left: `${rect.x0}px`, top: `${rect.y0}px`, width: `${rect.x1 - rect.x0}px`, height: `${rect.y1 - rect.y0}px` }} />}
       </div>
-      {elements.length === 0 && <p class="vide-grille">Aucune photo ni vidéo dans ce dossier.</p>}
+      {elements.length === 0 && <p class="vide-grille">{t`Aucune photo ni vidéo dans ce dossier.`}</p>}
     </div>
   );
 }

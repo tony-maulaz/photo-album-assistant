@@ -2,13 +2,15 @@
 
 import { signal } from '@preact/signals';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { langue, t } from '../../lib/langue';
 
 interface Demande {
   id: number;
   titre: string;
   texte?: string;
   saisie?: { valeur: string; verifier?: (v: string) => string | null };
-  bouton: string;
+  /** Sans libellé : « Confirmer » (confirmation) ou « Valider » (saisie), traduit à l'affichage. */
+  bouton?: string;
   danger?: boolean;
   resoudre: (v: string | boolean | null) => void;
 }
@@ -16,11 +18,11 @@ interface Demande {
 const courant = signal<Demande | null>(null);
 let prochain = 1;
 
-export function confirmer(titre: string, texte: string, bouton = 'Confirmer', danger = false): Promise<boolean> {
+export function confirmer(titre: string, texte: string, bouton?: string, danger = false): Promise<boolean> {
   return new Promise((resoudre) => (courant.value = { id: prochain++, titre, texte, bouton, danger, resoudre: (v) => resoudre(v === true) }));
 }
 
-export function demander(titre: string, texte: string, valeur = '', verifier?: (v: string) => string | null, bouton = 'Valider'): Promise<string | null> {
+export function demander(titre: string, texte: string, valeur = '', verifier?: (v: string) => string | null, bouton?: string): Promise<string | null> {
   return new Promise(
     (resoudre) => (courant.value = { id: prochain++, titre, texte, saisie: { valeur, verifier }, bouton, resoudre: (v) => resoudre(typeof v === 'string' ? v : null) }),
   );
@@ -79,10 +81,11 @@ function Boite({ d }: { d: Demande }) {
         )}
         <div class="actions droite">
           <button type="button" onClick={() => fermer(null)}>
-            Annuler
+            {/* « Annuler » ferme ici la boîte sans rien faire : « Cancel ». La clé « Annuler » vaut « Undo » partout ailleurs (annuler une action, Ctrl+Z). */}
+            {langue() === 'en' ? 'Cancel' : 'Annuler'}
           </button>
           <button ref={bouton} type="button" class={d.danger ? 'danger' : 'principal'} disabled={!!d.saisie && (!!erreur || !valeur.trim())} onClick={valider}>
-            {d.bouton}
+            {d.bouton ?? (d.saisie ? t`Valider` : t`Confirmer`)}
           </button>
         </div>
       </div>

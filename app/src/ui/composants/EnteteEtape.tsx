@@ -4,6 +4,7 @@
 // ligne : le panneau des dossiers et les photos ont toute la hauteur.
 
 import type { ComponentChildren } from 'preact';
+import { t } from '../../lib/langue';
 import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
 import { TeteEtape } from './Cadre';
 import { Icone } from './Icones';
@@ -36,7 +37,7 @@ export function EnteteEtape({
     <div class="tete-organiser">
       <button type="button" class="bouton-aide replier-entete" onClick={() => replierEntete(cle)} aria-expanded="true">
         <Icone nom="aide" taille={16} />
-        Replier
+        {t`Replier`}
       </button>
       <TeteEtape numero={numero} titre={titre}>
         {explication}
@@ -47,12 +48,12 @@ export function EnteteEtape({
 }
 
 /** Bouton au bout de la ligne du titre, quand l'explication est repliée, avec les signaux à garder en vue. */
-export function BoutonAide({ cle, ouverte = false, libelle = 'Aide et outils', pastilles }: { cle: string; ouverte?: boolean; libelle?: string; pastilles?: ComponentChildren }) {
+export function BoutonAide({ cle, ouverte = false, libelle = t`Aide et outils`, pastilles }: { cle: string; ouverte?: boolean; libelle?: string; pastilles?: ComponentChildren }) {
   if (explicationOuverte(cle, ouverte)) return null;
   return (
     <>
       {pastilles}
-      <button type="button" class="bouton-aide" onClick={() => ouvrirExplication(cle, true)} aria-expanded="false" title="Afficher l’explication de l’étape">
+      <button type="button" class="bouton-aide" onClick={() => ouvrirExplication(cle, true)} aria-expanded="false" title={t`Afficher l’explication de l’étape`}>
         <Icone nom="aide" taille={16} />
         {libelle}
       </button>

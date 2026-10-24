@@ -3,6 +3,7 @@
 
 import { signal } from '@preact/signals';
 import { useEffect } from 'preact/hooks';
+import { t } from '../../lib/langue';
 import { choisirDossierDepart, dossierDepart, oublierDossierDepart } from '../../navigateur/dossiers';
 import { notifier, texteErreur } from '../etat';
 
@@ -17,7 +18,7 @@ async function choisir() {
   try {
     const d = await choisirDossierDepart();
     nomDepart.value = d.name;
-    notifier('ok', `Les fenêtres de choix s’ouvriront désormais dans « ${d.name} ».`);
+    notifier('ok', t`Les fenêtres de choix s’ouvriront désormais dans « ${d.name} ».`);
   } catch (err) {
     if (!(err instanceof DOMException && err.name === 'AbortError')) notifier('erreur', texteErreur(err));
   }
@@ -26,7 +27,7 @@ async function choisir() {
 async function oublier() {
   await oublierDossierDepart();
   nomDepart.value = null;
-  notifier('ok', 'Plus de dossier de départ : les fenêtres de choix s’ouvrent dans le dernier dossier choisi.');
+  notifier('ok', t`Plus de dossier de départ : les fenêtres de choix s’ouvrent dans le dernier dossier choisi.`);
 }
 
 /** Réglage complet (page Réglages). */
@@ -35,21 +36,20 @@ export function ReglageDossierDepart() {
   const nom = nomDepart.value;
   return (
     <div class="formulaire">
-      <label>Dossier de départ</label>
+      <label>{t`Dossier de départ`}</label>
       <div class="ligne-champ">
         <button type="button" onClick={() => void choisir()}>
-          {nom ? 'Changer…' : 'Choisir…'}
+          {nom ? t`Changer…` : t`Choisir…`}
         </button>
-        <span class={nom ? '' : 'discret'}>{nom ? `« ${nom} »` : 'aucun : les fenêtres s’ouvrent dans le dernier dossier choisi'}</span>
+        <span class={nom ? '' : 'discret'}>{nom ? t`« ${nom} »` : t`aucun : les fenêtres s’ouvrent dans le dernier dossier choisi`}</span>
         {nom && (
           <button type="button" class="lien" onClick={() => void oublier()}>
-            Ne plus utiliser
+            {t`Ne plus utiliser`}
           </button>
         )}
       </div>
       <p class="aide-champ">
-        Choisissez le dossier où se trouvent vos photos (par exemple « Photos ») : toutes les fenêtres de choix de dossier et de fichier s’y ouvriront, sans
-        avoir à le chercher à chaque fois.
+        {t`Choisissez le dossier où se trouvent vos photos (par exemple « Photos ») : toutes les fenêtres de choix de dossier et de fichier s’y ouvriront, sans avoir à le chercher à chaque fois.`}
       </p>
     </div>
   );
@@ -64,16 +64,16 @@ export function RappelDossierDepart() {
     <p class="aide-champ">
       {nom ? (
         <>
-          Les fenêtres de choix s’ouvrent dans « {nom} ».{' '}
+          {t`Les fenêtres de choix s’ouvrent dans « ${nom} ».`}{' '}
           <button type="button" class="lien" onClick={() => void choisir()}>
-            Changer
+            {t`Changer`}
           </button>
         </>
       ) : (
         <>
-          Pour que les fenêtres de choix s’ouvrent toujours au même endroit :{' '}
+          {t`Pour que les fenêtres de choix s’ouvrent toujours au même endroit :`}{' '}
           <button type="button" class="lien" onClick={() => void choisir()}>
-            choisir un dossier de départ
+            {t`choisir un dossier de départ`}
           </button>
         </>
       )}

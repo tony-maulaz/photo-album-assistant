@@ -3,25 +3,26 @@
 // lance toute seule (D56) : pas de bouton, seulement sa progression.
 
 import { useEffect } from 'preact/hooks';
+import { aTraduire, t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { analyseEnCours, lancerAnalyseDossier } from '../analyseDossier';
 import { session, versionIA, versionPlan } from '../etat';
 import { duree, nombre } from '../format';
 import { BarreProgression } from './Cadre';
 
-const PHASES = { photos: 'Analyse des photos (netteté, ressemblance)', copies: 'Recherche des copies exactes' } as const;
+const PHASES = { photos: aTraduire('Analyse des photos (netteté, ressemblance)'), copies: aTraduire('Recherche des copies exactes') } as const;
 
 /** Barre de progression de l'analyse du dossier, avec le temps restant estimé. */
 export function ProgressionAnalyse() {
   const a = analyseEnCours.value;
-  if (!a) return <BarreProgression faits={0} total={0} texte="Préparation de l’analyse…" />;
+  if (!a) return <BarreProgression faits={0} total={0} texte={t`Préparation de l’analyse…`} />;
   const ecoule = performance.now() - a.debut;
   const restant = a.faits > 5 ? (ecoule / a.faits) * (a.total - a.faits) : 0;
   return (
     <BarreProgression
       faits={a.faits}
       total={a.total}
-      texte={`${PHASES[a.phase]} : ${nombre(a.faits)} / ${nombre(a.total)}${restant ? ` · encore ${duree(restant)}` : ''}`}
+      texte={t`${t(PHASES[a.phase])} : ${nombre(a.faits)} / ${nombre(a.total)}` + (restant ? t` · encore ${duree(restant)}` : '')}
     />
   );
 }
@@ -39,7 +40,7 @@ export function EncartAnalyse({ photos, pourquoi }: { photos: FichierPlan[]; pou
   return (
     <div class="encart analyse">
       <ProgressionAnalyse />
-      <p class="discret">L’analyse est gratuite et se fait sur cet ordinateur : {pourquoi}</p>
+      <p class="discret">{t`L’analyse est gratuite et se fait sur cet ordinateur : ${pourquoi}`}</p>
     </div>
   );
 }
