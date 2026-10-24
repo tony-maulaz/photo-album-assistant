@@ -62,7 +62,13 @@ Then open `app/dist/album-photos.html` by double-clicking it.
 
 ## Language
 
-The interface is currently in French. An English version is being added.
+The interface is available in **English** and **French**. It follows the
+browser language; you can change it on the welcome page or in Settings.
+
+Each project also has a language, chosen when it is created (by default the
+interface language). It sets the language of everything the app writes: the
+names of the folders it creates in the output, the report, the names and
+texts proposed by the AI, and place names from OpenStreetMap.
 
 ## Development
 

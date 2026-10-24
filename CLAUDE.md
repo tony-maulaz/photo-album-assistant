@@ -98,7 +98,13 @@ lancement.
 
 ## Conventions
 
-- Code, commentaires, interface et messages **en français**.
+- Code et commentaires **en français**. Interface en français et en anglais :
+  les textes restent écrits en français dans le code, marqués `` t`…` ``,
+  leur traduction anglaise dans `app/src/traductions/en/` (une table par
+  partie ; un test vérifie qu'aucune ne manque). Mécanisme et règles :
+  `app/src/lib/langue.ts`, `CONTRIBUTING.md`, D60.
+- Consignes IA en français (calibrées) ; la langue du projet décide de la
+  langue des noms de dossiers écrits dans la sortie et des réponses de l'IA.
 - Messages courts et actionnables : ce qui s'est passé, quoi faire.
 - Modèles et tarifs IA dans une table unique ; vérifier les valeurs actuelles
   sur https://docs.claude.com.

@@ -70,6 +70,17 @@ photo set for these tests would be a welcome contribution.
 - The project plan is only changed through undoable operations
   (`appliquer()` in `app/src/ui/etat.ts`).
 - Identifiers and comments are in **French**, like the rest of the code base.
+- **Interface texts are written in French in the code and marked for
+  translation** with the `t` tag: `` t`Valider et continuer` ``,
+  `` t`${nombre(n)} photos écartées` ``. The English text goes in the matching
+  table of `app/src/traductions/en/` (the key is the French text, each
+  `${…}` becoming `{0}`, `{1}`…). Plurals: `pluriel(n, 'photo', 'photos')`.
+  Never call `t` at module level: mark table labels with `aTraduire('…')`
+  and translate them where they are displayed. `npm test` fails if a marked
+  text has no English translation. Details in `app/src/lib/langue.ts`.
+- AI prompts and the names of the folders written to the output are not
+  translated through `t`: prompts stay in French, and the project language
+  decides the output names and the language of AI answers.
 - AI prompts live in `app/src/ia/consignes/`, one file per prompt. They were
   calibrated on real photos: explain why in `docs/DECISIONS.md` before
   changing one, and keep a test showing the change.

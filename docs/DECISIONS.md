@@ -413,6 +413,23 @@ reconsidérer si l'adresse ne suffit pas. Une case « C'est notre domicile »
 permet d'enregistrer le domicile sans passer par la Configuration (les
 voyages en ont besoin).
 
+**D60 — Interface en anglais et en français, langue du projet pour la
+sortie.** L'application est publiée : l'interface existe en anglais et en
+français. Les textes restent écrits en français dans le code, marqués
+`` t`…` `` (la clé est le texte français, chaque `${…}` devient `{0}`, `{1}`…),
+et leur traduction anglaise est dans `app/src/traductions/en/`, une table
+par partie de l'application ; un test vérifie que chaque texte marqué a sa
+traduction. Ce choix garde le code lisible pour qui connaît le projet, et
+une phrase modifiée sans sa traduction est signalée par le test. La langue
+de l'interface suit le navigateur, ou le choix fait sur la page d'accueil et
+dans les Réglages. Chaque projet a en plus sa propre langue, choisie à la
+création (par défaut celle de l'interface) puis fixe : elle décide des noms
+de dossiers écrits dans la sortie (`_mis_de_cote` ou `_set_aside`…), du
+rapport, de la langue des réponses de l'IA et des noms de lieux
+d'OpenStreetMap. Changer la langue de l'interface en cours de projet ne
+renomme donc rien. Les consignes IA restent en français, mot pour mot ; une
+seule ligne demande des réponses en anglais quand le projet est en anglais.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
