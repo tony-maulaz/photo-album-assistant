@@ -1,0 +1,43 @@
+# Données personnelles : jamais dans le dépôt
+*.jpg
+*.jpeg
+*.JPG
+*.png
+*.heic
+*.HEIC
+*.mp4
+*.ics
+tests/photos_reelles/
+# Produits et caches des scripts
+*_cache.json
+noms_proposes.json
+nettoyage_cache*.json
+album_app_etat.json
+doublons.csv
+fusions.csv
+renommages.csv
+selection_album.csv
+photos_ecartees.csv
+evenements.csv
+groupes.csv
+dossiers.csv
+erreurs_copie.csv
+textes_album.md
+_planches/
+_doublons/
+_a_supprimer/
+# Environnement
+.env
+__pycache__/
+node_modules/
+dist/
+
+# Configuration personnelle (domicile, calendrier)
+config/
+lieux_connus.csv
+
+# Scripts Python d'origine (référence pour le portage) : gardés hors du dépôt public.
+reference/
+
+# Copies de travail des agents (Claude Code)
+.claude/worktrees/

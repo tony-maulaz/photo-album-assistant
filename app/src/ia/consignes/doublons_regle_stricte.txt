@@ -1,0 +1,4 @@
+
+- (mode agressif) même les expressions proches comptent comme doublons :
+  garde uniquement la meilleure version de chaque scène, vise l'ensemble
+  minimal ;

@@ -1,0 +1,12 @@
+Voici l'aperçu de l'album photo {album} tel qu'il sera imprimé. Les planches montrent les photos dans l'ordre de l'album, numérotées de {debut} à {fin} ; l'étiquette "pN" indique la page. Le plan des sections :
+{plan}
+
+Relis cet album comme un éditeur bienveillant et fais des REMARQUES, sans rien décider : la famille choisit.
+- redondance : des photos très semblables sur une même page ou des pages voisines ;
+- rythme : une suite de pages monotone (même type de photo, même cadrage) ou une section qui s'éternise ;
+- desequilibre : une section beaucoup trop longue ou trop courte par rapport à ce qu'elle raconte ;
+- autre : toute remarque utile.
+Dix remarques au plus, d'une phrase chacune ; aucune si l'album te paraît réussi.
+
+Réponds UNIQUEMENT en JSON :
+{"remarques": [{"type": "<redondance|rythme|desequilibre|autre>", "pages": [<numéros de page>], "photos": [<numéros>], "texte": "<une phrase>"}, ...]}

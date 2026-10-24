@@ -1,0 +1,2 @@
+Tu peux faire quelques recherches sur internet pour vérifier ou enrichir les textes (monument, histoire d'un lieu, fait marquant d'un événement), seulement si les photos ou le nom de la sortie s'y prêtent. N'invente rien : chaque information trouvée sur internet figure aussi dans le champ "references", avec l'adresse de sa source.
+Ajoute à ta réponse : "references": [{"texte": "<l'information, une phrase>", "source": "<adresse de la page>"}, ...] (liste vide si tu n'as rien cherché).

@@ -1,0 +1,13 @@
+Voici la sélection d'une sortie pour l'album de famille : {sortie}.
+Les planches "Sélection" montrent les {k} photos retenues, numérotées de 1 à {k}.{autres}
+
+Relis cette sélection comme un ami photographe et fais des REMARQUES, sans rien décider : la famille choisit.
+- redondance : plusieurs photos retenues montrent la même chose (même scène, même point de vue, même pose) ; cite leurs numéros ;
+- manque : un moment, un lieu ou des personnes bien présents dans les autres photos de la sortie mais absents de la sélection (par exemple aucune photo de groupe) ; cite les numéros des autres photos qui pourraient le combler ;
+- faible : une photo retenue nettement moins bonne que les autres (floue, ratée, sans intérêt) ; cite son numéro ;
+- autre : toute remarque utile.
+La marque [flou?] est un indice calculé localement, parfois faux.
+Six remarques au plus, d'une phrase chacune ; aucune si la sélection te paraît réussie.
+
+Réponds UNIQUEMENT en JSON :
+{"remarques": [{"type": "<redondance|manque|faible|autre>", "photos": [<numéros>], "texte": "<une phrase>"}, ...]}

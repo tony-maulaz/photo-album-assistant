@@ -1,0 +1,23 @@
+Un petit dossier de {n} photo(s) a été isolé par le tri GPS automatique. Il
+s'agit peut-être d'un fragment détaché d'une activité voisine dans le temps.
+
+Dossier isolé : « {fragment} » ({periode_frag})
+Sa planche de miniatures est la PREMIÈRE image ci-dessus.
+
+Dossiers voisins dans le temps, dans l'ordre des planches suivantes :
+{candidats}
+
+Question : ces photos isolées font-elles partie de l'un de ces dossiers
+voisins (même activité, même moment, même décor ou mêmes personnes) ?
+
+- Si OUI, indique lequel.
+- Si NON — c'est une activité distincte, même courte (un repas, un coucher de
+  soleil, un trajet) — réponds absorber=false et propose un nom court dans la
+  convention Theme_Lieu_JJ.MM.AA.
+- Dans le DOUTE, réponds absorber=false : une fusion fausse est pire qu'un
+  petit dossier de plus.
+
+Réponds UNIQUEMENT en JSON :
+{"absorber": true|false, "cible": "<nom exact du dossier voisin ou null>",
+  "nom_propose": "<nom si absorber=false, sinon null>",
+  "confiance": <1-10>, "raison": "<une phrase>"}

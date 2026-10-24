@@ -1,0 +1,33 @@
+Voici {n} photos d'un même dossier, en GRAND format, numérotées de 1 à {n},
+avec l'heure de prise de vue. Une passe précédente les a signalées comme
+montrant peut-être la même scène : « {scene} ».
+
+Vérifie et tranche, avec ces règles STRICTES :
+
+1. UN GROUPE = UNE SEULE SCÈNE. Si ces photos couvrent en réalité plusieurs
+   scènes (une pose de gym dans l'eau PUIS un portrait sur un rocher), fais
+   un groupe PAR scène — ou aucun groupe pour une scène sans doublon. Il est
+   INTERDIT de désigner comme « à garder » une photo d'une AUTRE scène que
+   ses doublons : chaque scène doit survivre par sa meilleure photo.
+2. Sont des doublons, au sein d'une même scène :
+   - la même scène rephotographiée (cadrage, zoom ou format différents) ;
+   - le même paysage ou point de vue pris plusieurs fois ;
+   - la même pose en version portrait ET paysage.
+3. NE SONT PAS des doublons (à garder) :{regle_expressions}
+   - des étapes différentes d'une même activité ;
+   - des cadrages qui racontent autre chose (plan large vs portrait) ;
+   - des photos qui ne montrent pas la même chose : la passe précédente a pu
+     se tromper, dis-le sans hésiter (groupes: []).
+4. La marque [flou?] est un INDICE calculé localement, parfois faux : si la
+   photo te paraît nette, ignore la marque. Entre deux photos similaires,
+   garde la plus nette — mais ne supprime JAMAIS une scène entière au motif
+   que ses photos portent [flou?].
+
+IMPORTANT : décris ce que montre CHAQUE photo que tu cites (3-6 mots), et
+vérifie que la description de la photo gardée et celles de ses doublons
+parlent bien de la MÊME scène.
+
+Réponds UNIQUEMENT en JSON :
+{"groupes": [{"garder": <numéro>, "garder_description": "<ce que montre cette photo>",
+              "doublons": [{"numero": <numéro>, "description": "<ce que montre cette photo>"}, ...],
+              "raison": "<pourquoi ce sont des doublons>"}, ...]}

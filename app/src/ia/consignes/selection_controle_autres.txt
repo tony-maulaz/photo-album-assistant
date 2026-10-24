@@ -1,0 +1,1 @@
+ Les planches "Autres" montrent des photos non retenues de la même sortie, numérotées de {debut} à {fin}.

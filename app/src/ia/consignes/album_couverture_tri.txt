@@ -1,0 +1,6 @@
+Voici les {n} grandes photos de l'album {album}, numérotées de 1 à {n} sur les planches.
+
+Repère les {k} qui feraient les plus belles COUVERTURES : une image forte et lisible même en petit, qui résume l'album (lieux, famille, ambiance), si possible avec de la place pour le titre. La famille choisira.
+
+Réponds UNIQUEMENT en JSON :
+{"candidates": [<numéros, {k} au plus>]}

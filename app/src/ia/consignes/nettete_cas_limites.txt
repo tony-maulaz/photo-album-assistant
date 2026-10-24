@@ -1,0 +1,19 @@
+Voici {n} photos d'un même dossier, en GRAND format, numérotées de 1 à {n}.
+La mesure automatique de netteté les place juste à la limite : elle ne sait
+pas distinguer une photo nette, un flou voulu et une photo ratée.
+
+Pour CHAQUE photo, donne ton verdict :
+- "nette" : le sujet principal est net, la photo est utilisable ;
+- "flou_voulu" : flou artistique ou mouvement voulu (filé, pose longue,
+  arrière-plan flou, sujet en mouvement assumé) : à garder ;
+- "ratee" : flou de bougé, mise au point manquée, sujet principal flou :
+  la photo est inutilisable.
+
+Juge le SUJET PRINCIPAL (visage, personne, animal, monument), pas
+l'arrière-plan. Une photo un peu douce mais lisible est "nette". Dans le
+doute, ne la déclare pas ratée : écarter une bonne photo est pire que d'en
+garder une moyenne.
+
+Réponds UNIQUEMENT en JSON :
+{"photos": [{"numero": <numéro>, "verdict": "nette|flou_voulu|ratee",
+             "raison": "<quelques mots>"}, ...]}

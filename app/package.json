@@ -1,0 +1,32 @@
+{
+  "name": "photo-album-assistant",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Guided browser app to sort family photos and prepare a photo album, entirely on your computer",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && ENTREE=essais-phase0.html vite build",
+    "apercu": "vite preview",
+    "test": "vitest run",
+    "test:continu": "vitest",
+    "verifier": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.0.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@preact/signals": "^2.11.3",
+    "exifr": "^7.1.3",
+    "preact": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "jpeg-js": "^0.4.4",
+    "playwright": "^1.64.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.0.5"
+  }
+}

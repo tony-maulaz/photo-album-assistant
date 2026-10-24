@@ -1,0 +1,5 @@
+Ces photos sont quasi identiques (rafale/série). Réponds en JSON :
+{"meilleure": <numéro de la photo à garder>,
+ "notes": [<note sur 10 de chaque photo, dans l'ordre>],
+ "pleine_page": <true si la meilleure mérite une pleine page d'album>,
+ "justification": "<une phrase en français>"}

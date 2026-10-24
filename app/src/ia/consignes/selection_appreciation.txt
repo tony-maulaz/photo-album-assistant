@@ -1,0 +1,3 @@
+Ces photos sont indépendantes. Note chacune pour l'album. Réponds en JSON :
+[{"photo": <numéro>, "note": <sur 10>, "pleine_page": <true/false>,
+  "justification": "<une phrase en français>"}, ...]

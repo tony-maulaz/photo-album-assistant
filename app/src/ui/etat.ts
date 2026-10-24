@@ -1,0 +1,251 @@
+// État partagé de l'interface : page affichée, projet ouvert, plan et
+// annulation, réglages, messages. Le plan est enregistré au fil de l'eau
+// dans `.album/` (règle d'or 7).
+
+import { signal } from '@preact/signals';
+import type { ConfigAlbum } from '../lib/album';
+import type { EvenementCalendrier } from '../lib/ics';
+import { evenementsCalendriers } from '../navigateur/calendriers';
+import type { ContexteExecution } from '../navigateur/executeur';
+import { Historique, versJson, type Modification, type Plan } from '../lib/plan';
+import type { EtatSortie } from '../lib/sortie';
+import type { ResultatsAides } from '../navigateur/aides';
+import type { Analyses } from '../navigateur/analyses';
+import type { DossierConfig, LectureConfig } from '../navigateur/configuration';
+import type { AccesDossier } from '../navigateur/dossiers';
+import type { EtatDoublons } from '../navigateur/doublons';
+import type { Geocodage } from '../navigateur/geocodage';
+import type { ServiceIA } from '../navigateur/ia';
+import { Miniatures } from '../navigateur/miniatures';
+import { ETAPE, ETAPES, etapePrecedente, etapeSuivante, noterProjetRecent, type CodeEtape, type EtatProjet, type EtatEtape, type Projet } from '../navigateur/projet';
+import { enregistrerReglages, lireReglages, type Reglages } from '../navigateur/reglages';
+import { GroupeWorkers } from '../navigateur/workers';
+
+export type Page =
+  | { nom: 'reprendre' }
+  | { nom: 'accueil' }
+  | { nom: 'nouveau'; mode: Projet['mode'] }
+  | { nom: 'etape'; numero: number }
+  | { nom: 'ia' }
+  | { nom: 'configuration' }
+  | { nom: 'reglages' }
+  | { nom: 'journal' }
+  | { nom: 'aide' };
+
+export const page = signal<Page>({ nom: 'accueil' });
+
+export interface Session {
+  projet: Projet;
+  plan: Plan;
+  historique: Historique;
+  source: AccesDossier;
+  sortie: AccesDossier;
+  etat: EtatProjet;
+  etatSortie: EtatSortie;
+  /** Netteté, ressemblance et exposition des photos (`.album/analyse.json`). */
+  analyses: Analyses;
+  ia: ServiceIA;
+  /** Propositions et remarques des aides IA (`.album/aides.json`). */
+  aides: ResultatsAides;
+  /** Noms de lieux déjà demandés à OpenStreetMap (`.album/geocodage.json`). */
+  geocodage: Geocodage;
+  /** Réglages de l'album (étape « Album », `.album/album.json`). */
+  album: ConfigAlbum;
+  /** Propositions de l'étape « Doublons » (`.album/doublons.json`). */
+  doublons?: EtatDoublons;
+}
+
+export const session = signal<Session | null>(null);
+/** Incrémenté à chaque changement du plan, pour rafraîchir l'affichage. */
+export const versionPlan = signal(0);
+/** Incrémenté à chaque changement du projet (étapes, nom…). */
+export const versionProjet = signal(0);
+/** Incrémenté après chaque dépense IA et à chaque analyse terminée. */
+export const versionIA = signal(0);
+
+export const reglages = signal<Reglages>(lireReglages());
+export function changerReglages(r: Reglages) {
+  reglages.value = r;
+  enregistrerReglages(r);
+}
+
+export const configuration = signal<{ dossier: DossierConfig; lecture: LectureConfig | null } | null>(null);
+
+/** Événements des calendriers actifs (lieux et sorties, nommage, album), relus quand la configuration change. */
+export const evenements = signal<EvenementCalendrier[]>([]);
+export async function chargerEvenements() {
+  const c = configuration.value;
+  evenements.value = await evenementsCalendriers(c?.dossier, c?.lecture?.config).catch(() => []);
+}
+
+/** Ce qu'il faut pour exécuter une demande IA dans le projet ouvert. */
+export function contexteExecution(s: Session): ContexteExecution {
+  return { plan: s.plan, source: s.source, ia: s.ia, miniatures: serviceMiniatures() };
+}
+
+// ---------------------------------------------------------------------------
+// Messages passagers
+// ---------------------------------------------------------------------------
+
+export interface Message {
+  id: number;
+  type: 'info' | 'ok' | 'erreur';
+  texte: string;
+  action?: { libelle: string; faire: () => void };
+}
+
+export const messages = signal<Message[]>([]);
+let prochainMessage = 1;
+
+export function notifier(type: Message['type'], texte: string, action?: Message['action']) {
+  const id = prochainMessage++;
+  messages.value = [...messages.value.slice(-2), { id, type, texte, action }];
+  setTimeout(() => (messages.value = messages.value.filter((m) => m.id !== id)), type === 'erreur' ? 9000 : 5000);
+}
+
+export function texteErreur(err: unknown): string {
+  if (err instanceof DOMException && err.name === 'AbortError') return 'Action annulée.';
+  return err instanceof Error ? err.message : String(err);
+}
+
+// ---------------------------------------------------------------------------
+// Outils partagés : workers et miniatures
+// ---------------------------------------------------------------------------
+
+let groupe: GroupeWorkers | null = null;
+let miniatures: Miniatures | null = null;
+
+export function groupeWorkers(): GroupeWorkers {
+  groupe ??= new GroupeWorkers();
+  return groupe;
+}
+
+export function serviceMiniatures(): Miniatures {
+  miniatures ??= new Miniatures(groupeWorkers());
+  return miniatures;
+}
+
+// ---------------------------------------------------------------------------
+// Modifications du plan et enregistrement
+// ---------------------------------------------------------------------------
+
+let minuterie: ReturnType<typeof setTimeout> | null = null;
+let enregistrement: Promise<void> = Promise.resolve();
+
+/** Enregistre le plan dans `.album/plan.json`, au plus tard 400 ms après la dernière modification. */
+export function planifierEnregistrement() {
+  if (minuterie) clearTimeout(minuterie);
+  minuterie = setTimeout(() => void enregistrerMaintenant(), 400);
+}
+
+export function enregistrerMaintenant(): Promise<void> {
+  if (minuterie) clearTimeout(minuterie);
+  minuterie = null;
+  const s = session.value;
+  if (!s) return enregistrement;
+  enregistrement = enregistrement
+    .then(async () => {
+      s.projet.modifie_le = new Date().toISOString();
+      await s.etat.ecrire('plan.json', versJson(s.plan));
+      await s.etat.ecrire('projet.json', s.projet);
+    })
+    .catch((err) => notifier('erreur', `Enregistrement impossible : ${texteErreur(err)}`));
+  return enregistrement;
+}
+
+// Un onglet fermé ne doit rien perdre : on enregistre dès que la page est masquée.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && minuterie) void enregistrerMaintenant();
+});
+
+/** Applique une modification du plan : annulable, affichée et enregistrée. */
+export function appliquer(m: Modification | null) {
+  const s = session.value;
+  if (!s || !m) return;
+  s.historique.enregistrer(m);
+  apresChangement();
+}
+
+function apresChangement() {
+  versionPlan.value++;
+  const s = session.value;
+  // Revenir sur une étape marque les étapes suivantes déjà validées « à revoir » (§ 4.4) ;
+  // leurs décisions encore valables sont gardées (une photo déplacée garde son étoile).
+  if (s) {
+    const p = page.value;
+    const courante = p.nom === 'etape' ? p.numero : 0;
+    for (let n = Math.max(courante + 1, 2); n <= ETAPES.length; n++) if (s.projet.etapes[n - 1] === 'validee') changerEtape(n, 'a_revoir');
+  }
+  planifierEnregistrement();
+}
+
+export function annuler() {
+  const s = session.value;
+  const m = s?.historique.annuler(s.plan);
+  if (m) {
+    apresChangement();
+    notifier('info', `Annulé : ${m.libelle}`);
+  }
+}
+
+export function retablir() {
+  const s = session.value;
+  const m = s?.historique.retablir(s.plan);
+  if (m) {
+    apresChangement();
+    notifier('info', `Rétabli : ${m.libelle}`);
+  }
+}
+
+export function changerEtape(numero: number, etat: EtatEtape) {
+  const s = session.value;
+  if (!s || s.projet.etapes[numero - 1] === etat) return;
+  s.projet.etapes[numero - 1] = etat;
+  versionProjet.value++;
+  planifierEnregistrement();
+  // Instantané de la configuration utilisée à chaque validation (§ 8.7) : le projet reste reproductible.
+  const config = configuration.value?.lecture?.config;
+  if (etat === 'validee' && config) void s.etat.ecrire('config_utilisee.json', config).catch(() => undefined);
+  // Avancement affiché sur la carte du projet, à l'accueil.
+  const { id, nom, inventaire } = s.projet;
+  void noterProjetRecent({ id, nom, source: s.source.racine, sortie: s.sortie.racine, etapes: [...s.projet.etapes], fichiers: inventaire?.fichiers }).catch(() => undefined);
+}
+
+/** Ouvre une étape. */
+export function allerEtape(code: CodeEtape | null) {
+  if (code) page.value = { nom: 'etape', numero: ETAPE[code] };
+}
+
+/** « Revenir » : l'étape précédente du parcours (un dossier déjà trié saute le tri et ses suites). */
+export function revenirDe(code: CodeEtape) {
+  const s = session.value;
+  if (s) allerEtape(etapePrecedente(s.projet.mode, code));
+}
+
+/** « Valider et continuer » : l'étape est validée, la suivante du parcours s'ouvre (en cours si elle ne l'était pas). */
+export function validerEtape(code: CodeEtape) {
+  const s = session.value;
+  if (!s) return;
+  changerEtape(ETAPE[code], 'validee');
+  const suivante = etapeSuivante(s.projet.mode, code);
+  if (!suivante) return;
+  if (s.projet.etapes[ETAPE[suivante] - 1] !== 'validee') changerEtape(ETAPE[suivante], 'en_cours');
+  allerEtape(suivante);
+}
+
+let ecritureAlbum: Promise<void> = Promise.resolve();
+
+/** Change les réglages de l'album et les enregistre dans `.album/album.json`. */
+export function changerAlbum(modif: Partial<ConfigAlbum>) {
+  const s = session.value;
+  if (!s) return;
+  s.album = { ...s.album, ...modif };
+  versionPlan.value++;
+  if (s.projet.etapes[ETAPE.sortie - 1] === 'validee') changerEtape(ETAPE.sortie, 'a_revoir');
+  const config = s.album;
+  ecritureAlbum = ecritureAlbum.then(() => s.etat.ecrire('album.json', config)).catch((err) => notifier('erreur', `Enregistrement impossible : ${texteErreur(err)}`));
+}
+
+export function journal(type: string, texte: string, donnees?: unknown) {
+  void session.value?.etat.journal(type, texte, donnees).catch(() => undefined);
+}

@@ -1,0 +1,158 @@
+// État et actions de la page « Arborescence » : vue affichée, sélection,
+// dossiers récents (touches 1 à 9), glisser-déposer (SPEC § 5.3).
+
+import { signal } from '@preact/signals';
+import {
+  combiner,
+  contenu,
+  creerDossier,
+  deplacerFichiers,
+  mettreDeCote,
+  RACINE,
+  remettre,
+  type FichierPlan,
+  type Plan,
+} from '../lib/plan';
+import { verifierNomDossier } from '../lib/noms';
+import { demander } from './composants/Dialogues';
+import { annuler, appliquer, notifier, session, texteErreur } from './etat';
+
+/** Vues spéciales du panneau, à côté des dossiers. */
+export const VUE_MIS_DE_COTE = '§mis_de_cote';
+export const VUE_AUTRES = '§autres';
+
+export const vue = signal<string>(RACINE);
+export const selection = signal<ReadonlySet<string>>(new Set());
+/** Dernière photo cliquée : point de départ de Maj+clic, « toute la journée »… */
+export const ancre = signal<string | null>(null);
+/** Derniers dossiers utilisés, le plus récent d'abord (touches 1 à 9). */
+export const recents = signal<string[]>([]);
+
+/** Derniers dossiers utilisés qui existent encore (une annulation peut en avoir retiré) : touches 1 à 9. */
+export function recentsValides(): string[] {
+  const plan = session.value?.plan;
+  return plan ? recents.value.filter((id) => plan.dossiers.has(id)) : [];
+}
+export const deplacerOuvert = signal(false);
+export const visionneuse = signal<number | null>(null);
+export const deplies = signal<ReadonlySet<string>>(new Set([RACINE]));
+/** Présentation du panneau des dossiers : arborescence, ou liste à plat par période. */
+export const ordrePanneau = signal<'arbre' | 'periode'>('arbre');
+/** Dossier en cours de renommage dans le panneau (double-clic ou F2). */
+export const renommage = signal<string | null>(null);
+
+/** Ce qui est en train d'être glissé (le transfert HTML ne porte qu'un marqueur). */
+export type Glisse = { type: 'fichiers'; ids: string[] } | { type: 'dossier'; id: string };
+let glisseCourant: Glisse | null = null;
+export const glisse = {
+  get: () => glisseCourant,
+  commencer: (g: Glisse, e: DragEvent) => {
+    glisseCourant = g;
+    e.dataTransfer?.setData('application/x-album', g.type);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  },
+  finir: () => (glisseCourant = null),
+};
+
+const comparer = new Intl.Collator('fr', { numeric: true }).compare;
+
+/** Éléments affichés dans la grille pour une vue. */
+export function elementsVue(plan: Plan, v: string): FichierPlan[] {
+  if (v === VUE_MIS_DE_COTE) {
+    return [...plan.fichiers.values()].filter((f) => f.statut === 'mis_de_cote').sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || comparer(a.id, b.id));
+  }
+  if (v === VUE_AUTRES) return [...plan.fichiers.values()].filter((f) => f.categorie === 'autre').sort((a, b) => comparer(a.id, b.id));
+  return contenu(plan, v);
+}
+
+export function choisirVue(v: string) {
+  vue.value = v;
+  selection.value = new Set();
+  ancre.value = null;
+}
+
+function noterRecent(id: string) {
+  recents.value = [id, ...recents.value.filter((r) => r !== id)].slice(0, 9);
+}
+
+function texteNombre(n: number) {
+  return `${n} élément${n > 1 ? 's' : ''}`;
+}
+
+function retourAnnuler() {
+  return { libelle: 'Annuler', faire: annuler };
+}
+
+/** Déplace la sélection (ou `ids`) vers un dossier. */
+export function deplacerVers(cible: string, ids: string[] = [...selection.value]) {
+  const s = session.value;
+  if (!s || !ids.length) return;
+  try {
+    appliquer(deplacerFichiers(s.plan, ids, cible));
+    noterRecent(cible);
+    selection.value = new Set([...selection.value].filter((id) => !ids.includes(id)));
+    notifier('ok', `${texteNombre(ids.length)} déplacé${ids.length > 1 ? 's' : ''} vers « ${s.plan.dossiers.get(cible)?.nom} ».`, retourAnnuler());
+  } catch (err) {
+    notifier('erreur', texteErreur(err));
+  }
+}
+
+export function mettreSelectionDeCote(ids: string[] = [...selection.value]) {
+  const s = session.value;
+  if (!s || !ids.length) return;
+  appliquer(mettreDeCote(s.plan, ids, 'autres'));
+  selection.value = new Set();
+  notifier('ok', `${texteNombre(ids.length)} mis de côté (rien n’est supprimé : ils iront dans « _mis_de_cote »).`, retourAnnuler());
+}
+
+export function remettreSelection(ids: string[] = [...selection.value]) {
+  const s = session.value;
+  if (!s || !ids.length) return;
+  appliquer(remettre(s.plan, ids));
+  selection.value = new Set();
+  notifier('ok', `${texteNombre(ids.length)} remis dans leur dossier.`, retourAnnuler());
+}
+
+/** Demande un nom, crée le dossier et y range `ids` : un seul Ctrl+Z annule le tout. */
+export async function nouveauDossierAvec(ids: string[], parent = RACINE) {
+  const s = session.value;
+  if (!s) return;
+  const nom = await demander(
+    'Nouveau dossier',
+    ids.length ? `Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} » et recevra ${texteNombre(ids.length)}.` : `Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} ».`,
+    '',
+    verifierNomDossier,
+    'Créer',
+  );
+  if (!nom) return;
+  try {
+    const { id, modification } = creerDossier(s.plan, nom, parent);
+    appliquer(combiner(`Nouveau dossier « ${nom} »`, modification, ids.length ? deplacerFichiers(s.plan, ids, id) : null));
+    noterRecent(id);
+    selection.value = new Set();
+    deplies.value = new Set([...deplies.value, parent]);
+    notifier('ok', `Dossier « ${nom} » créé${ids.length ? ` avec ${texteNombre(ids.length)}` : ''}.`, retourAnnuler());
+  } catch (err) {
+    notifier('erreur', texteErreur(err));
+  }
+}
+
+/** Parent d'un nouveau dossier : à côté du dossier affiché (à la racine depuis la racine ou une vue spéciale). */
+/**
+ * Où créer un dossier avec des photos sélectionnées : au même niveau que le
+ * dossier affiché (on sort ces photos pour en faire une sortie voisine).
+ */
+export function parentPourNouveau(): string {
+  const d = session.value?.plan.dossiers.get(vue.value);
+  return d?.parent ?? RACINE;
+}
+
+/** Où créer un dossier vide (« + Nouveau dossier ») : dans le dossier affiché, comme dans l'Explorateur. */
+export function dossierPourNouveauVide(): string {
+  return session.value?.plan.dossiers.has(vue.value) ? vue.value : RACINE;
+}
+
+/** Sans accents ni majuscules, pour les recherches. */
+export function simplifier(t: string): string {
+  return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}

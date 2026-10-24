@@ -1,0 +1,10 @@
+Voici {n} photos de famille, numérotées de 1 à {n} (texte "Photo 1 :", "Photo 2 :"... juste avant chaque image).
+
+Pour CHAQUE photo, sans en oublier ni en inventer :
+- personnes : "aucune", "1", "2-4" ou "groupe" (5 personnes ou plus) ;
+- type : un seul parmi "portrait", "groupe", "paysage", "monument", "repas", "animal", "activite", "selfie", "document" ;
+- defauts : les défauts bien VISIBLES parmi "yeux_fermes", "flou_de_bouge", "tete_coupee", "contre_jour", "horizon_penche" ; liste vide si aucun ;
+- description : ce que montre la photo en 5 à 12 mots concrets (qui, quoi, où), sans prénoms.
+
+Réponds UNIQUEMENT en JSON :
+{"photos": [{"photo": <numéro>, "personnes": "<aucune|1|2-4|groupe>", "type": "<type>", "defauts": [<défauts>], "description": "<description>"}, ...]}

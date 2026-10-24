@@ -1,0 +1,16 @@
+Voici quelques photos d'une même sortie familiale.
+
+Lieu détecté par GPS : {lieu}
+Date : {dates}
+Nombre total de photos : {n}
+
+Si c'est utile, cherche sur le web ce qui se trouve ou se passait à cet
+endroit à cette date (musée, site touristique, fête locale, manifestation,
+station de ski...). Ne force pas : si la recherche n'apporte rien de fiable,
+appuie-toi uniquement sur les photos.
+
+Réponds en JSON :
+{"nom": "<Theme_Lieu_JJ.MM.AA selon la convention>",
+  "activite": "<l'activité en quelques mots, en clair>",
+  "confiance": <0 à 10 : à quel point tu es sûr de l'activité>,
+  "justification": "<une phrase : ce qui t'a mis sur la piste>"}

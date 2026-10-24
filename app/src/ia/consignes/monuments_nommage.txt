@@ -1,0 +1,5 @@
+
+
+En plus, si tu reconnais avec certitude un monument, un site ou un lieu
+connu sur ces photos, ajoute au JSON le champ "monuments" : la liste de
+leurs noms exacts (liste vide sinon). N'invente rien.

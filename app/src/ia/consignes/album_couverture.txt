@@ -1,0 +1,6 @@
+Voici {n} photos candidates à la COUVERTURE de l'album {album}.
+
+Classe les {k} meilleures, de la plus convaincante à la moins convaincante, et explique chaque choix en une phrase : force de l'image, lisibilité en petit, ce qu'elle raconte de l'album, place pour le titre. La famille choisira.
+
+Réponds UNIQUEMENT en JSON :
+{"couverture": [{"photo": <numéro>, "raison": "<une phrase>"}, ...]}

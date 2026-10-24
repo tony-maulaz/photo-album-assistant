@@ -1,0 +1,652 @@
+// Plan du projet : toutes les décisions (dossiers, destination de chaque
+// fichier, éléments mis de côté), sans jamais toucher aux fichiers (SPEC § 4.2).
+// Les objets du plan ne sont jamais modifiés sur place : chaque opération les
+// remplace, ce qui rend l'annulation (Ctrl+Z) simple et sûre.
+
+import type { Categorie } from './fichiers';
+import { cleNom, nomLibre, verifierNomDossier } from './noms';
+
+/** Dossier racine : `Photos/` dans la sortie. */
+export const RACINE = 'racine';
+
+export type RaisonMiseDeCote = 'floues' | 'doublons' | 'doublons_exacts' | 'autres';
+export type OrigineDate = 'exif' | 'nom' | 'video' | 'fichier';
+
+export interface DossierPlan {
+  id: string;
+  nom: string;
+  /** `null` pour la racine seulement. */
+  parent: string | null;
+  /** Sous-dossier de la source, créé à la main, ou proposé par le tri par lieux (étape « Tri automatique »). */
+  origine: 'source' | 'cree' | 'tri';
+  /** Sous-dossier de la source (étape 2) : à trier, gardé tel quel, ou gardé hors de l'album. */
+  traitement?: TraitementDossier;
+  /** Comment le tri par lieux a formé ce dossier (étape « Tri automatique »). */
+  tri?: InfoTri;
+}
+
+export type TraitementDossier = 'trier' | 'garder' | 'ignorer';
+
+export interface InfoTri {
+  origine: 'lieu_connu' | 'gps' | 'voyage' | 'etape' | 'sans_lieu';
+  /** Nom du lieu (lieu connu, ou géocodage du groupe GPS). */
+  lieu?: string;
+  lat?: number;
+  lon?: number;
+}
+
+export interface FichierPlan {
+  /** Chemin relatif dans la source (avec « / ») : identité stable du fichier. */
+  id: string;
+  /** Nom dans la sortie (peut différer de l'original en cas de collision). */
+  nom: string;
+  taille: number;
+  /** Date de modification d'origine en ms : la copie ne la conserve pas (D30). */
+  modifie: number;
+  categorie: Categorie;
+  /** Prise de vue retenue, heure locale : « AAAA-MM-JJTHH:MM:SS » ou « AAAA-MM-JJ ». */
+  date?: string;
+  origineDate?: OrigineDate;
+  /** Dossier de destination des photos et vidéos (aussi pour les remettre). */
+  dossier: string;
+  statut: 'archive' | 'mis_de_cote';
+  raison?: RaisonMiseDeCote;
+  /** Appareil (modèle EXIF). */
+  appareil?: string;
+  /** Marque de l'appareil (EXIF) : son absence aide à reconnaître une capture d'écran. */
+  marque?: string;
+  /** Position (EXIF des photos, ©xyz des vidéos). */
+  gps?: { lat: number; lon: number };
+  /** Dimensions stockées dans le fichier (avant orientation EXIF). */
+  dims?: { l: number; h: number };
+  /** Capture d'écran (étape 2) : rangée dans `Captures_ecran/`, exclue de l'album. */
+  capture?: boolean;
+  /** Empreinte SHA-256 du contenu, calculée seulement pour les candidats aux doublons exacts. */
+  empreinte?: string;
+  /** Décalage d'horloge de l'appareil déjà appliqué à `date` (« +HH:MM », étape 2). */
+  decalage?: string;
+  /** Étape 3 : écartée par le seuil de netteté (« auto »), sauvée ou écartée à la main. */
+  flou?: 'auto' | 'sauvee' | 'ecartee';
+  /** Choix pour l'album (étape « Sélection ») : 0 = pas dans l'album, 1 = ★, 2 = ★★ grande photo ; absent = à décider. */
+  album?: 0 | 1 | 2;
+  /** Rotation à appliquer à la copie dans Album/ (degrés, sens horaire). */
+  rotation?: Rotation;
+  /** Légende de la photo dans l'album (étape « Album »). */
+  legende?: string;
+  /** Doublon écarté à l'étape « Doublons » : la photo gardée à sa place, et pourquoi. */
+  doublon?: InfoDoublon;
+  /** Gardée volontairement à l'étape « Doublons » : jamais reproposée comme doublon (I10). */
+  protegee?: boolean;
+}
+
+export type Rotation = 0 | 90 | 180 | 270;
+
+export interface InfoDoublon {
+  /** Identifiant de la photo gardée à la place. */
+  garde: string;
+  source: 'rafale' | 'ia';
+  raison?: string;
+  description?: string;
+  descriptionGardee?: string;
+}
+
+export interface Plan {
+  dossiers: Map<string, DossierPlan>;
+  fichiers: Map<string, FichierPlan>;
+  prochainId: number;
+}
+
+export class ErreurPlan extends Error {}
+
+export function planVide(): Plan {
+  const racine: DossierPlan = { id: RACINE, nom: 'Photos', parent: null, origine: 'source' };
+  return { dossiers: new Map([[RACINE, racine]]), fichiers: new Map(), prochainId: 1 };
+}
+
+// ---------------------------------------------------------------------------
+// Enregistrement JSON (.album/plan.json)
+// ---------------------------------------------------------------------------
+
+export interface PlanJson {
+  version: 1;
+  prochainId: number;
+  dossiers: DossierPlan[];
+  fichiers: FichierPlan[];
+}
+
+export function versJson(plan: Plan): PlanJson {
+  return { version: 1, prochainId: plan.prochainId, dossiers: [...plan.dossiers.values()], fichiers: [...plan.fichiers.values()] };
+}
+
+export function depuisJson(j: PlanJson): Plan {
+  if (j?.version !== 1 || !Array.isArray(j.dossiers) || !Array.isArray(j.fichiers)) throw new ErreurPlan('plan.json illisible ou d’une version inconnue.');
+  const plan: Plan = { dossiers: new Map(j.dossiers.map((d) => [d.id, d])), fichiers: new Map(j.fichiers.map((f) => [f.id, f])), prochainId: j.prochainId };
+  if (!plan.dossiers.has(RACINE)) throw new ErreurPlan('plan.json sans dossier racine.');
+  return plan;
+}
+
+// ---------------------------------------------------------------------------
+// Lecture du plan
+// ---------------------------------------------------------------------------
+
+/** Chemin d'un dossier depuis `Photos/` (« » pour la racine). */
+export function cheminDossier(plan: Plan, id: string): string {
+  const noms: string[] = [];
+  let d = plan.dossiers.get(id);
+  while (d && d.parent !== null) {
+    noms.unshift(d.nom);
+    d = plan.dossiers.get(d.parent);
+  }
+  return noms.join('/');
+}
+
+const comparerNoms = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare;
+
+export function enfants(plan: Plan, id: string): DossierPlan[] {
+  return [...plan.dossiers.values()].filter((d) => d.parent === id).sort((a, b) => comparerNoms(a.nom, b.nom));
+}
+
+export function estDescendant(plan: Plan, id: string, ancetre: string): boolean {
+  let d = plan.dossiers.get(id);
+  while (d && d.parent !== null) {
+    if (d.parent === ancetre) return true;
+    d = plan.dossiers.get(d.parent);
+  }
+  return false;
+}
+
+/** Photos et vidéos rangées dans un dossier, par date puis par nom. */
+export function contenu(plan: Plan, id: string): FichierPlan[] {
+  return [...plan.fichiers.values()]
+    .filter((f) => f.statut === 'archive' && f.categorie !== 'autre' && f.dossier === id)
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '') || comparerNoms(a.nom, b.nom));
+}
+
+export interface ResumeDossier {
+  photos: number;
+  videos: number;
+  octets: number;
+  du?: string;
+  au?: string;
+  /** Totaux en comptant les sous-dossiers. */
+  photosTotal: number;
+  videosTotal: number;
+  duTotal?: string;
+  auTotal?: string;
+}
+
+/** Nombres et dates (du–au) de chaque dossier, mis à jour en direct dans le panneau. */
+export function resumes(plan: Plan): Map<string, ResumeDossier> {
+  const r = new Map<string, ResumeDossier>();
+  for (const id of plan.dossiers.keys()) r.set(id, { photos: 0, videos: 0, octets: 0, photosTotal: 0, videosTotal: 0 });
+  for (const f of plan.fichiers.values()) {
+    if (f.statut !== 'archive' || f.categorie === 'autre') continue;
+    const s = r.get(f.dossier);
+    if (!s) continue;
+    if (f.categorie === 'photo') s.photos++;
+    else s.videos++;
+    s.octets += f.taille;
+    if (f.date) {
+      const jour = f.date.slice(0, 10);
+      if (!s.du || jour < s.du) s.du = jour;
+      if (!s.au || jour > s.au) s.au = jour;
+    }
+  }
+  // Totaux : chaque dossier ajoute ses nombres à tous ses ancêtres.
+  for (const [id, s] of r) {
+    let d = plan.dossiers.get(id);
+    while (d) {
+      const t = r.get(d.id)!;
+      t.photosTotal += s.photos;
+      t.videosTotal += s.videos;
+      if (s.du && (!t.duTotal || s.du < t.duTotal)) t.duTotal = s.du;
+      if (s.au && (!t.auTotal || s.au > t.auTotal)) t.auTotal = s.au;
+      d = d.parent === null ? undefined : plan.dossiers.get(d.parent);
+    }
+  }
+  return r;
+}
+
+function nomsPris(plan: Plan, dossier: string, sauf: Set<string>): Set<string> {
+  const pris = new Set<string>();
+  for (const f of plan.fichiers.values()) {
+    if (f.statut === 'archive' && f.categorie !== 'autre' && f.dossier === dossier && !sauf.has(f.id)) pris.add(cleNom(f.nom));
+  }
+  return pris;
+}
+
+// ---------------------------------------------------------------------------
+// Modifications annulables
+// ---------------------------------------------------------------------------
+
+type Etat<T> = [string, T | null][];
+
+export interface Modification {
+  libelle: string;
+  avant: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
+  apres: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
+}
+
+/** Note la valeur précédente de chaque élément touché, pour pouvoir l'annuler. */
+/** Groupe de changements annulable d'un coup (les opérations du plan s'en servent). */
+export class Transaction {
+  private avantD = new Map<string, DossierPlan | null>();
+  private avantF = new Map<string, FichierPlan | null>();
+  private prochainIdAvant: number;
+
+  constructor(private plan: Plan) {
+    this.prochainIdAvant = plan.prochainId;
+  }
+
+  fichier(f: FichierPlan) {
+    if (!this.avantF.has(f.id)) this.avantF.set(f.id, this.plan.fichiers.get(f.id) ?? null);
+    this.plan.fichiers.set(f.id, f);
+  }
+
+  dossier(d: DossierPlan) {
+    if (!this.avantD.has(d.id)) this.avantD.set(d.id, this.plan.dossiers.get(d.id) ?? null);
+    this.plan.dossiers.set(d.id, d);
+  }
+
+  supprimerDossier(id: string) {
+    if (!this.avantD.has(id)) this.avantD.set(id, this.plan.dossiers.get(id) ?? null);
+    this.plan.dossiers.delete(id);
+  }
+
+  terminer(libelle: string): Modification | null {
+    if (!this.avantD.size && !this.avantF.size) return null;
+    return {
+      libelle,
+      avant: { dossiers: [...this.avantD], fichiers: [...this.avantF], prochainId: this.prochainIdAvant },
+      apres: {
+        dossiers: [...this.avantD.keys()].map((id) => [id, this.plan.dossiers.get(id) ?? null]),
+        fichiers: [...this.avantF.keys()].map((id) => [id, this.plan.fichiers.get(id) ?? null]),
+        prochainId: this.plan.prochainId,
+      },
+    };
+  }
+}
+
+function appliquer(plan: Plan, etat: Modification['avant']) {
+  for (const [id, d] of etat.dossiers) {
+    if (d) plan.dossiers.set(id, d);
+    else plan.dossiers.delete(id);
+  }
+  for (const [id, f] of etat.fichiers) {
+    if (f) plan.fichiers.set(id, f);
+    else plan.fichiers.delete(id);
+  }
+  plan.prochainId = etat.prochainId;
+}
+
+/** Pile d'annulation (Ctrl+Z) et de rétablissement (Ctrl+Y). */
+export class Historique {
+  private passe: Modification[] = [];
+  private futur: Modification[] = [];
+  constructor(private limite = 200) {}
+
+  enregistrer(m: Modification | null) {
+    if (!m) return;
+    this.passe.push(m);
+    if (this.passe.length > this.limite) this.passe.shift();
+    this.futur = [];
+  }
+
+  annuler(plan: Plan): Modification | null {
+    const m = this.passe.pop();
+    if (!m) return null;
+    appliquer(plan, m.avant);
+    this.futur.push(m);
+    return m;
+  }
+
+  retablir(plan: Plan): Modification | null {
+    const m = this.futur.pop();
+    if (!m) return null;
+    appliquer(plan, m.apres);
+    this.passe.push(m);
+    return m;
+  }
+
+  get peutAnnuler() {
+    return this.passe.length > 0;
+  }
+  get peutRetablir() {
+    return this.futur.length > 0;
+  }
+  get prochaineAnnulation(): string | undefined {
+    return this.passe.at(-1)?.libelle;
+  }
+}
+
+function dossierExistant(plan: Plan, id: string): DossierPlan {
+  const d = plan.dossiers.get(id);
+  if (!d) throw new ErreurPlan('Ce dossier n’existe plus.');
+  return d;
+}
+
+/** Range des fichiers dans `t`, avec un nom libre dans le dossier cible. */
+function ranger(plan: Plan, t: Transaction, ids: string[], cible: string) {
+  const deplaces = new Set(ids);
+  const pris = nomsPris(plan, cible, deplaces);
+  for (const id of ids) {
+    const f = plan.fichiers.get(id);
+    if (!f || f.categorie === 'autre') continue;
+    if (f.statut === 'archive' && f.dossier === cible) {
+      pris.add(cleNom(f.nom));
+      continue;
+    }
+    const nom = nomLibre(f.nom, pris);
+    pris.add(cleNom(nom));
+    t.fichier({ ...f, dossier: cible, statut: 'archive', raison: undefined, nom });
+  }
+}
+
+/** Déplace des photos ou vidéos vers un dossier (et les remet si elles étaient mises de côté). */
+export function deplacerFichiers(plan: Plan, ids: string[], cible: string): Modification | null {
+  const d = dossierExistant(plan, cible);
+  const t = new Transaction(plan);
+  ranger(plan, t, ids, cible);
+  return t.terminer(`Déplacer ${ids.length} élément${ids.length > 1 ? 's' : ''} vers « ${d.nom} »`);
+}
+
+export function mettreDeCote(plan: Plan, ids: string[], raison: RaisonMiseDeCote = 'autres'): Modification | null {
+  const t = new Transaction(plan);
+  for (const id of ids) {
+    const f = plan.fichiers.get(id);
+    if (f && f.categorie !== 'autre' && f.statut !== 'mis_de_cote') t.fichier({ ...f, statut: 'mis_de_cote', raison });
+  }
+  return t.terminer(`Mettre de côté ${ids.length} élément${ids.length > 1 ? 's' : ''}`);
+}
+
+/** Remet des éléments mis de côté dans leur dossier d'origine (ou la racine s'il a disparu). */
+export function remettre(plan: Plan, ids: string[]): Modification | null {
+  const t = new Transaction(plan);
+  const parDossier = new Map<string, string[]>();
+  for (const id of ids) {
+    const f = plan.fichiers.get(id);
+    if (!f || f.statut !== 'mis_de_cote') continue;
+    const d = plan.dossiers.has(f.dossier) ? f.dossier : RACINE;
+    parDossier.set(d, [...(parDossier.get(d) ?? []), id]);
+  }
+  for (const [d, liste] of parDossier) ranger(plan, t, liste, d);
+  return t.terminer(`Remettre ${ids.length} élément${ids.length > 1 ? 's' : ''}`);
+}
+
+function verifierFrere(plan: Plan, parent: string, nom: string, sauf?: string) {
+  const cle = cleNom(nom);
+  const existant = [...plan.dossiers.values()].find((d) => d.parent === parent && d.id !== sauf && cleNom(d.nom) === cle);
+  if (existant) throw new ErreurPlan(`Un dossier « ${existant.nom} » existe déjà à cet endroit.`);
+}
+
+export function creerDossier(plan: Plan, nom: string, parent = RACINE): { id: string; modification: Modification } {
+  const propre = nom.trim();
+  const erreur = verifierNomDossier(propre);
+  if (erreur) throw new ErreurPlan(erreur);
+  dossierExistant(plan, parent);
+  verifierFrere(plan, parent, propre);
+  const t = new Transaction(plan);
+  const id = `n${plan.prochainId++}`;
+  t.dossier({ id, nom: propre, parent, origine: 'cree' });
+  return { id, modification: t.terminer(`Créer le dossier « ${propre} »`)! };
+}
+
+export function renommerDossier(plan: Plan, id: string, nom: string): Modification | null {
+  const d = dossierExistant(plan, id);
+  if (d.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être renommé.');
+  const propre = nom.trim();
+  if (propre === d.nom) return null;
+  const erreur = verifierNomDossier(propre);
+  if (erreur) throw new ErreurPlan(erreur);
+  verifierFrere(plan, d.parent, propre, id);
+  const t = new Transaction(plan);
+  t.dossier({ ...d, nom: propre });
+  return t.terminer(`Renommer « ${d.nom} » en « ${propre} »`);
+}
+
+/**
+ * Fusionne `source` dans `cible` : ses photos, vidéos et sous-dossiers
+ * passent dans `cible` (les sous-dossiers de même nom fusionnent à leur
+ * tour), puis `source` disparaît.
+ */
+export function fusionnerDossiers(plan: Plan, source: string, cible: string): Modification | null {
+  const s = dossierExistant(plan, source);
+  const c = dossierExistant(plan, cible);
+  if (s.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être fusionné dans un autre.');
+  if (source === cible) return null;
+  if (estDescendant(plan, cible, source)) throw new ErreurPlan('Impossible de fusionner un dossier dans un de ses sous-dossiers.');
+  const t = new Transaction(plan);
+  const fusionner = (de: string, vers: string) => {
+    const archives: string[] = [];
+    for (const f of plan.fichiers.values()) {
+      if (f.dossier !== de) continue;
+      if (f.statut === 'archive') archives.push(f.id);
+      else t.fichier({ ...f, dossier: vers });
+    }
+    ranger(plan, t, archives, vers);
+    for (const e of enfants(plan, de)) {
+      const homonyme = enfants(plan, vers).find((x) => cleNom(x.nom) === cleNom(e.nom));
+      if (homonyme) fusionner(e.id, homonyme.id);
+      else t.dossier({ ...e, parent: vers });
+    }
+    t.supprimerDossier(de);
+  };
+  fusionner(source, cible);
+  return t.terminer(`Fusionner « ${s.nom} » dans « ${c.nom} »`);
+}
+
+/**
+ * Scinde un dossier par jour (§ 6.4) : ses photos et vidéos datées vont dans
+ * des dossiers voisins « <nom sans date>_AAAA-MM-JJ », un par journée ; le
+ * dossier d'origine disparaît s'il est vide. Rien à faire sur une seule journée.
+ */
+export function scinderParJour(plan: Plan, id: string): Modification | null {
+  const d = dossierExistant(plan, id);
+  if (d.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être scindé.');
+  const parJour = new Map<string, string[]>();
+  for (const f of plan.fichiers.values()) {
+    if (f.dossier !== id || f.categorie === 'autre' || !f.date) continue;
+    parJour.set(f.date.slice(0, 10), [...(parJour.get(f.date.slice(0, 10)) ?? []), f.id]);
+  }
+  if (parJour.size < 2) return null;
+  const base = d.nom.replace(/[_ -]+(\d{4}-\d{2}(-\d{2})?|\d{2}([.-]\d{2})?\.\d{2}\.\d{2,4})$/, '') || d.nom;
+  const t = new Transaction(plan);
+  const pris = new Set([...plan.dossiers.values()].filter((x) => x.parent === d.parent).map((x) => cleNom(x.nom)));
+  for (const [jour, ids] of [...parJour].sort()) {
+    const nom = nomLibre(`${base}_${jour}`, pris);
+    pris.add(cleNom(nom));
+    // Les journées gardent ce qu'était le dossier : origine du tri et traitement (gardé tel quel, hors de l'album).
+    const nouveau: DossierPlan = { id: `c${plan.prochainId++}`, nom, parent: d.parent, origine: 'cree', ...(d.tri ? { tri: d.tri } : {}), ...(d.traitement ? { traitement: d.traitement } : {}) };
+    t.dossier(nouveau);
+    for (const fid of ids) t.fichier({ ...plan.fichiers.get(fid)!, dossier: nouveau.id });
+  }
+  const reste = [...plan.fichiers.values()].some((f) => f.dossier === id) || enfants(plan, id).length > 0;
+  if (!reste) t.supprimerDossier(id);
+  return t.terminer(`Scinder « ${d.nom} » par jour (${parJour.size} jours)`);
+}
+
+/** Supprime un dossier vide (sans fichier, même mis de côté, ni sous-dossier). */
+export function supprimerDossierVide(plan: Plan, id: string): Modification | null {
+  const d = dossierExistant(plan, id);
+  if (d.parent === null) throw new ErreurPlan('Le dossier Photos ne peut pas être supprimé.');
+  if (enfants(plan, id).length) throw new ErreurPlan('Ce dossier contient des sous-dossiers.');
+  if ([...plan.fichiers.values()].some((f) => f.dossier === id && f.categorie !== 'autre')) throw new ErreurPlan('Ce dossier n’est pas vide.');
+  const t = new Transaction(plan);
+  t.supprimerDossier(id);
+  return t.terminer(`Supprimer le dossier vide « ${d.nom} »`);
+}
+
+/**
+ * Enchaîne des opérations en une seule modification annulable ; si l'une
+ * échoue, celles déjà faites sont défaites avant de rendre l'erreur (le plan
+ * n'est jamais laissé à moitié modifié).
+ */
+export function enchainer(plan: Plan, libelle: string, etapes: (() => Modification | null)[]): Modification | null {
+  const faites: Modification[] = [];
+  try {
+    for (const e of etapes) {
+      const m = e();
+      if (m) faites.push(m);
+    }
+  } catch (err) {
+    const h = new Historique();
+    for (const m of faites) h.enregistrer(m);
+    while (h.annuler(plan));
+    throw err;
+  }
+  return combiner(libelle, ...faites);
+}
+
+/** Réunit des modifications successives en une seule (un seul Ctrl+Z). */
+export function combiner(libelle: string, ...modifications: (Modification | null)[]): Modification | null {
+  const liste = modifications.filter((m): m is Modification => !!m);
+  if (!liste.length) return null;
+  const avantD = new Map<string, DossierPlan | null>();
+  const avantF = new Map<string, FichierPlan | null>();
+  const apresD = new Map<string, DossierPlan | null>();
+  const apresF = new Map<string, FichierPlan | null>();
+  for (const m of liste) {
+    for (const [id, d] of m.avant.dossiers) if (!avantD.has(id)) avantD.set(id, d);
+    for (const [id, f] of m.avant.fichiers) if (!avantF.has(id)) avantF.set(id, f);
+    for (const [id, d] of m.apres.dossiers) apresD.set(id, d);
+    for (const [id, f] of m.apres.fichiers) apresF.set(id, f);
+  }
+  return {
+    libelle,
+    avant: { dossiers: [...avantD], fichiers: [...avantF], prochainId: liste[0].avant.prochainId },
+    apres: { dossiers: [...apresD], fichiers: [...apresF], prochainId: liste.at(-1)!.apres.prochainId },
+  };
+}
+
+/** Traitement effectif d'un dossier : le sien, ou celui du parent le plus proche qui en a un. */
+export function traitementDe(plan: Plan, dossier: string): TraitementDossier | undefined {
+  for (let d = plan.dossiers.get(dossier); d; d = d.parent ? plan.dossiers.get(d.parent) : undefined) if (d.traitement) return d.traitement;
+  return undefined;
+}
+
+/** Photo d'un dossier gardé hors de l'album (étape 2) : ni doublons, ni sélection. */
+export function horsAlbum(plan: Plan, f: FichierPlan): boolean {
+  return traitementDe(plan, f.dossier) === 'ignorer';
+}
+
+/** Traitement d'un sous-dossier de la source (étape 2) : à trier, gardé tel quel, ou gardé hors de l'album. */
+export function changerTraitement(plan: Plan, ids: string[], traitement: TraitementDossier): Modification | null {
+  const t = new Transaction(plan);
+  for (const id of ids) {
+    const d = plan.dossiers.get(id);
+    if (d && d.parent !== null && d.traitement !== traitement) t.dossier({ ...d, traitement });
+  }
+  const libelles = { trier: 'À trier', garder: 'Garder tel quel', ignorer: 'Garder hors de l’album' } as const;
+  return t.terminer(`${libelles[traitement]} (${ids.length} dossier${ids.length > 1 ? 's' : ''})`);
+}
+
+// ---------------------------------------------------------------------------
+// Sélection, album et doublons (phase 2)
+// ---------------------------------------------------------------------------
+
+/** Choix pour l'album : 1 = ★, 2 = ★★, 0 = non, `undefined` = à décider (étape « Sélection »). */
+export function noterAlbum(plan: Plan, ids: string[], valeur: 0 | 1 | 2 | undefined): Modification | null {
+  const t = new Transaction(plan);
+  for (const id of ids) {
+    const f = plan.fichiers.get(id);
+    if (!f || f.categorie === 'autre' || f.album === valeur) continue;
+    const { album: _ancien, ...reste } = f;
+    t.fichier(valeur === undefined ? reste : { ...reste, album: valeur });
+  }
+  const libelle = valeur === undefined ? 'Remettre à décider' : valeur === 0 ? 'Pas dans l’album' : valeur === 1 ? 'Dans l’album ★' : 'Grande photo ★★';
+  return t.terminer(`${libelle} (${ids.length})`);
+}
+
+/** Tourne d'un quart de tour (sens horaire si `sens` = 90) ; appliqué à la copie dans Album/. */
+export function tourner(plan: Plan, ids: string[], sens: 90 | -90): Modification | null {
+  const t = new Transaction(plan);
+  for (const id of ids) {
+    const f = plan.fichiers.get(id);
+    if (!f || f.categorie !== 'photo') continue;
+    const r = (((f.rotation ?? 0) + sens + 360) % 360) as Rotation;
+    const { rotation: _ancienne, ...reste } = f;
+    t.fichier(r === 0 ? reste : { ...reste, rotation: r });
+  }
+  return t.terminer(`Tourner ${ids.length} photo${ids.length > 1 ? 's' : ''}`);
+}
+
+export function changerLegende(plan: Plan, id: string, legende: string): Modification | null {
+  const f = plan.fichiers.get(id);
+  const propre = legende.trim();
+  if (!f || (f.legende ?? '') === propre) return null;
+  const t = new Transaction(plan);
+  const { legende: _ancienne, ...reste } = f;
+  t.fichier(propre ? { ...reste, legende: propre } : reste);
+  return t.terminer('Changer la légende');
+}
+
+export interface DecisionDoublon extends InfoDoublon {
+  id: string;
+}
+
+/** Met de côté des doublons validés (étape « Doublons »), sauf les photos protégées. */
+export function marquerDoublons(plan: Plan, decisions: DecisionDoublon[]): Modification | null {
+  const t = new Transaction(plan);
+  for (const { id, ...info } of decisions) {
+    const f = plan.fichiers.get(id);
+    if (!f || f.protegee || f.categorie !== 'photo' || f.statut !== 'archive') continue;
+    t.fichier({ ...f, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+  }
+  return t.terminer(`Écarter ${decisions.length} doublon${decisions.length > 1 ? 's' : ''}`);
+}
+
+/** « Garder aussi » : le doublon revient dans son dossier et ne sera plus jamais proposé (I10). */
+export function garderAussi(plan: Plan, ids: string[]): Modification | null {
+  const t = new Transaction(plan);
+  const aRanger: string[] = [];
+  for (const id of ids) {
+    const f = plan.fichiers.get(id);
+    if (!f) continue;
+    const { doublon: _d, ...reste } = f;
+    t.fichier({ ...reste, protegee: true });
+    if (f.statut === 'mis_de_cote') aRanger.push(id);
+  }
+  const parDossier = new Map<string, string[]>();
+  for (const id of aRanger) {
+    const f = plan.fichiers.get(id)!;
+    const d = plan.dossiers.has(f.dossier) ? f.dossier : RACINE;
+    parDossier.set(d, [...(parDossier.get(d) ?? []), id]);
+  }
+  for (const [d, liste] of parDossier) ranger(plan, t, liste, d);
+  return t.terminer(`Garder ${ids.length} photo${ids.length > 1 ? 's' : ''}`);
+}
+
+/**
+ * Échange la photo gardée d'un groupe de doublons : `nouvelle` est protégée
+ * (remise dans son dossier si elle était écartée) et `actuelle` est écartée à
+ * sa place, même protégée : c'est un échange voulu. Les doublons déjà écartés
+ * du groupe renvoient désormais à la nouvelle gardée.
+ */
+export function echangerGardee(plan: Plan, groupe: string[], actuelle: string, nouvelle: string, info: InfoDoublon): Modification | null {
+  const n = plan.fichiers.get(nouvelle);
+  const a = plan.fichiers.get(actuelle);
+  if (!n || !a || nouvelle === actuelle) return null;
+  const t = new Transaction(plan);
+  const { doublon: _d, ...reste } = n;
+  t.fichier({ ...reste, protegee: true });
+  if (n.statut === 'mis_de_cote') ranger(plan, t, [nouvelle], plan.dossiers.has(n.dossier) ? n.dossier : RACINE);
+  if (a.statut === 'archive') {
+    const { protegee: _p, ...ra } = a;
+    t.fichier({ ...ra, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+  }
+  for (const id of groupe) {
+    const f = plan.fichiers.get(id);
+    if (f && id !== nouvelle && id !== actuelle && f.statut === 'mis_de_cote' && f.doublon) t.fichier({ ...f, doublon: { ...f.doublon, garde: nouvelle } });
+  }
+  return t.terminer('Garder une autre photo à la place');
+}
+
+/** Changer d'avis sur une photo « gardée aussi » : elle n'est plus protégée et rejoint les doublons écartés. */
+export function ecarterGardee(plan: Plan, id: string, info: InfoDoublon): Modification | null {
+  const f = plan.fichiers.get(id);
+  if (!f || f.categorie !== 'photo' || f.statut !== 'archive') return null;
+  const t = new Transaction(plan);
+  const { protegee: _p, ...reste } = f;
+  t.fichier({ ...reste, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+  return t.terminer('Écarter une photo gardée');
+}

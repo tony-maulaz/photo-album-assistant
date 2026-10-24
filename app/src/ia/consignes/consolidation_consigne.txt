@@ -1,0 +1,27 @@
+Voici la liste des dossiers d'un même répertoire (nom, nombre de photos,
+période couverte). Le tri GPS a pu éclater une même activité en plusieurs
+dossiers aux noms proches ou identiques à des variantes près.
+
+{liste}
+
+{section_planches}Propose une consolidation :
+1. FUSIONS : regroupe les dossiers qui couvrent LA MÊME activité au même
+   moment — noms quasi identiques (Vol_KohSamui / Vol_Koh_Samui), même
+   excursion vue de plusieurs endroits (bateau, randonnée et pique-nique de
+   la même sortie d'une journée), petit dossier (< 5 photos) qui est
+   manifestement un fragment d'un dossier voisin dans le temps.
+   Choisis comme nom cible le plus clair (corrige la date si la fusion étend
+   la période : Muay_Thai_25.07.26 + Muay_Thai_25-26.07.26 -> Muay_Thai_25-26.07.26).
+2. RENOMMAGES : pour les dossiers Lieu_inconnu_* dont tu vois les planches,
+   propose un nom dans la convention Theme_Lieu_JJ.MM.AA (sans accents ni
+   espaces) — ou une fusion s'ils appartiennent à une activité existante.
+3. NE fusionne PAS des activités réellement différentes du même jour (le
+   marché du matin et le temple de l'après-midi restent séparés). Dans le
+   doute, abstiens-toi : mieux vaut une fusion manquée qu'une fusion fausse.
+
+Réponds en JSON :
+{"fusions": [{"cible": "<nom du dossier final>",
+              "sources": ["<dossier à fusionner dedans>", ...],
+              "raison": "<une phrase>"}, ...],
+  "renommages": [{"dossier": "<nom actuel>", "nom": "<nouveau nom>",
+                  "raison": "<une phrase>"}, ...]}

@@ -1,0 +1,16 @@
+Ces photos appartiennent toutes à la même sortie de l'album de famille.
+Propose :
+- un TITRE de section court (2 à 6 mots), à écrire en haut de la première page
+  de cette sortie ;
+- un commentaire pour les photos qui le méritent le plus (les plus parlantes,
+  drôles ou marquantes) : une phrase courte, à écrire sous la photo.
+
+Ton : familial et chaleureux, avec de temps en temps une touche d'humour léger —
+varie, n'utilise pas la même formule partout. Tu peux suggérer un contexte
+plausible d'après l'image (la famille corrigera si besoin), mais reste crédible
+et ne prétends pas connaître des prénoms ou des dates.
+
+Réponds en JSON :
+{"titre": "<titre de la sortie>",
+ "sous_titre": "<facultatif, une courte phrase d'ambiance, ou \"\">",
+ "commentaires": [{"photo": <numéro>, "texte": "<une phrase>"}, ...]}

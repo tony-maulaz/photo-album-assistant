@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "modifie_le": "2026-10-21T15:00:00",
+  "lieux_connus": [
+    {
+      "id": "maison",
+      "nom": "Maison",
+      "lat": 46.5,
+      "lon": 6.6,
+      "rayon_m": 80,
+      "domicile": true,
+      "un_seul_dossier": false,
+      "notes": "exemple"
+    },
+    {
+      "id": "grands-parents",
+      "nom": "Chez_Grands_Parents",
+      "lat": 46.501,
+      "lon": 6.603,
+      "rayon_m": 80,
+      "domicile": false,
+      "un_seul_dossier": false,
+      "notes": ""
+    }
+  ],
+  "appareils": [
+    {
+      "modele": "Galaxy S25",
+      "decalage": "+00:00",
+      "surnom": ""
+    },
+    {
+      "modele": "Galaxy A54 5G",
+      "decalage": "+00:00",
+      "surnom": ""
+    }
+  ],
+  "calendriers": [
+    {
+      "fichier": "calendriers/famille.ics",
+      "nom": "Famille",
+      "actif": true,
+      "inclure_recurrents": false
+    }
+  ],
+  "prereglages": {
+    "annee": {
+      "rayon_km": 2,
+      "par_jour": false,
+      "voyages": true,
+      "lieux_connus": true
+    },
+    "voyage": {
+      "rayon_km": 2,
+      "par_jour": true,
+      "voyages": false,
+      "lieux_connus": false
+    }
+  }
+}

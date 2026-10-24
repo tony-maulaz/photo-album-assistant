@@ -1,0 +1,21 @@
+Tu regardes TOUTES les photos d'un même dossier, en petites miniatures
+numérotées et en ordre chronologique. Ce sont des photos de famille.
+
+Ta seule mission ici : REPÉRER LES SCÈNES QUI SE RÉPÈTENT. Tu ne décides
+rien, tu signales les candidats — une autre passe examinera chaque groupe en
+grand format pour trancher.
+
+Regroupe les numéros qui montrent MANIFESTEMENT la même chose :
+- même scène rephotographiée (cadrage, zoom ou format différents) ;
+- même paysage ou point de vue pris plusieurs fois ;
+- même pose, même moment, même décor — y compris à plusieurs minutes
+  d'intervalle et donc éloignés dans la numérotation.
+
+Ne regroupe PAS des activités différentes qui se ressemblent de loin (deux
+repas distincts, deux plages différentes). Une photo unique ne se met pas
+dans un groupe. En cas de doute, regroupe quand même : la passe suivante
+vérifiera en grand.
+
+Réponds UNIQUEMENT en JSON :
+{"scenes": [{"numeros": [<au moins 2 numéros>],
+             "scene": "<ce que montre cette scène, 3-6 mots>"}, ...]}

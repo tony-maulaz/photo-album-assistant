@@ -1,0 +1,291 @@
+:root {
+  --fond: #f6f5f2;
+  --carte: #ffffff;
+  --texte: #1f2328;
+  --discret: #5f6670;
+  --bord: #d9d6cf;
+  --accent: #2d6a8f;
+  --ok: #1d7a3a;
+  --echec: #b42318;
+  --avert: #a15c00;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #17191c;
+    --carte: #202327;
+    --texte: #e6e6e3;
+    --discret: #a0a6ad;
+    --bord: #383c42;
+    --accent: #6fb0d8;
+    --ok: #5cc27a;
+    --echec: #f07a6e;
+    --avert: #e0a64c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 15px/1.45 system-ui, 'Segoe UI', sans-serif;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-areas: 'entete entete' 'sections resultats';
+  gap: 0 20px;
+  padding: 0 20px 40px;
+}
+
+header {
+  grid-area: entete;
+}
+
+header h1 {
+  margin: 18px 0 4px;
+  font-size: 22px;
+}
+
+header h1 span {
+  font-weight: 400;
+  color: var(--discret);
+  font-size: 16px;
+}
+
+header p {
+  margin: 0 0 16px;
+  color: var(--discret);
+  max-width: 900px;
+}
+
+main {
+  grid-area: sections;
+  min-width: 0;
+}
+
+aside {
+  grid-area: resultats;
+  position: sticky;
+  top: 12px;
+  align-self: start;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  background: var(--carte);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+aside h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+aside h3 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--discret);
+}
+
+.section {
+  background: var(--carte);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  padding: 10px 16px 12px;
+  margin-bottom: 14px;
+}
+
+.section summary {
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.explication {
+  color: var(--discret);
+  margin: 6px 0 10px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+button {
+  font: inherit;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--bord);
+  background: var(--fond);
+  color: var(--texte);
+  cursor: pointer;
+}
+
+button.principal {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 3px 6px;
+  border: 1px solid var(--bord);
+  border-radius: 5px;
+  background: var(--carte);
+  color: var(--texte);
+}
+
+input.court {
+  width: 90px;
+}
+
+input.moyen {
+  width: 200px;
+}
+
+input.large {
+  width: 320px;
+}
+
+.etat {
+  color: var(--discret);
+  margin: 4px 0;
+}
+
+.journal {
+  margin-top: 8px;
+  max-height: 260px;
+  overflow: auto;
+  font-size: 14px;
+}
+
+.ligne {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.ligne .icone {
+  width: 1em;
+  flex: none;
+  text-align: center;
+  font-weight: 700;
+}
+
+.ok,
+.ligne.ok .icone {
+  color: var(--ok);
+}
+
+.echec,
+.ligne.echec .icone {
+  color: var(--echec);
+}
+
+.ligne.avert .icone {
+  color: var(--avert);
+}
+
+.ligne.info .icone {
+  color: var(--discret);
+}
+
+table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 13px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--bord);
+  padding: 4px 6px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  color: var(--discret);
+  font-weight: 600;
+}
+
+table.photos td:nth-child(2) {
+  max-width: 220px;
+  overflow-wrap: anywhere;
+}
+
+canvas.miniature {
+  display: block;
+  max-height: 80px;
+  width: auto;
+}
+
+pre.apercu {
+  white-space: pre-wrap;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--fond);
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+}
+
+pre.apercu:empty {
+  display: none;
+}
+
+.grille {
+  position: relative;
+  height: 60vh;
+  overflow-y: auto;
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  background: var(--fond);
+}
+
+.grille:empty {
+  display: none;
+}
+
+.plateau {
+  position: relative;
+}
+
+.case {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--bord);
+}
+
+@media (max-width: 1100px) {
+  body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'entete' 'resultats' 'sections';
+  }
+
+  aside {
+    position: static;
+    max-height: none;
+    margin-bottom: 14px;
+  }
+}

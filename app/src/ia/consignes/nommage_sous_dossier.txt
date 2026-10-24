@@ -1,0 +1,3 @@
+
+
+Ce dossier est un SOUS-DOSSIER de « {parent} » : ne répète pas ce nom, décris seulement l'activité ou l'occasion (ex. Anniversaire_Lea_26.01.25, Raclette_24.12.25).

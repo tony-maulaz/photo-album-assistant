@@ -1,0 +1,20 @@
+Les photos marquées d'une LETTRE n'ont pas de position GPS. Les photos
+marquées d'un NUMÉRO ont été prises juste avant ou juste après, et l'on sait
+où elles ont été rangées.
+
+Photos à situer : {cibles}
+
+Photos voisines dans le temps :
+{voisins}
+
+Question : les photos à situer ont-elles été prises au même endroit, pendant
+la même sortie, que l'une des photos voisines (même décor, mêmes personnes,
+même lumière, même activité) ?
+
+- Si OUI, indique le numéro de cette photo voisine.
+- Si NON, ou si tu ne peux pas le dire, réponds 0 : mieux vaut laisser une
+  photo sans lieu que la ranger au mauvais endroit.
+
+Réponds UNIQUEMENT en JSON :
+{"voisine": <numéro de la photo voisine, ou 0>, "confiance": <1-10>,
+ "raison": "<une phrase>"}
