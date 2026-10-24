@@ -16,7 +16,7 @@ import { Geocodage } from '../navigateur/geocodage';
 import { ServiceIA } from '../navigateur/ia';
 import { inventorier, lireDetails, listerSource, type Progression } from '../navigateur/inventaire';
 import { ETAPE, EtatProjet, migrerEtapes, noterProjetRecent, nouveauProjet, projetsRecents, type Projet } from '../navigateur/projet';
-import { appliquer, changementsSource, changerEtape, chargerEvenements, configuration, journal, notifier, page, planifierEnregistrement, reglages, session, versionIA, versionPlan, versionProjet } from './etat';
+import { appliquer, changementsSource, changerEtape, chargerEvenements, configuration, enregistrerProjet, journal, notifier, page, pageApresRechargement, reglages, session, versionIA, versionPlan, versionProjet } from './etat';
 
 /** Services du projet ouvert : analyses des photos et appels IA (cache, budget). */
 async function services(etat: EtatProjet, projet: Projet) {
@@ -27,8 +27,9 @@ async function services(etat: EtatProjet, projet: Projet) {
     () => reglages.value.tauxUsdChf,
     (alerte) => {
       versionIA.value++;
-      planifierEnregistrement();
       if (alerte) notifier('info', alerte);
+      // Dépense écrite tout de suite : un rechargement ne doit pas l'oublier (la réponse, elle, est déjà payée).
+      return enregistrerProjet(etat, projet);
     },
     journal,
   );
@@ -188,7 +189,7 @@ export async function mettreAJourInventaire(progres: (p: Progression) => void, a
 }
 
 /** Première étape à reprendre : la première en cours ou à revoir, sinon la dernière validée. */
-export function etapeAReprendre(p: Projet): number {
+export function etapeAReprendre(p: Pick<Projet, 'etapes'>): number {
   const i = p.etapes.findIndex((e) => e === 'en_cours' || e === 'a_revoir');
   if (i >= 0) return i + 1;
   const derniere = p.etapes.lastIndexOf('validee');
@@ -223,7 +224,8 @@ export async function ouvrirProjet(source: FileSystemDirectoryHandle, sortie: Fi
   journal('projet', t`Projet « ${projet.nom} » ouvert`);
   versionPlan.value++;
   versionProjet.value++;
-  page.value = { nom: 'etape', numero: etapeAReprendre(projet) };
+  // Après un rechargement de l'onglet, on reste sur la page regardée ; sinon, l'étape à reprendre.
+  page.value = pageApresRechargement(projet.id) ?? { nom: 'etape', numero: etapeAReprendre(projet) };
   // La source a-t-elle changé depuis (photos ajoutées pour trier en plusieurs fois, D63) ?
   changementsSource.value = null;
   void verifierSource();

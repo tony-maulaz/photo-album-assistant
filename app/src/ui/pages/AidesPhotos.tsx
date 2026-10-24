@@ -47,6 +47,8 @@ function estimer(s: Session, demandes: DemandeIA[]) {
  * Exécute des demandes (3 à la fois) et rend chaque réponse lue ; `garder`
  * reçoit chaque résultat aussitôt (pour l'enregistrer même si la suite
  * s'arrête). Un échec isolé est compté dans `bilan` et n'arrête pas les autres.
+ * Une réponse lisible mais refusée par `utilisable` est gardée comme
+ * illisible : l'aide le dit, et « Redemander » la redemande.
  */
 async function executer<T>(
   s: Session,
@@ -55,15 +57,19 @@ async function executer<T>(
   l: { progres: (f: number, t: number) => void; arreter: () => boolean },
   bilan: BilanEchecs,
   garder?: (x: { d: DemandeIA; r: T }) => void,
+  utilisable?: (r: T) => boolean,
 ): Promise<{ d: DemandeIA; r: T }[]> {
   const ctx = contexteExecution(s);
   const resultats: { d: DemandeIA; r: T }[] = [];
   let faits = 0;
   await enParallele(demandes, 3, async (d) => {
     if (l.arreter()) return;
-    const v = await essai(() => executerDemande(ctx, d, modeleDe(NIVEAU[d.niveau])), bilan);
+    const modele = modeleDe(NIVEAU[d.niveau]);
+    const v = await essai(() => executerDemande(ctx, d, modele), bilan);
     if (v !== undefined) {
       const x = { d, r: lire(v, d) };
+      // Même clé de cache que `executerDemande`.
+      if (v !== null && utilisable && !utilisable(x.r)) await s.ia.marquerInexploitable(`${d.fonction}|${modele}|${d.cle}`);
       resultats.push(x);
       garder?.(x);
     }
@@ -93,6 +99,7 @@ enregistrerAide({
   envoi: aTraduire('chaque photo réduite à 768 px, 10 par appel'),
   web: false,
   usage: 'rapide',
+  options: () => null,
   estimer: (s) => {
     const deja = s.aides.get<Record<string, Etiquettes>>('IA8') ?? {};
     const photos = photosDeLaVue(s).filter((f) => !deja[f.id]);
@@ -106,9 +113,17 @@ enregistrerAide({
     const ajouts: Record<string, Etiquettes> = {};
     const bilan: BilanEchecs = { echecs: 0 };
     try {
-      await executer(s, demandesEtiquettes(photos.map((f) => photoIA(s, f)), { contexte: s.projet.contexte }), (r, d) => lireEtiquettes(r, d.ids), l, bilan, ({ r }) => {
-        for (const [id, e] of r) ajouts[id] = e;
-      });
+      await executer(
+        s,
+        demandesEtiquettes(photos.map((f) => photoIA(s, f)), { contexte: s.projet.contexte }),
+        (r, d) => lireEtiquettes(r, d.ids),
+        l,
+        bilan,
+        ({ r }) => {
+          for (const [id, e] of r) ajouts[id] = e;
+        },
+        (r) => r.size > 0,
+      );
     } finally {
       await s.aides.fusionner('IA8', ajouts);
     }
@@ -124,6 +139,7 @@ enregistrerAide({
   envoi: aTraduire('les photos en 1024 px, 6 par appel'),
   web: false,
   usage: 'standard',
+  options: () => null,
   estimer: (s) => {
     const deja = s.aides.get<Record<string, Appreciation>>('IA9') ?? {};
     const photos = photosDeLaVue(s).filter((f) => !deja[f.id]);
@@ -137,9 +153,17 @@ enregistrerAide({
     const ajouts: Record<string, Appreciation> = {};
     const bilan: BilanEchecs = { echecs: 0 };
     try {
-      await executer(s, demandesAppreciation(photos.map((f) => photoIA(s, f)), { contexte: s.projet.contexte }), (r, d) => lireAppreciation(r, d.ids), l, bilan, ({ r }) => {
-        for (const [id, a] of r) ajouts[id] = a;
-      });
+      await executer(
+        s,
+        demandesAppreciation(photos.map((f) => photoIA(s, f)), { contexte: s.projet.contexte }),
+        (r, d) => lireAppreciation(r, d.ids),
+        l,
+        bilan,
+        ({ r }) => {
+          for (const [id, a] of r) ajouts[id] = a;
+        },
+        (r) => r.size > 0,
+      );
     } finally {
       await s.aides.fusionner('IA9', ajouts);
     }
@@ -163,6 +187,7 @@ enregistrerAide({
   envoi: aTraduire('les photos de la pile en 1024 px'),
   web: false,
   usage: 'standard',
+  options: () => null,
   estimer: (s) => {
     const pile = pileChoisie(s);
     if (!pile.length) return null;
@@ -177,7 +202,7 @@ enregistrerAide({
     let finale = null as ReturnType<typeof lireMeilleure>;
     const bilan: BilanEchecs = { echecs: 0 };
     while (candidates.length) {
-      const res = await executer(s, lotsPile(candidates).map((lot) => demandeMeilleure(lot, { contexte: s.projet.contexte })), (r, d) => lireMeilleure(r, d.ids), l, bilan);
+      const res = await executer(s, lotsPile(candidates).map((lot) => demandeMeilleure(lot, { contexte: s.projet.contexte })), (r, d) => lireMeilleure(r, d.ids), l, bilan, undefined, (r) => !!r);
       const gagnantes = res.map((x) => x.r).filter((x): x is NonNullable<typeof x> => !!x);
       if (gagnantes.length <= 1) {
         finale = gagnantes[0] ?? null;
@@ -204,6 +229,7 @@ enregistrerAide({
   envoi: aTraduire('planches des photos retenues et des autres photos de la sortie'),
   web: false,
   usage: 'standard',
+  options: () => null,
   estimer: (s) => {
     if (vue.value === RACINE) return null;
     const d = demandeControle(s);
@@ -393,8 +419,10 @@ function aideTextes(id: 'IA12' | 'IA13', legendes: boolean) {
       ? aTraduire('Légendes pour une part des photos de chaque section (15 % par défaut), dans le ton choisi.')
       : aTraduire('Titre et texte d’introduction de chaque section, d’après les photos, le nom de la sortie, le calendrier et le contexte ; recherche web en option.'),
     envoi: aTraduire('jusqu’à 12 photos par section (1024 px), le nom de la section, le calendrier et le contexte'),
-    web: !legendes,
+    // Titres comme légendes : recherche web selon la case « Informations trouvées sur internet ».
+    web: () => reglagesTextes.rechercheWeb,
     usage: 'avance',
+    options: () => reglagesTextes,
     estimer: (s) => {
       const liste = demandesTextes(s, legendes);
       if (!liste.length) return null;
@@ -407,9 +435,17 @@ function aideTextes(id: 'IA12' | 'IA13', legendes: boolean) {
       const ajouts: Record<string, TextesProposes> = {};
       const bilan: BilanEchecs = { echecs: 0 };
       try {
-        await executer(s, liste.map((x) => x.d), (r, d) => lireTextes(r, d.ids), l, bilan, ({ d, r }) => {
-          if (r) ajouts[parDemande.get(d)!] = { titre: r.titre, introduction: r.introduction, legendes: Object.fromEntries(r.legendes), references: r.references };
-        });
+        await executer(
+          s,
+          liste.map((x) => x.d),
+          (r, d) => lireTextes(r, d.ids),
+          l,
+          bilan,
+          ({ d, r }) => {
+            if (r) ajouts[parDemande.get(d)!] = { titre: r.titre, introduction: r.introduction, legendes: Object.fromEntries(r.legendes), references: r.references };
+          },
+          (r) => !!r,
+        );
       } finally {
         await s.aides.fusionner(id, ajouts);
       }
@@ -445,7 +481,9 @@ enregistrerAide({
   siRien: aTraduire('il faut au moins 2 grandes photos ★★'),
   envoi: aTraduire('les grandes photos ★★ (planches puis 1024 px)'),
   web: false,
-  usage: 'standard',
+  // Comme ses demandes (tri puis choix final) : le modèle avancé, affiché tel quel au catalogue.
+  usage: 'avance',
+  options: () => null,
   estimer: (s) => {
     const grandes = grandesPhotos(s);
     if (grandes.length < 2) return null;
@@ -462,14 +500,14 @@ enregistrerAide({
     let finalistes = grandes;
     const tri = demandeCouvertureTri(grandes, { album: s.projet.nom, contexte: s.projet.contexte });
     if (tri) {
-      const [r] = await executer(s, [tri], (x, d) => lireCouvertureTri(x, d.ids), l, bilan);
+      const [r] = await executer(s, [tri], (x, d) => lireCouvertureTri(x, d.ids), l, bilan, undefined, (ids) => ids.length > 0);
       const ids = r?.r ?? [];
       finalistes = grandes.filter((g) => ids.includes(g.id));
       if (!finalistes.length) finalistes = grandes.slice(0, 6);
     }
     const d = demandeCouverture(finalistes, { album: s.projet.nom, contexte: s.projet.contexte });
     if (!d) return t`Pas assez de grandes photos ★★.`;
-    const [r] = await executer(s, [d], (x, dd) => lireCouverture(x, dd.ids), l, bilan);
+    const [r] = await executer(s, [d], (x, dd) => lireCouverture(x, dd.ids), l, bilan, undefined, (c) => c.length > 0);
     if (r) await s.aides.set('IA14', { grandes: signature, propositions: r.r } satisfies CouverturesIA14);
     return `${pluriel(r?.r.length ?? 0, 'couverture proposée', 'couvertures proposées')}.${texteEchecs(bilan)}`;
   },
@@ -489,6 +527,7 @@ enregistrerAide({
   envoi: aTraduire('planches de l’album dans l’ordre, avec le numéro de page'),
   web: false,
   usage: 'standard',
+  options: () => null,
   estimer: (s) => {
     const d = demandesControle(s);
     return d.length ? estimer(s, d) : null;

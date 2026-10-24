@@ -2,18 +2,34 @@
 
 import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useState } from 'preact/hooks';
-import { MODELES } from '../../lib/tarifs';
+import { MODELES, modele as infoModele } from '../../lib/tarifs';
 import { client, expliquerErreur } from '../../navigateur/claude';
 import { cleApi, cleMasquee, cleMemorisee, enregistrerCleApi, oublierCleApi } from '../../navigateur/cle';
 import type { Reglages } from '../../navigateur/reglages';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { TeteEtape } from '../composants/Cadre';
-import { aTraduire, t } from '../../lib/langue';
+import { aTraduire, langue, t } from '../../lib/langue';
 import { ChoixLangue } from '../composants/ChoixLangue';
 import { ReglageDossierDepart } from '../composants/DossierDepart';
 import { changerReglages, notifier, page, reglages, session, versionIA } from '../etat';
-import { aides, modeleDe, texteCout } from './AidesIA';
-import { nombre } from '../format';
+import { revenir } from '../navigation';
+import { aides, modeleDe, retirerAvisCle, texteCout, type Aide } from './AidesIA';
+import { montantChf, nombre, pluriel } from '../format';
+
+/** « ← Retour » en haut des pages du menu : on revient là d'où l'on venait (le logo mène à l'accueil). */
+function BoutonRetour() {
+  return (
+    <button type="button" class="lien bouton-retour" onClick={revenir}>
+      {t`← Retour`}
+    </button>
+  );
+}
+
+/** Nom lisible d'un modèle (« Claude Opus 5.5 (avancé) »), ou son identifiant s'il n'est pas dans la table. */
+function nomModele(id: string): string {
+  const m = infoModele(id);
+  return m ? t(m.nom) : id;
+}
 
 function SelectModele({ valeur, changer }: { valeur: string; changer: (v: string) => void }) {
   return (
@@ -38,6 +54,7 @@ export function PageReglages() {
 
   return (
     <div class="page etroite">
+      <BoutonRetour />
       <TeteEtape titre={t`Réglages`}>{t`Ces réglages sont propres à cet ordinateur et à ce navigateur.`}</TeteEtape>
 
       <h2>{t`Clé API Claude`}</h2>
@@ -65,6 +82,7 @@ export function PageReglages() {
             enregistrerCleApi(cle.trim(), souvenir);
             setCle('');
             rafraichir((n) => n + 1);
+            retirerAvisCle();
             notifier('ok', t`Clé enregistrée.`);
           }}
         >
@@ -151,12 +169,42 @@ export function PageReglages() {
   );
 }
 
+/** Libellés des types d'activité du journal (enregistrés en codes : « ia », « sortie »…). */
+const TYPES_JOURNAL: Record<string, string> = {
+  projet: aTraduire('Projet'),
+  inventaire: aTraduire('Inventaire'),
+  analyse: aTraduire('Analyse des photos'),
+  doublons: aTraduire('Doublons'),
+  tri: aTraduire('Tri automatique'),
+  ia: aTraduire('IA'),
+  sortie: aTraduire('Écriture de la sortie'),
+  alerte: aTraduire('Alerte'),
+};
+
+interface EntreeJournal {
+  quand: string;
+  type: string;
+  message: string;
+  donnees?: unknown;
+}
+
+/** Texte d'une ligne du journal : le coût d'un appel IA est montré en CHF (il est noté en USD, la monnaie de l'API). */
+function texteJournal(e: EntreeJournal, taux: number): string {
+  const d = e.donnees as { fonction?: unknown; modele?: unknown; usd?: unknown } | undefined;
+  if (e.type === 'ia' && d && typeof d.fonction === 'string' && typeof d.modele === 'string' && typeof d.usd === 'number') {
+    return t`${d.fonction} ${nomFonction(d.fonction)} : ${nombre(d.usd * taux, 3)} CHF (${nomModele(d.modele)})`;
+  }
+  return e.message;
+}
+
 export function PageJournal() {
   const s = session.value;
-  const [entrees, setEntrees] = useState<{ quand: string; type: string; message: string }[]>([]);
+  const [entrees, setEntrees] = useState<EntreeJournal[]>([]);
   useEffect(() => void s?.etat.lireJournal().then((l) => setEntrees(l.reverse())), [s]);
+  const taux = reglages.value.tauxUsdChf;
   return (
     <div class="page etroite">
+      <BoutonRetour />
       <TeteEtape titre={t`Journal`}>{t`L’activité du projet : création, inventaire, aides IA et leur coût, écritures dans la sortie, alertes.`}</TeteEtape>
       {!s && <p class="discret">{t`Ouvrez un projet pour voir son journal.`}</p>}
       {s && Object.keys(s.projet.couts_usd ?? {}).length > 0 && (
@@ -177,11 +225,11 @@ export function PageJournal() {
                     <td>
                       {f} {nomFonction(f)}
                     </td>
-                    <td class="n">{nombre(usd * reglages.value.tauxUsdChf, 2)} CHF</td>
+                    <td class="n">{nombre(usd * taux, 2)} CHF</td>
                   </tr>
                 ))}
               <tr class="total">
-                <td>{t`Total (budget du projet : ${s.projet.budget_chf} CHF)`}</td>
+                <td>{t`Total (budget du projet : ${montantChf(s.projet.budget_chf)} CHF)`}</td>
                 <td class="n">{nombre(s.ia.depenseCHF(), 2)} CHF</td>
               </tr>
             </tbody>
@@ -193,7 +241,8 @@ export function PageJournal() {
       <ul class="journal-projet">
         {entrees.map((e, i) => (
           <li key={i}>
-            <span class="discret">{new Date(e.quand).toLocaleString('fr-CH')}</span> <span class="badge">{e.type}</span> {e.message}
+            <span class="discret">{new Date(e.quand).toLocaleString(langue() === 'en' ? 'en-GB' : 'fr-CH')}</span>{' '}
+            <span class="badge">{TYPES_JOURNAL[e.type] ? t(TYPES_JOURNAL[e.type]) : e.type}</span> {texteJournal(e, taux)}
           </li>
         ))}
       </ul>
@@ -231,14 +280,17 @@ export function PageFonctionsIA() {
   const enregistrees = new Map(aides().map((a) => [a.id, a]));
   const couts = s?.projet.couts_usd ?? {};
   const taux = reglages.value.tauxUsdChf;
+  // Recherche web : toujours, jamais, ou selon une case de la page de l'aide.
+  const texteWeb = (a: Aide) => (typeof a.web === 'function' ? (a.web() ? t`oui (option cochée)` : t`en option`) : a.web ? t`oui` : '—');
   return (
     <div class="page">
+      <BoutonRetour />
       <TeteEtape titre={t`Fonctions IA`}>
         {t`Toutes les aides IA, facultatives. Chacune affiche son coût estimé avant d’être lancée, et rien n’est envoyé sans votre action. Les réponses sont gardées : relancer une aide déjà faite ne coûte rien.`}
       </TeteEtape>
       {s ? (
         <p>
-          {t`Budget du projet :`} <strong>{nombre(s.ia.depenseCHF(), 2)}</strong> {t`CHF dépensés sur ${s.projet.budget_chf} CHF (détail dans le Journal).`}{' '}
+          {t`Budget du projet :`} <strong>{nombre(s.ia.depenseCHF(), 2)}</strong> {t`CHF dépensés sur ${montantChf(s.projet.budget_chf)} CHF (détail dans le Journal).`}{' '}
           <button
             type="button"
             class="lien"
@@ -246,7 +298,7 @@ export function PageFonctionsIA() {
             onClick={() =>
               void s.ia.oublierInexploitables().then((n) => {
                 versionIA.value++;
-                notifier('info', n ? t`${n} réponse(s) illisible(s) oubliée(s) : relancez les aides concernées.` : t`Aucune réponse illisible.`);
+                notifier('info', n ? t`${pluriel(n, 'réponse illisible oubliée', 'réponses illisibles oubliées')} : relancez les aides concernées.` : t`Aucune réponse illisible.`);
               })
             }
           >
@@ -274,15 +326,22 @@ export function PageFonctionsIA() {
           {FONCTIONS_IA.map(([code, nom, etape, envoi, web]) => {
             const a = enregistrees.get(code);
             const e = s && a ? a.estimer(s) : null;
+            const illisibles = s ? s.ia.inexploitables(code) : 0;
             return (
               <tr key={code}>
                 <td>{code}</td>
                 <td>{t(a?.nom ?? nom)}</td>
                 <td>{etape}</td>
                 <td>{t(a?.envoi ?? envoi)}</td>
-                <td>{a ? (a.web ? t`oui` : '—') : web === '—' ? web : t(web)}</td>
-                <td class="discret">{a ? modeleDe(a.usage) : ''}</td>
-                <td>{!s || !a ? '' : e === null ? t`rien à faire` : texteCout(e)}</td>
+                <td>{a ? texteWeb(a) : web === '—' ? web : t(web)}</td>
+                {/* Le modèle réellement appelé (celui de l'usage de l'aide, choisi dans Réglages). */}
+                <td class="discret" title={a ? modeleDe(a.usage) : undefined}>
+                  {a ? nomModele(modeleDe(a.usage)) : ''}
+                </td>
+                <td>
+                  {!s || !a ? '' : e === null ? t`rien à faire` : texteCout(e)}
+                  {illisibles > 0 && <div class="attention">{pluriel(illisibles, 'réponse illisible', 'réponses illisibles')}</div>}
+                </td>
                 <td class="n">{couts[code] ? `${nombre(couts[code] * taux, 2)} CHF` : ''}</td>
                 <td>
                   {s && (
@@ -303,7 +362,20 @@ export function PageFonctionsIA() {
 export function PageAide() {
   return (
     <div class="page etroite aide">
+      <BoutonRetour />
       <TeteEtape titre={t`Aide`}>{t`Comment utiliser l’application, étape par étape.`}</TeteEtape>
+
+      {/* L'essentiel pour un débutant, avant le détail. */}
+      <section class="pour-commencer">
+        <h2>{t`Pour commencer`}</h2>
+        <ol>
+          <li>{t`À l’accueil, choisissez « Trier un nouveau dossier » (ou « Ouvrir un dossier déjà trié ») : indiquez le dossier de photos, puis un dossier vide où le résultat sera écrit.`}</li>
+          <li>{t`Suivez les étapes dans l’ordre. En haut de chaque page, une explication dit quoi faire ; quand tout vous convient, cliquez sur « Valider et continuer », en bas à droite.`}</li>
+          <li>{t`Rien ne presse : vos photos d’origine ne sont jamais modifiées, Ctrl+Z annule la dernière modification, et vous pouvez fermer l’onglet à tout moment.`}</li>
+          <li>{t`Les aides IA (boutons ✦) sont facultatives : elles affichent leur prix avant de partir et demandent une clé API (menu ☰, Réglages).`}</li>
+        </ol>
+        <p class="discret">{t`Touche « ? » (hors d’un champ de saisie) : la liste des raccourcis clavier.`}</p>
+      </section>
 
       <h2>{t`Le principe`}</h2>
       <p>
@@ -400,7 +472,7 @@ export function PageAide() {
         <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, photos entremêlées avec un autre dossier.`}</li>
         <li>{t`Suppr met de côté (rien n’est supprimé : les éléments iront dans « ${nomsSortie().misDeCote} ») ; dans « Mis de côté », Suppr les remet.`}</li>
         <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>
-        <li>{t`Ctrl+Z annule, Ctrl+Y rétablit.`}</li>
+        <li>{t`Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.`}</li>
       </ul>
 
       <h2>{t`Créer la sortie (étape ${ETAPE.sortie})`}</h2>
@@ -408,7 +480,7 @@ export function PageAide() {
         {t`Le bouton écrit ce qui manque et déplace ce qui a changé de dossier ; relancé, il ne recopie jamais un fichier déjà en place. Le bilan dit si chaque fichier d’origine est dans la sortie. Seulement dans ce cas, vous pouvez copier la sortie sur le NAS, la vérifier, puis supprimer vous-même le dossier d’origine.`}
       </p>
       <p>
-        {t`La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; pour les autres, la date d’origine est notée dans « ${nomsSortie().rapport} ».`}
+        {t`La copie porte la date du jour : le navigateur ne peut pas conserver la date de modification. Les photos ont presque toutes leur date dans l’appareil (EXIF) ; « ${nomsSortie().rapport} » donne la date d’origine des autres, et celle de chaque fichier reste notée dans « .album/plan.json », dans le dossier de sortie.`}
       </p>
 
       <h2>{t`Configuration et clé API`}</h2>

@@ -7,12 +7,13 @@ export const TEXTES: Record<string, string> = {
 
   // claude.ts
   'Saisissez d’abord la clé API (Réglages).': 'First enter the API key (Settings).',
-  'Clé API refusée (401) : vérifiez-la.': 'API key refused (401): please check it.',
+  'Clé API refusée (401) : vérifiez-la dans Réglages.': 'API key refused (401): check it in Settings.',
   'Accès refusé (403) : {0}': 'Access denied (403): {0}',
-  'Introuvable (404) : {0}': 'Not found (404): {0}',
-  'Trop de requêtes (429) : patientez puis réessayez.': 'Too many requests (429): wait a moment, then try again.',
+  'Introuvable (404) : vérifiez les modèles dans Réglages. {0}': 'Not found (404): check the models in Settings. {0}',
+  'Trop de demandes en peu de temps (429) : patientez une minute, puis réessayez.': 'Too many requests in a short time (429): wait a minute, then try again.',
   'Requête refusée (400) : {0}': 'Request refused (400): {0}',
-  'Échec réseau (connexion, CORS ou blocage) : {0}': 'Network failure (connection, CORS or blocked): {0}',
+  'Impossible de joindre le service Claude (connexion coupée ou bloquée) : vérifiez la connexion à internet, puis réessayez.':
+    'Cannot reach the Claude service (connection lost or blocked): check the internet connection, then try again.',
   'Erreur de l’API ({0}) : {1}': 'API error ({0}): {1}',
 
   // configuration.ts
@@ -36,8 +37,8 @@ export const TEXTES: Record<string, string> = {
   'Cache des réponses IA illisible : gardé dans .album/{0}, les aides devront être relancées.':
     'The saved AI answers could not be read: kept in .album/{0}; the AI helpers will have to be run again.',
   '{0} % du budget IA du projet dépensé ({1} / {2} CHF).': '{0}% of the project’s AI budget spent ({1} / {2} CHF).',
-  '{0} : {1} USD ({2})': '{0}: {1} USD ({2})',
-  '{0} : réponse inexploitable ({1}), ignorée': '{0}: unusable answer ({1}), ignored',
+  '{0} : {1} CHF ({2})': '{0}: {1} CHF ({2})',
+  '{0} : réponse inexploitable ({1}), gardée comme illisible': '{0}: unusable answer ({1}), kept as unreadable',
   illisible: 'unreadable',
 
   // nominatim.ts

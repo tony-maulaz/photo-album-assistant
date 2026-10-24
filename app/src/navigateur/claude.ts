@@ -15,15 +15,36 @@ export function client(): Anthropic {
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 2 });
 }
 
-/** Message d'erreur compréhensible pour une erreur du SDK. */
+/** Message de l'API sans son enveloppe JSON (« Overloaded » plutôt que `529 {"type":"error",…}`). */
+function detailApi(err: InstanceType<typeof Anthropic.APIError>): string {
+  const corps = err.error as { error?: { message?: unknown }; message?: unknown } | undefined;
+  const m = corps?.error?.message ?? corps?.message;
+  if (typeof m === 'string' && m.trim()) return m.trim();
+  return err.message.replace(/^\d{3}\s+/, '').replace(/\s*\{.*\}\s*$/s, '').trim();
+}
+
+/**
+ * Message compréhensible pour une erreur du SDK : ce qui s'est passé et quoi
+ * faire, jamais la réponse JSON brute de l'API.
+ */
 export function expliquerErreur(err: unknown): string {
-  if (err instanceof Anthropic.AuthenticationError) return t`Clé API refusée (401) : vérifiez-la.`;
-  if (err instanceof Anthropic.PermissionDeniedError) return t`Accès refusé (403) : ${err.message}`;
-  if (err instanceof Anthropic.NotFoundError) return t`Introuvable (404) : ${err.message}`;
-  if (err instanceof Anthropic.RateLimitError) return t`Trop de requêtes (429) : patientez puis réessayez.`;
-  if (err instanceof Anthropic.BadRequestError) return t`Requête refusée (400) : ${err.message}`;
-  if (err instanceof Anthropic.APIConnectionError) return t`Échec réseau (connexion, CORS ou blocage) : ${err.message}`;
-  if (err instanceof Anthropic.APIError) return t`Erreur de l’API (${err.status}) : ${err.message}`;
+  if (err instanceof Anthropic.APIUserAbortError) return t`Action annulée.`;
+  if (err instanceof Anthropic.APIConnectionTimeoutError) return t`Le service Claude ne répond pas à temps : vérifiez la connexion à internet, puis réessayez.`;
+  if (err instanceof Anthropic.APIConnectionError) return t`Impossible de joindre le service Claude (connexion coupée ou bloquée) : vérifiez la connexion à internet, puis réessayez.`;
+  if (err instanceof Anthropic.APIError) {
+    const detail = detailApi(err);
+    const statut = err.status;
+    if (statut === 401) return t`Clé API refusée (401) : vérifiez-la dans Réglages.`;
+    if (statut === 403) return t`Accès refusé (403) : ${detail}`;
+    if (statut === 404) return t`Introuvable (404) : vérifiez les modèles dans Réglages. ${detail}`;
+    if (statut === 413) return t`Demande trop volumineuse (413) : relancez avec moins de photos à la fois.`;
+    if (statut === 429) return t`Trop de demandes en peu de temps (429) : patientez une minute, puis réessayez.`;
+    if (statut === 529 || err.type === 'overloaded_error') return t`Le service Claude est surchargé pour le moment (529) : réessayez dans quelques minutes.`;
+    if (statut !== undefined && statut >= 500) return t`Le service Claude a un problème passager (${statut}) : réessayez plus tard.`;
+    if (statut === 400 && /credit balance/i.test(detail)) return t`Crédit API épuisé : rechargez le compte sur console.anthropic.com, puis réessayez.`;
+    if (statut === 400) return t`Requête refusée (400) : ${detail}`;
+    return statut ? t`Erreur de l’API (${statut}) : ${detail}` : detail;
+  }
   return err instanceof Error ? err.message : String(err);
 }
 

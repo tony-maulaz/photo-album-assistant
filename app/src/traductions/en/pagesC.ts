@@ -251,7 +251,7 @@ export const TEXTES: Record<string, string> = {
   'photos sans mesure de netteté': 'photos without a sharpness measurement',
 
   // AidesIA.tsx
-  ' {0} ({1}) : relancez plus tard, le reste est gardé.': ' {0} ({1}): try again later, the rest is kept.',
+  ' {0}. {1} Le reste est gardé : relancez l’aide plus tard.': ' {0}. {1} The rest is kept: run the helper again later.',
   'demande a échoué': 'request failed',
   'demandes ont échoué': 'requests failed',
   'gratuit (déjà fait)': 'free (already done)',

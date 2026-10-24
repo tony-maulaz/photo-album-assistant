@@ -51,6 +51,17 @@ export interface Appel {
 
 type EntreeCache = { r: unknown; quand: string; modele: string };
 
+/** Aide IA d'une clé du cache : toutes commencent par « IA4| », « IA12| »… */
+export function fonctionDeCle(cle: string): string {
+  const i = cle.indexOf('|');
+  return i < 0 ? cle : cle.slice(0, i);
+}
+
+/** Montant arrondi, écrit dans la langue de l'interface (journal, alertes). */
+function montant(n: number, decimales: number): string {
+  return new Intl.NumberFormat(langue() === 'en' ? 'en-GB' : 'fr-CH', { minimumFractionDigits: decimales, maximumFractionDigits: decimales }).format(n);
+}
+
 export class ServiceIA {
   private cache: Record<string, EntreeCache> = {};
   private ecriture: Promise<void> = Promise.resolve();
@@ -62,12 +73,15 @@ export class ServiceIA {
   private enVol = new Map<string, Promise<unknown | null>>();
   /** Coût estimé des appels en cours, réservé sur le budget. */
   private reserveUSD = 0;
+  /** Pendant `sansInexploitables` : une réponse illisible compte comme absente (coût pour la redemander). */
+  private ignorerInexploitables = false;
 
   constructor(
     private etat: EtatProjet,
     private projet: Projet,
     private tauxUsdChf: () => number,
-    private apresDepense: (alerte: string | null) => void,
+    /** Après chaque dépense ; la réponse n'entre dans le cache qu'une fois la promesse tenue (dépense enregistrée d'abord). */
+    private apresDepense: (alerte: string | null) => void | Promise<void>,
     private journal: (type: string, message: string, donnees?: unknown) => void,
   ) {}
 
@@ -90,7 +104,36 @@ export class ServiceIA {
   }
 
   enCache(cle: string): boolean {
-    return cle in this.cache;
+    return cle in this.cache && !(this.ignorerInexploitables && this.cache[cle].r === null);
+  }
+
+  /** Réponses illisibles ou refusées gardées pour une aide (« IA12 ») : payées, mais sans rien d'utilisable. */
+  inexploitables(fonction: string): number {
+    let n = 0;
+    for (const [cle, e] of Object.entries(this.cache)) if (e.r === null && fonctionDeCle(cle) === fonction) n++;
+    return n;
+  }
+
+  /** Résultat de `f` (une estimation) comme si les réponses illisibles avaient été oubliées. */
+  sansInexploitables<T>(f: () => T): T {
+    this.ignorerInexploitables = true;
+    try {
+      return f();
+    } finally {
+      this.ignorerInexploitables = false;
+    }
+  }
+
+  /**
+   * Réponse lisible mais inutilisable (structure refusée par l'aide) : gardée
+   * comme illisible, pour être comptée et redemandée sur demande.
+   */
+  async marquerInexploitable(cle: string): Promise<void> {
+    const e = this.cache[cle];
+    if (!e || e.r === null) return;
+    this.cache[cle] = { ...e, r: null };
+    this.journal('alerte', t`${fonctionDeCle(cle)} : réponse inutilisable, gardée comme illisible`);
+    await this.enregistrerCache();
   }
 
   depenseUSD(): number {
@@ -125,7 +168,7 @@ export class ServiceIA {
     return this.ecriture;
   }
 
-  private noterCout(a: Appel, usage: Consommation) {
+  private noterCout(a: Appel, usage: Consommation): void | Promise<void> {
     // Modèle absent de la table des tarifs : compté au prix du plus cher, pour ne jamais sous-estimer le budget.
     const usd = coutUSD(a.modele, usage) ?? Math.max(...MODELES.map((m) => coutUSD(m.id, usage) ?? 0));
     const avant = this.depenseCHF();
@@ -134,19 +177,19 @@ export class ServiceIA {
     let alerte: string | null = null;
     for (const seuil of [0.8, 0.5]) {
       if (avant < seuil * this.projet.budget_chf && apres >= seuil * this.projet.budget_chf) {
-        const montant = langue() === 'en' ? apres.toFixed(2) : apres.toFixed(2).replace('.', ',');
-        alerte = t`${Math.round(seuil * 100)} % du budget IA du projet dépensé (${montant} / ${this.projet.budget_chf} CHF).`;
+        const budget = this.projet.budget_chf;
+        alerte = t`${Math.round(seuil * 100)} % du budget IA du projet dépensé (${montant(apres, 2)} / ${montant(budget, Number.isInteger(budget) ? 0 : 2)} CHF).`;
         break;
       }
     }
-    this.journal('ia', t`${a.fonction} : ${usd.toFixed(4)} USD (${a.modele})`, {
+    this.journal('ia', t`${a.fonction} : ${montant(usd * this.tauxUsdChf(), 4)} CHF (${a.modele})`, {
       fonction: a.fonction,
       modele: a.modele,
       usd,
       entree: usage.input_tokens,
       sortie: usage.output_tokens,
     });
-    this.apresDepense(alerte);
+    return this.apresDepense(alerte);
   }
 
   /**
@@ -222,12 +265,12 @@ export class ServiceIA {
         format = false;
         reponse = await requete(false, messages);
       }
-      this.noterCout(a, reponse.usage);
+      await this.noterCout(a, reponse.usage);
       // Une longue recherche web peut s'interrompre (pause_turn) : on la laisse reprendre.
       for (let reprise = 0; reponse.stop_reason === 'pause_turn' && reprise < 3; reprise++) {
         messages.push({ role: 'assistant', content: reponse.content as Anthropic.ContentBlockParam[] });
         reponse = await requete(format, messages);
-        this.noterCout(a, reponse.usage);
+        await this.noterCout(a, reponse.usage);
       }
       let r: unknown = null;
       if (reponse.stop_reason !== 'refusal') {
@@ -243,7 +286,10 @@ export class ServiceIA {
           r = null;
         }
       }
-      if (r === null) this.journal('alerte', t`${a.fonction} : réponse inexploitable (${reponse.stop_reason ?? t`illisible`}), ignorée`);
+      if (r === null) {
+        const raison = reponse.stop_reason === 'refusal' ? t`refusée par l’IA` : reponse.stop_reason === 'max_tokens' ? t`trop longue, coupée` : t`illisible`;
+        this.journal('alerte', t`${a.fonction} : réponse inexploitable (${raison}), gardée comme illisible`);
+      }
       this.cache[a.cle] = { r, quand: new Date().toISOString(), modele: a.modele };
       await this.enregistrerCache();
       return r;
@@ -253,9 +299,9 @@ export class ServiceIA {
     }
   }
 
-  /** Oublie les réponses inexploitables, pour les redemander. */
-  async oublierInexploitables(): Promise<number> {
-    const cles = Object.keys(this.cache).filter((c) => this.cache[c].r === null);
+  /** Oublie les réponses inexploitables (d'une aide, ou de toutes), pour les redemander. */
+  async oublierInexploitables(fonction?: string): Promise<number> {
+    const cles = Object.keys(this.cache).filter((c) => this.cache[c].r === null && (!fonction || fonctionDeCle(c) === fonction));
     for (const c of cles) delete this.cache[c];
     if (cles.length) await this.enregistrerCache();
     return cles.length;

@@ -4,8 +4,8 @@ import type { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCourtEtape, nomEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
-import { messages, page, reglages, sansSousDossiers, session, versionIA, versionProjet, type Page } from '../etat';
-import { nombre } from '../format';
+import { messages, page, reglages, sansSousDossiers, session, versionIA, versionPlan, versionProjet, type Page } from '../etat';
+import { montantChf, nombre } from '../format';
 import { fermerProjet } from '../projets';
 import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
 import { Icone } from './Icones';
@@ -44,6 +44,10 @@ const LIBELLES = { validee: aTraduire('validée'), en_cours: aTraduire('en cours
 function Avancement() {
   const s = session.value!;
   const p = page.value;
+  // Lus ici : sans eux, la frise (composant à signaux) ne se redessinerait pas quand l'état des étapes change
+  // (mise à jour de l'inventaire : étapes « à revoir »), mais seulement au changement de page.
+  versionProjet.value;
+  versionPlan.value;
   const [ouvert, basculer, zone] = useDeroulant();
   const courante = p.nom === 'etape' ? p.numero : 0;
   const etats = s.projet.etapes;
@@ -56,9 +60,11 @@ function Avancement() {
     const inutile = etapeInutile(s.projet.mode, code, sansSousDossiers(s));
     const etat = etats[i];
     const detail = inutile ? (s.projet.mode === 'vrac' ? t`rien à décider : aucun sous-dossier` : t`inutile pour un dossier déjà trié`) : verrouillee ? t`validez d’abord l’étape ${ETAPE.lieux} (${nomEtape(ETAPE.lieux)})` : t(LIBELLES[etat]);
+    // Dans la liste déroulante, un mot ou deux : la phrase entière reste en infobulle.
+    const resume = inutile ? (s.projet.mode === 'vrac' ? t`rien à décider` : t`inutile ici`) : verrouillee ? t`après l’étape ${ETAPE.lieux}` : detail;
     const symbole = inutile ? '–' : verrouillee ? '' : SYMBOLES[etat];
     const classe = `etape ${etat}${n === courante ? ' courante' : ''}${inutile ? ' inutile' : ''}${verrouillee ? ' verrouillee' : ''}`;
-    return { n, nom, court: nomCourtEtape(n), etat, detail, symbole, classe };
+    return { n, nom, court: nomCourtEtape(n), etat, detail, resume, symbole, classe };
   });
   const aller = (n: number) => {
     page.value = { nom: 'etape', numero: n };
@@ -94,10 +100,10 @@ function Avancement() {
         <ul class="liste-etapes" role="menu" aria-label={t`Étapes`}>
           {etapes.map((e) => (
             <li key={e.n}>
-              <button type="button" role="menuitem" class={`choix-${e.classe}`} onClick={() => aller(e.n)}>
+              <button type="button" role="menuitem" class={`choix-${e.classe}`} title={e.detail} onClick={() => aller(e.n)}>
                 <span class="rond">{e.symbole || e.n}</span>
                 <span class="nom">{e.nom}</span>
-                <span class="etat-etape">{e.detail}</span>
+                <span class="etat-etape">{e.resume}</span>
               </button>
             </li>
           ))}
@@ -179,10 +185,10 @@ export function Entete() {
       {s && (
         <span
           class={`budget${part >= 0.8 ? ' alerte' : part >= 0.5 ? ' moitie' : ''}`}
-          title={t`Dépenses IA du projet : ${nombre(depense, 2)} CHF sur un budget de ${s.projet.budget_chf} CHF (taux ${reglages.value.tauxUsdChf} CHF par USD). Détail dans le Journal.`}
+          title={t`Dépenses IA du projet : ${nombre(depense, 2)} CHF sur un budget de ${montantChf(s.projet.budget_chf)} CHF (taux ${nombre(reglages.value.tauxUsdChf, 2)} CHF par USD). Détail dans le Journal.`}
         >
           <span class="anneau" style={{ '--part': `${Math.min(100, part * 100).toFixed(1)}%` }} aria-hidden="true" />
-          {t`IA ${nombre(depense, 2)} / ${s.projet.budget_chf} CHF`}
+          {t`IA ${nombre(depense, 2)} / ${montantChf(s.projet.budget_chf)} CHF`}
         </span>
       )}
       <MenuPrincipal />
