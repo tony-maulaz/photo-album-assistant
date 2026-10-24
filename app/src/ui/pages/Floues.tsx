@@ -16,7 +16,7 @@ import { annuler, appliquer, notifier, planifierEnregistrement, retablir, reveni
 import { ETAPE } from '../../navigateur/projet';
 import { nombre, pluriel } from '../format';
 import { selection, visionneuse } from '../organiser';
-import { etatFloues, verdictsIA1 } from '../composants/AidesTri';
+import { verdictsIA1 } from '../composants/AidesTri';
 import { combiner } from '../../lib/plan';
 import { AideIA } from './AidesIA';
 
@@ -52,7 +52,6 @@ export function PageFloues() {
   const elements = voir === 'ecartees' ? triees.filter((f) => estFloue(f, nettete(f), seuil)) : triees;
   const choisis = [...selection.value];
   const sansMesure = concernees.filter((f) => nettete(f) === undefined).length;
-  etatFloues.seuil = seuil;
   const verdicts = verdictsIA1(s);
   const aSuivre = concernees.filter((f) => verdicts[f.id] && !f.flou);
 

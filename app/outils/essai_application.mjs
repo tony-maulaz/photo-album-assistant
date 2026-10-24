@@ -111,7 +111,8 @@ try {
   await page.getByRole('button', { name: 'Valider et continuer' }).waitFor({ timeout: 60_000 });
   await capturer(page, '03_inventaire');
   const tableau = (await page.locator('.tableau-bord').innerText()).replace(/\s+/g, ' ');
-  verifier(tableau.startsWith('17 photos 0 vidéos 1 autres fichiers 5 dossiers'), `inventaire : ${tableau} (la 18e photo est dans « _a_supprimer »)`);
+  // Toute la source, mis de côté compris : la 18e photo et le 6e dossier sont « _a_supprimer ».
+  verifier(tableau.startsWith('18 photos 0 vidéos 1 autres fichiers 6 dossiers'), `inventaire : ${tableau}`);
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.getByRole('heading', { name: /Doublons/ }).waitFor();
   verifier(true, 'dossier déjà trié : après l’inventaire, les doublons (le tri automatique est sauté)');

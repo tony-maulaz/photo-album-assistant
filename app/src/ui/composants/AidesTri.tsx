@@ -3,7 +3,7 @@
 // proposent ; l'utilisateur applique.
 
 import { casLimites, estimationCasLimites, estimationSituer, groupesSansGps, lireCasLimites, lireSituation, lotsCasLimites, requeteCasLimites, requeteSituer, voisinesDuGroupe, type PhotoLieu, type VerdictNettete } from '../../lib/aidesTri';
-import { photosConcernees } from '../../lib/floues';
+import { photosConcernees, SEUIL_FLOU } from '../../lib/floues';
 import { aTraduire, t } from '../../lib/langue';
 import { deplacerFichiers, enchainer, gardeSaPlace, type Modification } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
@@ -18,16 +18,14 @@ import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs
 // IA1 — cas limites de netteté
 // ---------------------------------------------------------------------------
 
-/** Seuil affiché à l'étape « Photos floues » (le curseur), pour choisir les cas limites. */
-export const etatFloues = { seuil: 60 };
-
 export type VerdictIA1 = { verdict: VerdictNettete; raison: string };
 
 function lotsIA1(s: Session) {
   const photos = photosConcernees(s.plan)
     .map((f) => ({ id: f.id, dossier: f.dossier, date: f.date, nettete: s.analyses.get(f)?.nettete ?? NaN }))
     .filter((p) => Number.isFinite(p.nettete));
-  return lotsCasLimites(casLimites(photos, etatFloues.seuil));
+  // Le curseur de l'étape « Photos floues » est gardé dans le projet dès qu'il bouge.
+  return lotsCasLimites(casLimites(photos, s.projet.seuil_flou ?? SEUIL_FLOU));
 }
 
 const identite = (s: Session) => (id: string) => {
