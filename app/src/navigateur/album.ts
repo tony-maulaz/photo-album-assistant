@@ -37,7 +37,7 @@ export function contenuAlbum(plan: Plan, config: ConfigAlbum, nomProjet: string)
   let couverture: FichierAlbum | undefined;
   if (f && f.statut === 'archive') {
     const ext = f.nom.includes('.') ? f.nom.slice(f.nom.lastIndexOf('.')).toLowerCase() : '.jpg';
-    couverture = { id: f.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: f.rotation ?? 0, ...(recadrageUtile(f.recadrage) ? { recadrage: f.recadrage } : {}), taille: f.taille };
+    couverture = { id: f.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: f.rotation ?? 0, ...(recadrageUtile(f.recadrage) ? { recadrage: f.recadrage } : {}), taille: f.taille, modifie: f.modifie };
   }
   const legendes = new Map(ordre.filter((x) => x.legende).map((x) => [x.id, x.legende!]));
   // Les textes sont écrits dans la sortie : dans la langue du projet (D60).
@@ -196,7 +196,7 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
       }
       const flux = await (await o.sortie.poignee(album(a.chemin), true)).createWritable();
       await contenu.stream().pipeTo(flux);
-      etat[a.chemin] = { id: a.id, taille: contenu.size, rotation: a.rotation, ...(recadree ? { recadrage: signatureRecadrage(a.recadrage) } : {}) };
+      etat[a.chemin] = { id: a.id, taille: contenu.size, rotation: a.rotation, ...(recadree ? { recadrage: signatureRecadrage(a.recadrage) } : {}), modifie: original.lastModified };
       r.copies++;
     } catch (err) {
       r.erreurs.push({ id: a.id, message: String(err) });

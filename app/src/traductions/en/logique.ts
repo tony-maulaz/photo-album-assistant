@@ -153,7 +153,7 @@ export const TEXTES: Record<string, string> = {
   vidéos: 'videos',
   'autre fichier': 'other file',
   'autres fichiers': 'other files',
-  '{0} dans la source → {1} dans la sortie : {2}.': '{0} in the source → {1} in the output: {2}.',
+  '{0} dans le dossier à trier → {1} dans la sortie : {2}.': '{0} in the folder to sort → {1} in the output: {2}.',
   fichier: 'file',
   fichiers: 'files',
   '… et {0} autres': '… and {0} more',
@@ -162,7 +162,7 @@ export const TEXTES: Record<string, string> = {
   'Tout est dans le dossier de sortie.': 'Everything is in the output folder.',
   'Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.':
     'Check it and copy it to its final location (NAS); you can then delete the original folder yourself.',
-  '{0} fichier(s) manquent dans la sortie : ne supprimez pas la source.': '{0} file(s) missing from the output: do not delete the source.',
+  '{0} dans la sortie : ne supprimez pas la source.': '{0} from the output: do not delete the source.',
   'Fichiers manquants': 'Missing files',
   'Les fichiers système masqués par le navigateur (comme {0}, le cache de miniatures de Windows) ne sont ni comptés ni copiés : Windows les recrée.':
     'System files hidden by the browser (such as {0}, the Windows thumbnail cache) are neither counted nor copied: Windows recreates them.',
@@ -172,15 +172,15 @@ export const TEXTES: Record<string, string> = {
   Photos: 'Photos',
   Vidéos: 'Videos',
   '(à la racine de Photos/)': '(at the root of Photos/)',
-  '{0} dans {1}, numérotées dans l’ordre de l’album ({2}, environ {3}) : importez-les dans ifolor dans cet ordre.':
-    '{0} in {1}, numbered in album order ({2}, about {3}): import them into ifolor in this order.',
+  '{0} photos dans {1}, numérotées dans l’ordre de l’album ({2}, environ {3}) : importez-les dans ifolor dans cet ordre.':
+    '{0} photos in {1}, numbered in album order ({2}, about {3}): import them into ifolor in this order.',
   section: 'section',
   sections: 'sections',
   page: 'page',
   pages: 'pages',
   'Titres, introductions et légendes : {0}.': 'Titles, introductions and captions: {0}.',
-  '{0} copies n’ont pas pu être écrite(s) : relancez la création de la sortie.': '{0} copies could not be written: create the output again.',
-  '{0} copie n’a pas pu être écrite(s) : relancez la création de la sortie.': '{0} copy could not be written: create the output again.',
+  '{0} copies n’ont pas pu être écrites : relancez la création de la sortie.': '{0} copies could not be written: create the output again.',
+  '{0} copie n’a pas pu être écrite : relancez la création de la sortie.': '{0} copy could not be written: create the output again.',
   'Mis de côté et autres fichiers': 'Set aside and other files',
   '{0}, dans {1}': '{0}, in {1}',
   '{0} (ni photo ni vidéo), dans {1} avec leur chemin d’origine': '{0} (neither photos nor videos), in {1} with their original path',
@@ -219,10 +219,8 @@ export const TEXTES: Record<string, string> = {
   'Enlever le recadrage de {0}': 'Remove the crop of {0}',
 
   // rapport.ts, source.ts : trier en plusieurs fois (D63)
-  '{0} pas dans le projet (arrivés ou modifiés depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.':
-    '{0} not in the project (added or changed since the inventory): update the inventory, do not delete the source.',
-  'fichier de la source n’est': 'source file is',
-  'fichiers de la source ne sont': 'source files are',
+  '{0} fichiers de la source ne sont pas dans le projet (arrivés ou modifiés depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.':
+    '{0} source files are not in the project (added or changed since the inventory): update the inventory, do not delete the source.',
   'Fichiers de la source pas encore dans le projet': 'Source files not yet in the project',
   'Mettre à jour l’inventaire': 'Update the inventory',
 };

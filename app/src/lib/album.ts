@@ -301,6 +301,8 @@ export interface FichierAlbum {
   /** Recadrage demandé (D62) : la copie est alors réencodée. */
   recadrage?: Recadrage;
   taille: number;
+  /** Date de modification de l'original : quand elle change (nouvelle version), la copie est refaite. */
+  modifie?: number;
 }
 
 /** Noms numérotés « 0001_AAAAMMJJ_Section.jpg », dans l'ordre de l'album. */
@@ -314,7 +316,7 @@ export function fichiersAlbum(ordre: FichierPlan[], secs: Section[], config: Con
     const jour = (f.date ?? '').slice(0, 10).replace(/-/g, '') || '00000000';
     const nom = `${String(i + 1).padStart(4, '0')}_${jour}_${partieNom(s.titre)}${extension(f.nom)}`;
     const dossier = config.sousDossiers ? `${String(sectionDe[i] + 1).padStart(2, '0')}_${partieNom(s.titre)}/` : '';
-    return { id: f.id, chemin: `${dossier}${nom}`, rotation: f.rotation ?? 0, ...(recadrageUtile(f.recadrage) ? { recadrage: f.recadrage } : {}), taille: f.taille };
+    return { id: f.id, chemin: `${dossier}${nom}`, rotation: f.rotation ?? 0, ...(recadrageUtile(f.recadrage) ? { recadrage: f.recadrage } : {}), taille: f.taille, modifie: f.modifie };
   });
 }
 
@@ -363,8 +365,12 @@ export function textesAlbum(titre: string, secs: Section[], fichiers: FichierAlb
 // Synchronisation de Album/ : copies dérivées, entièrement gérées par l'application
 // ---------------------------------------------------------------------------
 
-/** Ce que l'application a écrit dans `Album/` : chemin → photo, rotation et recadrage (sa signature). */
-export type EtatAlbum = Record<string, { id: string; taille: number; rotation: number; recadrage?: string }>;
+/**
+ * Ce que l'application a écrit dans `Album/` : chemin → photo, rotation,
+ * recadrage (sa signature) et date de modification de l'original copié
+ * (absente dans un état d'avant qu'elle soit notée).
+ */
+export type EtatAlbum = Record<string, { id: string; taille: number; rotation: number; recadrage?: string; modifie?: number }>;
 
 export type ActionAlbum =
   | { type: 'garder'; chemin: string; id: string }
@@ -389,20 +395,21 @@ export function planifierAlbum(voulus: FichierAlbum[], presents: Map<string, num
   const actions: ActionAlbum[] = [];
   const reutilises = new Set<string>();
 
-  // Copies réutilisables, par photo, rotation et recadrage.
+  // Copies réutilisables, par photo, rotation et recadrage, faites depuis la même version de l'original.
   const version = (x: { id: string; rotation: number }, recadrage: string | undefined) => `${x.id}|${x.rotation}|${recadrage ?? ''}`;
+  const memeOriginal = (e: { modifie?: number }, v: FichierAlbum) => e.modifie === undefined || v.modifie === undefined || e.modifie === v.modifie;
   const parPhoto = new Map<string, string[]>();
   for (const [c, e] of nos) parPhoto.set(version(e, e.recadrage), [...(parPhoto.get(version(e, e.recadrage)) ?? []), c]);
 
   for (const v of voulus) {
     const voulue = version(v, signatureRecadrage(v.recadrage));
     const e = nos.get(v.chemin) ?? [...nos].find(([c]) => cle(c) === cle(v.chemin))?.[1];
-    if (e && version(e, e.recadrage) === voulue) {
+    if (e && version(e, e.recadrage) === voulue && memeOriginal(e, v)) {
       actions.push({ type: 'garder', chemin: v.chemin, id: v.id });
       reutilises.add(cle(v.chemin));
       continue;
     }
-    const candidats = (parPhoto.get(voulue) ?? []).filter((c) => !reutilises.has(cle(c)) && !voulusCle.has(cle(c)));
+    const candidats = (parPhoto.get(voulue) ?? []).filter((c) => !reutilises.has(cle(c)) && !voulusCle.has(cle(c)) && memeOriginal(nos.get(c)!, v));
     if (candidats.length) {
       actions.push({ type: 'renommer', depuis: candidats[0], chemin: v.chemin, id: v.id });
       reutilises.add(cle(candidats[0]));

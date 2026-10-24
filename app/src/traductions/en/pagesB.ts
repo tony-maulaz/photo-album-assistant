@@ -459,8 +459,7 @@ export const TEXTES: Record<string, string> = {
   '{0} à copier ({1}) et {2} à déplacer ou renommer dans « {3} ». Le dossier à trier n’est pas modifié.':
     '{0} to copy ({1}) and {2} to move or rename in “{3}”. The folder to sort is not changed.',
   'Écrire': 'Write',
-  'Sortie : {0} copiés, {1} déplacés, {2} à jour ; {3} Album : {4} copiées, {5} renommées, {6} retirées.':
-    'Output: {0} copied, {1} moved, {2} up to date; {3} Album: {4} copied, {5} renamed, {6} removed.',
+  'Sortie : {0}, {1}, {2} à jour ; {3} Album : {4}, {5}, {6}.': 'Output: {0}, {1}, {2} up to date; {3} Album: {4}, {5}, {6}.',
   'Écriture interrompue : {0}': 'Writing interrupted: {0}',
   'L’application écrit le résultat dans le dossier de sortie, puis vérifie que chaque fichier du dossier à trier s’y retrouve. Vous pouvez la relancer à tout moment : seul ce qui a changé est copié ou déplacé.':
     'The application writes the result to the output folder, then checks that every file of the folder to sort is there. You can run it again at any time: only what has changed is copied or moved.',
@@ -492,15 +491,13 @@ export const TEXTES: Record<string, string> = {
     '{0} in “Album” was not written by the application and takes a place planned for the album: it is not touched. Move it so that the album is complete.',
   'Il faut environ {0} de place libre sur le disque de « {1} » : le navigateur ne peut pas vérifier la place disponible.':
     'About {0} of free space is needed on the disk of “{1}”: the browser cannot check the space available.',
-  '{0} ne peut pas être écrit : un autre fichier occupe déjà sa place dans la sortie (il n’est jamais écrasé). Exemple : {1}':
-    '{0} cannot be written: another file already takes its place in the output (it is never overwritten). Example: {1}',
+  '{0} fichier ne peut pas être écrit : un autre fichier, que l’application n’a pas écrit, occupe déjà sa place ({1}). Il n’est jamais écrasé : déplacez-le, puis relancez.':
+    '{0} file cannot be written: another file, not written by the application, already takes its place ({1}). It is never overwritten: move it, then run again.',
   '{0} / {1} fichiers · {2} / {3}{4}': '{0} / {1} files · {2} / {3}{4}',
   ' · {0}/s · encore {1}': ' · {0}/s · {1} left',
   'Arrêter (reprendra là où il s’est arrêté)': 'Stop (it will resume where it stopped)',
   Bilan: 'Summary',
   'Tout est dans le dossier de sortie.': 'Everything is in the output folder.',
-  'Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.':
-    'Check it and copy it to its final location (NAS); you can then delete the original folder yourself.',
   'fichier manque': 'file is missing',
   'fichiers manquent': 'files are missing',
   ' dans la sortie : ne supprimez pas le dossier d’origine.': ' from the output: do not delete the original folder.',

@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ordreAlbum, paginer, photosAlbum, sections, type ActionAlbum } from '../../lib/album';
 import { resumes } from '../../lib/plan';
-import { genererRapport, phraseBilan } from '../../lib/rapport';
-import { type ActionSynchro, type EtatSortie, langueDeLaSortie, nomsSortie, octetsACopier, planifierSynchro } from '../../lib/sortie';
+import { genererRapport, phraseBilan, texteDisparus } from '../../lib/rapport';
+import { type ActionSynchro, type EtatSortie, langueDeLaSortie, nomsSortie, octetsACopier, planifierSynchro, sourceRelue, type SourceRelue } from '../../lib/sortie';
 import { actionsAlbum, synchroniserAlbum, titreDossier, type ResultatAlbum } from '../../navigateur/album';
 import { listerSortie, synchroniser, type ProgressionSynchro, type ResultatSynchro } from '../../navigateur/synchro';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
-import { allerEtape, changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
+import { allerEtape, changementsSource, changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
 import { miseAJourDemandee } from '../composants/BandeauSource';
 import { verifierSource } from '../projets';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
@@ -18,13 +18,35 @@ import { duree, nombre, pluriel, taille } from '../format';
 
 interface Apercu {
   actions: ActionSynchro[];
+  /** Copies à écrire, nouvelles versions comprises. */
   aCopier: number;
+  /** Dont les nouvelles versions de fichiers modifiés, qui remplacent l'ancienne copie. */
+  aRemplacer: number;
   octets: number;
   aDeplacer: number;
   aJour: number;
   conflits: ActionSynchro[];
   album: { actions: ActionAlbum[]; aCopier: number; octets: number; aRenommer: number; aRetirer: number; conflits: number };
 }
+
+/** Le dossier à trier relu après l'écriture (D63). */
+interface Controle {
+  /** Fichiers absents du projet : arrivés ou modifiés depuis l'inventaire. */
+  horsProjet: string[];
+  /** Fichiers manquants dans la sortie parce qu'ils ne sont plus dans le dossier à trier. */
+  disparus: string[];
+  relue?: SourceRelue;
+}
+
+const aucunControle: Controle = { horsProjet: [], disparus: [] };
+
+const mettreAJourInventaire = () => {
+  miseAJourDemandee.value = true;
+  allerEtape('inventaire');
+};
+
+/** « … et 3 autres (voir le rapport) ». */
+const etAutres = (n: number) => (n > 1 ? t`… et ${nombre(n)} autres (voir le rapport)` : t`… et ${nombre(n)} autre (voir le rapport)`);
 
 export function PageSortie() {
   const s = session.value!;
@@ -34,8 +56,7 @@ export function PageSortie() {
   const [resultat, setResultat] = useState<ResultatSynchro | null>(null);
   const [resultatAlbum, setResultatAlbum] = useState<ResultatAlbum | null>(null);
   const [rapport, setRapport] = useState<string | null>(null);
-  /** Fichiers de la source absents du projet, relevés après l'écriture (D63). */
-  const [horsProjet, setHorsProjet] = useState<string[]>([]);
+  const [controle, setControle] = useState<Controle>(aucunControle);
   const debut = useRef(0);
   const arreter = useRef(false);
 
@@ -56,7 +77,8 @@ export function PageSortie() {
           conflits: album.filter((a) => a.type === 'conflit').length,
         },
         actions,
-        aCopier: actions.filter((a) => a.type === 'copier').length,
+        aCopier: actions.filter((a) => a.type === 'copier' || a.type === 'remplacer').length,
+        aRemplacer: actions.filter((a) => a.type === 'remplacer').length,
         octets: octetsACopier(s.plan, actions),
         aDeplacer: actions.filter((a) => a.type === 'deplacer').length,
         aJour: actions.filter((a) => a.type === 'garder').length,
@@ -114,13 +136,17 @@ export function PageSortie() {
       const ordre = ordreAlbum(photosAlbum(s.plan), s.album.ordre);
       const secs = sections(ordre, (d) => titreDossier(s.plan, d), s.album);
       const album = { photos: ordre.length, sections: secs.length, pages: paginer(ordre, secs, s.album).length, manquantes: ra.conflits.length + ra.erreurs.length };
-      // Le rapport est écrit dans la sortie : dans la langue du projet (D60).
-      // Contrôle de sécurité (D63) : la source relue ne doit rien contenir que le projet ignore.
+      // Contrôle de sécurité (D63) : la source relue ne doit rien contenir que le projet ignore ;
+      // un fichier qui manque parce qu'il n'est plus dans la source est expliqué à part.
       const c = await verifierSource();
       const horsProjet = c ? [...c.nouveaux, ...c.modifies] : [];
-      setHorsProjet(horsProjet);
+      const absents = new Set([...(c?.disparus ?? []), ...r.erreurs.filter((e) => e.disparu).map((e) => e.id)]);
+      const disparus = r.bilan.manquants.map((m) => m.id).filter((id) => absents.has(id));
+      const relue = c ? sourceRelue(s.plan, c) : undefined;
+      setControle({ horsProjet, disparus, relue });
+      // Le rapport est écrit dans la sortie : dans la langue du projet (D60).
       const html = avecLangue(langueDeLaSortie(), () =>
-        genererRapport({ projet: s.projet.nom, source: s.source.racine.name, sortie: s.sortie.racine.name, date: new Date(), album, horsProjet }, s.plan, r.bilan),
+        genererRapport({ projet: s.projet.nom, source: s.source.racine.name, sortie: s.sortie.racine.name, date: new Date(), album, horsProjet, relue, disparus }, s.plan, r.bilan),
       );
       await s.etat.ecrireTexte(s.sortie.racine, nomsSortie().rapport, html);
       const lecture = configuration.value?.lecture;
@@ -129,13 +155,17 @@ export function PageSortie() {
       setResultat(r);
       const complet = r.bilan.manquants.length === 0 && horsProjet.length === 0;
       changerEtape(ETAPE.sortie, complet ? 'validee' : 'en_cours');
-      journal('sortie', t`Sortie : ${r.copies} copiés, ${r.deplaces} déplacés, ${r.gardes} à jour ; ${phraseBilan(r.bilan)} Album : ${ra.copies} copiées, ${ra.renommes} renommées, ${ra.retires} retirées.`, {
-        copies: r.copies,
-        deplaces: r.deplaces,
-        erreurs: r.erreurs,
-        manquants: r.bilan.manquants.length,
-        dureeMs: performance.now() - debut.current,
-      });
+      journal(
+        'sortie',
+        t`Sortie : ${pluriel(r.copies, 'copié')}, ${pluriel(r.deplaces, 'déplacé')}, ${nombre(r.gardes)} à jour ; ${phraseBilan(r.bilan, relue)} Album : ${pluriel(ra.copies, 'copiée')}, ${pluriel(ra.renommes, 'renommée')}, ${pluriel(ra.retires, 'retirée')}.`,
+        {
+          copies: r.copies,
+          deplaces: r.deplaces,
+          erreurs: r.erreurs,
+          manquants: r.bilan.manquants.length,
+          dureeMs: performance.now() - debut.current,
+        },
+      );
       await enregistrerMaintenant();
     } catch (err) {
       notifier('erreur', t`Écriture interrompue : ${texteErreur(err)}`);
@@ -173,6 +203,14 @@ export function PageSortie() {
   const debit = progres && ecoule > 500 ? progres.octets / (ecoule / 1000) : 0;
   const restant = debit > 0 && progres ? ((progres.octetsTotal - progres.octets) / debit) * 1000 : 0;
   const b = resultat?.bilan;
+  const { horsProjet, disparus } = controle;
+  const complet = !!b && b.manquants.length === 0 && horsProjet.length === 0;
+  const autresErreurs = resultat?.erreurs.filter((e) => !e.disparu) ?? [];
+  const travailAlbum = apercu ? apercu.album.aCopier + apercu.album.aRenommer + apercu.album.aRetirer : 0;
+  const nbConflits = apercu?.conflits.length ?? 0;
+  // Des fichiers du dossier à trier pas encore dans le projet : la sortie n'est pas « à jour » (D63).
+  const c = changementsSource.value;
+  const sourceAJour = !c || c.nouveaux.length + c.modifies.length === 0;
 
   return (
     <div class="page etroite avec-barre">
@@ -200,15 +238,17 @@ export function PageSortie() {
           <tr>
             <td>Album/</td>
             <td>
-              {albumPhotos
+              {albumPhotos > 1
                 ? t`${pluriel(albumPhotos, 'photo')} de l’album, numérotées dans l’ordre pour ifolor, et les textes (${nomsSortie().textesAlbum})`
-                : t`rien : aucune photo retenue à l’étape ${ETAPE.selection}`}
+                : albumPhotos === 1
+                  ? t`${pluriel(albumPhotos, 'photo')} de l’album, et les textes (${nomsSortie().textesAlbum})`
+                  : t`rien : aucune photo retenue à l’étape ${ETAPE.selection}`}
             </td>
             <td class="n">{albumPhotos ? taille(albumOctets) : ''}</td>
           </tr>
           <tr>
             <td>{nomsSortie().misDeCote}/</td>
-            <td>{t`${pluriel(deCote.n, 'élément')} écartés (rien n’est supprimé)`}</td>
+            <td>{deCote.n > 1 ? t`${pluriel(deCote.n, 'élément')} écartés (rien n’est supprimé)` : t`${pluriel(deCote.n, 'élément')} écarté (rien n’est supprimé)`}</td>
             <td class="n">{taille(deCote.octets)}</td>
           </tr>
           <tr>
@@ -236,18 +276,28 @@ export function PageSortie() {
       {!apercu && !progres && <p class="discret">{t`Lecture du dossier de sortie…`}</p>}
       {apercu && !progres && (
         <div class="encart">
-          {apercu.aCopier + apercu.aDeplacer === 0 ? (
+          {apercu.aCopier + apercu.aDeplacer > 0 ? (
+            <p>
+              {t`À écrire :`} <strong>{pluriel(apercu.aCopier, 'fichier')}</strong>
+              {t` à copier (${taille(apercu.octets)}), ${pluriel(apercu.aDeplacer, 'fichier')} à déplacer (instantané), ${pluriel(apercu.aJour, 'fichier')} déjà à jour.`}
+            </p>
+          ) : nbConflits + travailAlbum + apercu.album.conflits === 0 && sourceAJour ? (
             <p>
               <strong>{t`La sortie est à jour`}</strong>
               {t` : ${pluriel(apercu.aJour, 'fichier')} déjà en place.`}
             </p>
           ) : (
-            <p>
-              {t`À écrire :`} <strong>{pluriel(apercu.aCopier, 'fichier')}</strong>
-              {t` à copier (${taille(apercu.octets)}), ${pluriel(apercu.aDeplacer, 'fichier')} à déplacer (instantané), ${pluriel(apercu.aJour, 'fichier')} déjà à jour.`}
+            // Pas « à jour » : l'album reste à écrire, des fichiers ne peuvent pas l'être (ci-dessous) ou n'entrent pas encore dans le projet.
+            <p>{t`Rien à copier ni à déplacer : ${pluriel(apercu.aJour, 'fichier')} déjà en place.`}</p>
+          )}
+          {apercu.aRemplacer > 0 && (
+            <p class="discret">
+              {apercu.aRemplacer > 1
+                ? t`${nombre(apercu.aRemplacer)} fichiers ont changé dans le dossier à trier depuis leur copie : leur nouvelle version remplacera l’ancienne copie.`
+                : t`${nombre(apercu.aRemplacer)} fichier a changé dans le dossier à trier depuis sa copie : sa nouvelle version remplacera l’ancienne copie.`}
             </p>
           )}
-          {apercu.album.aCopier + apercu.album.aRenommer + apercu.album.aRetirer > 0 && (
+          {travailAlbum > 0 && (
             <p>
               {t`Album : ${pluriel(apercu.album.aCopier, 'copie')} à faire (${taille(apercu.album.octets)})`}
               {apercu.album.aRenommer ? t`, ${pluriel(apercu.album.aRenommer, 'copie')} à renuméroter` : ''}
@@ -256,17 +306,21 @@ export function PageSortie() {
           )}
           {apercu.album.conflits > 0 && (
             <p class="attention">
-              {t`${pluriel(apercu.album.conflits, 'fichier')} de « Album » n’a pas été écrit par l’application et occupe une place prévue : il n’est pas touché. Déplacez-le pour que l’album soit complet.`}
+              {apercu.album.conflits > 1
+                ? t`${nombre(apercu.album.conflits)} fichiers de « Album » n’ont pas été écrits par l’application et occupent des places prévues : ils ne sont pas touchés. Déplacez-les pour que l’album soit complet.`
+                : t`${pluriel(apercu.album.conflits, 'fichier')} de « Album » n’a pas été écrit par l’application et occupe une place prévue : il n’est pas touché. Déplacez-le pour que l’album soit complet.`}
             </p>
           )}
-          {apercu.octets > 0 && (
+          {apercu.octets + apercu.album.octets > 0 && (
             <p class="discret">
-              {t`Il faut environ ${taille(apercu.octets)} de place libre sur le disque de « ${s.sortie.racine.name} » : le navigateur ne peut pas vérifier la place disponible.`}
+              {t`Il faut environ ${taille(apercu.octets + apercu.album.octets)} de place libre sur le disque de « ${s.sortie.racine.name} » : le navigateur ne peut pas vérifier la place disponible.`}
             </p>
           )}
-          {apercu.conflits.length > 0 && (
+          {nbConflits > 0 && (
             <p class="attention">
-              {t`${pluriel(apercu.conflits.length, 'fichier')} ne peut pas être écrit : un autre fichier occupe déjà sa place dans la sortie (il n’est jamais écrasé). Exemple : ${apercu.conflits[0].cible}`}
+              {nbConflits > 1
+                ? t`${nombre(nbConflits)} fichiers ne peuvent pas être écrits : d’autres fichiers, que l’application n’a pas écrits, occupent déjà leur place (par exemple ${apercu.conflits[0].cible}). Ils ne sont jamais écrasés : déplacez-les, puis relancez.`
+                : t`${nombre(nbConflits)} fichier ne peut pas être écrit : un autre fichier, que l’application n’a pas écrit, occupe déjà sa place (${apercu.conflits[0].cible}). Il n’est jamais écrasé : déplacez-le, puis relancez.`}
             </p>
           )}
         </div>
@@ -287,15 +341,17 @@ export function PageSortie() {
       )}
 
       {b && (
-        <div class={`encart bilan ${b.manquants.length || horsProjet.length ? 'incomplet' : 'complet'}`}>
+        <div class={`encart bilan ${complet ? 'complet' : 'incomplet'}`}>
           <h2>{t`Bilan`}</h2>
-          <p>{phraseBilan(b)}</p>
+          <p>{phraseBilan(b, controle.relue)}</p>
           {horsProjet.length > 0 && (
             <>
               <p class="attention">
                 <strong>{t`${pluriel(horsProjet.length, 'fichier du dossier à trier n’est', 'fichiers du dossier à trier ne sont')} pas dans le projet`}</strong>
-                {t` (arrivés ou modifiés depuis l’inventaire) : ils ne sont pas dans la sortie. Ne supprimez pas le dossier d’origine.`}{' '}
-                <button type="button" class="lien" onClick={() => ((miseAJourDemandee.value = true), allerEtape('inventaire'))}>
+                {horsProjet.length > 1
+                  ? t` (arrivés ou modifiés depuis l’inventaire) : ils ne sont pas dans la sortie. Ne supprimez pas le dossier d’origine.`
+                  : t` (arrivé ou modifié depuis l’inventaire) : il n’est pas dans la sortie. Ne supprimez pas le dossier d’origine.`}{' '}
+                <button type="button" class="lien" onClick={mettreAJourInventaire}>
                   {t`Mettre à jour l’inventaire`}
                 </button>
               </p>
@@ -303,16 +359,11 @@ export function PageSortie() {
                 {horsProjet.slice(0, 10).map((id) => (
                   <li key={id}>{id}</li>
                 ))}
-                {horsProjet.length > 10 && <li>{t`… et ${nombre(horsProjet.length - 10)} autres (voir le rapport)`}</li>}
+                {horsProjet.length > 10 && <li>{etAutres(horsProjet.length - 10)}</li>}
               </ul>
             </>
           )}
-          {b.manquants.length === 0 && horsProjet.length === 0 ? (
-            <p>
-              <strong>{t`Tout est dans le dossier de sortie.`}</strong>{' '}
-              {t`Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.`}
-            </p>
-          ) : (
+          {b.manquants.length > 0 && (
             <>
               <p class="attention">
                 <strong>{pluriel(b.manquants.length, 'fichier manque', 'fichiers manquent')}</strong>
@@ -322,9 +373,25 @@ export function PageSortie() {
                 {b.manquants.slice(0, 20).map((m) => (
                   <li key={m.id}>{m.id}</li>
                 ))}
-                {b.manquants.length > 20 && <li>{t`… et ${nombre(b.manquants.length - 20)} autres (voir le rapport)`}</li>}
+                {b.manquants.length > 20 && <li>{etAutres(b.manquants.length - 20)}</li>}
               </ul>
-              {resultat!.erreurs.length > 0 && <p class="discret">{t`Erreur rencontrée : ${resultat!.erreurs[0].message}`}</p>}
+              {disparus.length > 0 && (
+                <p class="attention">
+                  {texteDisparus(disparus.length)}{' '}
+                  <button type="button" class="lien" onClick={mettreAJourInventaire}>
+                    {t`Mettre à jour l’inventaire`}
+                  </button>
+                </p>
+              )}
+              {autresErreurs.length > 0 && <p class="discret">{t`Erreur rencontrée : ${autresErreurs[0].message}`}</p>}
+            </>
+          )}
+          {complet && (
+            <>
+              <p>
+                <strong>{t`Tout est dans le dossier de sortie.`}</strong>
+              </p>
+              <EtMaintenant sortie={s.sortie.racine.name} source={s.source.racine.name} album={albumPhotos > 0} />
             </>
           )}
           {resultatAlbum && (resultatAlbum.copies + resultatAlbum.renommes + resultatAlbum.retires > 0 || resultatAlbum.erreurs.length > 0) && (
@@ -347,16 +414,26 @@ export function PageSortie() {
                 : t`${nombre(resultatAlbum.sansRecadrage.length)} photo recadrée a été copiée entière (format que le navigateur ne sait pas lire) : recadrez-la dans ifolor.`}
             </p>
           )}
-          {b.enTrop.length > 0 && <p class="discret">{t`${pluriel(b.enTrop.length, 'fichier')} de la sortie hors du plan (laissés tels quels, listés dans le rapport).`}</p>}
+          {b.enTrop.length > 0 && (
+            <p class="discret">
+              {b.enTrop.length > 1
+                ? t`${pluriel(b.enTrop.length, 'fichier')} de la sortie hors du plan (laissés tels quels, listés dans le rapport).`
+                : t`${pluriel(b.enTrop.length, 'fichier')} de la sortie hors du plan (laissé tel quel, listé dans le rapport).`}
+            </p>
+          )}
           {b.datesFichierSeulement.length > 0 && (
-            <p class="discret">{t`${pluriel(b.datesFichierSeulement.length, 'photo ou vidéo', 'photos ou vidéos')} sans autre date que celle du fichier : leur date d’origine est dans le rapport.`}</p>
+            <p class="discret">
+              {b.datesFichierSeulement.length > 1
+                ? t`${pluriel(b.datesFichierSeulement.length, 'photo ou vidéo', 'photos ou vidéos')} sans autre date que celle du fichier : leur date d’origine est dans le rapport.`
+                : t`${pluriel(b.datesFichierSeulement.length, 'photo ou vidéo', 'photos ou vidéos')} sans autre date que celle du fichier : sa date d’origine est dans le rapport.`}
+            </p>
           )}
           <p class="discret">{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont ni comptés ni copiés : Windows les recrée.`}</p>
           <div class="actions">
             <button type="button" onClick={ouvrirRapport}>
               {t`Ouvrir le rapport`}
             </button>
-            {b.manquants.length > 0 && (
+            {b.manquants.length > disparus.length && (
               <button type="button" class="principal" onClick={() => void lancer()}>
                 {t`Réessayer`}
               </button>
@@ -372,12 +449,31 @@ export function PageSortie() {
         libelleValider={
           progres
             ? t`Écriture…`
-            : apercu && apercu.aCopier + apercu.aDeplacer + apercu.album.aCopier + apercu.album.aRenommer + apercu.album.aRetirer === 0
+            : apercu && apercu.aCopier + apercu.aDeplacer + travailAlbum === 0
               ? t`Vérifier à nouveau`
               : t`Créer / mettre à jour la sortie`
         }
         validerActif={!progres && !!apercu}
       />
+    </div>
+  );
+}
+
+/** Après une sortie complète : les gestes qui restent à faire, à la main (l'application ne supprime jamais rien). */
+function EtMaintenant({ sortie, source, album }: { sortie: string; source: string; album: boolean }) {
+  return (
+    <div class="et-maintenant">
+      <h3>{t`Et maintenant ?`}</h3>
+      <ol>
+        <li>{t`Copiez le dossier « ${sortie} » à son emplacement définitif (disque externe, NAS…), puis vérifiez la copie.`}</li>
+        {album && (
+          <li>
+            {t`Livre photo : importez dans ifolor les photos du dossier « Album », numérotées dans l’ordre de l’album. Titres, introductions et légendes : « Album/${nomsSortie().textesAlbum} ».`}
+          </li>
+        )}
+        <li>{t`Ensuite seulement, vous pouvez supprimer vous-même les photos du dossier d’origine « ${source} » : l’application ne supprime jamais rien.`}</li>
+        <li>{t`De nouvelles photos plus tard ? Mettez-les dans « ${source} », rouvrez ce projet depuis l’accueil et choisissez « Mettre à jour l’inventaire » : ce qui est déjà trié est gardé.`}</li>
+      </ol>
     </div>
   );
 }

@@ -226,8 +226,8 @@ try {
   await page.getByText('Tout est dans le dossier de sortie.').first().waitFor({ timeout: 60_000 });
   const bilan = await page.locator('.encart.bilan').innerText();
   await capturer(page, '06_sortie_bilan');
-  const phrase = bilan.split('\n').find((l) => l.includes('fichiers dans la source')) ?? bilan;
-  verifier(phrase.includes('19 fichiers dans la source → 19 dans la sortie'), `bilan complet : ${phrase}`);
+  const phrase = bilan.split('\n').find((l) => l.includes(' → ')) ?? bilan;
+  verifier(phrase.includes('19 fichiers dans le dossier à trier → 19 dans la sortie'), `bilan complet : ${phrase}`);
   verifier(phrase.includes('16 photos triées, 0 vidéo, 1 photo floue, 1 écartée à la main, 1 autre fichier'), 'pluriels du bilan');
 
   const sortie = await page.evaluate(async () => {

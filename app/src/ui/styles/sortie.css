@@ -1,1 +1,24 @@
 /* Lot « sortie » de la campagne de tests du 24.10.2026 : règles ajoutées par ce lot. */
+
+/* « Et maintenant ? » : les gestes à faire à la main après une sortie complète. */
+.et-maintenant {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 12px 0;
+}
+
+.et-maintenant h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.et-maintenant ol {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.et-maintenant li + li {
+  margin-top: 4px;
+}
