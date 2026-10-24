@@ -16,6 +16,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { controlerAnglais } from './anglais.mjs';
 
 const APP = fileURLToPath(new URL('..', import.meta.url));
 const PHOTOS = join(APP, '..', 'tests', 'photos_reelles');
@@ -549,6 +550,11 @@ try {
   await fichier.goto(`file://${join(APP, 'dist', 'album-photos.html')}`);
   await fichier.getByText(/Ouvrir un dossier déjà trié|Bonjour/).first().waitFor({ timeout: 20_000 });
   verifier(true, 'la page construite démarre en file://');
+
+  // Interface en anglais : chaque page ouverte, aucune traduction manquante (D60).
+  const anglais = await controlerAnglais(page, CAPTURES);
+  verifier(anglais.manquantes.length === 0, `anglais : ${anglais.manquantes.length ? `traductions manquantes :\n    ${anglais.manquantes.join('\n    ')}` : 'aucune traduction manquante'}`);
+  if (anglais.suspectes.length) console.log(`  Lignes à relire (peut-être restées en français) :\n    ${anglais.suspectes.join('\n    ')}`);
 } catch (err) {
   if (erreurs.length) console.log(`Erreurs de la page :\n  ${erreurs.join('\n  ')}`);
   throw err;

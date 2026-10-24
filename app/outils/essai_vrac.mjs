@@ -13,6 +13,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { controlerAnglais } from './anglais.mjs';
 
 const APP = fileURLToPath(new URL('..', import.meta.url));
 const PHOTOS = join(APP, '..', 'tests', 'photos_reelles');
@@ -266,6 +267,11 @@ try {
   verifier(sortie.includes('_mis_de_cote/doublons_exacts/copie de 0140.jpg'), 'copie exacte dans _mis_de_cote/doublons_exacts');
   verifier(sortie.includes('Photos/BESTOF/0141_best.jpg') && sortie.includes('Photos/janvier/0141_janvier.jpg'), 'dossiers gardés tels quels recopiés à l’identique');
   verifier(sortie.some((p) => /^Photos\/Sortie_Essai_\d+_18\.07\.26\/[^/]+\.jpg$/.test(p)), 'dossiers renommés d’après les noms proposés par l’IA');
+
+  // Interface en anglais : chaque page ouverte, aucune traduction manquante (D60).
+  const anglais = await controlerAnglais(page, CAPTURES);
+  verifier(anglais.manquantes.length === 0, `anglais : ${anglais.manquantes.length ? `traductions manquantes :\n    ${anglais.manquantes.join('\n    ')}` : 'aucune traduction manquante'}`);
+  if (anglais.suspectes.length) console.log(`  Lignes à relire (peut-être restées en français) :\n    ${anglais.suspectes.join('\n    ')}`);
 } catch (err) {
   if (erreurs.length) console.log(`Erreurs de la page :\n  ${erreurs.join('\n  ')}`);
   throw err;
