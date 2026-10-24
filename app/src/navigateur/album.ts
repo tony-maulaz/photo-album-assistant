@@ -3,17 +3,27 @@
 // faites sont gardées ou renommées ; les anciennes, retirées (incident I1).
 // Une photo tournée n'est pas recompressée : seule sa balise Orientation change.
 
-import { fichiersAlbum, ordreAlbum, photosAlbum, planifierAlbum, sections, textesAlbum, type ActionAlbum, type ConfigAlbum, type EtatAlbum, type FichierAlbum } from '../lib/album';
+import { fichiersAlbum, ordreAlbum, paginer, photosAlbum, planifierAlbum, sections, textesAlbum, titreDepuisNom, type ActionAlbum, type ConfigAlbum, type EtatAlbum, type FichierAlbum } from '../lib/album';
 import { avecExif, changerOrientation, orientationApresRotation, orientationJpeg, segmentExif } from '../lib/jpeg';
 import { avecLangue, t } from '../lib/langue';
 import type { Plan } from '../lib/plan';
-import { dessinerRecadrage, signatureRecadrage, tailleRecadree, type Recadrage } from '../lib/recadrage';
+import { dessinerRecadrage, recadrageUtile, signatureRecadrage, tailleRecadree, type Recadrage } from '../lib/recadrage';
 import { DOSSIER_ALBUM, langueDeLaSortie, nomsSortie, type EtatSortie } from '../lib/sortie';
 import type { AccesDossier } from './dossiers';
 
-/** Titre de section par défaut : le nom du dossier, sans soulignés (script 03). */
+/**
+ * Titre de section par défaut : le nom du dossier tel que l'utilisateur l'a
+ * tapé (accents compris) s'il est connu, sinon son nom, sans la date finale ni
+ * soulignés (`titreDepuisNom`).
+ */
 export function titreDossier(plan: Plan, id: string): string {
-  return (plan.dossiers.get(id)?.nom ?? id).replace(/_/g, ' ').trim();
+  const d = plan.dossiers.get(id);
+  return titreDepuisNom(d?.nomSaisi ?? d?.nom ?? id);
+}
+
+/** Titre de l'album : celui choisi à l'étape « Album », sinon le nom du projet. */
+export function titreAlbum(config: ConfigAlbum, nomProjet: string): string {
+  return config.titre?.trim() || nomProjet;
 }
 
 /** Fichiers voulus dans `Album/`, dans l'ordre, et les textes pour ifolor. */
@@ -21,16 +31,18 @@ export function contenuAlbum(plan: Plan, config: ConfigAlbum, nomProjet: string)
   const ordre = ordreAlbum(photosAlbum(plan), config.ordre);
   const secs = sections(ordre, (d) => titreDossier(plan, d), config);
   const voulus = fichiersAlbum(ordre, secs, config);
-  // Couverture choisie : une copie de plus, en tête de l'album.
-  const couverture = config.couverture ? plan.fichiers.get(config.couverture) : undefined;
-  if (couverture && couverture.statut === 'archive') {
-    const ext = couverture.nom.includes('.') ? couverture.nom.slice(couverture.nom.lastIndexOf('.')).toLowerCase() : '.jpg';
-    voulus.unshift({ id: couverture.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: couverture.rotation ?? 0, taille: couverture.taille });
+  const pages = paginer(ordre, secs, config);
+  // Couverture choisie : une copie de plus, en tête de l'album, telle qu'elle est montrée (rotation et recadrage).
+  const f = config.couverture ? plan.fichiers.get(config.couverture) : undefined;
+  let couverture: FichierAlbum | undefined;
+  if (f && f.statut === 'archive') {
+    const ext = f.nom.includes('.') ? f.nom.slice(f.nom.lastIndexOf('.')).toLowerCase() : '.jpg';
+    couverture = { id: f.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: f.rotation ?? 0, ...(recadrageUtile(f.recadrage) ? { recadrage: f.recadrage } : {}), taille: f.taille };
   }
-  const legendes = new Map(ordre.filter((f) => f.legende).map((f) => [f.id, f.legende!]));
+  const legendes = new Map(ordre.filter((x) => x.legende).map((x) => [x.id, x.legende!]));
   // Les textes sont écrits dans la sortie : dans la langue du projet (D60).
-  const textes = avecLangue(langueDeLaSortie(), () => textesAlbum(nomProjet, secs, voulus.filter((v) => !v.chemin.startsWith('0000_')), legendes, config));
-  return { voulus, textes };
+  const textes = avecLangue(langueDeLaSortie(), () => textesAlbum(titreAlbum(config, nomProjet), secs, voulus, legendes, config, pages, couverture?.chemin));
+  return { voulus: couverture ? [couverture, ...voulus] : voulus, textes };
 }
 
 /** Fichiers présents dans `Album/` (chemin relatif → taille). */
@@ -213,7 +225,8 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
 /**
  * Copie recadrée (D62) : la photo est décodée à l'endroit, tournée, redressée,
  * recadrée, puis réencodée en JPEG de haute qualité ; la date et l'appareil
- * (EXIF) de l'original sont repris. L'archive garde l'original intact.
+ * (EXIF) de l'original sont repris, avec la taille de la copie et sans la
+ * vignette de la photo entière. L'archive garde l'original intact.
  */
 async function copieRecadree(original: Blob, rotation: number, recadrage: Recadrage): Promise<Blob> {
   const image = await createImageBitmap(original, { imageOrientation: 'from-image' });
@@ -222,7 +235,7 @@ async function copieRecadree(original: Blob, rotation: number, recadrage: Recadr
     const toile = new OffscreenCanvas(l, h);
     dessinerRecadrage(toile.getContext('2d')!, image, image.width, image.height, rotation, recadrage);
     const jpeg = new Uint8Array(await (await toile.convertToBlob({ type: 'image/jpeg', quality: QUALITE_RECADRAGE })).arrayBuffer());
-    const exif = segmentExif(new Uint8Array(await original.arrayBuffer()));
+    const exif = segmentExif(new Uint8Array(await original.arrayBuffer()), { largeur: l, hauteur: h });
     return new Blob([(exif ? avecExif(jpeg, exif) : jpeg) as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' });
   } finally {
     image.close();

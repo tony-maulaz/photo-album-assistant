@@ -1,5 +1,5 @@
-// Album (SPEC § 6.10, § 12) : ordre (D8, I2), sections, pages simulées, noms
-// numérotés de `Album/`, textes pour ifolor, et synchronisation de `Album/`.
+// Album (SPEC § 6.10, § 12) : ordre (D8, I2), sections, pages simulées, cible,
+// noms numérotés de `Album/`, textes pour ifolor, et synchronisation de `Album/`.
 
 import { recadrageUtile, signatureRecadrage, type Recadrage } from './recadrage';
 import { t } from './langue';
@@ -24,7 +24,12 @@ export interface ConfigAlbum {
   cible: { mode: 'photos' | 'pages'; nombre: number };
   /** Photo de couverture choisie (étape « Album ») : copiée en tête de `Album/`. */
   couverture?: string;
+  /** Titre de l'album (pour la couverture), s'il diffère du nom du projet. */
+  titre?: string;
 }
+
+/** Cible par défaut : un livre photo courant de 24 pages (l'ancienne, 100 pages, ne convenait qu'aux très gros albums). */
+export const PAGES_CIBLE_DEFAUT = 24;
 
 export function configAlbumDefaut(): ConfigAlbum {
   return {
@@ -36,13 +41,72 @@ export function configAlbumDefaut(): ConfigAlbum {
     intros: {},
     coupures: {},
     rattachements: [],
-    cible: { mode: 'pages', nombre: 100 },
+    cible: { mode: 'pages', nombre: PAGES_CIBLE_DEFAUT },
   };
 }
 
-/** Photos de l'album : retenues (★ ou ★★), dans l'archive. */
-export function photosAlbum(plan: Plan): FichierPlan[] {
+/** Photos retenues pour l'album (★ ou ★★), dans l'archive, copies en double comprises. */
+function retenues(plan: Plan): FichierPlan[] {
   return [...plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && (f.album ?? 0) > 0);
+}
+
+/** Photos de l'album : retenues (★ ou ★★), dans l'archive, chacune une seule fois (`sansDoubles`). */
+export function photosAlbum(plan: Plan): FichierPlan[] {
+  return sansDoubles(retenues(plan)).gardees;
+}
+
+/** Copies d'une photo déjà dans l'album, retenues une deuxième fois (`sansDoubles`) : laissées hors de l'album. */
+export function doublesAlbum(plan: Plan): { id: string; garde: string }[] {
+  return sansDoubles(retenues(plan)).retirees;
+}
+
+/** Ce qui permet de reconnaître deux copies d'une même photo. */
+interface Copie {
+  id: string;
+  dossier: string;
+  date?: string;
+  origineDate?: string;
+  taille?: number;
+  empreinte?: string;
+  dims?: { l: number; h: number };
+}
+
+/**
+ * Deux fichiers sont-ils la même photo ? Même taille en octets et même
+ * empreinte ; sans empreinte (calculée seulement pour les candidats aux
+ * doublons exacts), même date de prise de vue à la seconde et mêmes dimensions.
+ */
+function memePhoto(a: Copie, b: Copie): boolean {
+  if (!a.taille || a.taille !== b.taille) return false;
+  if (a.empreinte && b.empreinte) return a.empreinte === b.empreinte;
+  const dateSure = (p: Copie) => !!p.date && p.date.length >= 19 && p.origineDate !== 'fichier';
+  return dateSure(a) && dateSure(b) && a.date === b.date && a.dims?.l === b.dims?.l && a.dims?.h === b.dims?.h;
+}
+
+/**
+ * Copies exactes retenues deux fois (une sélection « Best of » faite de copies
+ * reste entière à l'étape « Doublons », D61, et ses photos sont aussi dans le
+ * dossier de leur sortie) : la photo n'est mise qu'une fois dans l'album, à sa
+ * première place dans l'ordre par journée puis par sortie. Les photos gardées
+ * restent dans l'ordre reçu.
+ */
+export function sansDoubles<T extends Copie>(photos: T[]): { gardees: T[]; retirees: { id: string; garde: string }[] } {
+  // Seules des photos de même taille en octets peuvent être des copies : le plus souvent, il n'y en a pas.
+  const tailles = new Map<number, number>();
+  for (const p of photos) if (p.taille) tailles.set(p.taille, (tailles.get(p.taille) ?? 0) + 1);
+  const candidate = (p: T) => (tailles.get(p.taille ?? 0) ?? 0) > 1;
+  if (!photos.some(candidate)) return { gardees: photos, retirees: [] };
+  const vues = new Map<number, T[]>();
+  const retirees: { id: string; garde: string }[] = [];
+  for (const p of ordreAlbum(photos)) {
+    if (!candidate(p)) continue;
+    const memeTaille = vues.get(p.taille!) ?? [];
+    const garde = memeTaille.find((g) => memePhoto(g, p));
+    if (garde) retirees.push({ id: p.id, garde: garde.id });
+    else vues.set(p.taille!, [...memeTaille, p]);
+  }
+  const ids = new Set(retirees.map((r) => r.id));
+  return { gardees: retirees.length ? photos.filter((p) => !ids.has(p.id)) : photos, retirees };
 }
 
 /**
@@ -84,6 +148,26 @@ export interface Section {
   dossier: string;
   /** La sortie a déjà eu une section plus tôt dans l'album (sortie sur plusieurs jours). */
   suite: boolean;
+}
+
+/** Date en fin de nom de dossier (convention JJ.MM.AA, tri automatique AAAA-MM-JJ…), déjà affichée à côté du titre. */
+const DATE_FINALE = /[\s_]+(?:\d{4}-\d{2}(?:-\d{2})?|\d{1,2}(?:\.\d{1,2})?(?:-\d{1,2}(?:\.\d{1,2})?)?\.\d{2}(?:\d{2})?)$/;
+
+/**
+ * Titre de section tiré d'un nom de dossier : sans la date finale (déjà
+ * affichée à côté), soulignés changés en espaces, mots collés séparés
+ * (« SpectacleFeu_Chaweng_24.07.26 » → « Spectacle Feu Chaweng »). Une année
+ * seule reste (« Valais_Mars_2025 »), comme un nom qui n'est qu'une date.
+ */
+export function titreDepuisNom(nom: string): string {
+  // Deux fois : une période « 2026-07-15_2026-07-20 » finit par deux dates.
+  const sansDate = nom.replace(DATE_FINALE, '').replace(DATE_FINALE, '');
+  const titre = (/[^\s_]/.test(sansDate) ? sansDate : nom)
+    .replace(/_/g, ' ')
+    .replace(/(?<=\p{L}\p{Ll})(?=\p{Lu})/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return titre || nom;
 }
 
 /** Sections = blocs contigus d'une même sortie, ajustés par coupures et rattachements. */
@@ -143,6 +227,62 @@ export function paginer(ordre: { id: string; album?: 0 | 1 | 2 }[], secs: Sectio
   return pages;
 }
 
+/** Réglages qui changent la pagination ; ceux qui manquent gardent leur valeur par défaut. */
+export type ReglagesPages = Pick<ConfigAlbum, 'photosParPage'> & Partial<Pick<ConfigAlbum, 'ordre' | 'nouvellePageParSection' | 'coupures' | 'rattachements'>>;
+
+/** Ce qu'il faut savoir d'une photo pour la placer dans les pages simulées. */
+export type PhotoPage = Copie & { album?: 0 | 1 | 2 };
+
+/**
+ * Nombre de pages simulées pour les photos retenues parmi `photos` : le calcul
+ * de l'aperçu de l'étape « Album » (sections, ★★ seule sur sa page, copies en
+ * double comptées une fois), repris par la jauge de la cible (« Sélection »).
+ */
+export function nombrePages(photos: PhotoPage[], reglages: ReglagesPages): number {
+  const config = { ...configAlbumDefaut(), ...reglages };
+  const ordre = ordreAlbum(sansDoubles(photos.filter((p) => (p.album ?? 0) > 0)).gardees, config.ordre);
+  return paginer(ordre, sections(ordre, () => '', config), config).length;
+}
+
+/** Cible en pages (une cible en photos est ramenée à des pages pleines). */
+export function cibleEnPages(config: Pick<ConfigAlbum, 'cible' | 'photosParPage'>): number {
+  return config.cible.mode === 'pages' ? config.cible.nombre : Math.ceil(config.cible.nombre / Math.max(1, config.photosParPage));
+}
+
+/** Photos par page, au plus. */
+export const PHOTOS_PAR_PAGE_MAX = 12;
+
+export interface ConseilCible {
+  /** Pages simulées moins pages visées : négatif s'il en manque. */
+  ecart: number;
+  /** Environ combien de photos retenir de plus (ou retirer) pour atteindre la cible. */
+  photos: number;
+  /** Photos par page qui atteindraient la cible avec les mêmes photos, s'il y en a. */
+  photosParPage?: number;
+}
+
+/**
+ * Écart à la cible quand il dépasse 10 % (trop ou trop peu de pages), et deux
+ * façons de le combler : retenir (ou retirer) des photos, ou changer le nombre
+ * de photos par page. `null` si l'album est proche de la cible.
+ */
+export function conseilCible(photos: PhotoPage[], config: ConfigAlbum): ConseilCible | null {
+  const pages = nombrePages(photos, config);
+  const cible = cibleEnPages(config);
+  const ecart = pages - cible;
+  if (Math.abs(ecart) <= cible * 0.1) return null;
+  const conseil: ConseilCible = { ecart, photos: Math.abs(ecart) * Math.max(1, config.photosParPage) };
+  // Une cible en photos ne dépend pas de la mise en page : seul le nombre de photos compte.
+  if (config.cible.mode !== 'pages') return conseil;
+  // Moins de photos par page s'il manque des pages, plus s'il y en a trop : le réglage le plus proche qui suffit.
+  const pas = ecart < 0 ? -1 : 1;
+  for (let n = config.photosParPage + pas; n >= 1 && n <= PHOTOS_PAR_PAGE_MAX; n += pas) {
+    const p = nombrePages(photos, { ...config, photosParPage: n });
+    if (ecart < 0 ? p >= cible : p <= cible) return { ...conseil, photosParPage: n };
+  }
+  return conseil;
+}
+
 /** Partie de nom de fichier tirée d'un titre : sans espaces ni caractères spéciaux (script 03). */
 export function partieNom(titre: string): string {
   return nomAscii(titre).replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 60) || 'Section';
@@ -178,25 +318,43 @@ export function fichiersAlbum(ordre: FichierPlan[], secs: Section[], config: Con
   });
 }
 
-/** `textes_album.md` : titres, introductions et légendes à recopier dans ifolor (script 03). */
-export function textesAlbum(nomProjet: string, secs: Section[], fichiers: FichierAlbum[], legendes: Map<string, string>, config: ConfigAlbum): string {
+/**
+ * `textes_album.md` : titre de l'album et couverture, puis, section par
+ * section, le titre, l'introduction, le plan des pages de l'aperçu (quelles
+ * photos sur quelle page, ★★ en pleine page) et les légendes, à reproduire
+ * dans ifolor (script 03). `fichiers` : les photos de l'album dans l'ordre,
+ * sans la couverture.
+ */
+export function textesAlbum(titre: string, secs: Section[], fichiers: FichierAlbum[], legendes: Map<string, string>, config: ConfigAlbum, pages: Page[] = [], couverture?: string): string {
+  const nom = (f: FichierAlbum) => f.chemin.split('/').pop()!;
+  const indexDe = new Map(fichiers.map((f, i) => [f.id, i]));
   const lignes = [
-    `# ${t`Textes de l'album — ${nomProjet}`}`,
+    `# ${t`Textes de l'album — ${titre}`}`,
+    '',
+    t`Titre de l'album : ${titre}`,
+    couverture ? t`Couverture : \`${couverture}\`` : t`Couverture : pas encore choisie (étape « Album »).`,
     '',
     t`Titres de sections, introductions et légendes à recopier dans ifolor.`,
     t`Le titre se place sur la page où commence la photo indiquée.`,
-    '',
   ];
+  if (pages.length) lignes.push(t`Pages de l'aperçu : 0001, 0002… sont les photos du dossier « Album » ; ★★ = une photo seule, en pleine page.`);
+  lignes.push('');
   for (const s of secs) {
-    const premier = fichiers[s.debut];
     lignes.push(`\n## ${s.titre}${s.suite ? t` (suite)` : ''}`);
     const intro = !s.suite ? config.intros[s.dossier] : undefined;
     if (intro) lignes.push(`*${intro}*`);
-    lignes.push(`${t`(section démarrant à \`${premier.chemin.split('/').pop()}\`)`}\n`);
-    for (let i = s.debut; i <= s.fin; i++) {
-      const legende = legendes.get(fichiers[i].id);
-      if (legende) lignes.push(t`- \`${fichiers[i].chemin.split('/').pop()}\` : ${legende}`);
-    }
+    lignes.push(`${t`(section démarrant à \`${nom(fichiers[s.debut])}\`)`}\n`);
+    // Pages de la section ; une page partagée avec la section voisine n'y montre que les photos de celle-ci.
+    pages.forEach((p, j) => {
+      const numeros = p.photos
+        .map((id) => indexDe.get(id))
+        .filter((i): i is number => i !== undefined && i >= s.debut && i <= s.fin)
+        .map((i) => String(i + 1).padStart(4, '0'));
+      if (numeros.length) lignes.push(p.grande ? t`- Page ${j + 1} : ${numeros[0]} ★★ (pleine page)` : t`- Page ${j + 1} : ${numeros.join(', ')}`);
+    });
+    const legendees = fichiers.slice(s.debut, s.fin + 1).filter((f) => legendes.get(f.id));
+    if (legendees.length && pages.length) lignes.push('', t`Légendes :`);
+    for (const f of legendees) lignes.push(t`- \`${nom(f)}\` : ${legendes.get(f.id)}`);
   }
   return `${lignes.join('\n')}\n`;
 }

@@ -3,7 +3,7 @@
 // Les objets du plan ne sont jamais modifiés sur place : chaque opération les
 // remplace, ce qui rend l'annulation (Ctrl+Z) simple et sûre.
 
-import { normaliser, recadrageUtile, type Recadrage } from './recadrage';
+import { normaliser, recadrageUtile, tournerRecadrage, type Recadrage } from './recadrage';
 import { pluriel } from '../ui/format';
 import type { Categorie } from './fichiers';
 import { aTraduire, t } from './langue';
@@ -26,6 +26,12 @@ export interface DossierPlan {
   traitement?: TraitementDossier;
   /** Comment le tri par lieux a formé ce dossier (étape « Tri automatique »). */
   tri?: InfoTri;
+  /**
+   * Nom tel que l'utilisateur l'a tapé, quand le nom du dossier en a été tiré
+   * sans accents ni espaces (étape « Nommage ») : « Plage à Ko Samui 18.07.26 »
+   * pour « Plage_a_Ko_Samui_18.07.26 ». Sert au titre de section de l'album.
+   */
+  nomSaisi?: string;
 }
 
 /**
@@ -411,16 +417,23 @@ export function creerDossier(plan: Plan, nom: string, parent = RACINE): { id: st
   return { id, modification: tx.terminer(t`Créer le dossier « ${propre} »`)! };
 }
 
-export function renommerDossier(plan: Plan, id: string, nom: string): Modification | null {
+/**
+ * Renomme un dossier. `saisi` : le texte tapé, quand `nom` en a été tiré sans
+ * accents ni espaces ; il est gardé (`nomSaisi`) pour le titre de section de
+ * l'album. Un autre nom, tapé directement, l'oublie.
+ */
+export function renommerDossier(plan: Plan, id: string, nom: string, saisi?: string): Modification | null {
   const d = dossierExistant(plan, id);
   if (d.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être renommé.`);
   const propre = nom.trim();
-  if (propre === d.nom) return null;
+  const texte = saisi?.trim() && saisi.trim() !== propre ? saisi.trim() : undefined;
+  if (propre === d.nom && texte === d.nomSaisi) return null;
   const erreur = verifierNomDossier(propre);
   if (erreur) throw new ErreurPlan(erreur);
   verifierFrere(plan, d.parent, propre, id);
   const tx = new Transaction(plan);
-  tx.dossier({ ...d, nom: propre });
+  const { nomSaisi: _ancien, ...reste } = d;
+  tx.dossier({ ...reste, nom: propre, ...(texte ? { nomSaisi: texte } : {}) });
   return tx.terminer(t`Renommer « ${d.nom} » en « ${propre} »`);
 }
 
@@ -583,15 +596,19 @@ export function noterAlbum(plan: Plan, ids: string[], valeur: 0 | 1 | 2 | undefi
   return tx.terminer(`${libelle} (${ids.length})`);
 }
 
-/** Tourne d'un quart de tour (sens horaire si `sens` = 90) ; appliqué à la copie dans Album/. */
+/**
+ * Tourne d'un quart de tour (sens horaire si `sens` = 90) ; appliqué à la copie
+ * dans Album/. Un recadrage déjà fait tourne avec la photo : il garde la même
+ * partie de l'image (il est en fractions de l'image tournée).
+ */
 export function tourner(plan: Plan, ids: string[], sens: 90 | -90): Modification | null {
   const tx = new Transaction(plan);
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f || f.categorie !== 'photo') continue;
     const r = (((f.rotation ?? 0) + sens + 360) % 360) as Rotation;
-    const { rotation: _ancienne, ...reste } = f;
-    tx.fichier(r === 0 ? reste : { ...reste, rotation: r });
+    const { rotation: _ancienne, recadrage, ...reste } = f;
+    tx.fichier({ ...reste, ...(r ? { rotation: r } : {}), ...(recadrage ? { recadrage: tournerRecadrage(recadrage, sens) } : {}) });
   }
   return tx.terminer(t`Tourner ${pluriel(ids.length, 'photo')}`);
 }
