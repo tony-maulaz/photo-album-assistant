@@ -661,6 +661,24 @@ export function rangerVideos(dossiers: DossierPropose[], datesPhotos: Map<string
   return resultat;
 }
 
+/** Dossier des photos et vidéos sans vraie date (date du fichier seulement) : à placer à la main. */
+export const DOSSIER_SANS_DATE = '_sans_date';
+
+/**
+ * Photos et vidéos sans date ni dans les données de l'appareil ni dans le nom
+ * de fichier : la date du fichier est souvent celle d'une copie, et les
+ * ranger d'après elle crée de fausses sorties. Elles vont dans `_sans_date`.
+ */
+export function separerSansDate<T extends { id: string; origineDate?: string }>(fichiers: T[]): { datees: T[]; sansDate: T[] } {
+  const sansDate = fichiers.filter((f) => f.origineDate === 'fichier');
+  return { datees: fichiers.filter((f) => f.origineDate !== 'fichier'), sansDate };
+}
+
+/** Ajoute le dossier `_sans_date` aux dossiers proposés, s'il y a lieu. */
+export function avecSansDate(dossiers: DossierPropose[], sansDate: string[]): DossierPropose[] {
+  return sansDate.length ? [...dossiers, { chemin: [DOSSIER_SANS_DATE], photos: [...sansDate], info: { origine: 'sans_lieu' } }] : dossiers;
+}
+
 export interface LieuFrequent {
   lat: number;
   lon: number;

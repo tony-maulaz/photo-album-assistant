@@ -38,8 +38,9 @@ function comparable(plan: Plan, f: FichierPlan): boolean {
   return f.statut === 'archive' && f.categorie === 'photo' && !f.capture && !horsAlbum(plan, f);
 }
 
+/** Journée d'une photo ; « sans » si elle n'a pas de vraie date (date du fichier seulement). */
 function jourDe(f: FichierPlan): string {
-  return f.date?.slice(0, 10) ?? 'sans';
+  return f.origineDate === 'fichier' ? 'sans' : (f.date?.slice(0, 10) ?? 'sans');
 }
 
 /** « 18.07.26 », ou « Sans date ». */

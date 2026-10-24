@@ -6,6 +6,7 @@ import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, ETAPES_COURTES, etape
 import { messages, page, reglages, session, versionIA, versionProjet, type Page } from '../etat';
 import { nombre } from '../format';
 import { fermerProjet } from '../projets';
+import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
 import { Icone } from './Icones';
 
 /** Ouvert / fermé, refermé par un clic ailleurs ou Échap. */
@@ -209,14 +210,23 @@ export function Messages() {
 }
 
 /** Explication en deux phrases en tête de chaque page d'étape (§ 5.2). */
-export function TeteEtape({ numero, titre, children }: { numero?: number; titre: string; children: ComponentChildren }) {
+export function TeteEtape({ numero, titre, cle, children }: { numero?: number; titre: string; cle?: string; children: ComponentChildren }) {
+  // Avec `cle`, l'explication s'ouvre à la première visite, puis se replie derrière un bouton « Aide ».
+  useExplicationVue(cle);
+  const ouverte = !cle || explicationOuverte(cle);
   return (
     <div class="tete-etape">
       <h1>
         {numero !== undefined && <span class="numero-etape">Étape {numero}</span>}
         {titre}
+        {cle && (
+          <button type="button" class="bouton-aide" aria-expanded={ouverte} onClick={() => ouvrirExplication(cle, !ouverte)} title={ouverte ? 'Replier l’explication' : 'Afficher l’explication de l’étape'}>
+            <Icone nom="aide" taille={16} />
+            {ouverte ? 'Replier' : 'Aide'}
+          </button>
+        )}
       </h1>
-      <p class="explication">{children}</p>
+      {ouverte && <p class="explication">{children}</p>}
     </div>
   );
 }

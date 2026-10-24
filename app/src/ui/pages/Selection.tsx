@@ -211,7 +211,7 @@ const CHOIX: [Filtres['etoiles'], string, ((f: FichierPlan) => boolean) | null][
   ['a_decider', 'À décider', (f) => f.album === undefined],
   ['retenues', 'Retenues', (f) => (f.album ?? 0) >= 1],
   ['grandes', '★★ Grandes', (f) => f.album === 2],
-  ['non', 'Non', (f) => f.album === 0],
+  ['non', 'Pas pour l’album', (f) => f.album === 0],
 ];
 
 function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map<string, InfoPhoto>; ia: ResultatsIA }) {
@@ -404,7 +404,7 @@ export function PageSelection() {
         titre="Sélection"
         explication={
           <>
-            Choisissez les photos de l’album : <kbd>Espace</kbd> = ★ dans l’album, <kbd>2</kbd> = ★★ grande photo (pleine page), <kbd>X</kbd> = non. Le tri
+            Choisissez les photos de l’album : <kbd>Espace</kbd> = ★ dans l’album, <kbd>2</kbd> = ★★ grande photo (pleine page), <kbd>X</kbd> = pas pour l’album. Le tri
             rapide (<kbd>T</kbd>) montre les photos une à une ; les outils à droite vous aident, sans jamais choisir à votre place.
           </>
         }
@@ -451,7 +451,7 @@ export function PageSelection() {
               ★★ Grande
             </button>
             <button type="button" onClick={() => choisir([...choisis], 0)} title="Touche X">
-              Non
+              Pas pour l’album
             </button>
             <button type="button" onClick={() => choisir([...choisis], undefined)} title="Retour arrière">
               À décider
@@ -537,7 +537,7 @@ export function PageSelection() {
                 ★★
               </button>
               <button type="button" onClick={() => choisir([f.id], 0)}>
-                ✕ Non
+                ✕ Pas pour l’album
               </button>
             </>
           )}

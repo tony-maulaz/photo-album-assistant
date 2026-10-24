@@ -1,16 +1,19 @@
 // Étape 2 — Inventaire (SPEC § 6.2, version de la phase 1).
 
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { changerTraitement, RACINE, resumes, type TraitementDossier } from '../../lib/plan';
+import { changerTraitement, estDescendant, RACINE, resumes, type FichierPlan, type Plan, type TraitementDossier } from '../../lib/plan';
 import type { Progression } from '../../navigateur/inventaire';
 import { ETAPE, type CodeEtape } from '../../navigateur/projet';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
-import { ExtrasInventaire } from '../composants/ExtrasInventaire';
+import { ProgressionAnalyse } from '../composants/Analyse';
+import { capturesProposees, ExtrasInventaire, useCopiesExactes } from '../composants/ExtrasInventaire';
 import { Miniature } from '../composants/GrillePhotos';
 import { allerEtape, appliquer, changerEtape, notifier, session, texteErreur, validerEtape, versionPlan, versionProjet } from '../etat';
 import { duree, jourCourt, nombre, periode, pluriel, taille } from '../format';
 import { construirePlan } from '../projets';
+import { analyseAFaire, analyseEnCours, lancerAnalyseDossier } from '../analyseDossier';
+import { DOSSIER_SANS_DATE } from '../../lib/tri';
 
 const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
   parcours: 'Parcours des dossiers',
@@ -19,11 +22,22 @@ const ETAPES_INVENTAIRE: Record<Progression['etape'], string> = {
   videos: 'Date des vidéos',
 };
 
-const TRAITEMENTS: [TraitementDossier, string][] = [
-  ['trier', 'À trier par lieux et sorties'],
-  ['garder', 'Garder tel quel'],
-  ['ignorer', 'Garder tel quel, hors de l’album'],
+const TRAITEMENTS: [TraitementDossier, string, string][] = [
+  ['trier', 'Trier ses photos', 'elles rejoignent le tri par lieux et sorties. Pour un dossier fourre-tout : « Divers », « Téléphone ».'],
+  [
+    'garder',
+    'Garder tel quel',
+    'recopié à l’identique ; ses photos peuvent aller dans l’album. Pour un dossier déjà bien rangé (« Anniversaire Lea »), ou un mois de petites sorties.',
+  ],
+  ['ignorer', 'Garder tel quel, pas pour l’album', 'recopié à l’identique ; ses photos ne sont pas proposées pour l’album. Pour des documents, scans, fonds d’écran.'],
 ];
+
+/** Trois photos réparties dans un dossier (et ses sous-dossiers), pour le reconnaître d'un coup d'œil. */
+function apercuDossier(plan: Plan, dossier: string): FichierPlan[] {
+  const photos = [...plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive' && (f.dossier === dossier || estDescendant(plan, f.dossier, dossier)));
+  if (photos.length <= 3) return photos;
+  return [photos[0], photos[Math.floor(photos.length / 2)], photos.at(-1)!];
+}
 
 /** Sous-dossiers déjà présents dans un dossier en vrac (§ 6.2) : trier, garder tel quel, ou hors album. */
 function SousDossiers() {
@@ -33,12 +47,19 @@ function SousDossiers() {
   const racine = r.get(RACINE)!;
   if (!dossiers.length) return null;
   return (
-    <>
-      <h2>Sous-dossiers déjà présents</h2>
+    <section id="sous-dossiers">
+      <h2>Que faire des sous-dossiers déjà rangés ?</h2>
       <p class="discret">
-        Les {pluriel(racine.photos + racine.videos, 'élément')} en vrac à la racine seront triés. Les sous-dossiers déjà nommés (ou les dossiers de mois) sont gardés
-        tels quels, sauf si vous choisissez de les trier aussi. Un dossier gardé tel quel n’est jamais modifié (ni floues, ni doublons exacts retirés).
+        Les {pluriel(racine.photos + racine.videos, 'élément')} en vrac à la racine seront triés par lieux et sorties. Pour chaque sous-dossier, choisissez :
       </p>
+      <dl class="choix-traitement">
+        {TRAITEMENTS.map(([v, libelle, explication]) => (
+          <div key={v}>
+            <dt>{libelle}</dt>
+            <dd>{explication}</dd>
+          </div>
+        ))}
+      </dl>
       <table class="tableau sous-dossiers">
         <thead>
           <tr>
@@ -46,7 +67,7 @@ function SousDossiers() {
             <th>Période</th>
             <th class="n">Photos</th>
             <th class="n">Vidéos</th>
-            <th>Traitement</th>
+            <th>Que faire ?</th>
           </tr>
         </thead>
         <tbody>
@@ -54,12 +75,21 @@ function SousDossiers() {
             const x = r.get(d.id)!;
             return (
               <tr key={d.id}>
-                <td>{d.nom}</td>
+                <td>
+                  <div class="dossier-apercu">
+                    <span class="miniatures-dossier">
+                      {apercuDossier(s.plan, d.id).map((f) => (
+                        <Miniature key={f.id} f={f} taille={44} />
+                      ))}
+                    </span>
+                    {d.nom}
+                  </div>
+                </td>
                 <td>{periode(x.duTotal, x.auTotal)}</td>
                 <td class="n">{nombre(x.photosTotal)}</td>
                 <td class="n">{nombre(x.videosTotal)}</td>
                 <td>
-                  <select value={d.traitement ?? 'garder'} onChange={(e) => appliquer(changerTraitement(s.plan, [d.id], e.currentTarget.value as TraitementDossier))} aria-label={`Traitement de ${d.nom}`}>
+                  <select value={d.traitement ?? 'garder'} onChange={(e) => appliquer(changerTraitement(s.plan, [d.id], e.currentTarget.value as TraitementDossier))} aria-label={`Que faire de ${d.nom}`}>
                     {TRAITEMENTS.map(([v, l]) => (
                       <option key={v} value={v}>
                         {l}
@@ -80,7 +110,48 @@ function SousDossiers() {
           Tout garder tel quel
         </button>
       </p>
-    </>
+    </section>
+  );
+}
+
+/** En haut de l'inventaire : l'analyse en cours, et ce qu'il faut vérifier pendant ce temps. */
+function AVerifier() {
+  const s = session.value!;
+  versionPlan.value;
+  const copies = useCopiesExactes();
+  const enCours = !!analyseEnCours.value || analyseAFaire(s);
+  const sousDossiers = s.projet.mode === 'vrac' ? [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').length : 0;
+  const captures = capturesProposees(s).length;
+  const sansDate = [...s.plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && f.statut === 'archive' && f.origineDate === 'fichier').length;
+  const points = [
+    sousDossiers > 0 && <>que faire des <strong>{pluriel(sousDossiers, 'sous-dossier déjà rangé', 'sous-dossiers déjà rangés')}</strong> ;</>,
+    captures > 0 && <>les <strong>{pluriel(captures, 'capture d’écran trouvée', 'captures d’écran trouvées')}</strong> ;</>,
+    copies && copies.nbCopies > 0 && <>les <strong>{pluriel(copies.nbCopies, 'copie en double', 'copies en double')}</strong> ;</>,
+    sansDate > 0 && s.projet.mode === 'vrac' && (
+      <>
+        les <strong>{pluriel(sansDate, 'photo sans date', 'photos sans date')}</strong> : elles iront dans « {DOSSIER_SANS_DATE} », à placer à la main ;
+      </>
+    ),
+  ].filter(Boolean);
+  return (
+    <div class="encart a-verifier">
+      {enCours ? <ProgressionAnalyse /> : <p class="ok">✓ Analyse des photos terminée.</p>}
+      {points.length > 0 ? (
+        <>
+          <p>
+            <strong>{enCours ? 'Pendant ce temps, vérifiez :' : 'Vérifiez :'}</strong>
+          </p>
+          <ol>
+            {points.map((x, i) => (
+              <li key={i}>{x}</li>
+            ))}
+          </ol>
+          <p class="discret">Puis « Valider et continuer »{enCours ? ', dès la fin de l’analyse' : ''}.</p>
+        </>
+      ) : (
+        <p class="discret">Rien d’autre à vérifier : « Valider et continuer »{enCours ? ' dès la fin de l’analyse' : ''}.</p>
+      )}
+    </div>
   );
 }
 
@@ -107,10 +178,14 @@ export function PageInventaire() {
     }
   };
 
-  // Projet tout neuf : l'inventaire part tout seul.
+  // Projet tout neuf : l'inventaire part tout seul, puis l'analyse des photos (D56).
   useEffect(() => {
     if (!s.projet.inventaire && !progression) void lancer();
   }, [s.projet.id]);
+  const inventaireFait = !!s.projet.inventaire;
+  useEffect(() => {
+    if (inventaireFait && analyseAFaire(s)) void lancerAnalyseDossier();
+  }, [inventaireFait]);
 
   if (progression || !s.projet.inventaire) {
     const p = progression;
@@ -166,8 +241,10 @@ export function PageInventaire() {
   return (
     <div class="page avec-barre">
       <TeteEtape numero={ETAPE.inventaire} titre="Inventaire">
-        Le contenu du dossier à trier. Vérifiez les nombres et la période, puis passez à l’arborescence.
+        Voici ce que contient « {s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies) : c’est gratuit, cela se fait
+        sur cet ordinateur et ne modifie rien.
       </TeteEtape>
+      <AVerifier />
 
       <div class="tableau-bord">
         <div class="tuile-chiffre">
@@ -207,9 +284,7 @@ export function PageInventaire() {
         <li>{pluriel(origines.exif, 'photo datée', 'photos datées')} par l’appareil (EXIF) ;</li>
         <li>{nombre(origines.nom)} datées par leur nom de fichier ;</li>
         <li>{nombre(origines.video)} vidéos datées par leurs données internes ;</li>
-        <li class={origines.fichier ? 'attention' : ''}>
-          {nombre(origines.fichier)} sans autre date que celle du fichier : cette date sera notée dans le rapport, car la copie ne la conserve pas.
-        </li>
+        <li class={origines.fichier ? 'attention' : ''}>{nombre(origines.fichier)} sans date (ni l’appareil, ni le nom du fichier ne la donnent).</li>
       </ul>
 
       {s.projet.mode === 'vrac' && <SousDossiers />}
@@ -258,9 +333,11 @@ export function PageInventaire() {
             </p>
             {incertaines.length > 0 && (
               <>
-                <p class="attention">
-                  {pluriel(incertaines.length, 'photo à date incertaine', 'photos à date incertaine')} (ni EXIF, ni nom daté) : elles sont classées d’après la date
-                  du fichier.
+                <p class="attention" id="sans-date">
+                  {pluriel(incertaines.length, 'photo sans date', 'photos sans date')} : la date du fichier est souvent celle d’une copie, elle n’est donc pas utilisée.{' '}
+                  {s.projet.mode === 'vrac'
+                    ? `Le tri automatique les mettra dans « ${DOSSIER_SANS_DATE} », pour que vous les placiez à la main.`
+                    : 'Elles restent dans leurs dossiers ; dans l’album, elles se placent à la fin de leur sortie.'}
                 </p>
                 <div class="bande-miniatures">
                   {incertaines.slice(0, 12).map((f) => (
@@ -285,10 +362,12 @@ export function PageInventaire() {
       </ul>
 
       <BarreValidation
-        resume={`${pluriel(inv.fichiers, 'fichier')} dans « ${s.source.racine.name} »`}
+        resume={analyseEnCours.value || analyseAFaire(s) ? 'Analyse des photos en cours…' : `${pluriel(inv.fichiers, 'fichier')} dans « ${s.source.racine.name} »`}
         revenir={() => allerEtape('projet')}
         // Dossier en vrac : on enchaîne avec les floues ; dossier déjà trié : avec les doublons.
         valider={() => validerEtape('inventaire')}
+        // Les étapes suivantes ont besoin de l'analyse : on attend qu'elle soit finie.
+        validerActif={!analyseEnCours.value && !analyseAFaire(s)}
       />
       <p class="discret pied">
         <button

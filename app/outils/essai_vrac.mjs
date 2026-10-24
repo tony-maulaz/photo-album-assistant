@@ -150,10 +150,10 @@ try {
   await page.getByRole('button', { name: /Ranger les 1 captures/ }).click();
   await page.getByText('1 capture rangée').waitFor();
   verifier(true, 'capture d’écran rangée dans Captures_ecran');
-  await page.locator('section', { hasText: 'Doublons exacts' }).getByRole('button', { name: 'Analyser les photos' }).click();
-  await page.getByRole('button', { name: 'Chercher les doublons exacts' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
-  await page.getByRole('button', { name: 'Chercher les doublons exacts' }).click();
-  await page.locator('.groupe-exact').first().waitFor({ timeout: 30_000 });
+  const aVerifier = await page.locator('.a-verifier').innerText();
+  verifier(aVerifier.includes('sous-dossiers déjà rangés'), `message d’accueil : ce qu’il faut vérifier (${aVerifier.split('\n').slice(0, 3).join(' / ')})`);
+  // Analyse des photos et recherche des copies : toutes seules, sans bouton (D56).
+  await page.locator('.groupe-exact').first().waitFor({ timeout: 60_000 });
   const groupes = await page.locator('.groupe-exact').allInnerTexts();
   verifier(groupes.length === 1 && groupes[0].includes('copie de 0140.jpg'), `un doublon exact (la copie du vrac ; BESTOF jamais touché) : ${groupes.length} groupe(s)`);
   await page.getByRole('button', { name: /Écarter les 1 copies/ }).click();
@@ -167,16 +167,16 @@ try {
   await page.locator('.curseur-flou input').fill(String(Math.round(Math.log(900) * 100)));
   const compteurHaut = await page.locator('.compteur-floues').innerText();
   verifier(compteurHaut !== compteur, `le compteur suit le curseur : ${compteurHaut}`);
-  await page.getByRole('button', { name: /Revenir à 60/ }).click();
+  await page.getByRole('button', { name: /Revenir au réglage conseillé/ }).click();
   await capturer(page, 'v2_floues');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
   // Étape 4 : doublons, comparés journée par journée tant que le dossier est en vrac.
   await page.getByRole('heading', { name: /Doublons/ }).waitFor();
   verifier(true, 'après les floues, les doublons (nettoyer avant de ranger)');
-  await page.getByRole('button', { name: 'Repérer les rafales (gratuit)' }).click();
-  await page.getByRole('heading', { name: 'Aperçu par journée' }).waitFor({ timeout: 60_000 });
-  verifier((await page.getByText(/journées? ·/).count()) > 0, 'dossier en vrac : les doublons sont cherchés journée par journée');
+  // Les rafales se repèrent toutes seules à l'ouverture de la page.
+  await page.locator('.apercu-lots > summary', { hasText: 'Aperçu par journée' }).waitFor({ timeout: 60_000 });
+  verifier(true, 'dossier en vrac : rafales repérées toutes seules, journée par journée');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
   // Étape 5 : tri automatique.

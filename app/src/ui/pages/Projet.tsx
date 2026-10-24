@@ -10,17 +10,6 @@ import { RappelDossierDepart } from '../composants/DossierDepart';
 import { allerEtape, configuration, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
 import { creerProjet, sortieNonVide, verifierDossiers } from '../projets';
 
-const PREREGLAGES_BASE: [string, string][] = [
-  ['annee', 'Année (tout ce qui a été pris en un an)'],
-  ['voyage', 'Voyage (un dossier de vacances)'],
-];
-
-/** Préréglages proposés : Année, Voyage, ceux de la configuration (« Week-end »…), et personnalisé. */
-function prereglages(): [string, string][] {
-  const autres = Object.keys(configuration.value?.lecture?.config?.prereglages ?? {}).filter((k) => k !== 'annee' && k !== 'voyage');
-  return [...PREREGLAGES_BASE, ...autres.map((k): [string, string] => [k, k]), ['', 'Personnalisé']];
-}
-
 /** État de la configuration et de la clé (§ 6.1). */
 function EtatConfiguration() {
   const c = configuration.value;
@@ -57,7 +46,8 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
   const [sortie, setSortie] = useState<FileSystemDirectoryHandle | null>(null);
   const [nom, setNom] = useState('');
   const [contexte, setContexte] = useState('');
-  const [prereglage, setPrereglage] = useState(mode === 'vrac' ? 'annee' : '');
+  // Le préréglage du tri se choisit à l'étape « Tri automatique » ; « Année » par défaut pour un dossier en vrac.
+  const prereglage = mode === 'vrac' ? 'annee' : '';
   const [budget, setBudget] = useState(reglages.value.budgetDefautChf);
   const [erreur, setErreur] = useState<string | null>(null);
   const [encours, setEncours] = useState(false);
@@ -137,15 +127,6 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         <label for="nom-projet">Nom du projet</label>
         <input id="nom-projet" class="large" value={nom} placeholder="par exemple : Photos 2025" onInput={(e) => setNom(e.currentTarget.value)} />
 
-        <label for="prereglage">Préréglage</label>
-        <select id="prereglage" value={prereglage} onChange={(e) => setPrereglage(e.currentTarget.value)}>
-          {prereglages().map(([v, t]) => (
-            <option key={v} value={v}>
-              {t}
-            </option>
-          ))}
-        </select>
-
         <label for="contexte">Contexte (facultatif)</label>
         <textarea
           id="contexte"
@@ -156,8 +137,14 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         />
         <p class="aide-champ">Transmis aux aides IA (quand vous les lancerez) pour mieux nommer et décrire les photos.</p>
 
-        <label for="budget">Budget IA du projet (CHF)</label>
-        <input id="budget" type="number" min="0" step="5" class="court" value={budget} onInput={(e) => setBudget(Number(e.currentTarget.value) || 0)} />
+        <details class="avances champ-plein">
+          <summary>Réglages avancés</summary>
+          <label for="budget">
+            Budget IA du projet (CHF){' '}
+            <input id="budget" type="number" min="0" step="5" class="court" value={budget} onInput={(e) => setBudget(Number(e.currentTarget.value) || 0)} />
+          </label>
+          <p class="discret">Les aides IA s’arrêtent avant de dépasser ce montant. Il se change aussi plus tard, à l’étape Projet.</p>
+        </details>
 
         <p class="discret">
           Configuration : {configuration.value?.lecture?.config ? `« ${configuration.value.dossier.dossier.name} »` : 'aucune (facultative pour l’instant)'} — clé API :{' '}
@@ -200,14 +187,6 @@ export function PageEtape1() {
         <span>« {s.sortie.racine.name} »</span>
         <label for="nom-projet">Nom du projet</label>
         <input id="nom-projet" class="large" value={p.nom} onChange={(e) => changer({ nom: e.currentTarget.value.trim() || p.nom })} />
-        <label for="prereglage">Préréglage</label>
-        <select id="prereglage" value={p.prereglage} onChange={(e) => changer({ prereglage: e.currentTarget.value })}>
-          {prereglages().map(([v, t]) => (
-            <option key={v} value={v}>
-              {t}
-            </option>
-          ))}
-        </select>
         <label for="contexte">Contexte (facultatif)</label>
         <textarea id="contexte" rows={3} value={p.contexte} onChange={(e) => changer({ contexte: e.currentTarget.value })} />
         <label for="budget">Budget IA du projet (CHF)</label>

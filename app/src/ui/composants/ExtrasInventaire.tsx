@@ -2,29 +2,34 @@
 // doublons exacts (même contenu, ou copie réduite de type WhatsApp) et
 // appareils avec leur décalage d'horloge.
 
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import { appareilsDetectes, mesurerDecalage, type MesureDecalage } from '../../lib/appareils';
-import { candidatsEmpreinte, groupesDoublonsExacts, type GroupeExact } from '../../lib/doublonsExacts';
+import { groupesDoublonsExacts, type GroupeExact } from '../../lib/doublonsExacts';
 import { estCapture, extension } from '../../lib/fichiers';
 import { appliquerDecalages, ecarterDoublonsExacts, rangerCaptures } from '../../lib/inventaire';
 import { cheminDossier, traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
-import { annuler, appliquer, configuration, notifier, planifierEnregistrement, session, texteErreur, versionIA, versionPlan } from '../etat';
+import { analyseAFaire, analyseEnCours } from '../analyseDossier';
+import { annuler, appliquer, configuration, notifier, session, texteErreur, versionIA, versionPlan, type Session } from '../etat';
 import { jourCourt, nombre, pluriel } from '../format';
-import { EncartAnalyse } from './Analyse';
-import { BarreProgression } from './Cadre';
 import { Miniature } from './GrillePhotos';
 
 const garde = (plan: Plan, f: FichierPlan) => ['garder', 'ignorer'].includes(traitementDe(plan, f.dossier) ?? '');
 
+/** Captures d'écran proposées au rangement (pas encore rangées, hors dossiers gardés tels quels). */
+export function capturesProposees(s: Session): FichierPlan[] {
+  return [...s.plan.fichiers.values()].filter(
+    (f) => f.categorie === 'photo' && f.statut === 'archive' && !f.capture && !garde(s.plan, f) && estCapture({ nom: f.nom, marque: f.marque, appareil: f.appareil, dims: f.dims, extension: extension(f.nom) }),
+  );
+}
+
 function Captures() {
   const s = session.value!;
   versionPlan.value;
-  const photos = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive');
-  const rangees = photos.filter((f) => f.capture).length;
-  const candidates = photos.filter((f) => !f.capture && !garde(s.plan, f) && estCapture({ nom: f.nom, marque: f.marque, appareil: f.appareil, dims: f.dims, extension: extension(f.nom) }));
+  const rangees = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive' && f.capture).length;
+  const candidates = capturesProposees(s);
   if (!candidates.length && !rangees) return null;
   return (
-    <section>
+    <section id="captures">
       <h2>Captures d’écran</h2>
       {candidates.length > 0 ? (
         <>
@@ -48,78 +53,53 @@ function Captures() {
   );
 }
 
-async function empreinte(fichier: Blob): Promise<string> {
-  const h = new Uint8Array(await crypto.subtle.digest('SHA-256', await fichier.arrayBuffer()));
-  return [...h].map((b) => b.toString(16).padStart(2, '0')).join('');
+/**
+ * Copies exactes encore à écarter, ou `null` tant que l'analyse du dossier
+ * n'est pas finie (empreintes et ressemblance en viennent, D56).
+ */
+export function useCopiesExactes(): { groupes: GroupeExact[]; nbCopies: number } | null {
+  const s = session.value!;
+  versionPlan.value;
+  versionIA.value;
+  const pret = !analyseEnCours.value && !analyseAFaire(s);
+  const groupes = useMemo<GroupeExact[] | null>(() => {
+    if (!pret) return null;
+    const actuelles = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive');
+    return groupesDoublonsExacts(
+      actuelles.map((f) => ({
+        id: f.id,
+        nom: f.nom,
+        dossier: f.dossier,
+        taille: f.taille,
+        empreinte: f.empreinte,
+        phash: s.analyses.get(f)?.phash,
+        dims: f.dims,
+        exif: f.origineDate === 'exif',
+        gardeTelQuel: garde(s.plan, f),
+      })),
+    );
+  }, [pret, versionPlan.value, versionIA.value]);
+  if (!groupes) return null;
+  const actifs = groupes.map((g) => ({ ...g, copies: g.copies.filter((c) => s.plan.fichiers.get(c.id)?.statut === 'archive') })).filter((g) => g.copies.length && s.plan.fichiers.has(g.garde));
+  return { groupes: actifs, nbCopies: actifs.reduce((a, g) => a + g.copies.length, 0) };
 }
 
 function DoublonsExacts() {
   const s = session.value!;
-  versionPlan.value;
-  versionIA.value;
-  const [groupes, setGroupes] = useState<GroupeExact[] | null>(null);
-  const [progres, setProgres] = useState<{ faits: number; total: number } | null>(null);
-  const photos = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive');
-  const manquantes = s.analyses.manquantes(photos).length;
-
-  const chercher = async () => {
-    try {
-      // Empreinte seulement pour les photos de même taille : les seules qui peuvent être identiques.
-      const candidats = candidatsEmpreinte(photos.map((f) => ({ id: f.id, taille: f.taille }))).flat();
-      const aCalculer = candidats.filter((id) => !s.plan.fichiers.get(id)?.empreinte);
-      setProgres({ faits: 0, total: aCalculer.length });
-      let faits = 0;
-      for (const id of aCalculer) {
-        const e = await empreinte(await s.source.fichier(id));
-        // Relu après le calcul : un changement fait entre-temps sur ce fichier n'est pas écrasé.
-        const f = s.plan.fichiers.get(id);
-        if (f) s.plan.fichiers.set(id, { ...f, empreinte: e });
-        setProgres({ faits: ++faits, total: aCalculer.length });
-      }
-      if (aCalculer.length) planifierEnregistrement();
-      const actuelles = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive');
-      setGroupes(
-        groupesDoublonsExacts(
-          actuelles.map((f) => ({
-            id: f.id,
-            nom: f.nom,
-            dossier: f.dossier,
-            taille: f.taille,
-            empreinte: f.empreinte,
-            phash: s.analyses.get(f)?.phash,
-            dims: f.dims,
-            exif: f.origineDate === 'exif',
-            gardeTelQuel: garde(s.plan, f),
-          })),
-        ),
-      );
-    } catch (err) {
-      notifier('erreur', `Recherche interrompue : ${texteErreur(err)}`);
-    } finally {
-      setProgres(null);
-    }
-  };
-
-  const actifs = (groupes ?? []).map((g) => ({ ...g, copies: g.copies.filter((c) => s.plan.fichiers.get(c.id)?.statut === 'archive') })).filter((g) => g.copies.length && s.plan.fichiers.has(g.garde));
-  const nbCopies = actifs.reduce((a, g) => a + g.copies.length, 0);
+  const copies = useCopiesExactes();
+  const actifs = copies?.groupes ?? [];
+  const nbCopies = copies?.nbCopies ?? 0;
   const chemin = (f: FichierPlan) => cheminDossier(s.plan, f.dossier) || 'racine';
 
   return (
-    <section>
-      <h2>Doublons exacts</h2>
+    <section id="copies">
+      <h2>Copies en double</h2>
       <p class="discret">
         La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. L’original le plus complet est gardé ; les
         copies vont dans « _mis_de_cote/doublons_exacts ». Rien n’est jamais retiré d’un dossier gardé tel quel.
       </p>
-      {manquantes > 0 && <EncartAnalyse photos={photos} pourquoi="la ressemblance sert à reconnaître les copies réduites." />}
-      {progres ? (
-        <BarreProgression faits={progres.faits} total={progres.total} texte={`Empreintes : ${progres.faits} / ${progres.total}`} />
-      ) : (
-        <button type="button" disabled={manquantes > 0} onClick={() => void chercher()}>
-          {groupes ? 'Chercher à nouveau' : 'Chercher les doublons exacts'}
-        </button>
-      )}
-      {groupes && !actifs.length && <p>Aucun doublon exact à écarter.</p>}
+      {!copies && <p class="discret">Recherche en cours, pendant l’analyse des photos…</p>}
+      {copies && !actifs.length && <p>Aucune copie à écarter.</p>}
       {actifs.length > 0 && (
         <>
           <p>

@@ -4,7 +4,7 @@
 // gardée, ses doublons, pourquoi ; rien n'est écarté sans action de
 // l'utilisateur (règle d'or 3).
 
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { accepterProposition, ecarterDuGroupe, etatDoublon, gardeeActuelle, garderALaPlace, type Proposition } from '../../lib/doublons';
 import { cheminDossier, combiner, garderAussi, type FichierPlan } from '../../lib/plan';
 import { MODELES } from '../../lib/tarifs';
@@ -14,6 +14,7 @@ import { ETAPE } from '../../navigateur/projet';
 import { BudgetAtteint } from '../../navigateur/ia';
 import { cleMiniature } from '../../navigateur/miniatures';
 import { EncartAnalyse } from '../composants/Analyse';
+import { analyseEnCours } from '../analyseDossier';
 import { enregistrerAide } from './AidesIA';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { Comparateur } from '../composants/Comparateur';
@@ -273,6 +274,11 @@ export function PageDoublons() {
     }
   };
 
+  // Les rafales se repèrent toutes seules (gratuit, local) dès que l'analyse des photos est prête (D56).
+  useEffect(() => {
+    if (!s.doublons && !progres && !analyseEnCours.value && analysesManquantes === 0) void lancer(false);
+  }, [analysesManquantes === 0, !!analyseEnCours.value]);
+
   const toutAccepter = async () => {
     const aAccepter = visibles.filter((g) => g.p.doublons.some((d) => etatDoublon(fichier(d.id)) === 'propose'));
     const n = aAccepter.reduce((a, g) => a + g.p.doublons.filter((d) => etatDoublon(fichier(d.id)) === 'propose').length, 0);
@@ -285,7 +291,7 @@ export function PageDoublons() {
 
   return (
     <div class="page large avec-barre page-doublons">
-      <TeteEtape numero={ETAPE.doublons} titre="Doublons">
+      <TeteEtape numero={ETAPE.doublons} titre="Doublons" cle="doublons">
         L’application repère les photos en double : rafales quasi identiques (gratuit), puis, si vous le souhaitez, la même scène photographiée plusieurs fois
         (IA). Vous relisez chaque groupe : les photos écartées vont dans « _mis_de_cote/doublons », rien n’est supprimé.
         {s.projet.mode === 'vrac' && ' Le dossier n’étant pas encore trié, les photos sont comparées journée par journée.'}
@@ -293,7 +299,12 @@ export function PageDoublons() {
 
       <EncartAnalyse photos={toutes} pourquoi="la ressemblance et la netteté de chaque photo servent à repérer les doublons et à garder la plus nette." />
 
-      <div class="reglages-etape">
+      {/* L'analyse IA est facultative : elle vient en complément des rafales, repérées toutes seules. */}
+      <details class="avances encart-ia">
+        <summary>
+          Aller plus loin avec l’IA (facultatif) : la même scène photographiée plusieurs fois —{' '}
+          {estimation.dossiers ? `environ ${chf < 0.01 ? '< 0,01' : nombre(chf, 2)} CHF` : 'gratuit (déjà fait)'}
+        </summary>
         <fieldset class="choix-mode">
           <legend>Que considérer comme doublon ?</legend>
           <label>
@@ -305,6 +316,14 @@ export function PageDoublons() {
             expressions changent
           </label>
         </fieldset>
+        <div class="actions-etape">
+          <button type="button" class="principal" disabled={!!progres || analysesManquantes > 0 || !modeleInfo} onClick={() => void lancer(true)}>
+            Analyser avec l’IA — {estimation.dossiers ? `environ ${chf < 0.01 ? '< 0,01' : nombre(chf, 2)} CHF` : 'gratuit (déjà fait)'}
+          </button>
+          <span class="discret">
+            {pluriel(dossiers.length, un, plusieurs)} · dépensé : {nombre(s.ia.depenseCHF(), 2)} / {s.projet.budget_chf} CHF
+          </span>
+        </div>
         <details class="avances">
           <summary>Réglages avancés</summary>
           <label>
@@ -330,20 +349,7 @@ export function PageDoublons() {
             Redemander les réponses illisibles
           </button>
         </details>
-      </div>
-
-      <div class="actions-etape">
-        <button type="button" disabled={!!progres || analysesManquantes > 0} onClick={() => void lancer(false)}>
-          Repérer les rafales (gratuit)
-        </button>
-        <button type="button" class="principal" disabled={!!progres || analysesManquantes > 0 || !modeleInfo} onClick={() => void lancer(true)}>
-          Analyser avec l’IA — {estimation.dossiers ? `environ ${chf < 0.01 ? '< 0,01' : nombre(chf, 2)} CHF` : 'gratuit (déjà fait)'}
-        </button>
-        <span class="discret">
-          {pluriel(dossiers.length, un, plusieurs)} · dépensé : {nombre(s.ia.depenseCHF(), 2)} / {s.projet.budget_chf} CHF
-        </span>
-      </div>
-      {analysesManquantes > 0 && <p class="discret">Analysez d’abord les photos (ci-dessus).</p>}
+      </details>
 
       {progres && (
         <div class="encart">
@@ -356,7 +362,10 @@ export function PageDoublons() {
 
       {s.doublons && (
         <>
-          <h2>Aperçu par {un}</h2>
+          <details class="avances apercu-lots">
+            <summary>
+              Aperçu par {un} : {pluriel(totalProposes, 'doublon à relire', 'doublons à relire')}, {pluriel(totalEcartes, 'écarté', 'écartés')}
+            </summary>
           <table class="tableau apercu-doublons">
             <thead>
               <tr>
@@ -384,6 +393,7 @@ export function PageDoublons() {
                 })}
             </tbody>
           </table>
+          </details>
           {parDossier.size === 0 && <p>Aucun doublon trouvé.</p>}
 
           <div class="barre-outils filtres-doublons">
@@ -431,7 +441,7 @@ export function PageDoublons() {
       {comparees && (
         <Comparateur
           titre="Comparer le groupe"
-          photos={[comparees.p.garde, ...comparees.p.doublons.map((d) => d.id)].map(fichier).filter((f): f is FichierPlan => !!f).slice(0, 4)}
+          photos={[comparees.p.garde, ...comparees.p.doublons.map((d) => d.id)].map(fichier).filter((f): f is FichierPlan => !!f)}
           fermer={() => setComparees(null)}
           entete={(f) =>
             f.id === gardeeActuelle(comparees.p, fichier) ? (

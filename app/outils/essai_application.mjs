@@ -330,9 +330,9 @@ try {
   });
 
   await page.locator('.bandeau .etape', { hasText: /^.?4Doublons$/ }).click();
-  await page.getByRole('button', { name: 'Analyser les photos' }).click();
-  await page.getByRole('button', { name: 'Repérer les rafales (gratuit)' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
-  verifier(true, 'analyse locale des photos (netteté, ressemblance) terminée');
+  verifier((await page.getByRole('button', { name: 'Analyser les photos' }).count()) === 0, 'analyse locale déjà faite à l’inventaire : plus de bouton « Analyser les photos »');
+  await page.locator('.encart-ia > summary').click();
+  await page.getByRole('button', { name: /Analyser avec l’IA/ }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
   const boutonIA = page.getByRole('button', { name: /Analyser avec l’IA/ });
   verifier(/environ .* CHF/.test(await boutonIA.innerText()), `coût estimé affiché avant lancement (A10) : ${await boutonIA.innerText()}`);

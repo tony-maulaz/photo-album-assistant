@@ -1,5 +1,8 @@
 // Comparateur (SPEC § 5.4) : 2 à 4 photos côte à côte, zoom (molette) et
-// déplacement (glisser) synchronisés pour vérifier visages et netteté.
+// déplacement (glisser) synchronisés pour vérifier visages et netteté. Mode
+// « une à une » (double-clic ou Entrée) : une photo en plein écran, ← → pour
+// passer à la suivante en gardant le même zoom et le même cadrage, ce qui fait
+// sauter aux yeux la plus nette ou les yeux fermés.
 
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -38,10 +41,24 @@ interface Vue {
   y: number;
 }
 
-function Volet({ f, vue, rotation, actions, entete }: { f: FichierPlan; vue: Vue; rotation: number; actions?: ComponentChildren; entete?: ComponentChildren }) {
+function Volet({
+  f,
+  vue,
+  rotation,
+  actions,
+  entete,
+  agrandir,
+}: {
+  f: FichierPlan;
+  vue: Vue;
+  rotation: number;
+  actions?: ComponentChildren;
+  entete?: ComponentChildren;
+  agrandir?: () => void;
+}) {
   const url = useOriginal(f);
   return (
-    <div class="volet">
+    <div class="volet" onDblClick={agrandir} title={agrandir ? 'Double-clic : cette photo seule, en grand' : undefined}>
       <div class="volet-entete">
         <strong>{f.date ? dateHeure(f.date) : f.nom}</strong>
         <span class="discret">{f.nom}</span>
@@ -78,19 +95,27 @@ export function Comparateur({
   titre?: string;
 }) {
   const [vue, setVue] = useState<Vue>({ zoom: 1, x: 0, y: 0 });
+  // Mode « une à une » : l'indice de la photo affichée seule, ou `null` pour le côte à côte.
+  const [seule, setSeule] = useState<number | null>(null);
   const zone = useRef<HTMLDivElement>(null);
+  const n = photos.length;
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') fermer();
-      else if (e.key === '0') setVue({ zoom: 1, x: 0, y: 0 });
+      if (e.key === 'Escape') {
+        if (seule !== null) setSeule(null);
+        else fermer();
+      } else if (e.key === '0') setVue({ zoom: 1, x: 0, y: 0 });
+      else if (e.key === 'Enter' && seule === null) setSeule(0);
+      else if (e.key === 'ArrowRight' && seule !== null) setSeule((seule + 1) % n);
+      else if (e.key === 'ArrowLeft' && seule !== null) setSeule((seule - 1 + n) % n);
       else return;
       e.preventDefault();
       e.stopPropagation();
     };
     window.addEventListener('keydown', touche, true);
     return () => window.removeEventListener('keydown', touche, true);
-  }, [fermer]);
+  }, [fermer, seule, n]);
 
   // Zoom vers le pointeur : le point visé reste sous la souris, dans chaque volet.
   const molette = (e: WheelEvent) => {
@@ -129,9 +154,26 @@ export function Comparateur({
   return (
     <div class="comparateur" role="dialog" aria-label={titre}>
       <div class="comparateur-tete">
-        <h2>{titre}</h2>
-        <span class="discret">Molette : zoom · glisser : déplacer · 0 : taille normale · Échap : fermer</span>
+        <h2>{seule === null ? titre : `Photo ${seule + 1} sur ${n}`}</h2>
+        <span class="discret">
+          {seule === null
+            ? 'Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer'
+            : '← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte'}
+        </span>
         <span class="espace" />
+        {seule !== null && (
+          <>
+            <button type="button" onClick={() => setSeule((seule - 1 + n) % n)} aria-label="Photo précédente" title="Flèche gauche">
+              ←
+            </button>
+            <button type="button" onClick={() => setSeule((seule + 1) % n)} aria-label="Photo suivante" title="Flèche droite">
+              →
+            </button>
+            <button type="button" onClick={() => setSeule(null)}>
+              Côte à côte
+            </button>
+          </>
+        )}
         <button type="button" onClick={() => setVue({ zoom: 1, x: 0, y: 0 })} disabled={vue.zoom === 1}>
           Taille normale
         </button>
@@ -139,11 +181,16 @@ export function Comparateur({
           Fermer
         </button>
       </div>
-      <div class={`volets n${Math.min(4, photos.length)}`} ref={zone} onMouseDown={glisser}>
-        {photos.slice(0, 4).map((f) => (
-          <Volet key={f.id} f={f} vue={vue} rotation={f.rotation ?? 0} actions={actions?.(f)} entete={entete?.(f)} />
-        ))}
+      <div class={`volets n${seule === null ? Math.min(4, n) : 1}`} ref={zone} onMouseDown={glisser}>
+        {seule === null ? (
+          photos
+            .slice(0, 4)
+            .map((f, i) => <Volet key={f.id} f={f} vue={vue} rotation={f.rotation ?? 0} actions={actions?.(f)} entete={entete?.(f)} agrandir={() => setSeule(i)} />)
+        ) : (
+          <Volet key={photos[seule].id} f={photos[seule]} vue={vue} rotation={photos[seule].rotation ?? 0} actions={actions?.(photos[seule])} entete={entete?.(photos[seule])} />
+        )}
       </div>
+      {seule === null && n > 4 && <p class="discret plus-de-photos">{n - 4} autres photos : double-clic ou Entrée pour les voir une à une.</p>}
     </div>
   );
 }

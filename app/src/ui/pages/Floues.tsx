@@ -8,6 +8,7 @@ import type { FichierPlan } from '../../lib/plan';
 import { EncartAnalyse } from '../composants/Analyse';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { GrillePhotos } from '../composants/GrillePhotos';
+import { Icone } from '../composants/Icones';
 import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, notifier, planifierEnregistrement, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
@@ -74,18 +75,29 @@ export function PageFloues() {
 
   return (
     <div class="page large avec-barre page-floues">
-      <TeteEtape numero={ETAPE.floues} titre="Photos floues">
+      <TeteEtape numero={ETAPE.floues} titre="Photos floues" cle="floues">
         Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « _mis_de_cote/floues ».
         Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.
       </TeteEtape>
       <EncartAnalyse photos={concernees} pourquoi="il faut mesurer la netteté de chaque photo." />
       <div class="reglages-etape ligne">
-        <label class="curseur-flou">
-          Tolérance au flou : seuil <strong>{nombre(seuil)}</strong>
-          <input type="range" min={versCurseur(5)} max={versCurseur(1000)} value={versCurseur(seuil)} onInput={(e) => setSeuil(depuisCurseur(Number(e.currentTarget.value)))} />
+        {/* Le seuil de netteté (un nombre sans signification pour l'utilisateur) devient « plus tolérant ↔ plus strict ». */}
+        <label class="curseur-flou" title={`Seuil de netteté : ${nombre(seuil)} (conseillé : ${SEUIL_FLOU})`}>
+          <span class="bornes-curseur">
+            <span>Plus tolérant</span>
+            <span>Plus strict</span>
+          </span>
+          <input
+            type="range"
+            min={versCurseur(5)}
+            max={versCurseur(1000)}
+            value={versCurseur(seuil)}
+            aria-label="Tolérance au flou"
+            onInput={(e) => setSeuil(depuisCurseur(Number(e.currentTarget.value)))}
+          />
         </label>
-        <button type="button" class="lien" disabled={seuil === SEUIL_FLOU} onClick={() => setSeuil(SEUIL_FLOU)} title="Seuil réglé sur de vraies photos (script 01)">
-          Revenir à {SEUIL_FLOU} (conseillé)
+        <button type="button" class="lien" disabled={seuil === SEUIL_FLOU} onClick={() => setSeuil(SEUIL_FLOU)} title="Réglage calibré sur de vraies photos">
+          Revenir au réglage conseillé
         </button>
         <strong class="compteur-floues">{pluriel(ecartees, 'photo écartée', 'photos écartées')}</strong>
         <span class="discret">sur {nombre(concernees.length)}</span>
@@ -93,6 +105,10 @@ export function PageFloues() {
           <option value="toutes">Toutes, de la moins nette à la plus nette</option>
           <option value="ecartees">Seulement celles qui seront écartées</option>
         </select>
+        <span class="espace" />
+        <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title="Ctrl+Z">
+          Annuler
+        </button>
       </div>
       <AideIA fonction="IA1">
         {aSuivre.length > 0 && (
@@ -112,23 +128,24 @@ export function PageFloues() {
           </button>
         )}
       </AideIA>
-      <div class="barre-outils">
-        <span class="compte-selection">{choisis.length ? pluriel(choisis.length, 'sélectionnée', 'sélectionnées') : 'Aucune sélection'}</span>
-        <button type="button" disabled={!choisis.length} onClick={() => appliquer(deciderFlou(s.plan, choisis, 'sauvee'))} title="Touche S : reste dans le tri">
-          Sauver
-        </button>
-        <button type="button" disabled={!choisis.length} onClick={() => appliquer(deciderFlou(s.plan, choisis, 'ecartee'))} title="Touche X : nette mais ratée">
-          Écarter
-        </button>
-        <button type="button" disabled={!choisis.length} onClick={() => appliquer(deciderFlou(s.plan, choisis, undefined))}>
-          Laisser le seuil décider
-        </button>
-        <span class="espace" />
-        <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title="Ctrl+Z">
-          Annuler
-        </button>
-      </div>
       <div class="grille-floues">
+        {choisis.length > 0 && (
+          <div class="barre-action" role="toolbar" aria-label="Photos sélectionnées">
+            <span class="compte-selection">{pluriel(choisis.length, 'sélectionnée', 'sélectionnées')}</span>
+            <button type="button" onClick={() => appliquer(deciderFlou(s.plan, choisis, 'sauvee'))} title="Touche S : elle reste dans le tri">
+              Sauver
+            </button>
+            <button type="button" onClick={() => appliquer(deciderFlou(s.plan, choisis, 'ecartee'))} title="Touche X : nette mais ratée">
+              Écarter
+            </button>
+            <button type="button" onClick={() => appliquer(deciderFlou(s.plan, choisis, undefined))} title="Écartée ou gardée selon le curseur, comme les autres">
+              Selon le curseur
+            </button>
+            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title="Tout désélectionner (Échap)" aria-label="Tout désélectionner">
+              <Icone nom="croix" taille={16} />
+            </button>
+          </div>
+        )}
         <GrillePhotos
           elements={elements}
           options={{
@@ -152,7 +169,7 @@ export function PageFloues() {
         />
       </div>
       <BarreValidation
-        resume={`${pluriel(ecartees, 'photo écartée', 'photos écartées')} au seuil ${nombre(seuil)}`}
+        resume={pluriel(ecartees, 'photo écartée', 'photos écartées')}
         alertes={sansMesure ? [`${pluriel(sansMesure, 'photo sans mesure', 'photos sans mesure')} de netteté (gardées)`] : []}
         revenir={() => revenirDe('floues')}
         valider={valider}

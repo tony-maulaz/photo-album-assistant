@@ -49,9 +49,13 @@ export function photosAlbum(plan: Plan): FichierPlan[] {
  * bloc contigu, les blocs suivant l'ordre de leur première photo du jour.
  * Une sortie sur plusieurs jours donne un segment par jour.
  */
-export function ordreAlbum<T extends { id: string; dossier: string; date?: string }>(photos: T[], ordre: ConfigAlbum['ordre'] = 'segments'): T[] {
-  const cle = (p: T) => p.date ?? '';
-  if (ordre === 'chrono') return [...photos].sort((a, b) => cle(a).localeCompare(cle(b)) || a.id.localeCompare(b.id));
+export function ordreAlbum<T extends { id: string; dossier: string; date?: string; origineDate?: string }>(photos: T[], ordre: ConfigAlbum['ordre'] = 'segments'): T[] {
+  // Une photo sans vraie date (date du fichier seulement) se place à la fin de sa sortie, pas à une fausse date.
+  const finDossier = new Map<string, string>();
+  for (const p of photos) if (p.origineDate !== 'fichier' && p.date && p.date > (finDossier.get(p.dossier) ?? '')) finDossier.set(p.dossier, p.date);
+  const incertaine = (p: T) => p.origineDate === 'fichier' && finDossier.has(p.dossier);
+  const cle = (p: T) => (incertaine(p) ? finDossier.get(p.dossier)! : (p.date ?? ''));
+  if (ordre === 'chrono') return [...photos].sort((a, b) => cle(a).localeCompare(cle(b)) || Number(incertaine(a)) - Number(incertaine(b)) || a.id.localeCompare(b.id));
   const debutSegment = new Map<string, string>();
   for (const p of photos) {
     const k = `${p.dossier}|${cle(p).slice(0, 10)}`;
@@ -64,6 +68,7 @@ export function ordreAlbum<T extends { id: string; dossier: string; date?: strin
       debutSegment.get(`${a.dossier}|${cle(a).slice(0, 10)}`)!.localeCompare(debutSegment.get(`${b.dossier}|${cle(b).slice(0, 10)}`)!) ||
       a.dossier.localeCompare(b.dossier) ||
       cle(a).localeCompare(cle(b)) ||
+      Number(incertaine(a)) - Number(incertaine(b)) ||
       a.id.localeCompare(b.id),
   );
 }

@@ -31,6 +31,17 @@ describe('ordre de l’album (D8, incident I2)', () => {
     expect(ordreAlbum(jour).map((p) => p.id)).toEqual(['a1', 'a2', 'b1', 'b2']);
     expect(ordreAlbum(jour, 'chrono').map((p) => p.id)).toEqual(['a1', 'b1', 'a2', 'b2']);
   });
+
+  it('une photo sans vraie date se place à la fin de sa sortie, pas à la date du fichier', () => {
+    const photos = [
+      { id: 'a1', dossier: 'A', date: '2026-07-15T10:00:00', origineDate: 'exif' },
+      { id: 'copie', dossier: 'A', date: '2026-10-01T09:00:00', origineDate: 'fichier' },
+      { id: 'a2', dossier: 'A', date: '2026-07-15T12:00:00', origineDate: 'exif' },
+      { id: 'b1', dossier: 'B', date: '2026-07-16T10:00:00', origineDate: 'exif' },
+    ];
+    expect(ordreAlbum(photos).map((p) => p.id)).toEqual(['a1', 'a2', 'copie', 'b1']);
+    expect(ordreAlbum(photos, 'chrono').map((p) => p.id)).toEqual(['a1', 'a2', 'copie', 'b1']);
+  });
 });
 
 describe('sections et pages', () => {

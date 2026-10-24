@@ -210,7 +210,9 @@ export function PagePetitsDossiers() {
   const liste = useMemo(() => tousFragments(s), [versionPlan.value, versionIA.value]);
   const decisions = s.aides.get<Record<string, DecisionIA3>>('IA3') ?? {};
   const gardes = new Set(s.aides.get<string[]>('fragments_gardes') ?? []);
-  const visibles = liste.filter((f) => !gardes.has(f.dossier.id));
+  // Sans aucune sortie voisine (et sans proposition de l'IA), il n'y a rien à choisir : le dossier reste à part, sans carte.
+  const seuls = liste.filter((f) => !gardes.has(f.dossier.id) && f.voisins.length === 0 && !decisions[f.dossier.id]);
+  const visibles = liste.filter((f) => !gardes.has(f.dossier.id) && !seuls.includes(f));
   const surs = visibles.filter(
     (f) => decisions[f.dossier.id]?.absorber && decisions[f.dossier.id].cible && s.plan.dossiers.has(decisions[f.dossier.id].cible!) && (decisions[f.dossier.id].confiance ?? 0) >= 8,
   );
@@ -219,7 +221,7 @@ export function PagePetitsDossiers() {
 
   return (
     <div class="page large avec-barre page-fragments">
-      <TeteEtape numero={ETAPE.petits} titre="Petits dossiers">
+      <TeteEtape numero={ETAPE.petits} titre="Petits dossiers" cle="petits">
         Le tri par lieux isole parfois quelques photos dans un petit dossier (un arrêt en route, une photo sans GPS). Chacun est montré à côté des sorties voisines
         dans le temps, les plus ressemblantes d’abord : rattachez-le, ou gardez-le à part.
       </TeteEtape>
@@ -241,6 +243,28 @@ export function PagePetitsDossiers() {
         </p>
       )}
       {visibles.length === 0 && <p class="encart">Aucun petit dossier (moins de 5 photos) à rattacher.</p>}
+      {seuls.length > 0 && (
+        <details class="avances petits-seuls">
+          <summary>
+            {pluriel(seuls.length, 'petit dossier sans sortie voisine', 'petits dossiers sans sortie voisine')} (à moins de 12 h) : {seuls.length > 1 ? 'ils restent' : 'il reste'} à
+            part
+          </summary>
+          <ul class="liste-seuls">
+            {seuls.map((f) => (
+              <li key={f.dossier.id}>
+                <Vignettes d={f.dossier} n={3} />
+                <span>
+                  <strong>{f.dossier.nom}</strong>{' '}
+                  <span class="discret">
+                    {pluriel(f.dossier.photos.length, 'photo')} · {periode(f.dossier)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p class="discret">Pour en rattacher un quand même, glissez-le sur un autre dossier à l’étape {ETAPE.lieux}.</p>
+        </details>
+      )}
       <div class="groupes">
         {visibles.map((f) => {
           const d = decisions[f.dossier.id];
@@ -338,7 +362,7 @@ export function PageConsolidation() {
 
   return (
     <div class="page large avec-barre page-consolidation">
-      <TeteEtape numero={ETAPE.consolidation} titre="Consolidation">
+      <TeteEtape numero={ETAPE.consolidation} titre="Consolidation" cle="consolidation">
         Plusieurs dossiers couvrent parfois la même activité (une journée à la plage coupée en deux par le tri). Les propositions sont montrées côte à côte ; vous
         pouvez aussi fusionner à la main en glissant un dossier sur un autre à l’étape {ETAPE.lieux}.
       </TeteEtape>

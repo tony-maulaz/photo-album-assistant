@@ -3,30 +3,14 @@
 // au bout de la ligne du titre, la rouvre. Repliée, elle ne prend aucune
 // ligne : le panneau des dossiers et les photos ont toute la hauteur.
 
-import { signal } from '@preact/signals';
 import type { ComponentChildren } from 'preact';
-import { useEffect } from 'preact/hooks';
-import { planifierEnregistrement, session } from '../etat';
+import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
 import { TeteEtape } from './Cadre';
+import { Icone } from './Icones';
 
-/** Choix fait dans la session (ouvrir, replier) ; sinon, ouverte tant que la page n'a pas été vue. */
-const choix = signal<Record<string, boolean>>({});
-
-function noterVue(cle: string) {
-  const s = session.value;
-  if (!s || s.projet.entetes_vus?.includes(cle)) return;
-  s.projet.entetes_vus = [...(s.projet.entetes_vus ?? []), cle];
-  planifierEnregistrement();
-}
-
-function estOuverte(cle: string, ouverte: boolean): boolean {
-  return choix.value[cle] ?? (ouverte || !session.value?.projet.entetes_vus?.includes(cle));
-}
-
-/** Replie l'explication (par exemple une fois le tri automatique calculé). */
+/** Replie l'explication d'une page. */
 export function replierEntete(cle: string) {
-  choix.value = { ...choix.value, [cle]: false };
-  noterVue(cle);
+  ouvrirExplication(cle, false);
 }
 
 export function EnteteEtape({
@@ -46,13 +30,13 @@ export function EnteteEtape({
   ouverte?: boolean;
   children?: ComponentChildren;
 }) {
-  // En quittant la page, l'explication compte comme vue : à la visite suivante, elle est repliée.
-  useEffect(() => () => noterVue(cle), [cle]);
-  if (!estOuverte(cle, ouverte)) return null;
+  useExplicationVue(cle);
+  if (!explicationOuverte(cle, ouverte)) return null;
   return (
     <div class="tete-organiser">
-      <button type="button" class="doux replier-entete" onClick={() => replierEntete(cle)} aria-expanded="true">
-        Replier ▴
+      <button type="button" class="bouton-aide replier-entete" onClick={() => replierEntete(cle)} aria-expanded="true">
+        <Icone nom="aide" taille={16} />
+        Replier
       </button>
       <TeteEtape numero={numero} titre={titre}>
         {explication}
@@ -64,12 +48,13 @@ export function EnteteEtape({
 
 /** Bouton au bout de la ligne du titre, quand l'explication est repliée, avec les signaux à garder en vue. */
 export function BoutonAide({ cle, ouverte = false, libelle = 'Aide et outils', pastilles }: { cle: string; ouverte?: boolean; libelle?: string; pastilles?: ComponentChildren }) {
-  if (estOuverte(cle, ouverte)) return null;
+  if (explicationOuverte(cle, ouverte)) return null;
   return (
     <>
       {pastilles}
-      <button type="button" class="doux" onClick={() => (choix.value = { ...choix.value, [cle]: true })} aria-expanded="false">
-        {libelle} ▾
+      <button type="button" class="bouton-aide" onClick={() => ouvrirExplication(cle, true)} aria-expanded="false" title="Afficher l’explication de l’étape">
+        <Icone nom="aide" taille={16} />
+        {libelle}
       </button>
     </>
   );

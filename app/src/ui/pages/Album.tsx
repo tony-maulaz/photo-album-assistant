@@ -316,7 +316,7 @@ export function PageAlbum() {
 
   return (
     <div class="page large avec-barre page-album">
-      <TeteEtape numero={ETAPE.album} titre="Album">
+      <TeteEtape numero={ETAPE.album} titre="Album" cle="album">
         Voici l’album tel qu’il sera préparé pour ifolor : les photos retenues dans l’ordre des journées, regroupées en sections. Modifiez les titres, ajoutez des
         légendes, découpez ou regroupez les sections ; cliquez une photo pour la modifier.
       </TeteEtape>

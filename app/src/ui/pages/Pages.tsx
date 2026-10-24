@@ -103,6 +103,21 @@ export function PageReglages() {
       <h2>Fenêtres de choix de dossier et de fichier</h2>
       <ReglageDossierDepart />
 
+      <h2>Affichage</h2>
+      <div class="formulaire">
+        <label for="miniatures">Taille des miniatures</label>
+        <input id="miniatures" type="range" min="100" max="600" step="20" value={r.tailleMiniatures} onInput={(e) => changer({ tailleMiniatures: Number(e.currentTarget.value) })} />
+        <label for="theme">Thème</label>
+        <select id="theme" value={r.theme} onChange={(e) => changer({ theme: e.currentTarget.value as Reglages['theme'] })}>
+          <option value="auto">Comme l’ordinateur</option>
+          <option value="clair">Clair</option>
+          <option value="sombre">Sombre</option>
+        </select>
+      </div>
+
+      {/* Ce qui ne sert qu'aux habitués : replié par défaut. */}
+      <details class="avances reglages-avances">
+        <summary>Réglages avancés : modèles IA, coûts, OpenStreetMap</summary>
       <h2>Modèles par usage</h2>
       <div class="formulaire">
         <label>Rapide (gros volumes : étiquettes)</label>
@@ -129,18 +144,7 @@ export function PageReglages() {
         <input id="email" type="email" class="large" value={r.emailNominatim} onChange={(e) => changer({ emailNominatim: e.currentTarget.value.trim() })} />
       </div>
       <p class="aide-champ">Transmise à OpenStreetMap avec les demandes de noms de lieux, comme le demandent ses règles d’usage. Elle n’est envoyée nulle part ailleurs.</p>
-
-      <h2>Affichage</h2>
-      <div class="formulaire">
-        <label for="miniatures">Taille des miniatures</label>
-        <input id="miniatures" type="range" min="100" max="600" step="20" value={r.tailleMiniatures} onInput={(e) => changer({ tailleMiniatures: Number(e.currentTarget.value) })} />
-        <label for="theme">Thème</label>
-        <select id="theme" value={r.theme} onChange={(e) => changer({ theme: e.currentTarget.value as Reglages['theme'] })}>
-          <option value="auto">Comme l’ordinateur</option>
-          <option value="clair">Clair</option>
-          <option value="sombre">Sombre</option>
-        </select>
-      </div>
+      </details>
     </div>
   );
 }
@@ -351,7 +355,7 @@ export function PageAide() {
           <strong>Consolidation</strong> : fusionnez les dossiers qui couvrent la même activité.
         </li>
         <li>
-          <strong>Sélection</strong> : Espace = ★ dans l’album, 2 = ★★ grande photo, X = non, T = tri rapide, C = comparer, R = tourner.
+          <strong>Sélection</strong> : Espace = ★ dans l’album, 2 = ★★ grande photo, X = pas pour l’album (elle reste dans l’archive), T = tri rapide, C = comparer, R = tourner.
         </li>
         <li>
           <strong>Album</strong> : ordre, sections, titres, légendes, couverture, aperçu des pages.

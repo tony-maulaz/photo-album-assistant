@@ -118,14 +118,9 @@ try {
   if (VRAC) {
     await page.getByRole('button', { name: 'Tout trier' }).click();
     debut = performance.now();
-    await page.getByRole('button', { name: 'Chercher les doublons exacts' }).waitFor();
-    await page.locator('section', { hasText: 'Doublons exacts' }).getByRole('button', { name: 'Analyser les photos' }).click();
-    await page.getByRole('button', { name: 'Chercher les doublons exacts' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
-    noter(`analyse locale de toutes les photos en ${duree(debut)}`);
-    debut = performance.now();
-    await page.getByRole('button', { name: 'Chercher les doublons exacts' }).click();
-    await page.getByText(/Aucun doublon exact|copies? dans/).first().waitFor({ timeout: 600_000 });
-    noter(`doublons exacts cherchés en ${duree(debut)}`);
+    // Analyse des photos et des copies exactes : toute seule après l'inventaire (D56).
+    await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
+    noter(`analyse locale et copies exactes en ${duree(debut)} : ${(await page.locator('#copies').innerText()).split('\n').slice(1, 3).join(' ')}`);
     await page.getByRole('button', { name: 'Valider et continuer' }).click();
     await page.getByRole('heading', { name: /Photos floues/ }).waitFor();
     noter(`floues : ${await page.locator('.compteur-floues').innerText()}`);
@@ -157,6 +152,9 @@ try {
     noter(`mémoire JavaScript : ${((await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0)) / 2 ** 20).toFixed(0)} Mo`);
     throw new Error('FIN_VRAC');
   }
+  debut = performance.now();
+  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
+  noter(`analyse locale (netteté, ressemblance, copies) de toutes les photos en ${duree(debut)}`);
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.getByRole('heading', { name: /Doublons/ }).waitFor();
 
@@ -212,15 +210,11 @@ try {
   noter(`mémoire JavaScript : ${(memoire / 2 ** 20).toFixed(0)} Mo`);
 
   // Phase 2 : analyse locale, rafales, sélection, album.
-  await page.locator('.bandeau .etape', { hasText: /^.?8Doublons$/ }).click();
+  await page.locator('.bandeau .etape', { hasText: /^.?4Doublons$/ }).click();
   debut = performance.now();
-  await page.getByRole('button', { name: 'Analyser les photos' }).click();
-  await page.getByRole('button', { name: 'Repérer les rafales (gratuit)' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
-  noter(`analyse locale (netteté, ressemblance, exposition) de toutes les photos en ${duree(debut)}`);
-  noter(`estimation affichée : ${await page.getByRole('button', { name: /Analyser avec l’IA/ }).innerText()}`);
-  debut = performance.now();
-  await page.getByRole('button', { name: 'Repérer les rafales (gratuit)' }).click();
-  await page.getByText(/proposés? : relisez/).first().waitFor({ timeout: 600_000 });
+  // Rafales repérées toutes seules à l'ouverture (l'analyse locale a été faite à l'inventaire).
+  await page.locator('.apercu-lots > summary').waitFor({ timeout: 3_600_000 });
+  noter(`estimation affichée : ${await page.locator('.encart-ia > summary').innerText()}`);
   noter(`rafales repérées en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_doublons.png') });
   if (await page.getByRole('button', { name: 'Écarter tous les doublons affichés' }).isEnabled()) {

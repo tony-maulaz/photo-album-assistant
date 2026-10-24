@@ -1,5 +1,5 @@
 // Tri rapide (SPEC § 6.9) : plein écran, photo par photo. Espace = ★,
-// 2 = ★★, X = non, Retour arrière = à décider, ← → pour naviguer, R pour
+// 2 = ★★, X = pas pour l’album, Retour arrière = à décider, ← → pour naviguer, R pour
 // tourner. Chaque choix passe à la photo suivante.
 
 import { useEffect } from 'preact/hooks';

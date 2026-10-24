@@ -654,6 +654,70 @@ button.etape-courante:hover:not(:disabled) {
   letter-spacing: 0.08em;
 }
 
+/* Bouton « Aide » (explication repliée après la première visite) : bien visible, avec son icône. */
+button.bouton-aide {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 3px 12px 3px 9px;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+button.bouton-aide:hover:not(:disabled) {
+  border-color: var(--accent-fonce);
+  background: var(--cible);
+}
+
+.tete-etape h1 .bouton-aide {
+  margin-left: 14px;
+  vertical-align: middle;
+}
+
+/* Les trois choix pour un sous-dossier déjà rangé (inventaire) : une carte chacun. */
+.choix-traitement {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 8px 0 14px;
+}
+
+.choix-traitement > div {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--ombre-douce);
+}
+
+.choix-traitement dt {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.choix-traitement dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--discret);
+}
+
+.dossier-apercu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.miniatures-dossier {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
 .explication {
   color: var(--discret);
   max-width: 820px;
@@ -889,6 +953,10 @@ button.etape-courante:hover:not(:disabled) {
 
 .formulaire select {
   max-width: 560px;
+}
+
+.formulaire > .champ-plein {
+  grid-column: 1 / -1;
 }
 
 .formulaire > p {
@@ -2013,6 +2081,11 @@ kbd {
   max-width: 640px;
 }
 
+.avances.reglages-avances {
+  max-width: none;
+  margin-top: 24px;
+}
+
 .avances[open] {
   display: flex;
   flex-direction: column;
@@ -2207,6 +2280,15 @@ kbd {
   gap: 6px;
   padding: 0 6px 6px;
   cursor: grab;
+}
+
+.volets.n1 {
+  grid-template-columns: 1fr;
+}
+
+.plus-de-photos {
+  margin: 0;
+  padding: 4px 16px 8px;
 }
 
 .volets.n2 {
@@ -2939,11 +3021,20 @@ button.bouton-ia:disabled {
   min-width: 320px;
 }
 
+.bornes-curseur {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--discret);
+}
+
 .compteur-floues {
   font-size: 17px;
 }
 
 .grille-floues {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 380px);
@@ -3066,6 +3157,20 @@ button.bouton-ia:disabled {
 .voisin.propose {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
+}
+
+.liste-seuls {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.liste-seuls li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .groupe-consolidation {

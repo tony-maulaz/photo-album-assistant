@@ -4,7 +4,7 @@
 
 import { useRef, useState } from 'preact/hooks';
 import { traitementDe, type FichierPlan, type Plan } from '../../lib/plan';
-import { arborescence, grouper, OPTIONS_TRI_DEFAUT, optionsDepuisPrereglage, rangerVideos, appliquerTri, type OptionsTri, type PhotoTri } from '../../lib/tri';
+import { arborescence, avecSansDate, grouper, OPTIONS_TRI_DEFAUT, optionsDepuisPrereglage, rangerVideos, appliquerTri, separerSansDate, type OptionsTri, type PhotoTri } from '../../lib/tri';
 import { appliquer, changerEtape, configuration, journal, notifier, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
 import { duree, nombre, pluriel } from '../format';
 import { BarreProgression } from './Cadre';
@@ -35,7 +35,9 @@ export function TriAuto() {
   const calculer = async () => {
     if (dejaTrie && !(await confirmer('Recalculer l’arborescence ?', 'Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier calcul seront remplacés (Ctrl+Z annule).', 'Recalculer')))
       return;
-    const photos: PhotoTri[] = aTrier.filter((f) => f.categorie === 'photo').map((f) => ({ id: f.id, nom: f.id.split('/').pop()!, date: f.date, gps: f.gps }));
+    // Sans vraie date, une photo ne peut pas être rangée dans une sortie : elle va dans « _sans_date ».
+    const { datees, sansDate } = separerSansDate(aTrier);
+    const photos: PhotoTri[] = datees.filter((f) => f.categorie === 'photo').map((f) => ({ id: f.id, nom: f.id.split('/').pop()!, date: f.date, gps: f.gps }));
     photos.sort((a, b) => a.id.localeCompare(b.id));
     const g = grouper(photos, lieux, o);
     arreter.current = false;
@@ -45,10 +47,13 @@ export function TriAuto() {
       const noms = await s.geocodage.nommer(g.groupes, reglages.value.emailNominatim, (faits, total) => setProgres({ faits, total }), () => arreter.current);
       const proposes = arborescence(g, new Map(g.groupes.map((gr, i) => [gr.index, noms[i]])), o);
       const dates = new Map(photos.map((p) => [p.id, p.date]));
-      const avecVideos = rangerVideos(
-        proposes,
-        dates,
-        aTrier.filter((f) => f.categorie === 'video').map((f) => ({ id: f.id, date: f.date })),
+      const avecVideos = avecSansDate(
+        rangerVideos(
+          proposes,
+          dates,
+          datees.filter((f) => f.categorie === 'video').map((f) => ({ id: f.id, date: f.date })),
+        ),
+        sansDate.map((f) => f.id),
       );
       // Le géocodage a pu durer : seules les photos encore à trier maintenant sont rangées.
       const plan = session.value?.plan;

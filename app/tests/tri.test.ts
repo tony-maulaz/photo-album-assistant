@@ -333,3 +333,19 @@ describe('suggestion de lieux connus (§ 6.4)', () => {
     expect(restants[0].lat).toBeCloseTo(46.8, 3);
   });
 });
+
+describe('photos sans date (date du fichier seulement)', () => {
+  it('ne sont pas rangées d’après la date du fichier : elles vont dans « _sans_date »', async () => {
+    const { separerSansDate, avecSansDate, DOSSIER_SANS_DATE } = await import('../src/lib/tri');
+    const f = [
+      { id: 'a', origineDate: 'exif' },
+      { id: 'b', origineDate: 'fichier' },
+      { id: 'c', origineDate: 'nom' },
+    ];
+    const { datees, sansDate } = separerSansDate(f);
+    expect(datees.map((x) => x.id)).toEqual(['a', 'c']);
+    expect(sansDate.map((x) => x.id)).toEqual(['b']);
+    expect(avecSansDate([], ['b'])).toEqual([{ chemin: [DOSSIER_SANS_DATE], photos: ['b'], info: { origine: 'sans_lieu' } }]);
+    expect(avecSansDate([], [])).toEqual([]);
+  });
+});

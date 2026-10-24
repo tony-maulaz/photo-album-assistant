@@ -372,6 +372,26 @@ de temps en temps (Fonctions IA, Configuration, Réglages, Journal, Aide,
 Fermer le projet) passent dans un menu ☰. Le budget IA reste visible (règle
 d'or 5). Gain : environ 80 px sur toutes les pages.
 
+**D56 — Calculer tout seul, ne demander que les décisions.** L'analyse
+locale des photos (netteté, ressemblance, exposition) et l'empreinte des
+photos de même taille démarrent toutes seules après l'inventaire, sur la page
+Inventaire, avec leur progression ; « Valider et continuer » attend la fin.
+Les copies exactes sont alors proposées sans bouton, et les rafales sont
+repérées dès l'ouverture de l'étape Doublons. Plus aucun bouton « Analyser
+les photos ». Rien n'est écarté sans validation ; l'analyse IA des doublons
+reste un bouton facultatif, avec son coût. Une analyse en arrière-plan
+pendant les étapes suivantes a été écartée : moins claire pour un débutant
+(pages à moitié prêtes), et le gain est faible (environ 1 minute pour 1600
+photos).
+
+**D57 — Photos sans date : `_sans_date`.** Sans date dans les données de
+l'appareil ni dans le nom, la date du fichier est souvent celle d'une copie :
+sur une vraie année, toutes ces photos tombaient le même jour, dans une
+fausse sortie. Le tri automatique les met dans `_sans_date`, à placer à la
+main ; les doublons les comparent entre elles (lot « Sans date ») ; dans
+l'album, une photo sans date rangée dans une sortie se place à la fin de
+cette sortie. Pour un dossier déjà trié, elles restent dans leurs dossiers.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

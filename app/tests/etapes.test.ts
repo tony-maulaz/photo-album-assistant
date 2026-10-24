@@ -79,6 +79,8 @@ describe('lots des doublons', () => {
       photo('f', 'g', '2026-07-19T11:00:00'),
       photo('capture', 'racine', '2026-07-18T12:00:00', { capture: true }),
       photo('ecartee', 'racine', '2026-07-18T13:00:00', { statut: 'mis_de_cote' }),
+      photo('copie1', 'racine', '2026-10-01T09:00:00', { origineDate: 'fichier' }),
+      photo('copie2', 'racine', '2026-10-01T09:05:00', { origineDate: 'fichier' }),
     ])
       p.fichiers.set(f.id, f);
     return p;
@@ -89,8 +91,10 @@ describe('lots des doublons', () => {
     const p = plan();
     expect(lotsDoublons(p, true)).toEqual([
       { id: 'jour:2026-07-18', nom: '18.07.26' },
+      { id: 'jour:sans', nom: 'Sans date' },
       { id: 'g', nom: 'BESTOF' },
     ]);
+    expect(photosLot(p, 'jour:sans', analyses).map((x) => x.id)).toEqual(['copie1', 'copie2']);
     expect(photosLot(p, 'jour:2026-07-18', analyses).map((x) => x.id)).toEqual(['a', 'b', 'c']);
     expect(photosLot(p, 'g', analyses).map((x) => x.id)).toEqual(['e', 'f']);
   });
@@ -98,6 +102,6 @@ describe('lots des doublons', () => {
   it('dossier déjà trié : par dossier, comme avant', () => {
     const p = plan();
     expect(lotsDoublons(p, false).map((l) => l.id)).toEqual(['g', 'racine']);
-    expect(photosLot(p, 'racine', analyses).map((x) => x.id)).toEqual(['a', 'b', 'd']);
+    expect(photosLot(p, 'racine', analyses).map((x) => x.id)).toEqual(['a', 'b', 'd', 'copie1', 'copie2']);
   });
 });

@@ -172,7 +172,7 @@ export function PageNommage() {
 
   return (
     <div class="page large avec-barre page-nommage">
-      <TeteEtape numero={ETAPE.nommage} titre="Nommage">
+      <TeteEtape numero={ETAPE.nommage} titre="Nommage" cle="nommage">
         Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). L’IA peut proposer des noms en regardant
         quelques photos, le lieu, le calendrier et le contexte du projet ; vous gardez le dernier mot.
       </TeteEtape>
