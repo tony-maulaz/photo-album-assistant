@@ -7,12 +7,17 @@ import { aTraduire, t } from '../lib/langue';
 import { seuilFlou, signaux, type Indicateurs, type Signal } from '../lib/indicateurs';
 import { rechercher } from '../lib/recherche';
 import { estDescendant, noterAlbum, RACINE, tourner, type FichierPlan, type Plan } from '../lib/plan';
-import { piles } from '../lib/selection';
+import { jourArrivee, piles } from '../lib/selection';
 import type { Analyses } from '../navigateur/analyses';
+import { photoAMontrer } from './composants/GrillePhotos';
 import { annuler, appliquer, notifier, session } from './etat';
+import { ancre, selection } from './organiser';
 
 export interface Filtres {
+  /** Un jour « AAAA-MM-JJ » ou un mois « AAAA-MM » (barres de l'équilibre). */
   jour: string;
+  /** Photos arrivées par une mise à jour de l'inventaire (D63) : « nouvelles » (toutes), ou un jour d'arrivée « AAAA-MM-JJ ». */
+  arrivee: string;
   appareil: string;
   etoiles: 'toutes' | 'retenues' | 'grandes' | 'non' | 'a_decider';
   signal: Signal | 'aucun' | 'tous';
@@ -25,7 +30,7 @@ export interface Filtres {
   recherche: string;
 }
 
-export const FILTRES_DEFAUT: Filtres = { jour: '', appareil: '', etoiles: 'toutes', signal: 'tous', tri: 'date', personnes: '', typePhoto: '', defaut: '', recherche: '' };
+export const FILTRES_DEFAUT: Filtres = { jour: '', arrivee: '', appareil: '', etoiles: 'toutes', signal: 'tous', tri: 'date', personnes: '', typePhoto: '', defaut: '', recherche: '' };
 
 /** Résultats des aides IA utiles aux filtres : étiquettes (IA8) et appréciations (IA9). */
 export interface ResultatsIA {
@@ -43,6 +48,16 @@ export const pilesOuvertes = signal<ReadonlySet<string>>(new Set());
 /** Tri rapide plein écran : liste figée à l'ouverture et position. */
 export const triRapide = signal<{ ids: string[]; index: number } | null>(null);
 export const comparaison = signal<string[] | null>(null);
+/** Photo préférée par l'IA au dernier lancement de « Meilleure de la sélection » (IA10), montrée dans le panneau. */
+export const derniereMeilleure = signal<string | null>(null);
+
+/** Sélectionne des photos et amène la première à l'écran dans la grille (résultats des aides IA). */
+export function montrerPhotos(ids: string[]) {
+  if (!ids.length) return;
+  selection.value = new Set(ids);
+  ancre.value = ids[0];
+  photoAMontrer.value = ids[0];
+}
 
 /** Photos de l'archive dans un dossier et ses sous-dossiers (toutes depuis la racine). */
 export function photosVue(plan: Plan, vue: string): FichierPlan[] {
@@ -79,7 +94,8 @@ export function filtrer(photos: FichierPlan[], infos: Map<string, InfoPhoto>, f:
     if (f.typePhoto && e?.type !== f.typePhoto) return false;
     if (f.defaut === 'aucun' && e && e.defauts.length) return false;
     if (f.defaut && f.defaut !== 'aucun' && !e?.defauts.includes(f.defaut as Etiquettes['defauts'][number])) return false;
-    if (f.jour && p.date?.slice(0, 10) !== f.jour) return false;
+    if (f.jour && !p.date?.startsWith(f.jour)) return false;
+    if (f.arrivee && (!p.ajout || (f.arrivee !== 'nouvelles' && jourArrivee(p.ajout) !== f.arrivee))) return false;
     if (f.appareil && (p.appareil ?? '') !== f.appareil) return false;
     if (f.etoiles === 'retenues' && !(p.album && p.album > 0)) return false;
     if (f.etoiles === 'grandes' && p.album !== 2) return false;

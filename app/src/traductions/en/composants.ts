@@ -146,7 +146,7 @@ export const TEXTES: Record<string, string> = {
   'Côte à côte': 'Side by side',
   'Taille normale': 'Normal size',
   Fermer: 'Close',
-  '{0} autres photos : double-clic ou Entrée pour les voir une à une.': '{0} more: double-click or press Enter to see all the photos one by one.',
+  '{0} : double-clic ou Entrée pour les voir une à une.': '{0}: double-click or press Enter to see all the photos one by one.',
 
   // Dialogues.tsx
   Valider: 'Confirm',

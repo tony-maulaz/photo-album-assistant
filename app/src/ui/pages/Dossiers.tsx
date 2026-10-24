@@ -33,7 +33,11 @@ export function PageDossiers() {
   const s = session.value!;
   versionPlan.value;
   const r = resumes(s.plan);
-  const dossiers = [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { numeric: true }));
+  // Dans l'ordre du temps (début de la période), pas des noms : « janvier, février… » et non « août, avril… ». Sans date : à la fin.
+  const debut = (id: string) => r.get(id)?.duTotal ?? '9999';
+  const dossiers = [...s.plan.dossiers.values()]
+    .filter((d) => d.parent === RACINE && d.origine === 'source')
+    .sort((a, b) => debut(a.id).localeCompare(debut(b.id)) || a.nom.localeCompare(b.nom, 'fr', { numeric: true }));
   const racine = r.get(RACINE)!;
   const choix = (id: string) => traitementDe(s.plan, id) ?? 'trier';
   const compte = (v: TraitementDossier) => dossiers.filter((d) => choix(d.id) === v).length;
@@ -115,7 +119,7 @@ export function PageDossiers() {
       <BarreValidation
         resume={
           dossiers.length
-            ? t`${nombre(compte('trier'))} à trier · ${nombre(compte('nettoyer'))} gardés et nettoyés · ${nombre(compte('garder'))} à ne pas toucher`
+            ? t`${nombre(compte('trier'))} à trier · ${pluriel(compte('nettoyer'), 'gardé et nettoyé', 'gardés et nettoyés')} · ${nombre(compte('garder'))} à ne pas toucher`
             : t`Aucun sous-dossier`
         }
         revenir={() => revenirDe('dossiers')}
