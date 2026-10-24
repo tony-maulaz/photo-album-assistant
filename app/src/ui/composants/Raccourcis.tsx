@@ -85,6 +85,14 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     L('F2', aTraduire('Renommer le dossier affiché')),
     LT(aTraduire('Entrée'), aTraduire('Voir la photo en grand (← → : la suivante)')),
   ],
+  doublons: [
+    LT(aTraduire('J et K (ou ↓ ↑)'), aTraduire('Groupe suivant, groupe précédent')),
+    L('← →', aTraduire('Passer d’une photo du groupe à l’autre')),
+    LT(aTraduire('Espace'), aTraduire('Garder ou écarter la photo')),
+    L('A', aTraduire('Accepter la proposition du groupe')),
+    L('C', aTraduire('Comparer le groupe en grand (Page préc. / Page suiv. : autre groupe)')),
+    LT(aTraduire('N et P'), aTraduire('Journée (ou dossier) suivante, précédente')),
+  ],
   selection: [
     ...GRILLE,
     LT(aTraduire('Espace ou 1'), aTraduire('★ dans l’album')),

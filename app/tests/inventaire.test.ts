@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appliquerDecalages, ecarterDoublonsExacts, rangerCaptures, ressembleACapture, resumeSource } from '../src/lib/inventaire';
+import { appliquerDecalages, rangerCaptures, ressembleACapture, resumeSource } from '../src/lib/inventaire';
 import { definirLangueSortie, nomsSortie } from '../src/lib/sortie';
 import { deplacerFichiers, Historique, mettreDeCote, planVide, RACINE, type FichierPlan, type Plan } from '../src/lib/plan';
 
@@ -82,28 +82,6 @@ describe('propositions de l’inventaire (étape 2)', () => {
     deplacerFichiers(p, ['a.jpg', 'Annecy/1.jpg'], 'n1');
     mettreDeCote(p, ['Annecy/2.jpg'], 'doublons');
     expect(resumeSource(p)).toEqual(attendu);
-  });
-
-  it('met de côté les copies exactes que l’utilisateur n’a pas gardées', () => {
-    const p = plan();
-    const groupe = { garde: 'a.jpg', copies: [{ id: 'c.jpg', type: 'identique' as const }], aGarder: ['a.jpg'] };
-    ecarterDoublonsExacts(p, [groupe], new Set(['a.jpg']));
-    expect(p.fichiers.get('c.jpg')).toMatchObject({ statut: 'mis_de_cote', raison: 'doublons_exacts' });
-    expect(p.fichiers.get('a.jpg')!.statut).toBe('archive');
-  });
-
-  it('garde l’exemplaire choisi à la place du meilleur', () => {
-    const p = plan();
-    ecarterDoublonsExacts(p, [{ garde: 'a.jpg', copies: [{ id: 'c.jpg', type: 'identique' }], aGarder: ['a.jpg'] }], new Set(['c.jpg']));
-    expect(p.fichiers.get('a.jpg')).toMatchObject({ statut: 'mis_de_cote', raison: 'doublons_exacts' });
-    expect(p.fichiers.get('c.jpg')!.statut).toBe('archive');
-  });
-
-  it('garde toujours au moins un exemplaire d’un groupe', () => {
-    const p = plan();
-    ecarterDoublonsExacts(p, [{ garde: 'a.jpg', copies: [{ id: 'c.jpg', type: 'identique' }], aGarder: ['a.jpg'] }], new Set());
-    expect(p.fichiers.get('a.jpg')!.statut).toBe('archive');
-    expect(p.fichiers.get('c.jpg')!.statut).toBe('mis_de_cote');
   });
 
   it('corrige l’heure d’un appareil sans cumuler les décalages', () => {

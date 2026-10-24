@@ -4,9 +4,10 @@
 // la proposition garde le meilleur exemplaire de chaque emplacement (un
 // dossier qui garde sa place, ou les photos à trier) : une sélection « Best
 // of » faite de copies reste entière. Une photo à trier qui a déjà sa place
-// dans un dossier « Garder, nettoyer » n'est pas triée une seconde fois. Les
-// copies d'un même emplacement et les versions réduites sont proposées pour
-// `_mis_de_cote/doublons_exacts/`.
+// dans un dossier « Garder, nettoyer » n'est pas triée une seconde fois ; si
+// ce dossier n'en a qu'une version réduite, l'original y prend sa place (D71).
+// Les copies d'un même emplacement et les versions réduites sont proposées
+// pour `_mis_de_cote/doublons_exacts/`.
 
 export interface PhotoExacte {
   id: string;
@@ -44,6 +45,12 @@ export interface GroupeExact {
    * déjà dans un dossier « Garder, nettoyer ».
    */
   aGarder: string[];
+  /**
+   * Version réduite rangée dans un dossier « Garder, nettoyer », original à
+   * trier : l'original (`garde`) est proposé dans ce dossier, à la place de la
+   * copie, qui est écartée (D71).
+   */
+  remplacement?: { original: string; copie: string; dossier: string };
 }
 
 /**
@@ -187,6 +194,8 @@ export function groupesDoublonsExacts(photos: PhotoExacte[]): GroupeExact[] {
     // le tri la rangerait une seconde fois dans un nouveau dossier).
     const dejaRangee = g.some((p) => p.genre === 'nettoyer');
     const ordre = dejaRangee ? [...g.filter((p) => p.genre !== 'a_trier'), ...g.filter((p) => p.genre === 'a_trier')] : g;
+    // Seule une version réduite est déjà rangée : le meilleur original à trier la remplacera.
+    const reduiteRangee = !dejaRangee && ordre[0].genre === 'a_trier' ? reduites.find((p) => p.genre === 'nettoyer') : undefined;
     // Le meilleur exemplaire de chaque emplacement (g est trié du meilleur au moins bon).
     const aGarder: string[] = [];
     const emplacements = new Set<string>();
@@ -199,6 +208,7 @@ export function groupesDoublonsExacts(photos: PhotoExacte[]): GroupeExact[] {
       garde: ordre[0].id,
       copies: [...ordre.slice(1).map((p) => ({ id: p.id, type: 'identique' as const })), ...reduites.map((p) => ({ id: p.id, type: 'reduite' as const }))],
       aGarder,
+      ...(reduiteRangee && { remplacement: { original: ordre[0].id, copie: reduiteRangee.id, dossier: reduiteRangee.dossier } }),
     });
   }
   return resultat.sort((a, b) => a.garde.localeCompare(b.garde));

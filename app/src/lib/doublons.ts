@@ -12,7 +12,6 @@ import consigneVue from '../ia/consignes/doublons_vue.txt?raw';
 import { seuilFlou } from './indicateurs';
 import { t } from './langue';
 import { distanceHamming } from './phash';
-import { combiner, ecarterGardee, echangerGardee, garderAussi, marquerDoublons, type DecisionDoublon, type FichierPlan, type Modification, type Plan } from './plan';
 import { minutes } from './selection';
 import { jetonsImage, type Modele } from './tarifs';
 
@@ -33,8 +32,6 @@ export interface PhotoDoublon {
   date?: string;
   phash?: string;
   nettete?: number;
-  /** Gardée volontairement : jamais proposée comme doublon (I10). */
-  protegee?: boolean;
 }
 
 export interface Proposition {
@@ -54,7 +51,9 @@ function semblables(a: PhotoDoublon, b: PhotoDoublon, seuil: number): boolean {
 /**
  * Étage 1 : rafales quasi identiques (à moins de 10 min et distance ≤ 12),
  * groupement glouton ; la plus nette de chaque groupe est gardée.
- * `photos` est trié par date.
+ * `photos` est trié par date. Une photo gardée volontairement reste dans son
+ * groupe (il ne change pas d'une recherche à l'autre) : c'est son état, lu
+ * dans le plan, qui la met à l'abri (I10, D71).
  */
 export function rafales(photos: PhotoDoublon[], p = PARAMETRES_DOUBLONS): Proposition[] {
   const groupes: PhotoDoublon[][] = [];
@@ -73,8 +72,8 @@ export function rafales(photos: PhotoDoublon[], p = PARAMETRES_DOUBLONS): Propos
   for (const g of groupes) {
     if (g.length < 2) continue;
     const meilleure = g.reduce((a, b) => ((b.nettete ?? 0) > (a.nettete ?? 0) ? b : a));
-    const doublons = g.filter((r) => r !== meilleure && !r.protegee).map((r) => ({ id: r.id, raison: t`quasi identique à quelques secondes` }));
-    if (doublons.length) propositions.push({ garde: meilleure.id, doublons, source: 'rafale' });
+    const doublons = g.filter((r) => r !== meilleure).map((r) => ({ id: r.id, raison: t`quasi identique à quelques secondes` }));
+    propositions.push({ garde: meilleure.id, doublons, source: 'rafale' });
   }
   return propositions;
 }
@@ -372,7 +371,7 @@ export async function analyserDossier(photos: PhotoDoublon[], ia: OutilsIA | nul
         const garde = sous[d.garder - 1];
         const doublons = d.doublons
           .map((x) => ({ id: sous[x.numero - 1], description: x.description }))
-          .filter((x) => !parId.get(x.id)?.protegee && !marques.has(x.id) && x.id !== garde)
+          .filter((x) => !marques.has(x.id) && x.id !== garde)
           .map((x) => ({ ...x, raison: x.description ? `${x.description} — ${d.raison}` : d.raison }));
         doublons.forEach((x) => marques.add(x.id));
         const refus = d.refus.map((r) => ({ id: sous[r.numero - 1], motif: r.motif }));
@@ -384,7 +383,7 @@ export async function analyserDossier(photos: PhotoDoublon[], ia: OutilsIA | nul
 }
 
 // ---------------------------------------------------------------------------
-// Coût estimé et décisions de l'utilisateur
+// Coût estimé (les décisions de l'utilisateur : lib/groupesDoublons.ts)
 // ---------------------------------------------------------------------------
 
 /** Jetons d'une planche de `n` vignettes (cellule, colonnes, marges de 6 px). */
@@ -417,72 +416,4 @@ export function estimationDoublons(photosParDossier: number[], m: Modele, p = PA
     sortie += verifs * 1500;
   }
   return { appels, images, usd: (entree * m.entree + sortie * m.sortie) / 1e6 };
-}
-
-/** État d'un doublon proposé, lu dans le plan (les décisions y sont enregistrées). */
-export function etatDoublon(f: FichierPlan | undefined): 'propose' | 'accepte' | 'garde' {
-  if (f?.statut === 'mis_de_cote' && f.raison === 'doublons') return 'accepte';
-  if (!f || f.protegee || f.statut !== 'archive') return 'garde';
-  return 'propose';
-}
-
-/** Photo gardée en ce moment dans un groupe : la proposée, ou celle choisie à sa place. */
-export function gardeeActuelle(p: Proposition, fichier: (id: string) => FichierPlan | undefined): string {
-  const proposee = fichier(p.garde);
-  if (etatDoublon(proposee) !== 'accepte') return p.garde;
-  const remplacante = proposee?.doublon?.garde;
-  return remplacante && (remplacante === p.garde || p.doublons.some((d) => d.id === remplacante)) ? remplacante : p.garde;
-}
-
-function descriptionDans(p: Proposition, id: string): string | undefined {
-  return id === p.garde ? p.descriptionGardee : p.doublons.find((d) => d.id === id)?.description;
-}
-
-/**
- * « Garder celle-ci à la place », depuis n'importe quel état : `nouvelle`
- * devient la gardée, la gardée actuelle est écartée, et les doublons encore
- * proposés du groupe sont écartés au profit de la nouvelle.
- */
-export function garderALaPlace(plan: Plan, p: Proposition, nouvelle: string): Modification | null {
-  const fichier = (id: string) => plan.fichiers.get(id);
-  const actuelle = gardeeActuelle(p, fichier);
-  const groupe = [p.garde, ...p.doublons.map((d) => d.id)];
-  const info = (id: string, raison: string) => ({ garde: nouvelle, source: p.source, raison, description: descriptionDans(p, id), descriptionGardee: descriptionDans(p, nouvelle) });
-  const remplacee = t`remplacée par une photo semblable choisie à la main`;
-  const echange = echangerGardee(plan, groupe, actuelle, nouvelle, info(actuelle, remplacee));
-  const restants = groupe.filter((id) => id !== nouvelle && id !== actuelle && etatDoublon(fichier(id)) === 'propose');
-  const raisons = new Map(p.doublons.map((d) => [d.id, d.raison]));
-  return combiner(t`Garder une autre photo à la place`, echange, marquerDoublons(plan, restants.map((id) => ({ id, ...info(id, raisons.get(id) ?? remplacee) }))));
-}
-
-/** « Écarter » une photo gardée aussi : on change d'avis, elle rejoint les doublons écartés du groupe. */
-export function ecarterDuGroupe(plan: Plan, p: Proposition, id: string): Modification | null {
-  const garde = gardeeActuelle(p, (x) => plan.fichiers.get(x));
-  const raison = p.doublons.find((d) => d.id === id)?.raison ?? t`écartée à la main`;
-  return ecarterGardee(plan, id, { garde, source: p.source, raison, description: descriptionDans(p, id), descriptionGardee: descriptionDans(p, garde) });
-}
-
-/**
- * Accepte une proposition : ses doublons sont mis de côté. Avec `garde`, une
- * autre photo du groupe est gardée à la place (« Garder celle-ci à la place ») :
- * elle est protégée, et l'ancienne gardée devient un doublon.
- */
-export function accepterProposition(plan: Plan, p: Proposition, garde = p.garde): Modification | null {
-  const doublons = new Map(p.doublons.map((d) => [d.id, d]));
-  const descriptionGardee = garde === p.garde ? p.descriptionGardee : doublons.get(garde)?.description;
-  const decisions: DecisionDoublon[] = [p.garde, ...doublons.keys()]
-    .filter((id) => id !== garde && (id === p.garde || etatDoublon(plan.fichiers.get(id)) === 'propose'))
-    .map((id) => ({
-      id,
-      garde,
-      source: p.source,
-      raison: doublons.get(id)?.raison ?? t`remplacée par une photo semblable choisie à la main`,
-      description: id === p.garde ? p.descriptionGardee : doublons.get(id)?.description,
-      descriptionGardee,
-    }));
-  return combiner(
-    garde === p.garde ? t`Écarter les doublons` : t`Garder une autre photo à la place`,
-    garde !== p.garde ? garderAussi(plan, [garde]) : null,
-    marquerDoublons(plan, decisions),
-  );
 }

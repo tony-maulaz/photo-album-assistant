@@ -224,23 +224,26 @@ try {
   // Phase 2 : analyse locale, rafales, sélection, album.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Doublons$/ }).click();
   debut = performance.now();
-  // Rafales repérées toutes seules à l'ouverture (l'analyse locale a été faite à l'inventaire).
-  await page.locator('.apercu-lots > summary').waitFor({ timeout: 3_600_000 });
-  noter(`estimation affichée : ${await page.locator('.encart-ia > summary').innerText()}`);
+  // Rafales repérées toutes seules à l'ouverture (l'analyse locale a été faite à l'inventaire) ; onglets (D71).
+  await page.locator('.onglet-doublons', { hasText: 'Rafales' }).click();
+  await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 3_600_000 });
   noter(`rafales repérées en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_doublons.png') });
-  if (await page.getByRole('button', { name: 'Écarter tous les doublons affichés' }).isEnabled()) {
+  const accepterJournee = page.getByRole('button', { name: /^Accepter (la proposition|les \d+ propositions) · / });
+  if (await accepterJournee.count()) {
     debut = performance.now();
-    await page.getByRole('button', { name: 'Écarter tous les doublons affichés' }).click();
-    await page.getByRole('button', { name: 'Écarter', exact: true }).click();
-    await page.getByText(/doublons? écartés?\./).first().waitFor();
-    noter(`doublons écartés en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
+    await accepterJournee.click();
+    await page.getByText(/écartées? → /).first().waitFor();
+    noter(`propositions de la première journée acceptées en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
   }
+  await page.locator('.onglet-doublons', { hasText: 'Même scène (IA)' }).click();
+  noter(`estimation affichée : ${await page.getByRole('button', { name: /Analyser avec l’IA/ }).innerText()}`);
 
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
   debut = performance.now();
-  await page.waitForFunction(() => document.querySelectorAll('.page-selection .tuile img').length >= 20, null, { timeout: 120_000 });
-  noter(`sélection : toutes les photos affichées, 20 miniatures en ${duree(debut)}`);
+  // Les titres de journée prennent de la place : une dizaine de miniatures tiennent dans l'écran.
+  await page.waitForFunction(() => document.querySelectorAll('.page-selection .tuile img').length >= 10, null, { timeout: 120_000 });
+  noter(`sélection : toutes les photos affichées, 10 miniatures en ${duree(debut)}`);
   const echappe = max.nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   await page.locator('.ligne-dossier', { has: page.locator('.nom-dossier', { hasText: new RegExp(`^${echappe}$`) }) }).first().click();
   await page.locator('.page-selection .tuile').first().waitFor();
@@ -251,7 +254,7 @@ try {
   await page.waitForTimeout(100);
   noter(`${max.n} photos marquées ★ en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
   debut = performance.now();
-  await page.getByText('Empiler les semblables').click();
+  await page.getByRole('button', { name: 'Empiler', exact: true }).click();
   await page.waitForTimeout(100);
   noter(`piles calculées en ${duree(debut)} : ${await page.locator('.badge-pile:not(.dans-pile)').count()} piles visibles`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_selection.png') });

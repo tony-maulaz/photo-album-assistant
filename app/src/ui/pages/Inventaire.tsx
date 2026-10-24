@@ -11,7 +11,7 @@ import { aTraduire, t } from '../../lib/langue';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { ProgressionAnalyse } from '../composants/Analyse';
-import { copiesProposees, useCopiesExactes } from '../composants/CopiesExactes';
+import { copiesProposees, useCopiesExactes } from '../copiesExactes';
 import { miseAJourDemandee } from '../composants/BandeauSource';
 import { ExtrasInventaire } from '../composants/ExtrasInventaire';
 import { Miniature } from '../composants/GrillePhotos';
@@ -34,7 +34,7 @@ function AVerifier() {
   const copies = useCopiesExactes();
   const enCours = !!analyseEnCours.value || analyseAFaire(s);
   const sousDossiers = s.projet.mode === 'vrac' ? [...s.plan.dossiers.values()].filter((d) => d.parent === RACINE && d.origine === 'source').length : 0;
-  const nbCopies = copies ? copiesProposees(copies) : 0;
+  const nbCopies = copies ? copiesProposees(copies, s.plan) : 0;
   const sansDate = [...s.plan.fichiers.values()].filter((f) => f.categorie !== 'autre' && f.statut === 'archive' && f.origineDate === 'fichier').length;
   const derniere = s.projet.mises_a_jour?.at(-1);
   const points = [

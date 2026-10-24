@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { depuisJson, garderAussi, planVide, versJson, type FichierPlan } from '../src/lib/plan';
 import { modele } from '../src/lib/tarifs';
 import {
-  accepterProposition,
-  ecarterDuGroupe,
-  gardeeActuelle,
-  garderALaPlace,
   analyserDossier,
   estimationDoublons,
-  etatDoublon,
   consigneVerif,
   consigneVue,
   decisionsVerification,
@@ -36,12 +30,12 @@ describe('rafales (étage local du script 06)', () => {
     expect(rafales(photos)).toEqual([{ garde: 'b', doublons: [{ id: 'a', raison: 'quasi identique à quelques secondes' }], source: 'rafale' }]);
   });
 
-  it('ne propose jamais une photo protégée (I10)', () => {
+  it('un groupe ne dépend que des photos : une décision ne le change pas (D71, l’état est dans le plan)', () => {
     const photos: PhotoDoublon[] = [
-      { id: 'a', date: '2026-07-21T11:00:00', phash: h(0), nettete: 300, protegee: true },
+      { id: 'a', date: '2026-07-21T11:00:00', phash: h(0), nettete: 300 },
       { id: 'b', date: '2026-07-21T11:00:05', phash: h(1), nettete: 900 },
     ];
-    expect(rafales(photos)).toEqual([]);
+    expect(rafales(photos)).toEqual([{ garde: 'b', doublons: [{ id: 'a', raison: 'quasi identique à quelques secondes' }], source: 'rafale' }]);
   });
 
   it('repère les scènes locales (distance ≤ 20) parmi les photos non groupées', () => {
@@ -200,62 +194,7 @@ describe('analyse d’un dossier (orchestration, IA simulée)', () => {
   });
 });
 
-describe('décisions de l\u2019utilisateur et coût estimé', () => {
-  const plan = () => {
-    const p = planVide();
-    for (const id of ['a', 'b', 'c']) {
-      const f: FichierPlan = { id, nom: `${id}.jpg`, taille: 10, modifie: 0, categorie: 'photo', date: '2026-07-24T12:00:00', origineDate: 'exif', dossier: 'racine', statut: 'archive' };
-      p.fichiers.set(id, f);
-    }
-    return depuisJson(versJson(p));
-  };
-  const prop = { garde: 'a', doublons: [{ id: 'b', raison: 'r', description: 'pont flou' }, { id: 'c', raison: 'r', description: 'pont de loin' }], source: 'ia' as const, descriptionGardee: 'pont net' };
-
-  it('accepte : les doublons sont mis de côté avec leur raison', () => {
-    const p = plan();
-    accepterProposition(p, prop);
-    expect(['a', 'b', 'c'].map((id) => etatDoublon(p.fichiers.get(id)))).toEqual(['propose', 'accepte', 'accepte']);
-    expect(p.fichiers.get('b')!.doublon).toMatchObject({ garde: 'a', description: 'pont flou', descriptionGardee: 'pont net' });
-  });
-
-  it('garde une autre photo à la place : elle est protégée, l\u2019ancienne gardée devient doublon', () => {
-    const p = plan();
-    accepterProposition(p, prop, 'c');
-    expect(['a', 'b', 'c'].map((id) => etatDoublon(p.fichiers.get(id)))).toEqual(['accepte', 'accepte', 'garde']);
-    expect(p.fichiers.get('a')!.doublon).toMatchObject({ garde: 'c', description: 'pont net', descriptionGardee: 'pont de loin' });
-    expect(p.fichiers.get('c')!.protegee).toBe(true);
-  });
-
-  it('« garder celle-ci à la place » depuis une photo proposée : les autres sont écartées au profit de la nouvelle', () => {
-    const p = plan();
-    garderALaPlace(p, prop, 'b');
-    expect(['a', 'b', 'c'].map((id) => etatDoublon(p.fichiers.get(id)))).toEqual(['accepte', 'garde', 'accepte']);
-    expect(p.fichiers.get('a')!.doublon?.garde).toBe('b');
-    expect(p.fichiers.get('c')!.doublon?.garde).toBe('b');
-    expect(gardeeActuelle(prop, (id) => p.fichiers.get(id))).toBe('b');
-  });
-
-  it('changer d’avis après un échange : revenir à la photo d’origine ne garde pas les deux', () => {
-    const p = plan();
-    accepterProposition(p, prop, 'c');
-    expect(gardeeActuelle(prop, (id) => p.fichiers.get(id))).toBe('c');
-    garderALaPlace(p, prop, 'a');
-    expect(['a', 'b', 'c'].map((id) => etatDoublon(p.fichiers.get(id)))).toEqual(['garde', 'accepte', 'accepte']);
-    expect(p.fichiers.get('c')!.protegee).toBeUndefined();
-    expect(p.fichiers.get('b')!.doublon?.garde).toBe('a');
-    expect(gardeeActuelle(prop, (id) => p.fichiers.get(id))).toBe('a');
-  });
-
-  it('une photo « gardée aussi » peut de nouveau être écartée', () => {
-    const p = plan();
-    garderAussi(p, ['b']);
-    expect(etatDoublon(p.fichiers.get('b'))).toBe('garde');
-    ecarterDuGroupe(p, prop, 'b');
-    expect(etatDoublon(p.fichiers.get('b'))).toBe('accepte');
-    expect(p.fichiers.get('b')).toMatchObject({ statut: 'mis_de_cote', raison: 'doublons', doublon: { garde: 'a', description: 'pont flou' } });
-    expect(p.fichiers.get('b')!.protegee).toBeUndefined();
-  });
-
+describe('coût estimé', () => {
   it('estime un coût raisonnable (Thaïlande : 1600 photos en 40 dossiers)', () => {
     const e = estimationDoublons(Array(40).fill(40), modele('claude-sonnet-5-5')!);
     expect(e.appels).toBe(40 + 40 * 4);

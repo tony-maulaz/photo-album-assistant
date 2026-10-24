@@ -70,7 +70,7 @@ stable (`ETAPE.lieux`), indépendant de son numéro.
 | 2 | **Inventaire** | Date (EXIF, sinon nom de fichier), GPS, appareil ; analyse locale (netteté, ressemblance, empreintes) ; vidéos et autres fichiers | Tableau de bord du contenu, rien à décider (§ 6.2) | — |
 | 3 | **Dossiers** | Pour chaque sous-dossier d'un dossier en vrac : Trier, Garder et nettoyer, ou Ne pas toucher ; sautée sans sous-dossier et pour un dossier déjà trié | Tableau des sous-dossiers, trois boutons par ligne (§ 6.2) | — |
 | 4 | **Photos floues** | Classement par netteté | Grille des floues, curseur avec mise à jour en direct | Option : vérification IA des cas limites |
-| 5 | **Doublons** | Copies exactes, rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Relecture groupe par groupe | Oui |
+| 5 | **Doublons** | Copies exactes, rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Onglets par sorte, relecture journée par journée, un clic par photo | Oui |
 | 6 | **Tri automatique** | Captures d'écran rangées à part, lieux fréquents à enregistrer, réglages, regroupement GPS, sorties, voyages, noms de lieux ; inutile pour un dossier déjà trié | Résumé du tri (§ 6.4) | Option : lieu des photos sans GPS |
 | 7 | **Lieux et sorties** | Vérifier et corriger l'arborescence | **Arborescence prévue** éditable (§ 6.4) | — |
 | 8 | **Petits dossiers** | Rattachement des petits dossiers à une sortie voisine | Propositions à accepter ou refuser | Oui |
@@ -308,32 +308,49 @@ miniatures, nom cible modifiable). Fusion manuelle par glisser-déposer. Sans
 IA : noms proches et chevauchements présentés côte à côte.
 
 ### 6.8 Étape 5 — Doublons (IA)
-- **Copies exactes** en tête de page (D61), sur tout le projet, quels que
-  soient le dossier et la date : même contenu (empreinte du fichier) ou
-  **même photo en version réduite** (WhatsApp : très semblable, dimensions
-  plus petites, sans EXIF). L'utilisateur clique sur chaque exemplaire pour
-  le garder ou l'écarter. Proposition : le meilleur exemplaire de chaque
-  emplacement (un dossier qui garde sa place, ou les photos à trier) est
-  gardé, les copies d'un même emplacement et les versions réduites vont dans
-  `_mis_de_cote/doublons_exacts/`. Une photo présente dans plusieurs dossiers
-  (une sélection `BESTOF` faite de copies) reste donc entière ; ces groupes
-  sont repliés à part. Les vidéos et autres fichiers ne sont que copiés,
+- **Onglets** (D71), un par sorte de doublons, chacun avec ce qui reste à
+  relire : **Copies exactes**, **Dans plusieurs dossiers**, **Rafales**,
+  **Même scène (IA)**, **Mis de côté** (tout ce que l'étape a écarté, à
+  remettre d'un clic). En haut, toujours visibles : Afficher (À relire,
+  Relus, Tous), Classer, l'avancement et « Accepter les propositions » de la
+  journée affichée. À gauche, la liste des journées (puis des dossiers
+  gardés, puis des photos sans date) ; on relit une journée à la fois.
+  Au-delà de 20 entrées (une année), la liste passe aux mois.
+- **Un groupe par carte** : heure, sorte, emplacement, proposition. Chaque
+  photo a une proposition (garder ou écarter) et un état lu dans le plan :
+  gardée, écartée, ou « à écarter » tant que la proposition n'est pas
+  acceptée. Un clic sur n'importe quelle photo, la ★ comprise, inverse ce
+  qu'on voit ; **Accepter**, **Tout garder**, **Tout écarter**, **Comparer
+  en grand** (zoom synchronisé, groupe suivant, « Accepter et groupe
+  suivant »). Rien ne disparaît : un groupe accepté se replie à sa place.
+  Un groupe non relu garde ses photos dans l'archive. Tout s'annule
+  (Ctrl+Z). Clavier : J et K, ← et →, Espace, A, C, N et P.
+- **Copies exactes** sur tout le projet, quels que soient le dossier et la
+  date (D61) : même contenu (empreinte du fichier) ou **même photo en
+  version réduite** (WhatsApp : très semblable, dimensions plus petites,
+  sans EXIF). Proposition : le meilleur exemplaire de chaque emplacement (un
+  dossier qui garde sa place, ou les photos à trier) est gardé ; les copies
+  d'un même emplacement et les versions réduites vont dans
+  `_mis_de_cote/doublons_exacts/`. Une photo déjà rangée dans un dossier
+  « Garder, nettoyer » n'est pas triée une seconde fois ; si ce dossier n'en
+  a qu'une version réduite, l'original y prend sa place. Une photo présente
+  dans plusieurs dossiers gardés (une sélection `BESTOF` faite de copies)
+  reste entière : onglet « Dans plusieurs dossiers ». Tous les exemplaires
+  peuvent être écartés. Les vidéos et autres fichiers ne sont que copiés,
   contrôlés par leur taille.
-- Réglage simple : **Prudent** (défaut, les expressions différentes sont
-  gardées) ou **Strict**.
-- Algorithme du script 06 (§ 11) : rafales (local), vue d'ensemble de tout le
-  dossier, scènes locales, vérification en grand format, garde-fous. Juste
-  après les floues, un dossier en vrac n'est pas encore rangé : ses photos
-  sont comparées **journée par journée** (un dossier « Garder, nettoyer »
-  forme son propre lot, un dossier « Ne pas toucher » n'est pas comparé) ; un
-  dossier déjà trié, dossier par dossier.
-- **Relecture** : pour chaque groupe, la photo gardée en grand et les doublons
-  à côté, avec description, raison et heure. Actions : **Garder aussi**,
-  **Garder celle-ci à la place**, **Comparer** (zoom synchronisé). Vue « tout
-  le dossier », filtre « à vérifier en priorité ».
+- Réglage simple de l'IA : **Prudent** (défaut, les expressions différentes
+  sont gardées) ou **Strict**. Son coût est affiché dans l'onglet « Même
+  scène (IA) », où elle se lance.
+- Algorithme du script 06 (§ 11) : rafales (local, toutes seules à
+  l'ouverture), vue d'ensemble de tout le dossier, scènes locales,
+  vérification en grand format, garde-fous (une photo refusée par le
+  garde-fou est montrée, gardée, et peut être écartée). Juste après les
+  floues, un dossier en vrac n'est pas encore rangé : ses photos sont
+  comparées **journée par journée** (un dossier « Garder, nettoyer » forme
+  son propre lot, un dossier « Ne pas toucher » n'est pas comparé) ; un
+  dossier déjà trié, dossier par dossier. Les groupes ne changent pas d'une
+  recherche à l'autre : une nouvelle recherche retrouve les décisions prises.
 - Les **scènes** repérées sont conservées pour la sélection (piles).
-- Aperçu : photos avant et après par dossier (ou par journée). Les doublons iront dans
-  `_mis_de_cote/doublons/`.
 
 ### 6.9 Étape 11 — Sélection (boîte à outils)
 L'utilisateur choisit, l'application l'aide au maximum. Deux niveaux :

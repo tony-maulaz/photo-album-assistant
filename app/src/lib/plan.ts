@@ -657,19 +657,22 @@ export function changerLegende(plan: Plan, id: string, legende: string): Modific
   return tx.terminer(t`Changer la légende`);
 }
 
-export interface DecisionDoublon extends InfoDoublon {
-  id: string;
-}
-
-/** Met de côté des doublons validés (étape « Doublons »), sauf les photos protégées. */
-export function marquerDoublons(plan: Plan, decisions: DecisionDoublon[]): Modification | null {
+/**
+ * Écarte des photos à l'étape « Doublons » (D71) : mises de côté avec leur
+ * raison et, pour un doublon, la photo gardée à sa place. Une photo gardée
+ * volontairement peut l'être aussi : c'est l'utilisateur qui change d'avis.
+ */
+export function ecarterDoublons(plan: Plan, decisions: { id: string; raison: 'doublons' | 'doublons_exacts'; doublon?: InfoDoublon }[]): Modification | null {
   const tx = new Transaction(plan);
-  for (const { id, ...info } of decisions) {
-    const f = plan.fichiers.get(id);
-    if (!f || f.protegee || f.categorie !== 'photo' || f.statut !== 'archive') continue;
-    tx.fichier({ ...f, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
+  let n = 0;
+  for (const d of decisions) {
+    const f = plan.fichiers.get(d.id);
+    if (!f || f.categorie !== 'photo' || f.statut !== 'archive') continue;
+    const { protegee: _p, doublon: _d, ...reste } = f;
+    tx.fichier(d.doublon ? { ...reste, statut: 'mis_de_cote', raison: d.raison, doublon: d.doublon } : { ...reste, statut: 'mis_de_cote', raison: d.raison });
+    n++;
   }
-  return tx.terminer(t`Écarter ${pluriel(decisions.length, 'doublon')}`);
+  return tx.terminer(t`Écarter ${pluriel(n, 'photo')}`);
 }
 
 /** « Garder aussi » : le doublon revient dans son dossier et ne sera plus jamais proposé (I10). */
@@ -691,39 +694,4 @@ export function garderAussi(plan: Plan, ids: string[]): Modification | null {
   }
   for (const [d, liste] of parDossier) ranger(plan, tx, liste, d);
   return tx.terminer(t`Garder ${pluriel(ids.length, 'photo')}`);
-}
-
-/**
- * Échange la photo gardée d'un groupe de doublons : `nouvelle` est protégée
- * (remise dans son dossier si elle était écartée) et `actuelle` est écartée à
- * sa place, même protégée : c'est un échange voulu. Les doublons déjà écartés
- * du groupe renvoient désormais à la nouvelle gardée.
- */
-export function echangerGardee(plan: Plan, groupe: string[], actuelle: string, nouvelle: string, info: InfoDoublon): Modification | null {
-  const n = plan.fichiers.get(nouvelle);
-  const a = plan.fichiers.get(actuelle);
-  if (!n || !a || nouvelle === actuelle) return null;
-  const tx = new Transaction(plan);
-  const { doublon: _d, ...reste } = n;
-  tx.fichier({ ...reste, protegee: true });
-  if (n.statut === 'mis_de_cote') ranger(plan, tx, [nouvelle], plan.dossiers.has(n.dossier) ? n.dossier : RACINE);
-  if (a.statut === 'archive') {
-    const { protegee: _p, ...ra } = a;
-    tx.fichier({ ...ra, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
-  }
-  for (const id of groupe) {
-    const f = plan.fichiers.get(id);
-    if (f && id !== nouvelle && id !== actuelle && f.statut === 'mis_de_cote' && f.doublon) tx.fichier({ ...f, doublon: { ...f.doublon, garde: nouvelle } });
-  }
-  return tx.terminer(t`Garder une autre photo à la place`);
-}
-
-/** Changer d'avis sur une photo « gardée aussi » : elle n'est plus protégée et rejoint les doublons écartés. */
-export function ecarterGardee(plan: Plan, id: string, info: InfoDoublon): Modification | null {
-  const f = plan.fichiers.get(id);
-  if (!f || f.categorie !== 'photo' || f.statut !== 'archive') return null;
-  const tx = new Transaction(plan);
-  const { protegee: _p, ...reste } = f;
-  tx.fichier({ ...reste, statut: 'mis_de_cote', raison: 'doublons', doublon: info });
-  return tx.terminer(t`Écarter une photo gardée`);
 }

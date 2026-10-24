@@ -190,22 +190,39 @@ try {
   // Étape 5 : doublons, comparés journée par journée tant que le dossier est en vrac.
   await page.getByRole('heading', { name: /Doublons/ }).waitFor();
   verifier(true, 'après les floues, les doublons (nettoyer avant de ranger)');
-  // Copies exactes en tête : un exemplaire gardé par emplacement, l'utilisateur peut changer (D61).
-  await page.locator('#copies .groupe-exact').first().waitFor({ timeout: 60_000 });
-  const aDecider = page.locator('#copies > .groupes-exacts > .groupe-exact');
-  verifier((await aDecider.count()) === 2 && (await aDecider.first().locator('.exemplaire.ecarte').innerText()).includes('copie de 0140.jpg'), 'copies exactes : la copie du vrac est proposée à l’écart');
-  const copie0141 = aDecider.nth(1);
+  // Onglets (D71) : on arrive sur les copies exactes ; un exemplaire gardé par emplacement, l'utilisateur peut changer (D61).
+  await page.locator('.onglet-doublons.actif', { hasText: 'Copies exactes' }).waitFor({ timeout: 60_000 });
+  await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
+  verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à relire'), 'onglets : on arrive sur « Copies exactes », 2 groupes à relire');
+  const copie0140 = page.locator('.tuile-doublon[aria-label^="copie de 0140.jpg"]');
+  verifier((await copie0140.getAttribute('class')).includes('a_ecarter'), 'copies exactes : la copie du vrac est proposée à l’écart (« à écarter »)');
+  const carte0141 = page.locator('.carte-doublons', { hasText: 'BESTOF' });
   verifier(
-    (await copie0141.locator('.exemplaire.garde').count()) === 2 && (await copie0141.locator('.exemplaire.ecarte').innerText()).includes('racine'),
+    (await carte0141.locator('.tuile-doublon.gardee').count()) === 2 && (await carte0141.locator('.tuile-doublon.a_ecarter').count()) === 1,
     'copie déjà rangée dans janvier (« Garder, nettoyer ») : l’exemplaire à trier est proposé à l’écart, celui de BESTOF (« Ne pas toucher ») gardé',
   );
   await capturer(page, 'v2b_copies');
-  await page.getByRole('button', { name: 'Écarter 2 copies' }).click();
-  await page.locator('#copies > .groupes-exacts').waitFor({ state: 'detached' });
-  verifier(true, 'copies exactes écartées');
+  // Un clic garde la copie proposée à l'écart ; Ctrl+Z annule (la page ne perd rien).
+  await copie0140.click();
+  await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('gardee'));
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
+  verifier(true, 'un clic garde une copie proposée à l’écart ; Ctrl+Z annule');
+  const cartes = await page.locator('.carte-doublons').count();
+  await page.getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
+  await page.locator('.onglet-doublons.actif', { hasText: '✓ 2' }).waitFor();
+  verifier(
+    (await page.locator('.carte-doublons').count()) === cartes && (await page.locator('.tuile-doublon.ecartee').count()) === 2,
+    'copies exactes écartées : les groupes restent à leur place, les copies marquées « Écartée »',
+  );
+  await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
+  await page.locator('.tuile-doublon.ecartee').first().waitFor();
+  verifier((await page.locator('.tuile-doublon.ecartee').count()) === 2, 'onglet « Mis de côté » : les 2 copies écartées, prêtes à être remises');
   // Les rafales se repèrent toutes seules à l'ouverture de la page.
-  await page.locator('.apercu-lots > summary', { hasText: 'Aperçu par journée' }).waitFor({ timeout: 60_000 });
+  await page.locator('.onglet-doublons', { hasText: 'Rafales' }).click();
+  await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 60_000 });
   verifier(true, 'dossier en vrac : rafales repérées toutes seules, journée par journée');
+  await capturer(page, 'v2c_rafales');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
   // Étape 6 : tri automatique ; les captures d'écran parmi les photos à trier se rangent d'abord.

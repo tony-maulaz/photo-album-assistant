@@ -489,6 +489,217 @@ tant qu'un fichier n'est pas dans le projet, le bilan et le rapport disent de
 ne pas supprimer la source. « Refaire l'inventaire » (tout perdre) est replié
 sous « Repartir de zéro ».
 
+**D64 — Lieux et sorties : jamais de grille vide.** Après le tri, la racine
+n'a plus de photos en propre : la page s'ouvrait sur « Photos (racine) · 0
+photo » alors que le panneau en annonçait des centaines. Elle ouvre désormais
+le premier dossier qui a des photos, dans l'ordre du panneau (les dossiers
+techniques en dernier). Un dossier fait seulement de sous-dossiers (« Maison
+», la racine) montre les photos de ses sous-dossiers, avec le nom du
+sous-dossier sous chacune, comme la Sélection. Un nouveau dossier créé depuis
+cette vue avec des photos sélectionnées va dans le dossier affiché, à côté de
+leurs sous-dossiers.
+
+**D65 — Nouveautés d'une mise à jour de l'inventaire.** Une photo arrivée par
+une mise à jour (D63) et pas encore écrite dans la sortie est « nouvelle ».
+Son dossier porte un badge « nouveau », et une case du panneau ne montre que
+ces dossiers et leurs parents. La définition s'appuie sur la sortie et non sur
+la dernière mise à jour : deux mises à jour successives avant d'écrire la
+sortie gardent toutes leurs photos « nouvelles ».
+
+**D66 — Ligne de temps lisible.** Les dates sous les colonnes sont espacées
+d'au moins trois colonnes : d'abord la première, les débuts de mois (qui
+peuvent glisser de quelques jours) et les sauts, puis une par semaine. L'année
+s'écrit quand elle change. Les événements du calendrier s'étagent sur
+plusieurs rangées pour que leur nom tienne en entier ; un événement d'un jour
+n'est plus tronqué en « We… ».
+
+**D67 — Petits dossiers : un seuil, une action pour chacun.** Le seuil du
+script 05 (moins de 5 photos) vaut maintenant aussi pour le badge « petit » et
+l'alerte de « Lieux et sorties », au lieu de 3. Sur une vraie année, 28 petits
+dossiers sur 29 n'avaient pas de sortie voisine à moins de 12 h et restaient
+sans action possible. Chacun peut maintenant être rattaché au dossier de son
+choix (les plus proches dans le temps proposés d'abord), ceux d'une même
+journée réunis, ou gardés à part. Une décision reste affichée, cochée, avec «
+Annuler ». Pour un rattachement, cet « Annuler » ressort le dossier (même
+identifiant, mêmes noms de fichiers) même après d'autres changements ; la note
+est gardée dans `aides.json` (`fragments_rattaches`). L'écart avec une sortie
+voisine se mesure entre les périodes (0 = « pendant cette sortie ») et non
+plus entre les premières photos, qui donnait « à 72 h » pour un arrêt au
+milieu d'un voyage. La ressemblance est dite en mots d'après les calibrations
+(§ 2) : ≤ 12 très semblables, ≤ 20 semblables, au-delà peu semblables. La
+distance reste dans la bulle.
+
+**D68 — Noms du tri au format de la famille.** Le tri écrit `Lieu_JJ.MM.AA`,
+`Lieu_JJ-JJ.MM.AA` sur plusieurs jours (`JJ.MM-JJ.MM.AA` sur deux mois) et
+`Lieu_MM.AA` par mois, au lieu des dates AAAA-MM-JJ. C'est la forme des
+dossiers nommés à la main, que le Nommage ne doit pas reprendre. Le tri note
+donc le nom qu'il donne (`tri.nom`) : un nom à ce format n'est automatique que
+tant que le dossier le porte. Les anciens noms AAAA-MM-JJ restent toujours
+automatiques, pour les projets existants et pour « Scinder par jour ». Un nom
+déjà pris reçoit `_2` sans couper la date, ce qui évite `X_12.01_2.26`.
+
+**D69 — Nommage sans perte.** Entrée applique le nom tapé. Quitter l'étape
+avec des noms tapés mais pas appliqués demande quoi en faire : les appliquer,
+les laisser, ou rester. Un dossier renommé reste dans le tableau, coché. «
+Tout accepter » existe aussi pour les noms de confiance inférieure à 8, avec
+une confirmation qui dit combien sont à relire.
+
+**D70 — Consolidation : noms proches et proches dans le temps.** Sans IA, deux
+noms proches n'étaient comparés que par le nom : le nom d'un village
+rapprochait toutes les sorties de l'année à cet endroit (le 22.11 avec le
+13.12), celui d'une ville janvier avec juillet. Ils doivent maintenant être à
+2 jours d'écart au plus. « Ignorer cette paire » écarte une paire pour de bon
+(`consolidation_paires_ignorees`), et un lien permet de les reproposer toutes.
+
+**D71 — Étape « Doublons » en onglets ; chaque photo se garde ou s'écarte d'un
+clic.** Sur une vraie année (3 213 photos), la page faisait 26 écrans : neuf
+écrans de copies avant les filtres, un « Aperçu par journée » au milieu, des
+groupes qui disparaissaient au clic (le filtre « À relire » les retirait
+aussitôt), des choix impossibles (la photo gardée n'avait aucun bouton, une
+photo refusée par le garde-fou n'était pas affichée, 40 groupes de copies
+visibles sur 270 alors que « Écarter 270 copies » les traitait tous), des
+choix de copies perdus en quittant l'étape, et des badges faux (une copie
+écartée montrée « gardée » dans une rafale). Désormais : un onglet par sorte
+(Copies exactes, Dans plusieurs dossiers, Rafales, Même scène (IA), Mis de
+côté), chacun avec son compteur ; filtres, classement et avancement collés en
+haut ; à gauche, les journées (puis les dossiers gardés, puis les photos sans
+date) avec ce qui reste à relire. Au-delà de 20 journées et dossiers (une
+année), la liste passe aux mois, dans l'ordre du temps, et chaque carte dit sa
+journée et son dossier : sur 2025, 13 mois au lieu de 74 journées et 39
+dossiers, souvent d'un seul groupe. Une période relue, « Suite à relire » mène
+à la suivante. Un seul modèle (`lib/groupesDoublons.ts`) : chaque photo d'un
+groupe porte une proposition (garder ou écarter) et un état lu dans le plan,
+gardée, écartée par cette étape, ou « à écarter » tant que la proposition
+n'est pas acceptée. Un clic sur n'importe quelle photo, la ★ comprise, inverse
+ce qu'on voit ; « Accepter » applique ce qui reste proposé ; « Tout garder »
+et « Tout écarter » complètent (tous les exemplaires d'une copie peuvent être
+écartés : rien n'est supprimé). Rien n'est écarté sans action (règle d'or 3) :
+un groupe non relu garde ses photos dans l'archive. Rien ne disparaît : la
+liste affichée est figée tant qu'on reste sur la journée, un groupe accepté se
+replie à sa place ; tout est dans le plan, donc enregistré au fil de l'eau et
+annulable (Ctrl+Z). Les actions groupées ne portent que sur la journée
+affichée, sauf « Accepter les N propositions » des copies exactes, qui dit son
+nombre. Les groupes ne changent plus d'une recherche à l'autre : une photo
+écartée par l'étape reste dans son lot, une photo gardée reste dans son
+groupe, si bien qu'une nouvelle recherche (en cache, gratuite) retrouve les
+mêmes groupes avec leurs décisions ; une photo écartée pour une autre raison
+(floue, copie exacte) quitte le groupe. Une recherche arrêtée en route reprend
+d'elle-même les journées manquantes et annonce combien sont faites ; une
+recherche locale (nouvelles photos) garde les scènes de l'IA du lot. Copies
+exactes : une photo déjà rangée dans un dossier « Garder, nettoyer » n'est pas
+triée une seconde fois (ses exemplaires à trier sont proposés à l'écart) ; si
+ce dossier n'en a qu'une version réduite (WhatsApp), l'original y prend sa
+place et la copie réduite est écartée (choix de l'utilisateur, 24.10.2026). «
+Comparer en grand » ouvre le comparateur, qui passe d'un groupe à l'autre
+(Page préc., Page suiv.) et accepte (A). Clavier : J et K, ← et →, Espace, A,
+C, N et P.
+
+**D72 — Photos floues : le seuil est celui du projet.** La position du curseur
+de netteté est enregistrée dans le projet dès qu'elle change, et non plus
+seulement à « Valider » : un rechargement la perdait (3 photos écartées
+redevenaient 1). Le seuil ne s'applique au plan qu'à la validation, comme
+avant. L'aide IA des cas limites lit ce seuil dans le projet : lancée depuis «
+Aides IA » avant de passer par l'étape, elle prenait 60 au lieu du réglage
+choisi.
+
+**D73 — Recadrer puis tourner ; copies recadrées.** Le rectangle de recadrage
+est en fractions de l'image tournée : tourner une photo déjà recadrée fait
+donc tourner le rectangle d'un quart de tour avec elle (avant, la copie
+montrait une bande verticale, 1281 × 4000 au lieu de 4000 × 1848). Le
+redressement reste, car il tourne autour du centre comme le quart de tour. La
+copie réencodée garde la date et l'appareil, mais plus la vignette EXIF (IFD1)
+de la photo entière, et porte sa vraie taille en pixels : certains
+explorateurs et l'import du livre photo montraient la photo entière. Dans le
+recadreur, 3:2 et 4:3 commencent dans le sens de la photo. Une photo recadrée
+puis tournée avant ce changement est à recadrer de nouveau.
+
+**D74 — Album : couverture, cible, copies et textes.** Toute photo de l'album
+peut devenir la couverture, depuis son panneau, sans IA ; l'IA ne fait que
+proposer, en miniatures. La couverture est la première page de l'aperçu, avec
+le titre de l'album (nom du projet par défaut, modifiable), et sa copie garde
+rotation et recadrage. La cible passe de 100 à 24 pages, un livre photo
+courant (un projet existant garde la sienne) ; l'alerte part dès 10 % d'écart,
+en dessous comme au-dessus, et dit comment combler l'écart ; la jauge de «
+Sélection » et l'aperçu de « Album » font le même calcul (`nombrePages`). Une
+même photo retenue dans deux dossiers (même empreinte, ou même date EXIF à la
+seconde avec mêmes taille et dimensions, un « Best of » fait de copies)
+n'entre qu'une fois dans l'album, à sa première place ; l'étape « Album » le
+dit. `textes_album.md` reprend titre, couverture et plan des pages. Les titres
+de section sont tirés du nom du dossier sans la date ; le texte tapé au
+Nommage (accents, espaces) est gardé (`nomSaisi`) et sert de titre, le nom de
+dossier restant ASCII.
+
+**D75 — Accueil, nouveau projet et configuration sur place.** Cliquer sur une
+carte d'entrée ouvre aussitôt le sélecteur du dossier à trier ; le formulaire
+s'ouvre ensuite avec ce dossier rempli. Configuration et clé API sont dites «
+facultatives », en gris neutre. Un dossier de sortie qui contient déjà un
+projet est signalé tout de suite, avec « Ouvrir ce projet ». Un projet terminé
+rappelle qu'on peut le rouvrir pour de nouvelles photos (D63). Enregistrer un
+lieu fréquent ou un appareil sans dossier de configuration ouvre un encart qui
+le crée ou le choisit sans quitter l'étape, puis l'action se poursuit. Le
+bandeau « le dossier à trier a changé » est dans le flux, sous l'en-tête : il
+pousse la page au lieu de cacher son titre.
+
+**D76 — Inventaire : les chiffres de la source.** La page dit ce que contient
+la source : ses chiffres (photos, vidéos, dossiers, période, dates, GPS, à la
+racine, petits dossiers) sont tirés des chemins dans la source, éléments mis
+de côté compris. Ils ne bougent plus quand le tri crée des dossiers ou quand
+les floues et les doublons écartent des photos ; seule une mise à jour de
+l'inventaire les change. La date du fichier d'une photo sans date, souvent
+celle d'une copie, n'entre plus dans la période d'un dossier (panneau, étape
+Dossiers, rapport, ligne de temps) ni d'une section d'album.
+
+**D77 — Tri sans connexion ; une vraie photo n'est jamais une capture.** Si
+OpenStreetMap ne répond pas, le tri continue : les noms en cache sont gardés,
+les autres lieux reçoivent un nom provisoire (`Lieu_01`…) et un message dit de
+les renommer ou de recalculer une fois connecté. Des photos de téléphone en
+1080 × 1920, avec GPS et date EXIF mais sans marque, étaient prises pour des
+captures : une position GPS, ou une marque d'appareil avec une date EXIF,
+prouve maintenant que c'est une photo. Une date EXIF seule ne suffit pas (les
+captures d'iPhone en ont une). Chaque capture proposée peut être décochée
+(notée « pas une capture »), agrandie d'un clic, et montre son nom.
+
+**D78 — Sortie : une nouvelle version d'un fichier, un bilan qui dit vrai.**
+Le bilan ne comparait que les tailles : une photo retouchée dans la source
+après sa copie, de même taille, était jugée « à jour ». `etat_sortie.json`
+note maintenant pour chaque copie la taille et la date de modification de
+l'original lu ; une copie de l'application faite d'une version plus ancienne
+est remplacée, et le bilan ne compte une copie que si taille et date
+concordent. Un fichier que l'application n'a pas écrit, ou une copie retouchée
+à la main, n'est jamais écrasé. Un état écrit avant ce changement, sans date,
+garde l'ancienne règle. La phrase « N fichiers → M dans la sortie » compte le
+dossier à trier relu après l'écriture, ou donne les deux nombres s'il diffère
+du projet. L'aperçu ne dit plus « à jour » quand un fichier ne peut pas être
+écrit ou quand `Album/` reste à écrire ; la place disque compte `Album/`.
+Après une sortie complète, « Et maintenant ? » dit ce qui reste à faire à la
+main (copier la sortie, importer `Album/` dans ifolor, supprimer soi-même les
+originaux).
+
+**D79 — Sélection sur plusieurs séances et plusieurs jours.** Les photos de la
+dernière mise à jour de l'inventaire portent un badge « nouveau » ; la
+Sélection offre une pastille « Nouvelles » et un filtre « Arrivées le … »,
+dont les comptes suivent les autres filtres. Triée par date, la grille est
+découpée en journées titrées, avec la date et l'heure sous chaque miniature.
+Après la dernière photo du tri rapide, un encart dit « Tout est décidé » ou
+combien il en reste. L'équilibre a une barre par jour jusqu'à 45 jours, puis
+une par mois. L'alerte de redondance signale aussi une même photo retenue dans
+deux dossiers. Une photo citée par l'IA est montrée, jamais nommée par son
+fichier. L'étape Dossiers présente les sous-dossiers dans l'ordre du temps. En
+anglais, le choix pour l'album se dit « in the album » ; « selected » est
+réservé à la sélection dans la grille.
+
+**D80 — Annuler partout ; coûts et dépenses justes ; navigation.** Un seul
+gestionnaire, en capture sur `window`, traite Ctrl+Z, Ctrl+Y et Ctrl+Maj+Z sur
+toutes les étapes, hors champ de saisie et hors fenêtre ouverte : aucune page
+n'annule deux fois. « ? » ouvre la liste des raccourcis. Le coût d'une aide IA
+est recalculé quand ses options changent. Une réponse illisible reste en cache
+pour ne pas être payée deux fois, mais est comptée, et l'aide propose «
+Redemander » avec son coût. Chaque coût IA est écrit dans `projet.json` avant
+que la réponse entre dans le cache (règle d'or 7). Chaque page s'ouvre en haut
+; le bouton Précédent du navigateur et « ← Retour » restent dans l'application
+; un rechargement rouvre la page regardée. Les messages passagers s'affichent
+au centre de la barre de validation, jamais sur ses boutons.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

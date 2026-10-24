@@ -1663,7 +1663,6 @@ button.bouton-nouveau.cible {
   padding: 1px 6px;
 }
 
-
 .ligne-dossier.speciale {
   min-height: 36px;
   color: var(--discret);
@@ -2136,34 +2135,11 @@ kbd {
 
 /* Étape 8 */
 
-.apercu-doublons tbody tr {
-  cursor: pointer;
-}
-
-.apercu-doublons tbody tr.actif {
-  background: var(--accent-doux);
-}
-
-.filtres-doublons {
-  margin-top: 18px;
-  padding: 8px 0;
-}
-
-.groupes {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
 .carte-groupe {
   border-radius: var(--rayon-carte);
   background: var(--surface);
   box-shadow: var(--ombre-douce);
   padding: 16px 20px;
-}
-
-.carte-groupe.accepte {
-  opacity: 0.75;
 }
 
 .carte-groupe header,
@@ -2175,45 +2151,6 @@ kbd {
 
 .carte-groupe footer {
   margin-top: 8px;
-}
-
-.source {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--surface-3);
-}
-
-.source.ia {
-  background: var(--accent);
-  color: var(--accent-texte);
-}
-
-.photos-groupe {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: flex-start;
-  margin-top: 8px;
-}
-
-.vignette-doublon {
-  margin: 0;
-}
-
-.vignette-doublon figcaption {
-  font-size: 13px;
-  max-width: 220px;
-  padding-top: 3px;
-}
-
-.vignette-doublon.gardee .cadre-miniature {
-  border-color: var(--ok);
-}
-
-.vignette-doublon.accepte .cadre-miniature img {
-  opacity: 0.45;
 }
 
 .badge.gardee,
@@ -2234,34 +2171,6 @@ kbd {
   bottom: auto;
   background: var(--erreur);
   color: #fff;
-}
-
-.doublon {
-  max-width: 170px;
-}
-
-.doublon .raison {
-  font-size: 12px;
-  color: var(--discret);
-  margin: 2px 0 6px;
-}
-
-.actions-doublon {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.actions-doublon button {
-  min-height: 30px;
-  font-size: 13px;
-  padding: 3px 10px;
-}
-
-.garde-fou {
-  font-size: 13px;
-  color: var(--attention);
-  margin: 8px 0 0;
 }
 
 /* Comparateur */
@@ -3150,28 +3059,6 @@ button.bouton-ia:disabled {
   margin: 8px 0;
 }
 
-.groupes-exacts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.groupe-exact {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: var(--ombre-douce);
-}
-
-.groupe-exact figure {
-  margin: 0;
-  max-width: 200px;
-  font-size: 12px;
-}
-
 /* Proposition de l'IA : bandeau vert pâle, à accepter ou ignorer. */
 .proposition-ia {
   margin: 8px 0;
@@ -3589,36 +3476,6 @@ button.bouton-ia:disabled {
 .choix-segmente button[aria-checked='true'] {
   background: var(--accent);
   color: var(--accent-texte);
-}
-
-/* Copies exactes : chaque exemplaire se garde ou s'écarte d'un clic. */
-.groupe-exact .exemplaire {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  max-width: 200px;
-  padding: 6px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  box-shadow: none;
-  font-size: 12px;
-  font-weight: 400;
-  text-align: left;
-  white-space: normal;
-}
-
-.groupe-exact .exemplaire.garde {
-  border-color: var(--accent);
-}
-
-.groupe-exact .exemplaire.ecarte {
-  opacity: 0.55;
-}
-
-.legende-exemplaire {
-  overflow-wrap: anywhere;
 }
 
 /* Actions rares d'une étape, tout à droite de la ligne du titre. */

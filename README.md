@@ -16,7 +16,7 @@ nothing is ever deleted: what you set aside is kept in the output folder.
 | Inventory | Reads dates (camera data or file names), GPS positions, cameras; analyses sharpness and similarity on your computer. Sort a folder in several sessions: photos added later are detected and added without losing what is already decided. |
 | Folders | For each existing subfolder: sort its photos, keep it and clean it (blurry photos, duplicates), or leave it as is. |
 | Blurry photos | Scores the sharpness of every photo; you adjust the tolerance and rescue the ones you like. |
-| Duplicates | Exact copies (you choose which one to keep), bursts of near-identical photos found locally; optionally, the same scene shot several times (AI). |
+| Duplicates | One tab per kind: exact copies, bursts of near-identical photos found locally, and optionally the same scene shot several times (AI). You review day by day; one click keeps or sets aside any photo. |
 | Automatic sorting | Puts screenshots aside, then groups photos by place and outing (GPS, trips away from home, known places, place names from OpenStreetMap, family calendar). |
 | Places and outings | Fix the result: drag photos between folders, timeline view, undo. |
 | Small folders, naming, consolidation | Attach stray photos to the right outing, give folders meaningful names, merge folders that cover the same activity. |

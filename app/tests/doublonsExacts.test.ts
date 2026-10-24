@@ -151,6 +151,28 @@ describe('doublons exacts (D31)', () => {
     ).toEqual([{ garde: 'BESTOF/a.jpg', copies: [{ id: 'Vrac/IMG-WA1.jpg', type: 'reduite' }], aGarder: ['BESTOF/a.jpg'] }]);
   });
 
+  it('seule une copie réduite est rangée dans un dossier « Garder, nettoyer » : l’original à trier y prend sa place (D71)', () => {
+    const g = groupesDoublonsExacts([
+      photo('IMG_7.jpg', { empreinte: 'o' }),
+      photo('IMG_7 (1).jpg', { empreinte: 'o' }),
+      photo('Best of/IMG-WA7.jpg', { empreinte: 'w', exif: false, taille: 100, dims: { l: 1600, h: 1200 }, emplacement: 'Best of', genre: 'nettoyer' }),
+    ]);
+    expect(g).toEqual([
+      {
+        garde: 'IMG_7.jpg',
+        copies: [
+          { id: 'IMG_7 (1).jpg', type: 'identique' },
+          { id: 'Best of/IMG-WA7.jpg', type: 'reduite' },
+        ],
+        aGarder: ['IMG_7.jpg'],
+        remplacement: { original: 'IMG_7.jpg', copie: 'Best of/IMG-WA7.jpg', dossier: 'Best of' },
+      },
+    ]);
+    // Dans un dossier « Ne pas toucher », la copie réduite n'est pas remplacée.
+    const intact = groupesDoublonsExacts([photo('IMG_7.jpg', { empreinte: 'o' }), photo('Best of/IMG-WA7.jpg', { empreinte: 'w', exif: false, taille: 100, dims: { l: 1600, h: 1200 }, emplacement: 'Best of', genre: 'tel_quel' })]);
+    expect(intact[0].remplacement).toBeUndefined();
+  });
+
   it('copies identiques d’une version réduite : rattachées au même original', () => {
     const g = groupesDoublonsExacts([
       photo('Vrac/IMG_5.jpg', { empreinte: 'o' }),

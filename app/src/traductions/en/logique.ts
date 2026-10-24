@@ -69,10 +69,7 @@ export const TEXTES: Record<string, string> = {
 
   // doublons.ts
   'quasi identique à quelques secondes': 'almost identical, a few seconds apart',
-  'remplacée par une photo semblable choisie à la main': 'replaced by a similar photo chosen by hand',
-  'Garder une autre photo à la place': 'Keep another photo instead',
   'écartée à la main': 'set aside by hand',
-  'Écarter les doublons': 'Set aside the duplicates',
 
   // floues.ts
   'Photos floues : {0}, {1}': 'Blurry photos: {0}, {1}',
@@ -139,7 +136,6 @@ export const TEXTES: Record<string, string> = {
   doublon: 'duplicate',
   doublons: 'duplicates',
   'Garder {0}': 'Keep {0}',
-  'Écarter une photo gardée': 'Set aside a kept photo',
 
   // rapport.ts : Rapport.html, écrit dans la sortie
   'photo floue': 'blurry photo',

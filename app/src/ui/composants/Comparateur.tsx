@@ -82,18 +82,29 @@ function Volet({
   );
 }
 
+/** Passer d'un groupe de photos à l'autre sans fermer (étape « Doublons ») : Page préc. / Page suiv., A pour accepter. */
+export interface NavigationGroupes {
+  texte: string;
+  precedent?: () => void;
+  suivant?: () => void;
+  /** Accepter la proposition du groupe, puis passer au suivant. */
+  accepter?: () => void;
+}
+
 export function Comparateur({
   photos,
   fermer,
   actions,
   entete,
   titre = t`Comparer`,
+  navigation,
 }: {
   photos: FichierPlan[];
   fermer: () => void;
   actions?: (f: FichierPlan) => ComponentChildren;
   entete?: (f: FichierPlan) => ComponentChildren;
   titre?: string;
+  navigation?: NavigationGroupes;
 }) {
   const [vue, setVue] = useState<Vue>({ zoom: 1, x: 0, y: 0 });
   // Mode « une à une » : l'indice de la photo affichée seule, ou `null` pour le côte à côte.
@@ -110,13 +121,16 @@ export function Comparateur({
       else if (e.key === 'Enter' && seule === null) setSeule(0);
       else if (e.key === 'ArrowRight' && seule !== null) setSeule((seule + 1) % n);
       else if (e.key === 'ArrowLeft' && seule !== null) setSeule((seule - 1 + n) % n);
+      else if (e.key === 'PageDown' && navigation?.suivant) navigation.suivant();
+      else if (e.key === 'PageUp' && navigation?.precedent) navigation.precedent();
+      else if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey && navigation?.accepter) navigation.accepter();
       else return;
       e.preventDefault();
       e.stopPropagation();
     };
     window.addEventListener('keydown', touche, true);
     return () => window.removeEventListener('keydown', touche, true);
-  }, [fermer, seule, n]);
+  }, [fermer, seule, n, navigation]);
 
   // Zoom vers le pointeur : le point visé reste sous la souris, dans chaque volet.
   const molette = (e: WheelEvent) => {
@@ -161,6 +175,22 @@ export function Comparateur({
             ? t`Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer`
             : t`← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte`}
         </span>
+        {navigation && (
+          <span class="navigation-groupes">
+            <button type="button" disabled={!navigation.precedent} onClick={navigation.precedent} title={t`Page préc.`}>
+              {t`‹ Groupe précédent`}
+            </button>
+            <span class="discret">{navigation.texte}</span>
+            <button type="button" disabled={!navigation.suivant} onClick={navigation.suivant} title={t`Page suiv.`}>
+              {t`Groupe suivant ›`}
+            </button>
+            {navigation.accepter && (
+              <button type="button" class="principal" onClick={navigation.accepter} title={t`Touche A`}>
+                {t`Accepter et groupe suivant`}
+              </button>
+            )}
+          </span>
+        )}
         <span class="espace" />
         {seule !== null && (
           <>

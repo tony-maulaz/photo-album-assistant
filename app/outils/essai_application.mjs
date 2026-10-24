@@ -334,29 +334,40 @@ try {
 
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Doublons$/ }).click();
   verifier((await page.getByRole('button', { name: 'Analyser les photos' }).count()) === 0, 'analyse locale déjà faite à l’inventaire : plus de bouton « Analyser les photos »');
-  await page.locator('.encart-ia > summary').click();
+  // Onglet « Même scène (IA) » (D71) : l'analyse IA s'y lance, son coût affiché.
+  await page.locator('.onglet-doublons', { hasText: 'Même scène (IA)' }).click();
   await page.getByRole('button', { name: /Analyser avec l’IA/ }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
   const boutonIA = page.getByRole('button', { name: /Analyser avec l’IA/ });
   verifier(/environ .* CHF/.test(await boutonIA.innerText()), `coût estimé affiché avant lancement (A10) : ${await boutonIA.innerText()}`);
   await boutonIA.click();
-  await page.getByText(/doublons? proposés?/).first().waitFor({ timeout: 60_000 });
+  await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
   await capturer(page, '11_doublons');
   verifier(appels.vue > 0 && appels.verif > 0, `l’IA est appelée : ${appels.vue} vue(s) d’ensemble, ${appels.verif} vérification(s)`);
-  const groupes = await page.locator('.carte-groupe').count();
+  const groupes = await page.locator('.carte-doublons').count();
   verifier(groupes > 0, `${groupes} groupe(s) de doublons à relire`);
-  verifier(appels.refus > 0 && (await page.locator('.garde-fou').count()) > 0, `garde-fou des descriptions (I7) : ${appels.refus} description(s) d’une autre scène refusée(s) et signalée(s)`);
+  verifier(appels.refus > 0 && (await page.locator('.legende-doublon .refus').count()) > 0, `garde-fou des descriptions (I7) : ${appels.refus} description(s) d’une autre scène refusée(s), photo affichée et gardée`);
   const depense = await page.locator('.entete .budget').innerText();
   verifier(/^IA \d/.test(depense) && !depense.startsWith('IA 0,00'), `dépense IA comptée dans l’en-tête : ${depense}`);
   const avant = { ...appels };
+  await page.locator('.encart-ia > summary').click();
   await page.waitForTimeout(300);
   verifier((await boutonIA.innerText()).includes('gratuit'), 'relancer est gratuit : les réponses sont en cache');
   await boutonIA.click();
-  await page.getByText(/doublons? proposés?/).first().waitFor({ timeout: 60_000 });
+  await page.waitForTimeout(500);
+  await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
   verifier(appels.vue === avant.vue && appels.verif === avant.verif, 'deuxième analyse sans aucun appel (A11)');
-  await page.locator('.carte-groupe').first().locator('footer button.principal').click();
+  verifier((await page.locator('.carte-doublons').count()) === groupes, 'relancer l’analyse retrouve les mêmes groupes');
+  // La photo proposée (★) n'est plus intouchable : un clic l'écarte, un autre la remet.
+  const carte = page.locator('.carte-doublons').first();
+  await carte.locator('.tuile-doublon.gardee').first().click();
+  await carte.locator('.tuile-doublon.ecartee').first().waitFor();
+  await carte.locator('.tuile-doublon.ecartee').first().click();
+  verifier((await carte.locator('.tuile-doublon.ecartee').count()) === 0, 'la photo gardée s’écarte d’un clic et revient d’un autre');
+  await carte.locator('[data-action="accepter"]').click();
   await page.waitForTimeout(300);
-  verifier((await page.locator('.barre-validation .resume').innerText()).includes('1 doublon écarté'), 'un doublon écarté après relecture');
+  verifier((await page.locator('.barre-validation .resume').innerText()).includes('1 photo écartée'), 'un doublon écarté après relecture');
+  verifier((await page.locator('.carte-doublons').count()) === groupes, 'le groupe accepté reste à sa place, replié');
 
   // Étape 9 : sélection au clavier, tri rapide, rotation.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();

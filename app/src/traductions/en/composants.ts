@@ -182,19 +182,13 @@ export const TEXTES: Record<string, string> = {
     '{0} in “{1}”.',
   'capture rangée': 'screenshot filed',
   'captures rangées': 'screenshots filed',
-  racine: 'root',
-  'Recherche en cours, pendant l’analyse des photos…': 'Searching, while the photos are being analysed…',
   copie: 'copy',
   copies: 'copies',
-  'dans {0}.': 'in {0}.',
   groupe: 'group',
   groupes: 'groups',
-  'copie écartée': 'copy set aside',
-  'copies écartées': 'copies set aside',
   gardée: 'kept',
   'copie réduite': 'smaller copy',
   Écarter: 'Set aside',
-  '… et {0} autres groupes.': '… and {0} more groups.',
   'Appareil « {0} » enregistré dans la configuration avec le décalage {1}.': 'Camera “{0}” saved in the configuration with the offset {1}.',
   'Appareil « {0} » enregistré dans la configuration.': 'Camera “{0}” saved in the configuration.',
   Appareils: 'Cameras',
@@ -351,15 +345,6 @@ export const TEXTES: Record<string, string> = {
 
   // CopiesExactes.tsx
   'Copies exactes': 'Exact copies',
-  'Gardez au moins un exemplaire de chaque photo.': 'Keep at least one copy of each photo.',
-  'Cliquer pour garder ou écarter cet exemplaire': 'Click to keep or set aside this copy',
-  'La même photo en plusieurs exemplaires (même contenu, ou copie réduite envoyée par WhatsApp), quel que soit le dossier. Cliquez sur un exemplaire pour le garder ou l’écarter ; les exemplaires écartés vont dans « {0} ».':
-    'The same photo several times (same content, or a reduced copy sent through WhatsApp), whatever the folder. Click a copy to keep it or set it aside; copies set aside go to “{0}”.',
-  'copie à écarter': 'copy to set aside',
-  'copies à écarter': 'copies to set aside',
-  '{0} : toutes gardées (souvent voulu, par exemple un « Best of » fait de copies)': '{0}: all kept (often on purpose, for example a “Best of” made of copies)',
-  'photo présente dans plusieurs dossiers': 'photo found in several folders',
-  'photos présentes dans plusieurs dossiers': 'photos found in several folders',
 
   // PanneauDossiers.tsx (choix par sous-dossier)
   'Sous-dossier de la source gardé à sa place ; ses floues et ses doublons sont proposés': 'Source subfolder kept in its place; its blurry photos and duplicates are proposed',

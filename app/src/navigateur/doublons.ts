@@ -4,7 +4,7 @@
 // scènes sont enregistrées dans `.album/doublons.json` au fil de l'eau (règle
 // d'or 7) ; les décisions de l'utilisateur, elles, sont dans le plan.
 
-import { analyserDossier, cleVue, etatDoublon, consigneSysteme, estimationDoublons, etageRafales, SCHEMA_VERIF, SCHEMA_VUE, type OutilsIA, type PhotoDoublon, type ResultatDossier } from '../lib/doublons';
+import { analyserDossier, cleVue, consigneSysteme, estimationDoublons, etageRafales, SCHEMA_VERIF, SCHEMA_VUE, type OutilsIA, type PhotoDoublon, type ResultatDossier } from '../lib/doublons';
 import { t } from '../lib/langue';
 import { cheminDossier, contenu, gardeSaPlace, nePasToucher, type FichierPlan, type Plan } from '../lib/plan';
 import { coutUSD, modele as infoModele } from '../lib/tarifs';
@@ -22,8 +22,11 @@ export interface EtatDoublons {
   /** Modèle utilisé, ou `null` pour les rafales seules. */
   modele: string | null;
   quand: string;
-  /** Résultat de chaque lot analysé, par identifiant de lot (dossier, ou « jour:AAAA-MM-JJ »). */
-  dossiers: Record<string, ResultatDossier & { photos: number }>;
+  /**
+   * Résultat de chaque lot analysé, par identifiant de lot (dossier, ou
+   * « jour:AAAA-MM-JJ ») ; `modele` : le lot a été vu par l'IA (absent : rafales seules).
+   */
+  dossiers: Record<string, ResultatDossier & { photos: number; modele?: string }>;
 }
 
 /** Un lot de photos comparées entre elles : un dossier, ou une journée (dossier en vrac). */
@@ -35,8 +38,10 @@ export interface LotDoublons {
 const PREFIXE_JOUR = 'jour:';
 
 function comparable(plan: Plan, f: FichierPlan): boolean {
-  // « Ne pas toucher » : ses photos ne sont pas comparées (D61).
-  return f.statut === 'archive' && f.categorie === 'photo' && !f.capture && !nePasToucher(plan, f.dossier);
+  // Une photo écartée par cette étape reste dans son lot : une nouvelle recherche retrouve les mêmes
+  // groupes, avec les décisions prises (D71). « Ne pas toucher » : ses photos ne sont pas comparées (D61).
+  const enJeu = f.statut === 'archive' || (f.raison === 'doublons' && !!f.doublon);
+  return enJeu && f.categorie === 'photo' && !f.capture && !nePasToucher(plan, f.dossier);
 }
 
 /** Journée d'une photo ; « sans » si elle n'a pas de vraie date (date du fichier seulement). */
@@ -95,7 +100,7 @@ export function photosLot(plan: Plan, lot: string, analyses: Analyses): PhotoDou
     : contenu(plan, lot).filter((f) => comparable(plan, f));
   return fichiers.map((f) => {
     const a = analyses.get(f);
-    return { id: f.id, date: f.date, phash: a?.phash, nettete: a?.nettete, protegee: f.protegee };
+    return { id: f.id, date: f.date, phash: a?.phash, nettete: a?.nettete };
   });
 }
 
@@ -149,8 +154,9 @@ export async function analyserDoublons(
 ): Promise<{ etat: EtatDoublons; budgetAtteint: boolean; erreurs: string[]; faits: number; arrete: boolean }> {
   const resultat: EtatDoublons = {
     version: 1,
-    strict: o.strict,
-    modele: o.ia?.modele ?? null,
+    strict: o.ia ? o.strict : (precedent?.strict ?? o.strict),
+    // Dernier modèle IA utilisé : une recherche de rafales seules ne l'efface pas.
+    modele: o.ia?.modele ?? precedent?.modele ?? null,
     quand: new Date().toISOString(),
     // Les dossiers non relancés gardent leurs propositions.
     dossiers: { ...(precedent?.dossiers ?? {}) },
@@ -190,9 +196,11 @@ export async function analyserDoublons(
     };
     try {
       const r = await analyserDossier(photos, outils, o.strict);
-      // Les groupes déjà acceptés restent visibles (leurs doublons ne sont plus dans le dossier).
-      const acceptes = (precedent?.dossiers[d]?.propositions ?? []).filter((p) => p.doublons.some((x) => etatDoublon(o.plan.fichiers.get(x.id)) === 'accepte'));
-      resultat.dossiers[d] = { ...r, propositions: [...acceptes, ...r.propositions], photos: photos.length };
+      // Rafales seules sur un lot déjà vu par l'IA (des photos y sont arrivées) : ses scènes sont gardées, sans nouveau coût.
+      const avant = precedent?.dossiers[d];
+      const scenesIA = !o.ia && avant?.modele ? avant.propositions.filter((p) => p.source === 'ia') : [];
+      const modele = o.ia?.modele ?? (scenesIA.length ? avant?.modele : undefined);
+      resultat.dossiers[d] = { ...r, propositions: [...r.propositions, ...scenesIA], photos: photos.length, ...(modele && { modele }) };
     } catch (err) {
       if (err instanceof BudgetAtteint) budgetAtteint = true;
       else erreurs.push(t`${nom} : ${err instanceof Error ? err.message : String(err)}`);

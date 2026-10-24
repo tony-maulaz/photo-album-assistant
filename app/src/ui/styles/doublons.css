@@ -1,1 +1,452 @@
-/* Lot « doublons » de la campagne de tests du 24.10.2026 : règles ajoutées par ce lot. */
+/* Étape « Doublons » en onglets (D71) : onglets et outils en haut, journées à gauche, un groupe par carte. */
+
+.onglets-doublons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--bord-fort);
+}
+
+.onglet-doublons {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--discret);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.onglet-doublons:hover {
+  background: none;
+  color: var(--texte);
+}
+
+.onglet-doublons.actif {
+  border-bottom-color: var(--accent);
+  color: var(--texte);
+}
+
+.onglets-doublons .compte,
+.sections-doublons .compte {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.onglets-doublons .compte.gris,
+.sections-doublons .compte {
+  background: var(--bord);
+  color: var(--discret);
+}
+
+.onglets-doublons .compte.fini {
+  background: var(--accent-doux);
+  color: var(--ok);
+}
+
+.encart-onglet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 32px;
+  margin-top: 16px;
+}
+
+.encart-onglet p {
+  flex: 1 1 520px;
+  margin: 0;
+}
+
+.encart-onglet .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-doublons .encart-ia {
+  margin-top: 16px;
+}
+
+/* Afficher, Classer, avancement, accepter la journée : toujours visibles en haut, au défilement. */
+.outils-doublons {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bord);
+  background: var(--fond);
+}
+
+.outils-doublons .espace {
+  flex: 1;
+}
+
+.avance-doublons {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.jauge-doublons {
+  width: 140px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bord);
+}
+
+.jauge-doublons span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.aide-doublons {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.corps-doublons {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+/* Liste des journées et dossiers : elle reste en vue, sous la barre d'outils. */
+.sections-doublons {
+  position: sticky;
+  top: 72px;
+  flex: 0 0 240px;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--bord);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.sections-doublons h2 {
+  margin: 6px 8px 6px;
+  color: var(--discret);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.section-doublons {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--texte);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.section-doublons:hover {
+  background: var(--fond);
+}
+
+.section-doublons.choisie {
+  background: var(--accent-doux);
+  font-weight: 700;
+}
+
+.section-doublons .reste {
+  color: var(--accent-doux-texte);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.section-doublons .fait {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.contenu-doublons {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tete-section-doublons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+}
+
+.tete-section-doublons h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.tete-section-doublons .espace {
+  flex: 1;
+}
+
+/* Un groupe. */
+.carte-doublons {
+  padding: 14px 18px;
+  border: 1px solid var(--bord);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.carte-doublons.en-attente {
+  border-color: var(--bord-fort);
+}
+
+.carte-doublons:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--cible);
+}
+
+.carte-doublons > header,
+.carte-doublons > footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.carte-doublons > header {
+  margin-bottom: 12px;
+}
+
+.carte-doublons > footer {
+  margin-top: 12px;
+}
+
+.carte-doublons .espace {
+  flex: 1;
+}
+
+.carte-doublons .heure {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.carte-doublons .titre {
+  font-weight: 600;
+}
+
+.pastille-proposition,
+.pastille-relue {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pastille-proposition {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+}
+
+.pastille-relue {
+  color: var(--ok);
+}
+
+.carte-doublons.repliee {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  background: var(--fond);
+}
+
+.carte-doublons.repliee .vu {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.carte-doublons.repliee .heure {
+  font-size: 15px;
+}
+
+.carte-doublons.repliee .resume {
+  flex: 1;
+  color: var(--discret);
+  font-size: 14px;
+}
+
+.scene-doublons {
+  margin: -4px 0 10px;
+  color: var(--discret);
+  font-style: italic;
+}
+
+.photos-doublons,
+.grille-mis-de-cote {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.photo-doublon {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Une photo : un bouton ; un clic la garde ou l'écarte. Gardée : bordure verte ; écartée : pâle ; « à écarter » : pâle, pointillés. */
+.tuile-doublon {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  line-height: 0;
+}
+
+.tuile-doublon:hover {
+  background: none;
+}
+
+.cadre-tuile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bord);
+}
+
+.cadre-tuile img {
+  display: block;
+}
+
+.tuile-doublon.gardee .cadre-tuile {
+  outline: 3px solid var(--ok);
+  outline-offset: 0;
+}
+
+.tuile-doublon.ecartee .cadre-tuile {
+  opacity: 0.4;
+}
+
+.tuile-doublon.a_ecarter .cadre-tuile {
+  opacity: 0.55;
+  outline: 2px dashed var(--bord-fort);
+}
+
+.tuile-doublon:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.etat-photo {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.tuile-doublon .etat-photo {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+}
+
+.etat-photo.gardee {
+  background: var(--ok);
+  color: #fff;
+}
+
+.etat-photo.ecartee {
+  background: var(--encre);
+  color: #fff;
+}
+
+.etat-photo.a_ecarter {
+  border: 1px dashed var(--discret);
+  background: var(--surface);
+  color: var(--texte);
+}
+
+.etoile-doublon {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--etoile);
+  color: #1b1c1f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.legende-doublon {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: var(--discret);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.legende-doublon strong {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+.legende-doublon .refus,
+.legende-doublon .alerte-legende {
+  color: var(--attention);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.alerte-doublons {
+  margin: 10px 0 0;
+  color: var(--attention);
+  font-weight: 600;
+}
+
+/* Comparateur : passer d'un groupe à l'autre. */
+.navigation-groupes {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.navigation-groupes button,
+.navigation-groupes span {
+  white-space: nowrap;
+}
+
+.suite-doublons {
+  margin: 8px 0 0;
+}

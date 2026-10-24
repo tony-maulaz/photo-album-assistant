@@ -49,6 +49,31 @@ export function jourCourt(d?: string): string {
   return `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(2, 4)}`;
 }
 
+/**
+ * « Sam. 13 décembre » (« Sat 13 December ») depuis « 2025-12-13 » ; `complet` :
+ * « Samedi 13 décembre 2025 » ; `annee` : l'année aussi dans la forme courte.
+ */
+export function nomJour(jour: string, complet = false, annee = false): string {
+  const [a, m, j] = jour.split('-').map(Number);
+  const texte = new Intl.DateTimeFormat(langue() === 'en' ? 'en-GB' : 'fr-CH', {
+    timeZone: 'UTC',
+    weekday: complet ? 'long' : 'short',
+    day: 'numeric',
+    month: 'long',
+    ...((complet || annee) && { year: 'numeric' }),
+  })
+    .format(new Date(Date.UTC(a, m - 1, j)))
+    .replace(',', '');
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
+/** « Juillet 2025 » (« July 2025 ») depuis « 2025-07 ». */
+export function nomMois(mois: string): string {
+  const [a, m] = mois.split('-').map(Number);
+  const texte = new Intl.DateTimeFormat(langue() === 'en' ? 'en-GB' : 'fr-CH', { timeZone: 'UTC', month: 'long', year: 'numeric' }).format(new Date(Date.UTC(a, m - 1, 1)));
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
+}
+
 /** « 27.06 – 29.06.25 », « 24.07.25 » ou « 28.12.24 – 02.01.25 ». */
 export function periode(du?: string, au?: string): string {
   if (!du || !au) return '';

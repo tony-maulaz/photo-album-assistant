@@ -4,10 +4,9 @@
 
 import { pluriel } from '../ui/format';
 import { appliquerDecalage, decalageAppareil, minutesDecalage, texteDecalage } from './appareils';
-import type { GroupeExact } from './doublonsExacts';
 import { t } from './langue';
 import { estCapture, extension } from './fichiers';
-import { combiner, deplacerFichiers, mettreDeCote, RACINE, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
+import { combiner, deplacerFichiers, RACINE, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
 import { cleNom } from './noms';
 import { nomsSortie } from './sortie';
 
@@ -87,21 +86,6 @@ export function resumeSource(plan: Plan): ResumeSource {
   r.dossiers = dossiers.size;
   r.petitsDossiers = [...parDossier.values()].filter((n) => n < 3).length;
   return r;
-}
-
-/**
- * Met de côté les exemplaires des groupes de doublons exacts qui ne sont pas dans
- * `aGarder` (`_mis_de_cote/doublons_exacts/`) ; un groupe garde toujours au moins
- * un exemplaire (son meilleur, si on n'en a gardé aucun).
- */
-export function ecarterDoublonsExacts(plan: Plan, groupes: GroupeExact[], aGarder: ReadonlySet<string>): Modification | null {
-  const ids = groupes.flatMap((g) => {
-    const membres = [g.garde, ...g.copies.map((c) => c.id)];
-    const gardes = membres.some((id) => aGarder.has(id)) ? aGarder : new Set([g.garde]);
-    return membres.filter((id) => !gardes.has(id));
-  });
-  const aEcarter = ids.filter((id) => plan.fichiers.get(id)?.statut === 'archive');
-  return aEcarter.length ? mettreDeCote(plan, aEcarter, 'doublons_exacts') : null;
 }
 
 /**

@@ -419,7 +419,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.doublons)}</strong>
-          {t` : copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite : vous choisissez celle à garder), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA) ; vous relisez chaque groupe. Pour un dossier en vrac, les photos sont comparées journée par journée.`}
+          {t` : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic sur une photo la garde ou l’écarte, « Accepter » applique la proposition.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
