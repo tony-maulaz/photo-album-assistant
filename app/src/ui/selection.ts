@@ -3,6 +3,7 @@
 
 import { signal } from '@preact/signals';
 import { texteEtiquettes, type Etiquettes } from '../lib/aidesSelection';
+import { aTraduire, t } from '../lib/langue';
 import { seuilFlou, signaux, type Indicateurs, type Signal } from '../lib/indicateurs';
 import { rechercher } from '../lib/recherche';
 import { estDescendant, horsAlbum, noterAlbum, RACINE, tourner, type FichierPlan, type Plan } from '../lib/plan';
@@ -131,13 +132,13 @@ export function avecPiles(photos: FichierPlan[], pilesDe: Map<string, string[]>,
   });
 }
 
-const LIBELLES = { 0: 'pas dans l’album', 1: 'dans l’album ★', 2: 'grande photo ★★' } as const;
+const LIBELLES = { 0: aTraduire('pas dans l’album'), 1: aTraduire('dans l’album ★'), 2: aTraduire('grande photo ★★') } as const;
 
 export function choisir(ids: string[], valeur: 0 | 1 | 2 | undefined) {
   const s = session.value;
   if (!s || !ids.length) return;
   appliquer(noterAlbum(s.plan, ids, valeur));
-  if (ids.length > 1) notifier('ok', `${ids.length} photos : ${valeur === undefined ? 'à décider' : LIBELLES[valeur]}.`, { libelle: 'Annuler', faire: annuler });
+  if (ids.length > 1) notifier('ok', t`${ids.length} photos : ${valeur === undefined ? t`à décider` : t(LIBELLES[valeur])}.`, { libelle: t`Annuler`, faire: annuler });
 }
 
 export function tournerPhotos(ids: string[], sens: 90 | -90 = 90) {

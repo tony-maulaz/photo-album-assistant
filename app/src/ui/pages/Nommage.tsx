@@ -5,6 +5,7 @@
 
 import { useMemo, useState } from 'preact/hooks';
 import { blocCalendrier, evenementsAutour } from '../../lib/ics';
+import { aTraduire, t } from '../../lib/langue';
 import { dossiersANommer, estimationNommage, lireNommage, normaliserNom, requeteNommage, respecteConvention, type CibleNommage, type NomPropose } from '../../lib/nommage';
 import { combiner, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
@@ -46,10 +47,10 @@ function requete(s: Session, c: CibleNommage, modele: string, o: { recherche: bo
 
 enregistrerAide({
   id: 'IA4',
-  nom: 'Nommer les sorties avec l’IA',
+  nom: aTraduire('Nommer les sorties avec l’IA'),
   etape: ETAPE.nommage,
-  description: 'Propose un nom parlant (Theme_Lieu_JJ.MM.AA) pour chaque dossier, avec sa confiance et sa justification.',
-  envoi: '5 photos par dossier, position GPS, événements du calendrier, contexte du projet',
+  description: aTraduire('Propose un nom parlant (Theme_Lieu_JJ.MM.AA) pour chaque dossier, avec sa confiance et sa justification.'),
+  envoi: aTraduire('5 photos par dossier, position GPS, événements du calendrier, contexte du projet'),
   web: true,
   usage: 'standard',
   estimer: (s) => {
@@ -57,7 +58,8 @@ enregistrerAide({
     const aFaire = cibles.filter((c) => !s.ia.enCache(requete(s, c, modeleDe('standard')).cle));
     if (!cibles.length) return null;
     const e = estimationNommage(aFaire.map((c) => c.photos.length), modeleDe('standard'), { recherche: reglagesNommage.recherche });
-    return { usd: e.usd, appels: e.appels, detail: `${pluriel(aFaire.length, 'dossier')} à nommer${reglagesNommage.recherche ? ', avec recherche web' : ''}` };
+    const n = pluriel(aFaire.length, 'dossier');
+    return { usd: e.usd, appels: e.appels, detail: reglagesNommage.recherche ? t`${n} à nommer, avec recherche web` : t`${n} à nommer` };
   },
   lancer: async (s, l) => {
     // Options figées au lancement : cocher « Recherche web » pendant l'exécution ne change pas le coût accepté.
@@ -83,7 +85,7 @@ enregistrerAide({
     } finally {
       await s.aides.fusionner('IA4', ajouts);
     }
-    return `${pluriel(lus, 'nom proposé', 'noms proposés')} sur ${nombre(cibles.length)} dossier${cibles.length > 1 ? 's' : ''}.${texteEchecs(bilan)}`;
+    return t`${pluriel(lus, 'nom proposé', 'noms proposés')} sur ${pluriel(cibles.length, 'dossier')}.${texteEchecs(bilan)}`;
   },
 });
 
@@ -98,7 +100,7 @@ function renommerTous(plan: Plan, noms: [string, string][]): { m: Modification |
       refus.push(nom);
     }
   }
-  return { m: combiner(`Renommer ${noms.length - refus.length} dossier${noms.length - refus.length > 1 ? 's' : ''}`, ...mods), refus };
+  return { m: combiner(t`Renommer ${pluriel(noms.length - refus.length, 'dossier')}`, ...mods), refus };
 }
 
 function Ligne({ c, p, saisi, saisir }: { c: CibleNommage; p?: PropositionNom; saisi: string; saisir: (v: string) => void }) {
@@ -115,31 +117,31 @@ function Ligne({ c, p, saisi, saisir }: { c: CibleNommage; p?: PropositionNom; s
       </td>
       <td>
         <strong>{c.nom}</strong>
-        {c.parent && <div class="discret">dans {c.parent}</div>}
+        {c.parent && <div class="discret">{t`dans ${c.parent}`}</div>}
         <div class="discret">
           {jourCourt(dates[0])}
           {dates.length > 1 && dates[0].slice(0, 10) !== dates.at(-1)!.slice(0, 10) ? ` – ${jourCourt(dates.at(-1))}` : ''} · {pluriel(c.photos.length, 'photo')}
         </div>
       </td>
       <td>
-        <input class="nom-propose" value={saisi} onInput={(e) => saisir(e.currentTarget.value)} aria-label={`Nouveau nom de ${c.nom}`} />
-        {saisi && propre && propre !== saisi && <div class="discret">deviendra « {propre} »</div>}
-        {propre && !respecteConvention(propre) && <div class="attention">Convention : Theme_Lieu_JJ.MM.AA</div>}
+        <input class="nom-propose" value={saisi} onInput={(e) => saisir(e.currentTarget.value)} aria-label={t`Nouveau nom de ${c.nom}`} />
+        {saisi && propre && propre !== saisi && <div class="discret">{t`deviendra « ${propre} »`}</div>}
+        {propre && !respecteConvention(propre) && <div class="attention">{t`Convention : Theme_Lieu_JJ.MM.AA`}</div>}
       </td>
       <td class="n">{p?.confiance ?? ''}</td>
       <td class="justification">
         {p?.activite && <strong>{p.activite}. </strong>}
         {p?.justification}
-        {p && p.monuments.length > 0 && <div class="monuments">Reconnu : {p.monuments.join(', ')}</div>}
-        {evts.length > 0 && <div class="evenements">Calendrier : {evts.slice(0, 3).map((e) => e.titre).join(' · ')}</div>}
+        {p && p.monuments.length > 0 && <div class="monuments">{t`Reconnu : ${p.monuments.join(', ')}`}</div>}
+        {evts.length > 0 && <div class="evenements">{t`Calendrier : ${evts.slice(0, 3).map((e) => e.titre).join(' · ')}`}</div>}
       </td>
       <td>
         <button type="button" disabled={!propre || propre === c.nom} onClick={() => {
           const r = renommerTous(s.plan, [[c.dossier, propre]]);
-          if (r.refus.length) notifier('erreur', `« ${propre} » existe déjà à cet endroit.`);
+          if (r.refus.length) notifier('erreur', t`« ${propre} » existe déjà à cet endroit.`);
           else appliquer(r.m);
         }}>
-          Renommer
+          {t`Renommer`}
         </button>
       </td>
     </tr>
@@ -167,43 +169,45 @@ export function PageNommage() {
       surs.map((c) => [c.dossier, normaliserNom(saisi(c))]),
     );
     appliquer(r.m);
-    notifier(r.refus.length ? 'erreur' : 'ok', `${pluriel(surs.length - r.refus.length, 'dossier renommé', 'dossiers renommés')}${r.refus.length ? ` ; ${r.refus.length} nom(s) déjà pris : ${r.refus.join(', ')}` : ''}.`, { libelle: 'Annuler', faire: annuler });
+    const renommes = pluriel(surs.length - r.refus.length, 'dossier renommé', 'dossiers renommés');
+    notifier(r.refus.length ? 'erreur' : 'ok', r.refus.length ? t`${renommes} ; ${r.refus.length} nom(s) déjà pris : ${r.refus.join(', ')}.` : `${renommes}.`, { libelle: t`Annuler`, faire: annuler });
   };
 
   return (
     <div class="page large avec-barre page-nommage">
-      <TeteEtape numero={ETAPE.nommage} titre="Nommage" cle="nommage">
-        Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). L’IA peut proposer des noms en regardant
-        quelques photos, le lieu, le calendrier et le contexte du projet ; vous gardez le dernier mot.
+      <TeteEtape numero={ETAPE.nommage} titre={t`Nommage`} cle="nommage">
+        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). L’IA peut proposer des noms en regardant quelques photos, le lieu, le calendrier et le contexte du projet ; vous gardez le dernier mot.`}
       </TeteEtape>
       <div class="reglages-etape ligne">
         <label class="case">
-          <input type="checkbox" checked={tous} onChange={(e) => setTous(e.currentTarget.checked)} /> Tous les dossiers (pas seulement les noms automatiques comme
-          « Ko_Samui_2026-07-18 »)
+          <input type="checkbox" checked={tous} onChange={(e) => setTous(e.currentTarget.checked)} />{' '}
+          {t`Tous les dossiers (pas seulement les noms automatiques comme « Ko_Samui_2026-07-18 »)`}
         </label>
-        <label class="case" title="Événements locaux, lieux touristiques, résultats de course… (environ 0,09 CHF de plus par dossier)">
-          <input type="checkbox" checked={recherche} onChange={(e) => setRecherche(e.currentTarget.checked)} /> Recherche web
+        <label class="case" title={t`Événements locaux, lieux touristiques, résultats de course… (environ 0,09 CHF de plus par dossier)`}>
+          <input type="checkbox" checked={recherche} onChange={(e) => setRecherche(e.currentTarget.checked)} /> {t`Recherche web`}
         </label>
       </div>
       <AideIA fonction="IA4" />
       {surs.length > 0 && (
         <p>
           <button type="button" class="principal" onClick={accepterSurs}>
-            Accepter les {nombre(surs.length)} noms de confiance 8 ou plus
+            {t`Accepter les ${nombre(surs.length)} noms de confiance 8 ou plus`}
           </button>
         </p>
       )}
       {cibles.length === 0 ? (
-        <p class="encart">Aucun dossier au nom automatique : tout est déjà nommé. Cochez « Tous les dossiers » pour en renommer d’autres.</p>
+        <p class="encart">{t`Aucun dossier au nom automatique : tout est déjà nommé. Cochez « Tous les dossiers » pour en renommer d’autres.`}</p>
       ) : (
         <table class="tableau nommage">
           <thead>
             <tr>
               <th />
-              <th>Dossier</th>
-              <th>Nouveau nom</th>
-              <th class="n" title="Confiance de l’IA, de 1 à 10">Conf.</th>
-              <th>Justification</th>
+              <th>{t`Dossier`}</th>
+              <th>{t`Nouveau nom`}</th>
+              <th class="n" title={t`Confiance de l’IA, de 1 à 10`}>
+                {t`Conf.`}
+              </th>
+              <th>{t`Justification`}</th>
               <th />
             </tr>
           </thead>
@@ -215,7 +219,7 @@ export function PageNommage() {
         </table>
       )}
       <BarreValidation
-        resume={`${pluriel(cibles.length, 'dossier')} à nommer · ${pluriel(Object.keys(propositions).length, 'proposition')}`}
+        resume={t`${pluriel(cibles.length, 'dossier')} à nommer · ${pluriel(Object.keys(propositions).length, 'proposition')}`}
         revenir={() => revenirDe('nommage')}
         valider={() => validerEtape('nommage')}
       />

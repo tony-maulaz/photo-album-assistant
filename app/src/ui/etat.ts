@@ -2,7 +2,7 @@
 // annulation, réglages, messages. Le plan est enregistré au fil de l'eau
 // dans `.album/` (règle d'or 7).
 
-import type { Langue } from '../lib/langue';
+import { t, type Langue } from '../lib/langue';
 import { signal } from '@preact/signals';
 import type { ConfigAlbum } from '../lib/album';
 import type { EvenementCalendrier } from '../lib/ics';
@@ -107,7 +107,7 @@ export function notifier(type: Message['type'], texte: string, action?: Message[
 }
 
 export function texteErreur(err: unknown): string {
-  if (err instanceof DOMException && err.name === 'AbortError') return 'Action annulée.';
+  if (err instanceof DOMException && err.name === 'AbortError') return t`Action annulée.`;
   return err instanceof Error ? err.message : String(err);
 }
 
@@ -152,7 +152,7 @@ export function enregistrerMaintenant(): Promise<void> {
       await s.etat.ecrire('plan.json', versJson(s.plan));
       await s.etat.ecrire('projet.json', s.projet);
     })
-    .catch((err) => notifier('erreur', `Enregistrement impossible : ${texteErreur(err)}`));
+    .catch((err) => notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
   return enregistrement;
 }
 
@@ -187,7 +187,7 @@ export function annuler() {
   const m = s?.historique.annuler(s.plan);
   if (m) {
     apresChangement();
-    notifier('info', `Annulé : ${m.libelle}`);
+    notifier('info', t`Annulé : ${m.libelle}`);
   }
 }
 
@@ -196,7 +196,7 @@ export function retablir() {
   const m = s?.historique.retablir(s.plan);
   if (m) {
     apresChangement();
-    notifier('info', `Rétabli : ${m.libelle}`);
+    notifier('info', t`Rétabli : ${m.libelle}`);
   }
 }
 
@@ -246,7 +246,7 @@ export function changerAlbum(modif: Partial<ConfigAlbum>) {
   versionPlan.value++;
   if (s.projet.etapes[ETAPE.sortie - 1] === 'validee') changerEtape(ETAPE.sortie, 'a_revoir');
   const config = s.album;
-  ecritureAlbum = ecritureAlbum.then(() => s.etat.ecrire('album.json', config)).catch((err) => notifier('erreur', `Enregistrement impossible : ${texteErreur(err)}`));
+  ecritureAlbum = ecritureAlbum.then(() => s.etat.ecrire('album.json', config)).catch((err) => notifier('erreur', t`Enregistrement impossible : ${texteErreur(err)}`));
 }
 
 export function journal(type: string, texte: string, donnees?: unknown) {

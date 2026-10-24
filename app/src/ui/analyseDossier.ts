@@ -7,6 +7,7 @@
 
 import { signal } from '@preact/signals';
 import { candidatsEmpreinte } from '../lib/doublonsExacts';
+import { t } from '../lib/langue';
 import type { FichierPlan } from '../lib/plan';
 import { groupeWorkers, journal, notifier, planifierEnregistrement, session, texteErreur, versionIA, versionPlan, type Session } from './etat';
 import { pluriel } from './format';
@@ -70,8 +71,8 @@ async function analyser() {
         (faits, total) => (analyseEnCours.value = { phase: 'photos', faits, total, debut }),
         arreter,
       );
-      journal('analyse', `Analyse de ${r.analysees} photos en ${Math.round((performance.now() - debut) / 1000)} s`, r);
-      if (r.erreurs) notifier('info', `${pluriel(r.erreurs, 'photo n’a pas pu être lue', 'photos n’ont pas pu être lues')} (format non reconnu ?).`);
+      journal('analyse', t`Analyse de ${r.analysees} photos en ${Math.round((performance.now() - debut) / 1000)} s`, r);
+      if (r.erreurs) notifier('info', t`${pluriel(r.erreurs, 'photo n’a pas pu être lue', 'photos n’ont pas pu être lues')} (format non reconnu ?).`);
     }
     if (arreter()) return;
     const aCalculer = empreintesManquantes(s);
@@ -91,6 +92,6 @@ async function analyser() {
       versionPlan.value++;
     }
   } catch (err) {
-    notifier('erreur', `Analyse interrompue : ${texteErreur(err)}`);
+    notifier('erreur', t`Analyse interrompue : ${texteErreur(err)}`);
   }
 }
