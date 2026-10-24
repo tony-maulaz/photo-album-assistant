@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && ENTREE=essais-phase0.html vite build",
+    "build": "tsc --noEmit && vite build && vite build --mode essais",
     "apercu": "vite preview",
     "test": "vitest run",
     "test:continu": "vitest",

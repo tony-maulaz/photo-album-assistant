@@ -51,7 +51,46 @@ API, which Firefox and Safari do not provide.
 
 ## Getting started
 
-Build the single-file app (Node 24, see `app/.nvmrc`):
+1. **Download** `album-photos.html` from the
+   [latest release](https://github.com/tony-maulaz/photo-album-assistant/releases/latest).
+   It is the whole app in one file: nothing to install.
+2. **Open it** in Chrome or Edge (double-click the file).
+3. Click **Sort a new folder** (an unsorted folder: phone dumps, a holiday…)
+   or **Open an already sorted folder** (you mainly want the album), then
+   choose the folder to sort and an empty output folder. Each step explains
+   itself; the **Help** button reopens the explanation.
+
+You can stop at any time: everything is saved in the output folder (in a
+hidden `.album` folder) and the project reopens where you left it. Photos
+added to the folder later are detected when you reopen the project.
+
+### Optional: AI helpers
+
+To use them, create an API key in the
+[Claude Console](https://console.anthropic.com/) (Anthropic, paid per use)
+and paste it in **Settings** (menu ☰). Each project has a budget; costs are
+shown in Swiss francs (CHF), with an exchange rate you can change in
+Settings.
+
+### Optional: configuration folder
+
+A small folder of your own (see [`config.exemple/`](config.exemple)) holds
+your known places (home, grandparents, school…), family calendars and
+cameras. It is not needed to start; with your home location, the automatic
+sorting can also recognise trips. Choose it on the **Configuration** page
+(menu ☰). Never publish it: it contains your home address.
+
+### The album
+
+The `Album/` folder of the output holds copies of the selected photos,
+numbered in album order, and a text file with section titles, captions and a
+page plan. Import them into your photo-book service (the app was designed
+with [ifolor](https://www.ifolor.ch) in mind, but any service that keeps the
+file order works).
+
+### Building it yourself
+
+Node 24 (see `app/.nvmrc`):
 
 ```sh
 cd app
@@ -59,7 +98,7 @@ npm install
 npm run build
 ```
 
-Then open `app/dist/album-photos.html` by double-clicking it.
+Then open `app/dist/album-photos.html`.
 
 ## Language
 
