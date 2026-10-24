@@ -8,7 +8,7 @@
 // Usage (depuis app/) : node outils/essai_vrac.mjs   (CAPTURES=dossier pour des captures d'écran)
 
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -141,6 +141,40 @@ try {
     await racine.getDirectoryHandle('selecteur_sortie', { create: true });
   }, chemins);
 
+  // Calendrier familial (D83) : un dossier « config » avec un .ics, choisi plus loin depuis la page Configuration.
+  const config = JSON.parse(readFileSync(join(APP, '..', 'config.exemple', 'config.json'), 'utf8'));
+  Object.assign(config, { lieux_connus: [], appareils: [], calendriers: [{ fichier: 'calendriers/famille.ics', nom: 'famille', actif: true, inclure_recurrents: false }] });
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:voyage',
+    'DTSTART;VALUE=DATE:20260714',
+    'DTEND;VALUE=DATE:20260726',
+    'SUMMARY:Voyage Thaïlande',
+    'END:VEVENT',
+    'BEGIN:VEVENT',
+    'UID:lea',
+    'DTSTART;VALUE=DATE:20260718',
+    'DTEND;VALUE=DATE:20260719',
+    'SUMMARY:18 ans de Lea',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  await page.evaluate(
+    async ({ config, ics }) => {
+      const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_config', { create: true });
+      const ecrire = async (dossier, nom, texte) => {
+        const w = await (await dossier.getFileHandle(nom, { create: true })).createWritable();
+        await w.write(texte);
+        await w.close();
+      };
+      await ecrire(d, 'config.json', JSON.stringify(config, null, 2));
+      await ecrire(await d.getDirectoryHandle('calendriers', { create: true }), 'famille.ics', ics);
+    },
+    { config, ics },
+  );
+
   // Nouveau projet « Trier un nouveau dossier ».
   await page.getByRole('button', { name: /Trier un nouveau dossier/ }).click();
   const choisir = page.getByRole('button', { name: 'Choisir…' });
@@ -249,6 +283,13 @@ try {
   await page.waitForTimeout(500);
   verifier(requetesNominatim.length === avant, 'recalculer ne redemande pas les noms (cache)');
   verifier((await page.locator('.resume-tri').innerText()) === resume, 'recalculer avec les mêmes réglages donne la même arborescence');
+  // Configuration avec le calendrier familial, choisie depuis le menu (Fonctions IA, Configuration, …).
+  await page.locator('.bouton-menu').click();
+  await page.locator('.menu-deroulant [role=menuitem]').nth(1).click();
+  await page.getByRole('button', { name: 'Choisir le dossier config…' }).click();
+  await page.getByText(/Calendriers \(1\)/).waitFor();
+  verifier(true, 'configuration avec un calendrier .ics choisie');
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
   // Étape 7 : lieux et sorties.
@@ -269,6 +310,12 @@ try {
   await page.getByRole('button', { name: 'Ligne de temps' }).click();
   verifier((await page.locator('.ldt-barre.actif').count()) >= 1, 'ligne de temps : le dossier choisi est mis en évidence');
   await page.getByRole('button', { name: 'Photos', exact: true }).click();
+  // Les dossiers pris pendant le voyage du calendrier : proposés à réunir sous son titre (D83).
+  const regroupement = page.locator('.regroupements-calendrier');
+  await regroupement.locator('summary').click();
+  const texteRegroupement = (await regroupement.innerText()).replace(/\s+/g, ' ');
+  await capturer(page, 'v3c_calendrier');
+  verifier(texteRegroupement.includes('« Voyage Thaïlande »') && /Les ranger dans « Voyage_Thailande_/.test(texteRegroupement), `calendrier : ${texteRegroupement.slice(0, 160)}`);
 
   // Étapes 8 à 10 (IA simulée).
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
@@ -284,6 +331,12 @@ try {
   await page.getByText(/noms? proposés?/).first().waitFor({ timeout: 60_000 });
   verifier(appelsIA.nommage > 0, `nommage IA4 : ${appelsIA.nommage} dossier(s)`);
   await capturer(page, 'v5_nommage');
+  // Le titre d'un événement du calendrier est proposé comme nom (D83), l'IA reste à un clic.
+  const champs = await page.locator('input.nom-propose').evaluateAll((l) => l.map((x) => x.value));
+  verifier(
+    champs.includes('18 ans de Lea 18.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 15.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 2 15.07.26') && champs.includes('Voyage Thaïlande Mu Ko Ang Thong 21.07.26'),
+    `noms tirés du calendrier (titre seul, ou titre et lieu pendant un voyage) : ${champs.filter((v) => /Lea|Voyage/.test(v)).join(', ')}`,
+  );
   verifier(appelsIA.monumentsDemandes === appelsIA.nommage && (await page.locator('.monuments').first().innerText()).includes('Plage de Chaweng'), 'monuments demandés dans le même appel que le nom et affichés');
   verifier((await page.getByRole('button', { name: /Reconnaître lieux et monuments/ }).count()) === 0, 'un seul bouton d’IA au nommage');
   await page.getByRole('button', { name: /Accepter les \d+ noms de confiance 8 ou plus/ }).click();

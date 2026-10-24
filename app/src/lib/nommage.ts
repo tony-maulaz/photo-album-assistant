@@ -12,6 +12,7 @@ import consigneSysteme from '../ia/consignes/nommage_systeme.txt?raw';
 import { verifierNomDossier } from './noms';
 import { RACINE, type FichierPlan, type Plan } from './plan';
 import { coutUSD, jetonsImage, modele as infoModele, PRIX_RECHERCHE_WEB } from './tarifs';
+import { dateDeNom } from './tri';
 
 // ---------------------------------------------------------------------------
 // Requêtes IA communes aux aides d'organisation
@@ -409,6 +410,16 @@ export function normaliserNom(nom: string): string {
     .replace(/_(\d{1,2})\.(\d{1,2})\.(\d{2})$/, (_, j: string, m: string, a: string) => `_${j.padStart(2, '0')}.${m.padStart(2, '0')}.${a}`);
   n = n.slice(0, 120).replace(/[_.-]+$/, '');
   return verifierNomDossier(n) ? '' : n;
+}
+
+/**
+ * Nom tiré d'un événement du calendrier (D83) : son titre, souvent parlant
+ * (« 18 ans de Lea »), et les jours du dossier. Les accents et les espaces sont
+ * gardés : c'est le texte du champ, qui sert aussi de titre dans l'album ; le
+ * nom du dossier en est tiré par `normaliserNom` (« 18_ans_de_Lea_26.01.25 »).
+ */
+export function nomDepuisEvenement(titre: string, du: string, au: string): string {
+  return `${titre.trim()} ${dateDeNom(du.slice(0, 10), au.slice(0, 10))}`;
 }
 
 /** Le nom suit-il la convention (Theme_Lieu_JJ.MM.AA ou Theme_Lieu_JJ-JJ.MM.AA) ? */

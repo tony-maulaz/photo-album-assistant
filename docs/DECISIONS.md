@@ -729,6 +729,28 @@ captures d'écran et les photos des lieux fréquents, plus petites, en suivent
 l'échelle. L'inventaire annonce aussi les rafales à relire, comme les copies
 exactes.
 
+**D83 — Le calendrier nomme et regroupe.** Les titres du calendrier familial
+sont souvent les noms les plus parlants (« 18 ans de Lea », « Vacances Tessin
+») : l'utilisateur les a écrits lui-même. Jusqu'ici, seule l'IA du nommage les
+lisait, et rien ne s'en servait sans IA. Désormais, tous les événements des
+calendriers actifs comptent (une journée, plusieurs jours, ou à l'heure, avec
+une heure de marge). L'événement d'un ensemble de photos est celui pendant
+lequel la plus grande part a été prise (la moitié au moins) ; à égalité, le
+plus court, plus précis. Au Nommage, son titre suivi des dates du dossier est
+proposé ; s'il couvre toutes les photos, il passe devant la proposition de
+l'IA (confiance 9), qui reste à un clic, et inversement. Un événement partagé
+par plusieurs dossiers (un voyage) est suivi du lieu, et deux dossiers du même
+lieu le même jour reçoivent un numéro, pour que les noms ne se répètent pas. À
+l'étape « Lieux et sorties », quand deux dossiers ou plus du premier niveau
+ont été photographiés pendant un même événement (80 % de leurs photos),
+l'application propose de les réunir sous son titre : en sous-dossiers pour un
+événement de plusieurs jours (on garde les étapes, comme un voyage du tri),
+fusionnés pour un seul jour ; une proposition ignorée n'est plus montrée
+(`aides.json`, `regroupements_ignores`). Les dossiers qui gardent leur place
+et les dossiers techniques ne sont jamais proposés. Les anniversaires répétés
+chaque année ne comptent que si « inclure les récurrents » est coché pour le
+calendrier.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

@@ -124,3 +124,46 @@
   gap: 4px;
   color: var(--ok);
 }
+
+/* Dossiers d'un même événement du calendrier (D83) : propositions repliables, au-dessus des photos. */
+.regroupements-calendrier {
+  margin: 6px 16px 0;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+}
+
+.regroupements-calendrier summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.regroupements-calendrier ul {
+  margin: 8px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.regroupements-calendrier li + li {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bord);
+}
+
+.regroupements-calendrier p {
+  margin: 0;
+  color: var(--texte);
+}
+
+.regroupements-calendrier .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.regroupements-calendrier .espace {
+  flex: 1;
+}

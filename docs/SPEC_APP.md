@@ -280,6 +280,10 @@ dossier par jour, détecter les voyages, utiliser les lieux connus.
 - **événements du calendrier** correspondant aux dates.
 
 **Vues** : arborescence, ligne de temps, filtre « seulement les alertes ».
+**Calendrier** (D83) : quand plusieurs dossiers ont été photographiés pendant
+un même événement (80 % de leurs photos au moins), l'application propose de
+les réunir sous son titre : en sous-dossiers pour un événement de plusieurs
+jours, fusionnés pour un seul jour ; ou d'ignorer la proposition.
 **Corrections** : panneau des dossiers et déplacement (§ 5.3), fusionner,
 scinder par jour, renommer, mettre dans `_autres/`, annuler.
 **Suggestion de lieux connus** : un groupe GPS qui revient sur de nombreux
@@ -302,6 +306,11 @@ présentés, l'utilisateur décide.
   une **recherche web** (événements locaux, lieux touristiques, résultats de
   course…).
 - Tri par confiance croissante ; « Accepter les noms de confiance ≥ 8 ».
+- **Sans IA, le calendrier** (D83) : quand les photos d'un dossier ont été
+  prises pendant un événement du calendrier, son titre est proposé avec les
+  dates du dossier (« 18 ans de Lea 26.01.26 ») ; couvrant toutes les photos,
+  il passe devant la proposition de l'IA, qui reste à un clic. Un événement
+  partagé par plusieurs dossiers (un voyage) est suivi du lieu.
 - Convention `Theme_Lieu_JJ.MM.AA`, sans accents ni espaces, correction
   proposée.
 
@@ -546,7 +555,9 @@ l'étape 5 (suggestions).
 ### 8.4 Calendriers
 Ajouter un `.ics` (copié dans `config/calendriers/`), voir le nombre
 d'événements et la période, activer ou désactiver, inclure les récurrents
-(avancé). Utilisés aux étapes 4 (information), 6 (nommage) et 10 (textes).
+(avancé : les anniversaires d'une année sur l'autre). Utilisés à l'étape
+Lieux et sorties (ligne de temps, dossiers à réunir), au Nommage (titre de
+l'événement proposé comme nom) et pour les textes de l'album (D83).
 
 ### 8.5 Appareils
 Modèles détectés, décalage d'horloge (`+HH:MM`), surnom (« téléphone

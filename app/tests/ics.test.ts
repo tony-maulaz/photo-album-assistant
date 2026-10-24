@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { blocCalendrier, evenementsAutour, lireIcs, resumeCalendrier, type EvenementCalendrier } from '../src/lib/ics';
+import { blocCalendrier, evenementDesPhotos, evenementsAutour, lireIcs, partPendant, resumeCalendrier, type EvenementCalendrier } from '../src/lib/ics';
+import { nomDepuisEvenement, normaliserNom } from '../src/lib/nommage';
 
 /** Calendrier de test (aucune donnée personnelle), avec fins de ligne CRLF comme les exports. */
 function ics(...evenements: string[]): string {
@@ -166,5 +167,27 @@ describe('événements autour des dates et texte des consignes (scripts 03 et 04
     );
     const beaucoup = Array.from({ length: 20 }, (_, i) => ev(`E${i}`, '2026-07-15', '2026-07-15'));
     expect(blocCalendrier(beaucoup).split('\n').filter((l) => l.startsWith('- '))).toHaveLength(12);
+  });
+});
+
+describe('noms tirés du calendrier (D83)', () => {
+  const ev = (titre: string, debut: string, fin: string, journee = true): EvenementCalendrier => ({ titre, debut, fin, journee, recurrent: false });
+  const vacances = ev('Vacances d’hiver', '2026-01-24', '2026-02-01');
+  const anniversaire = ev('18 ans de Lea', '2026-01-26', '2026-01-26');
+  const match = ev('Match de foot', '2026-01-27T14:00:00', '2026-01-27T16:00:00', false);
+
+  it('le plus court des événements qui couvrent les photos : son titre est le plus parlant', () => {
+    const r = evenementDesPhotos([vacances, anniversaire, match], ['2026-01-26T15:00:00', '2026-01-26T18:30:00']);
+    expect(r).toMatchObject({ evenement: { titre: '18 ans de Lea' }, part: 1 });
+    expect(normaliserNom(nomDepuisEvenement(r!.evenement.titre, '2026-01-26', '2026-01-26'))).toBe('18_ans_de_Lea_26.01.26');
+  });
+
+  it('un événement à l’heure compte une heure de marge ; la moitié des photos au moins', () => {
+    expect(partPendant(match, ['2026-01-27T13:20:00', '2026-01-27T16:45:00', '2026-01-27T19:00:00'])).toBeCloseTo(2 / 3);
+    expect(evenementDesPhotos([match], ['2026-01-27T19:00:00', '2026-01-27T20:00:00', '2026-01-27T15:00:00'])).toBeNull();
+    // Plusieurs jours : les jours du dossier, pas ceux de l'événement.
+    const r = evenementDesPhotos([vacances, anniversaire], ['2026-01-25T10:00:00', '2026-01-26T10:00:00', '2026-01-28T10:00:00']);
+    expect(r?.evenement.titre).toBe('Vacances d’hiver');
+    expect(normaliserNom(nomDepuisEvenement(r!.evenement.titre, '2026-01-25', '2026-01-28'))).toBe('Vacances_d_hiver_25-28.01.26');
   });
 });

@@ -130,6 +130,25 @@ export const TEXTES: Record<string, string> = {
   '{0} (photos quasi identiques prises à quelques secondes) : vous choisirez à l’étape « {1} » celles à garder.':
     '{0} (nearly identical photos taken a few seconds apart): you will choose which to keep at the “{1}” step.',
 
+  // Nommage.tsx : noms tirés du calendrier (D83)
+  'D’après le calendrier': 'From the calendar',
+  'Calendrier : « {0} », pendant toutes les photos': 'Calendar: “{0}”, during all the photos',
+  'Calendrier : « {0} », pendant une partie des photos': 'Calendar: “{0}”, during some of the photos',
+  'Proposition de l’IA :': 'AI suggestion:',
+  'D’après le calendrier (« {0} ») :': 'From the calendar (“{0}”):',
+
+  // Organiser.tsx, lib/regroupements.ts : dossiers d'un même événement du calendrier (D83)
+  'Réunir {0} dans « {1} »': 'Gather {0} into “{1}”',
+  'regroupement proposé': 'suggested grouping',
+  'regroupements proposés': 'suggested groupings',
+  ': {0} pendant cet événement.': ': {0} during this event.',
+  'dossier pris': 'folder taken',
+  'dossiers pris': 'folders taken',
+  'Les ranger dans « {0} »': 'Put them in “{0}”',
+  'Toutes les photos dans un seul dossier, sans sous-dossiers': 'All the photos in a single folder, without subfolders',
+  'ou les fusionner en un seul dossier': 'or merge them into a single folder',
+  Ignorer: 'Ignore',
+
   // Raccourcis.tsx
   'J et K (ou ↓ ↑)': 'J and K (or ↓ ↑)',
   'Groupe suivant, groupe précédent': 'Next group, previous group',

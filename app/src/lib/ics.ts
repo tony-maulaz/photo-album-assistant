@@ -269,6 +269,11 @@ function occurrences(r: Regle, debut: string, au?: string): number[] {
 // ---------------------------------------------------------------------------
 
 /** Premier et dernier jour couverts par un événement. */
+/** Premier et dernier jour d'un événement (« AAAA-MM-JJ »). */
+export function joursEvenement(e: EvenementCalendrier): [string, string] {
+  return jours(e);
+}
+
 function jours(e: EvenementCalendrier): [string, string] {
   const d1 = e.debut.slice(0, 10);
   let d2 = e.fin.slice(0, 10);
@@ -384,6 +389,43 @@ export function resumeCalendrier(evts: EvenementCalendrier[]): { nombre: number;
   if (!evts.length) return { nombre: 0 };
   const j = evts.map(jours);
   return { nombre: evts.length, du: j.map((x) => x[0]).sort()[0], au: j.map((x) => x[1]).sort().at(-1) };
+}
+
+/** Durée d'un événement, en secondes (une journée entière compte 24 h). */
+export function dureeEvenement(e: EvenementCalendrier): number {
+  const [d1, d2] = jours(e);
+  return e.journee ? (jourDepuis(d2) - jourDepuis(d1) + 1) * 86_400 : secondes(e.fin) - secondes(e.debut);
+}
+
+/**
+ * Part des photos prises pendant l'événement : `dates` sont leurs dates
+ * (« AAAA-MM-JJTHH:MM:SS » ou « AAAA-MM-JJ ») ; une heure de marge autour d'un
+ * événement à l'heure (on photographie un peu avant et après).
+ */
+export function partPendant(e: EvenementCalendrier, dates: string[]): number {
+  if (!dates.length) return 0;
+  const [d1, d2] = jours(e);
+  const debut = secondes(e.debut) - 3600;
+  const fin = secondes(e.fin) + 3600;
+  const pendant = (d: string) => (e.journee || d.length <= 10 ? d.slice(0, 10) >= d1 && d.slice(0, 10) <= d2 : secondes(d) >= debut && secondes(d) <= fin);
+  return dates.filter(pendant).length / dates.length;
+}
+
+/**
+ * L'événement du calendrier qui décrit le mieux des photos (D83) : celui
+ * pendant lequel la plus grande part a été prise (la moitié au moins) ; à
+ * égalité, le plus court, plus parlant (« 18 ans de Lea » plutôt que
+ * « Vacances d'hiver »). Son titre fait souvent un bon nom de dossier.
+ */
+export function evenementDesPhotos(evts: EvenementCalendrier[], dates: string[]): { evenement: EvenementCalendrier; part: number } | null {
+  let meilleur: { evenement: EvenementCalendrier; part: number } | null = null;
+  for (const e of evts) {
+    const part = partPendant(e, dates);
+    if (part < 0.5) continue;
+    const egal = meilleur && Math.abs(part - meilleur.part) < 1e-9;
+    if (!meilleur || (!egal && part > meilleur.part) || (egal && dureeEvenement(e) < dureeEvenement(meilleur.evenement))) meilleur = { evenement: e, part };
+  }
+  return meilleur;
 }
 
 /** Événements chevauchant [du − marge, au + marge] (`evenements_autour` des scripts 03 et 04). */
