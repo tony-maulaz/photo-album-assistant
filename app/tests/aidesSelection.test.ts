@@ -31,7 +31,8 @@ const photos = (n: number, prefixe = 'p'): PhotoIA[] =>
 const SCRIPT_03 = new URL('../../reference/python/03_selection_album_ia.py', import.meta.url);
 
 describe.skipIf(!existsSync(SCRIPT_03))('consignes reprises mot pour mot du script 03', () => {
-  const script = readFileSync(SCRIPT_03, 'utf-8');
+  // Lu seulement s'il existe : le corps d'un describe sauté est quand même exécuté pour lister ses tests.
+  const script = existsSync(SCRIPT_03) ? readFileSync(SCRIPT_03, 'utf-8') : '';
   // Dans le source Python, « \\" » vaut « \" » une fois la chaîne évaluée.
   const evalue = script.replaceAll('\\\\"', '\\"');
 
