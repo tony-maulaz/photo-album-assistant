@@ -159,7 +159,7 @@ try {
     await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
     await page.getByRole('button', { name: 'Écrire' }).click();
     await page.locator('.encart.bilan').waitFor({ timeout: 1_800_000 });
-    noter(`sortie écrite en ${duree(debut)} : ${(await page.locator('.encart.bilan').innerText()).split('\n').find((l) => l.includes('fichiers dans la source'))}`);
+    noter(`sortie écrite en ${duree(debut)} : ${(await page.locator('.encart.bilan').innerText()).split('\n').find((l) => l.includes(' → '))}`);
     noter(`bilan complet : ${(await page.getByText('Tout est dans le dossier de sortie.').count()) > 0 ? 'oui' : 'NON'}`);
     noter(`mémoire JavaScript : ${((await page.evaluate(() => performance.memory?.usedJSHeapSize ?? 0)) / 2 ** 20).toFixed(0)} Mo`);
     throw new Error('FIN_VRAC');
@@ -212,7 +212,7 @@ try {
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
   await page.getByRole('button', { name: 'Écrire' }).click();
   await page.locator('.encart.bilan').waitFor({ timeout: 1_800_000 });
-  const bilan = (await page.locator('.encart.bilan').innerText()).split('\n').find((l) => l.includes('fichiers dans la source'));
+  const bilan = (await page.locator('.encart.bilan').innerText()).split('\n').find((l) => l.includes(' → '));
   noter(`sortie écrite en ${duree(debut)} : ${bilan}`);
   noter(`bilan complet : ${(await page.getByText('Tout est dans le dossier de sortie.').count()) > 0 ? 'oui' : 'NON'}`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_sortie.png'), fullPage: true });

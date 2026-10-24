@@ -3,7 +3,7 @@
 import { nombre, pluriel } from '../ui/format';
 import { aTraduire, langue, t } from './langue';
 import { cheminDossier, resumes, type Plan } from './plan';
-import { dossierMisDeCote, nomsSortie, type Bilan } from './sortie';
+import { dossierMisDeCote, nomsSortie, type Bilan, type SourceRelue } from './sortie';
 
 /** Raison de mise de côté : [singulier, pluriel]. */
 const RAISONS: Record<string, [string, string]> = {
@@ -31,12 +31,27 @@ function jour(d?: string): string {
   return `${j}.${m}.${a}`;
 }
 
-/** Phrase de bilan du § 6.11 : « 5123 fichiers dans la source → 5123 dans la sortie : … ». */
-export function phraseBilan(b: Bilan): string {
+/**
+ * Phrase de bilan du § 6.11 : « 5123 fichiers dans le dossier à trier → 5123
+ * dans la sortie : … ». Les nombres disent vrai : sans le dossier à trier
+ * relu, c'est le projet qui est compté ; s'il diffère du projet (fichiers
+ * arrivés, modifiés ou disparus depuis l'inventaire), les deux le sont.
+ */
+export function phraseBilan(b: Bilan, source?: SourceRelue): string {
   const parties = [pluriel(b.categories.photos, 'photo triée', 'photos triées'), pluriel(b.categories.videos, 'vidéo')];
   for (const [r, n] of Object.entries(b.categories.misDeCote)) parties.push(raison(r, n));
   parties.push(pluriel(b.categories.autres, 'autre fichier', 'autres fichiers'));
-  return t`${pluriel(b.total, 'fichier')} dans la source → ${nombre(b.presents)} dans la sortie : ${parties.join(', ')}.`;
+  const detail = parties.join(', ');
+  if (!source) return t`${pluriel(b.total, 'fichier')} dans le projet → ${nombre(b.presents)} dans la sortie : ${detail}.`;
+  if (source.commeLeProjet) return t`${pluriel(b.total, 'fichier')} dans le dossier à trier → ${nombre(b.presents)} dans la sortie : ${detail}.`;
+  return t`${pluriel(source.fichiers, 'fichier')} dans le dossier à trier, ${nombre(b.total)} dans le projet → ${nombre(b.presents)} dans la sortie : ${detail}.`;
+}
+
+/** Fichiers du projet qui ne sont plus dans le dossier à trier : ils ne peuvent pas être copiés (la page y ajoute le bouton « Mettre à jour l'inventaire »). */
+export function texteDisparus(n: number): string {
+  return n > 1
+    ? t`${nombre(n)} fichiers ne sont plus dans le dossier à trier (supprimés, renommés ou déplacés depuis l’inventaire) : ils ne peuvent pas être copiés.`
+    : t`${nombre(n)} fichier n’est plus dans le dossier à trier (supprimé, renommé ou déplacé depuis l’inventaire) : il ne peut pas être copié.`;
 }
 
 export interface InfosRapport {
@@ -48,6 +63,10 @@ export interface InfosRapport {
   album?: { photos: number; sections: number; pages: number; manquantes: number };
   /** Fichiers de la source qui ne sont pas (ou plus tels quels) dans le projet : arrivés ou modifiés depuis l'inventaire (D63). */
   horsProjet?: string[];
+  /** Le dossier à trier relu après l'écriture (absent s'il n'a pas pu l'être). */
+  relue?: SourceRelue;
+  /** Fichiers du projet manquants dans la sortie parce qu'ils ne sont plus dans le dossier à trier. */
+  disparus?: string[];
 }
 
 export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): string {
@@ -59,7 +78,17 @@ export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): strin
     .sort((a, b2) => a.chemin.localeCompare(b2.chemin, 'fr', { numeric: true }));
   const racine = r.get('racine');
   const horsProjet = infos.horsProjet ?? [];
+  const disparus = infos.disparus ?? [];
   const complet = b.manquants.length === 0 && horsProjet.length === 0;
+  // Seulement les messages qui s'appliquent.
+  const alertes = [
+    b.manquants.length > 0 && t`${pluriel(b.manquants.length, 'fichier manque', 'fichiers manquent')} dans la sortie : ne supprimez pas la source.`,
+    disparus.length > 0 && `${texteDisparus(disparus.length)} ${t`Mettez à jour l’inventaire.`}`,
+    horsProjet.length > 0 &&
+      (horsProjet.length > 1
+        ? t`${nombre(horsProjet.length)} fichiers de la source ne sont pas dans le projet (arrivés ou modifiés depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.`
+        : t`${nombre(horsProjet.length)} fichier de la source n’est pas dans le projet (arrivé ou modifié depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.`),
+  ].filter((x): x is string => !!x);
   const autres = [...plan.fichiers.values()].filter((f) => f.categorie === 'autre').map((f) => f.id).sort();
   const locale = langue() === 'en' ? 'en-GB' : 'fr-CH';
   const quand = infos.date.toLocaleString(locale, { dateStyle: 'long', timeStyle: 'short' });
@@ -73,7 +102,7 @@ export function genererRapport(infos: InfosRapport, plan: Plan, b: Bilan): strin
       ? `<details><summary>${titre} (${nombre(elements.length)})</summary><ul>${elements
           .slice(0, max)
           .map((e) => `<li>${echapper(e)}</li>`)
-          .join('')}${elements.length > max ? `<li>${t`… et ${nombre(elements.length - max)} autres`}</li>` : ''}</ul></details>`
+          .join('')}${elements.length > max ? `<li>${elements.length - max > 1 ? t`… et ${nombre(elements.length - max)} autres` : t`… et ${nombre(elements.length - max)} autre`}</li>` : ''}</ul></details>`
       : '';
 
   return `<!doctype html>
@@ -96,15 +125,14 @@ summary { cursor: pointer; } ul { margin: 6px 0; padding-left: 20px; } li { over
 <body>
 <h1>${echapper(infos.projet)}</h1>
 <p class="discret">${t`Rapport du ${echapper(quand)} — source « ${echapper(infos.source)} », sortie « ${echapper(infos.sortie)} ».`}</p>
-<p class="bilan">${echapper(phraseBilan(b))}<br>
+<p class="bilan">${echapper(phraseBilan(b, infos.relue))}<br>
 ${
   complet
     ? `<strong class="ok">${t`Tout est dans le dossier de sortie.`}</strong> ${t`Vérifiez-le et copiez-le à son emplacement définitif (NAS) ; vous pourrez ensuite supprimer le dossier d’origine vous-même.`}`
-    : b.manquants.length
-      ? `<strong class="echec">${t`${nombre(b.manquants.length)} fichier(s) manquent dans la sortie : ne supprimez pas la source.`}</strong>`
-      : `<strong class="echec">${t`${pluriel(horsProjet.length, 'fichier de la source n’est', 'fichiers de la source ne sont')} pas dans le projet (arrivés ou modifiés depuis l’inventaire) : mettez à jour l’inventaire, ne supprimez pas la source.`}</strong>`
+    : alertes.map((a) => `<strong class="echec">${a}</strong>`).join('<br>\n')
 }</p>
 ${liste(t`Fichiers manquants`, b.manquants.map((m) => `${m.id} → ${m.cible}`))}
+${liste(t`Fichiers qui ne sont plus dans le dossier à trier`, disparus)}
 ${liste(t`Fichiers de la source pas encore dans le projet`, horsProjet)}
 <p class="discret">${t`Les fichiers système masqués par le navigateur (comme ${code('Thumbs.db')}, le cache de miniatures de Windows) ne sont ni comptés ni copiés : Windows les recrée.`}</p>
 
@@ -120,12 +148,16 @@ ${lignesDossiers}
 ${
   album && album.photos
     ? `<h2>${t`Album`}</h2>
-<p>${t`${pluriel(album.photos, 'photo')} dans ${code('Album/')}, numérotées dans l’ordre de l’album (${pluriel(album.sections, 'section')}, environ ${pluriel(album.pages, 'page')}) : importez-les dans ifolor dans cet ordre.`} ${t`Titres, introductions et légendes : ${code(`Album/${nomsSortie().textesAlbum}`)}.`}${
+<p>${
+        album.photos > 1
+          ? t`${nombre(album.photos)} photos dans ${code('Album/')}, numérotées dans l’ordre de l’album (${pluriel(album.sections, 'section')}, environ ${pluriel(album.pages, 'page')}) : importez-les dans ifolor dans cet ordre.`
+          : t`${nombre(album.photos)} photo dans ${code('Album/')} (${pluriel(album.sections, 'section')}, environ ${pluriel(album.pages, 'page')}) : importez-la dans ifolor.`
+      } ${t`Titres, introductions et légendes : ${code(`Album/${nomsSortie().textesAlbum}`)}.`}${
         album.manquantes
           ? ` <strong class="echec">${
               album.manquantes > 1
-                ? t`${nombre(album.manquantes)} copies n’ont pas pu être écrite(s) : relancez la création de la sortie.`
-                : t`${nombre(album.manquantes)} copie n’a pas pu être écrite(s) : relancez la création de la sortie.`
+                ? t`${nombre(album.manquantes)} copies n’ont pas pu être écrites : relancez la création de la sortie.`
+                : t`${nombre(album.manquantes)} copie n’a pas pu être écrite : relancez la création de la sortie.`
             }</strong>`
           : ''
       }</p>`
@@ -137,7 +169,11 @@ ${
 ${Object.entries(b.categories.misDeCote)
   .map(([r, n]) => `<li>${t`${raison(r, n)}, dans ${code(`${echapper(dossierMisDeCote(r))}/`)}`}</li>`)
   .join('\n')}
-<li>${t`${pluriel(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans ${code(`${nomsSortie().autres}/`)} avec leur chemin d’origine`}</li>
+<li>${
+  b.categories.autres > 1
+    ? t`${pluriel(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans ${code(`${nomsSortie().autres}/`)} avec leur chemin d’origine`
+    : t`${pluriel(b.categories.autres, 'autre fichier', 'autres fichiers')} (ni photo ni vidéo), dans ${code(`${nomsSortie().autres}/`)} avec son chemin d’origine`
+}</li>
 </ul>
 ${liste(t`Autres fichiers`, autres)}
 
@@ -152,7 +188,15 @@ ${liste(
   t`Photos et vidéos sans autre date que celle du fichier`,
   b.datesFichierSeulement.map((f) => t`${f.id} — modifié le ${new Date(f.modifie).toLocaleString(locale)}`),
 )}
-${b.enTrop.length ? `<h2>${t`Fichiers de la sortie hors du plan`}</h2><p>${t`Présents dans la sortie mais absents du plan (déposés à la main, ou anciennes copies) : ils n’ont pas été touchés.`}</p>${liste(t`Fichiers`, b.enTrop)}` : ''}
+${
+  b.enTrop.length
+    ? `<h2>${t`Fichiers de la sortie hors du plan`}</h2><p>${
+        b.enTrop.length > 1
+          ? t`Présents dans la sortie mais absents du plan (déposés à la main, ou anciennes copies) : ils n’ont pas été touchés.`
+          : t`Présent dans la sortie mais absent du plan (déposé à la main, ou ancienne copie) : il n’a pas été touché.`
+      }</p>${liste(t`Fichiers`, b.enTrop)}`
+    : ''
+}
 </body>
 </html>
 `;

@@ -177,6 +177,16 @@ describe('synchronisation de Album/', () => {
     appliquer(planifierAlbum(voulus(['a']), presents, etat), presents, etat);
     expect(types(planifierAlbum(voulus(['a'], { a: 90 }), presents, etat))).toBe('copier,retirer');
   });
+
+  it('suit la nouvelle version de l’original (date de modification) ; un état sans date garde la copie', () => {
+    const presents = new Map([['0001_x_a.jpg', 10]]);
+    const avec = (modifie: number) => voulus(['a']).map((v) => ({ ...v, modifie }));
+    const etat: EtatAlbum = { '0001_x_a.jpg': { id: 'a', taille: 10, rotation: 0, modifie: 1 } };
+    expect(types(planifierAlbum(avec(1), presents, etat))).toBe('garder');
+    expect(types(planifierAlbum(avec(2), presents, etat))).toBe('copier,retirer');
+    delete etat['0001_x_a.jpg'].modifie;
+    expect(types(planifierAlbum(avec(2), presents, etat))).toBe('garder');
+  });
 });
 
 describe('outils de sélection', () => {

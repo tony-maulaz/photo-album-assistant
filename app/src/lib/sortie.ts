@@ -5,6 +5,7 @@ import type { EtatAlbum } from './album';
 import { cleNom } from './noms';
 import type { Langue } from './langue';
 import { cheminDossier, type FichierPlan, type Plan, type RaisonMiseDeCote } from './plan';
+import { aucunChangement, type ChangementsSource } from './source';
 
 export const DOSSIER_PHOTOS = 'Photos';
 export const DOSSIER_ETAT = '.album';
@@ -104,12 +105,24 @@ export function cheminSortie(plan: Plan, f: FichierPlan): string {
   return `${DOSSIER_PHOTOS}/${dossier ? `${dossier}/` : ''}${f.nom}`;
 }
 
-/** Ce que la synchronisation a écrit, pour retrouver un fichier qui a changé de dossier (`.album/etat_sortie.json`). */
+/**
+ * Ce que la synchronisation a écrit (`.album/etat_sortie.json`) : pour
+ * retrouver un fichier qui a changé de dossier, et reconnaître les copies de
+ * l'application, qu'elle remplace quand l'original a changé.
+ */
 export interface EtatSortie {
   version: 1;
-  fichiers: Record<string, { chemin: string; taille: number }>;
+  fichiers: Record<string, CopieSortie>;
   /** Copies écrites dans `Album/` (chemin relatif à `Album/`). */
   album?: EtatAlbum;
+}
+
+/** Une copie écrite par l'application : où, et la taille et la date de modification de l'original copié. */
+export interface CopieSortie {
+  chemin: string;
+  taille: number;
+  /** Absente dans un état écrit avant qu'elle soit notée : la taille seule compte alors. */
+  modifie?: number;
 }
 
 export function etatVide(): EtatSortie {
@@ -124,41 +137,73 @@ export function cleChemin(chemin: string): string {
   return cleNom(chemin);
 }
 
+/**
+ * Copies de l'application encore en place, par clé de chemin : l'identifiant
+ * du fichier copié. Une copie dont la taille a changé depuis (retouchée à la
+ * main) n'est plus la sienne : elle ne sera jamais écrasée.
+ */
+function copiesEnPlace(listing: ListingSortie, etat: EtatSortie): Map<string, string> {
+  const copies = new Map<string, string>();
+  for (const [id, e] of Object.entries(etat.fichiers)) {
+    const cle = cleChemin(e.chemin);
+    if (listing.get(cle)?.taille === e.taille) copies.set(cle, id);
+  }
+  return copies;
+}
+
+/** La copie est-elle celle de la version du plan : même taille et, si elle est notée, même date de modification ? */
+function copieAJour(e: CopieSortie, f: FichierPlan): boolean {
+  return e.taille === f.taille && (e.modifie === undefined || e.modifie === f.modifie);
+}
+
+/** Ce que l'état note d'une copie gardée ou déplacée : la version du plan, qui est la sienne. */
+export function copieDuPlan(f: FichierPlan, chemin: string): CopieSortie {
+  return { chemin, taille: f.taille, modifie: f.modifie };
+}
+
 export type ActionSynchro =
   | { type: 'garder'; id: string; cible: string }
-  | { type: 'copier'; id: string; cible: string }
+  /** `libere` : la place est prise par la copie d'un autre fichier, déplacée ailleurs juste avant. */
+  | { type: 'copier'; id: string; cible: string; libere?: string }
+  /**
+   * L'original a changé depuis sa copie (nouvelle version) : la copie de
+   * l'application est remplacée, après avoir été déplacée depuis `depuis` si
+   * le fichier a aussi changé de dossier.
+   */
+  | { type: 'remplacer'; id: string; cible: string; depuis?: string }
   | { type: 'deplacer'; id: string; cible: string; depuis: string }
   /** La place est prise par un autre fichier, que l'on ne touche pas. */
   | { type: 'conflit'; id: string; cible: string };
 
 /**
  * Actions qui amènent la sortie à l'état du plan : un fichier identique (même
- * taille) n'est jamais recopié (A13) ; un fichier déjà écrit ailleurs est
- * déplacé ; rien n'est jamais écrasé ni supprimé.
+ * taille, même date de modification) n'est jamais recopié (A13) ; un fichier
+ * déjà écrit ailleurs est déplacé ; la copie d'une version plus ancienne est
+ * remplacée. Un fichier que l'application n'a pas écrit n'est jamais écrasé,
+ * et rien n'est supprimé.
  */
 export function planifierSynchro(plan: Plan, listing: ListingSortie, etat: EtatSortie): ActionSynchro[] {
+  const copies = copiesEnPlace(listing, etat);
   const actions: ActionSynchro[] = [];
-  const cibles = new Set<string>();
   for (const f of plan.fichiers.values()) {
     const cible = cheminSortie(plan, f);
     const cle = cleChemin(cible);
-    cibles.add(cle);
-    const present = listing.get(cle)?.taille;
-    if (present === f.taille) {
-      actions.push({ type: 'garder', id: f.id, cible });
-      continue;
-    }
+    const present = listing.get(cle);
     const avant = etat.fichiers[f.id];
-    if (present === undefined && avant && cleChemin(avant.chemin) !== cle && listing.get(cleChemin(avant.chemin))?.taille === f.taille) {
-      actions.push({ type: 'deplacer', id: f.id, cible, depuis: avant.chemin });
-      continue;
-    }
-    actions.push({ type: present === undefined ? 'copier' : 'conflit', id: f.id, cible });
+    const occupant = copies.get(cle);
+    if (!present) {
+      // Sa copie est restée à son ancienne place (le fichier a changé de dossier) : déplacée.
+      const depuis = avant && copies.get(cleChemin(avant.chemin)) === f.id ? avant.chemin : undefined;
+      if (!depuis) actions.push({ type: 'copier', id: f.id, cible });
+      else actions.push({ type: copieAJour(avant, f) ? 'deplacer' : 'remplacer', id: f.id, cible, depuis });
+    } else if (occupant === f.id) actions.push({ type: copieAJour(avant, f) ? 'garder' : 'remplacer', id: f.id, cible });
+    else if (occupant !== undefined) actions.push({ type: 'copier', id: f.id, cible, libere: occupant });
+    // Un fichier que l'application n'a pas noté (sortie écrite sans état) : gardé s'il a la même taille.
+    else actions.push({ type: present.taille === f.taille ? 'garder' : 'conflit', id: f.id, cible });
   }
-  // Un fichier déplacé ne doit pas l'être vers une place qu'un autre fichier du plan occupe encore.
-  return actions.map((a) =>
-    a.type === 'deplacer' && cibles.has(cleChemin(a.depuis)) ? { type: 'copier', id: a.id, cible: a.cible } : a,
-  );
+  // La place prise par la copie d'un autre fichier n'est libérée que si cette copie part ailleurs.
+  const departs = new Set(actions.flatMap((a) => ((a.type === 'deplacer' || a.type === 'remplacer') && a.depuis ? [`${a.id}|${cleChemin(a.depuis)}`] : [])));
+  return actions.map((a) => (a.type === 'copier' && a.libere && !departs.has(`${a.libere}|${cleChemin(a.cible)}`) ? { type: 'conflit', id: a.id, cible: a.cible } : a));
 }
 
 export interface Bilan {
@@ -173,8 +218,13 @@ export interface Bilan {
   enTrop: string[];
 }
 
-/** Chaque fichier de la source se retrouve-t-il dans la sortie, avec la même taille ? (A2) */
-export function bilan(plan: Plan, listing: ListingSortie): Bilan {
+/**
+ * Chaque fichier du projet se retrouve-t-il dans la sortie, dans sa version ?
+ * (A2) Même taille et, pour une copie notée par l'application, même date de
+ * modification de l'original : la copie d'une version plus ancienne, ou celle
+ * d'un autre fichier, ne compte pas.
+ */
+export function bilan(plan: Plan, listing: ListingSortie, etat: EtatSortie): Bilan {
   const b: Bilan = {
     total: 0,
     presents: 0,
@@ -184,13 +234,17 @@ export function bilan(plan: Plan, listing: ListingSortie): Bilan {
     datesFichierSeulement: [],
     enTrop: [],
   };
+  const copies = copiesEnPlace(listing, etat);
   const attendus = new Set<string>();
   for (const f of plan.fichiers.values()) {
     b.total++;
     b.octets += f.taille;
     const cible = cheminSortie(plan, f);
-    attendus.add(cleChemin(cible));
-    if (listing.get(cleChemin(cible))?.taille === f.taille) b.presents++;
+    const cle = cleChemin(cible);
+    attendus.add(cle);
+    const occupant = copies.get(cle);
+    const aJour = occupant === undefined || (occupant === f.id && copieAJour(etat.fichiers[f.id], f));
+    if (listing.get(cle)?.taille === f.taille && aJour) b.presents++;
     else b.manquants.push({ id: f.id, cible });
     if (f.categorie === 'autre') b.categories.autres++;
     else if (f.statut === 'mis_de_cote') b.categories.misDeCote[f.raison ?? 'autres'] = (b.categories.misDeCote[f.raison ?? 'autres'] ?? 0) + 1;
@@ -205,9 +259,19 @@ export function bilan(plan: Plan, listing: ListingSortie): Bilan {
   return b;
 }
 
-/** Espace nécessaire pour ce qui reste à copier. */
+/** Le dossier à trier relu après l'écriture (D63) : son nombre de fichiers, et s'il contient exactement ceux du projet. */
+export interface SourceRelue {
+  fichiers: number;
+  commeLeProjet: boolean;
+}
+
+export function sourceRelue(plan: Plan, c: ChangementsSource): SourceRelue {
+  return { fichiers: plan.fichiers.size - c.disparus.length + c.nouveaux.length, commeLeProjet: aucunChangement(c) };
+}
+
+/** Espace nécessaire pour ce qui reste à copier (une nouvelle version remplace l'ancienne copie). */
 export function octetsACopier(plan: Plan, actions: ActionSynchro[]): number {
   let total = 0;
-  for (const a of actions) if (a.type === 'copier') total += plan.fichiers.get(a.id)?.taille ?? 0;
+  for (const a of actions) if (a.type === 'copier' || a.type === 'remplacer') total += plan.fichiers.get(a.id)?.taille ?? 0;
   return total;
 }

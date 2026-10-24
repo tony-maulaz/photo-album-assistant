@@ -25,7 +25,7 @@ export function contenuAlbum(plan: Plan, config: ConfigAlbum, nomProjet: string)
   const couverture = config.couverture ? plan.fichiers.get(config.couverture) : undefined;
   if (couverture && couverture.statut === 'archive') {
     const ext = couverture.nom.includes('.') ? couverture.nom.slice(couverture.nom.lastIndexOf('.')).toLowerCase() : '.jpg';
-    voulus.unshift({ id: couverture.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: couverture.rotation ?? 0, taille: couverture.taille });
+    voulus.unshift({ id: couverture.id, chemin: `${nomsSortie().couverture}${ext}`, rotation: couverture.rotation ?? 0, taille: couverture.taille, modifie: couverture.modifie });
   }
   const legendes = new Map(ordre.filter((f) => f.legende).map((f) => [f.id, f.legende!]));
   // Les textes sont écrits dans la sortie : dans la langue du projet (D60).
@@ -184,7 +184,7 @@ export async function synchroniserAlbum(o: OptionsAlbum): Promise<ResultatAlbum>
       }
       const flux = await (await o.sortie.poignee(album(a.chemin), true)).createWritable();
       await contenu.stream().pipeTo(flux);
-      etat[a.chemin] = { id: a.id, taille: contenu.size, rotation: a.rotation, ...(recadree ? { recadrage: signatureRecadrage(a.recadrage) } : {}) };
+      etat[a.chemin] = { id: a.id, taille: contenu.size, rotation: a.rotation, ...(recadree ? { recadrage: signatureRecadrage(a.recadrage) } : {}), modifie: original.lastModified };
       r.copies++;
     } catch (err) {
       r.erreurs.push({ id: a.id, message: String(err) });

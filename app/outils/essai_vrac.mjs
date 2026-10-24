@@ -277,7 +277,7 @@ try {
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).click();
   await page.getByRole('button', { name: 'Écrire' }).click();
   await page.getByText('Tout est dans le dossier de sortie.').first().waitFor({ timeout: 60_000 });
-  const bilan = (await page.locator('.encart.bilan').innerText()).split('\n').find((l) => l.includes('fichiers dans la source'));
+  const bilan = (await page.locator('.encart.bilan').innerText()).split('\n').find((l) => l.includes(' → '));
   verifier(!!bilan, `bilan complet : ${bilan}`);
   const sortie = await page.evaluate(async () => {
     const lister = async (d, p) => {
@@ -344,7 +344,7 @@ try {
   await capturer(page, 'v9_rangement');
   verifier(true, 'tri automatique : seule la nouvelle photo à trier est rangée');
   const bilanApres = await ecrireSortie();
-  verifier(bilanApres.includes('Tout est dans le dossier de sortie.'), `après la mise à jour, bilan complet : ${bilanApres.split('\n').find((l) => l.includes('fichiers dans la source'))}`);
+  verifier(bilanApres.includes('Tout est dans le dossier de sortie.'), `après la mise à jour, bilan complet : ${bilanApres.split('\n').find((l) => l.includes(' → '))}`);
   const sortieApres = await page.evaluate(async () => {
     const lister = async (d, p) => {
       const l = [];
