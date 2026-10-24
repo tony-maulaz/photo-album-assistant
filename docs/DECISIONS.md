@@ -401,6 +401,18 @@ d'une bulle au survol). Les lieux fréquents montrent une photo par jour, la
 liste complète sur demande et le nom de la ville proche (OpenStreetMap,
 déjà utilisé par le tri), pour qu'on sache ce qu'on nomme.
 
+**D59 — Lieux fréquents : l'adresse précise plutôt qu'un nom proposé par
+l'IA.** Pour reconnaître un lieu qui revient souvent, chaque carte montre
+son adresse (OpenStreetMap au zoom 18 : nom de l'endroit s'il en a un, rue,
+localité ; une requête gratuite par lieu, gardée dans `.album/adresses.json`).
+Une proposition de nom par l'IA (recherche internet, analyse des photos) a
+été écartée pour l'instant : les lieux les plus fréquents sont des lieux de
+famille (maison, grands-parents) que ni l'IA ni internet ne peuvent nommer,
+et les lieux publics (école, stade) ont déjà leur nom dans OpenStreetMap. À
+reconsidérer si l'adresse ne suffit pas. Une case « C'est notre domicile »
+permet d'enregistrer le domicile sans passer par la Configuration (les
+voyages en ont besoin).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

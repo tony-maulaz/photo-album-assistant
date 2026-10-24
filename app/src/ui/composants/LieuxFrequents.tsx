@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { FichierPlan } from '../../lib/plan';
-import { nomAscii } from '../../lib/noms';
+import { nomAscii, nouvelIdLieu } from '../../lib/noms';
 import { lieuxFrequents } from '../../lib/tri';
 import { configuration, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { dateHeure, nombre, pluriel } from '../format';
@@ -28,23 +28,27 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
   );
   const visibles = suggestions.filter((l) => !ignores.has(`${l.lat},${l.lon}`));
   const [deplies, setDeplies] = useState<Set<string>>(new Set());
-  // Nom du lieu proche (OpenStreetMap, mis en cache comme pour le tri) : aide à reconnaître l'endroit.
-  const [procheDe, setProcheDe] = useState<Record<string, string>>({});
+  // Adresse précise (OpenStreetMap, mise en cache) : aide à reconnaître l'endroit (D59).
+  const [adresses, setAdresses] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!suggestions.length) return;
     let actif = true;
     void s.geocodage
-      .nommer(suggestions, reglages.value.emailNominatim, () => undefined, () => !actif)
-      .then((noms) => actif && setProcheDe(Object.fromEntries(suggestions.flatMap((l, i) => (noms[i] ? [[`${l.lat},${l.lon}`, noms[i]!]] : [])))))
+      .adresser(suggestions, reglages.value.emailNominatim, () => !actif)
+      .then((r) => actif && setAdresses(Object.fromEntries(suggestions.flatMap((l, i) => (r[i] ? [[`${l.lat},${l.lon}`, r[i]!]] : [])))))
       .catch(() => undefined);
     return () => {
       actif = false;
     };
   }, [suggestions]);
+  // Le domicile sert à repérer les voyages : proposé tant qu'aucun lieu ne l'est.
+  const [domicile, setDomicile] = useState<string | null>(null);
+  const sansDomicile = !lieux.some((l) => l.domicile);
   if (!visibles.length) return null;
 
   const enregistrer = async (lat: number, lon: number, cle: string) => {
-    const nom = nomAscii(noms[cle] ?? '').replace(/^_+|_+$/g, '');
+    const estDomicile = sansDomicile && domicile === cle;
+    const nom = nomAscii(noms[cle] || (estDomicile ? 'Maison' : '')).replace(/^_+|_+$/g, '');
     if (!nom) {
       notifier('erreur', 'Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).');
       return;
@@ -55,9 +59,23 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
     }
     try {
       const cfg = structuredClone(c.lecture.config);
-      cfg.lieux_connus.push({ id: nom.toLowerCase(), nom, lat: Number(lat.toFixed(6)), lon: Number(lon.toFixed(6)), rayon_m: 150, domicile: false, un_seul_dossier: false, notes: 'suggéré au tri automatique' });
+      cfg.lieux_connus.push({
+        id: nouvelIdLieu(nom, cfg.lieux_connus.map((l) => l.id)),
+        nom,
+        lat: Number(lat.toFixed(6)),
+        lon: Number(lon.toFixed(6)),
+        rayon_m: 150,
+        domicile: estDomicile,
+        un_seul_dossier: false,
+        notes: 'suggéré au tri automatique',
+      });
       configuration.value = { dossier: c.dossier, lecture: await c.dossier.ecrire(cfg, c.lecture) };
-      notifier('ok', `Lieu « ${nom} » enregistré : recalculez l’arborescence pour en tenir compte.`);
+      notifier(
+        'ok',
+        estDomicile
+          ? `Domicile « ${nom} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.`
+          : `Lieu « ${nom} » enregistré : recalculez l’arborescence pour en tenir compte.`,
+      );
     } catch (err) {
       notifier('erreur', texteErreur(err));
     }
@@ -70,7 +88,7 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
         grands-parents, école…)
       </summary>
       <p class="discret">
-        Un lieu enregistré reçoit son propre dossier (« Maison », « Chez_Grands_Parents »…), rangé par sortie. Le nom proche vient d’OpenStreetMap (seules les
+        Un lieu enregistré reçoit son propre dossier (« Maison », « Chez_Grands_Parents »…), rangé par sortie. L’adresse vient d’OpenStreetMap (seules les
         coordonnées sont envoyées).
       </p>
       <ul class="lieux-frequents">
@@ -82,8 +100,9 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
             <li key={cle} class="lieu-frequent">
               <div class="tete-lieu">
                 <strong>{pluriel(photos.length, 'photo')}</strong>
-                <span class="discret">
-                  sur {nombre(l.jours)} jours{procheDe[cle] ? ` · près de « ${procheDe[cle]} »` : ''} · ({l.lat.toFixed(4)}, {l.lon.toFixed(4)})
+                <span class="discret">sur {nombre(l.jours)} jours ·</span>
+                <span class="adresse-lieu" title={`Coordonnées : ${l.lat.toFixed(4)}, ${l.lon.toFixed(4)}`}>
+                  {adresses[cle] ?? 'Recherche de l’adresse…'}
                 </span>
               </div>
               {/* Une photo par jour, pour reconnaître l'endroit d'un coup d'œil ; toutes sur demande. */}
@@ -100,6 +119,11 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
                 </button>
                 <span class="espace" />
                 <input placeholder="Nom du lieu (ex. Maison)" value={noms[cle] ?? ''} onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })} />
+                {sansDomicile && (
+                  <label class="case" title="Le domicile sert à repérer les voyages (sorties loin de la maison qui s’enchaînent).">
+                    <input type="checkbox" checked={domicile === cle} onChange={(e) => setDomicile(e.currentTarget.checked ? cle : null)} /> C’est notre domicile
+                  </label>
+                )}
                 <button type="button" onClick={() => void enregistrer(l.lat, l.lon, cle)}>
                   Enregistrer comme lieu connu
                 </button>

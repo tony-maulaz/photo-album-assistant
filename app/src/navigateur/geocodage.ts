@@ -1,11 +1,14 @@
 // Noms de lieux des groupes GPS (étape « Tri automatique ») : Nominatim, une requête par
 // seconde, français puis anglais si le nom n'est pas en écriture latine (I3),
 // cache dans `.album/geocodage.json` par coordonnée arrondie (script 01).
+// Adresses précises des lieux fréquents, pour les reconnaître : `.album/adresses.json`.
 
-import { nomDeLieu } from './nominatim';
+import { adresseCourte } from '../lib/noms';
+import { inverse, nomDeLieu } from './nominatim';
 import type { EtatProjet } from './projet';
 
 const FICHIER = 'geocodage.json';
+const FICHIER_ADRESSES = 'adresses.json';
 
 type Entree = { nom: string | null; precis: boolean; langue: string | null };
 
@@ -16,10 +19,28 @@ export function cleGeocodage(lat: number, lon: number): string {
 
 export class Geocodage {
   private cache: Record<string, Entree> = {};
+  private adresses: Record<string, string | null> = {};
   constructor(private etat: EtatProjet) {}
 
   async charger(): Promise<void> {
     this.cache = (await this.etat.lire<Record<string, Entree>>(FICHIER).catch(() => undefined)) ?? {};
+    this.adresses = (await this.etat.lire<Record<string, string | null>>(FICHIER_ADRESSES).catch(() => undefined)) ?? {};
+  }
+
+  /** Adresse précise de chaque point (`null` si Nominatim n'en donne pas), dans l'ordre ; enregistrée au fil de l'eau. */
+  async adresser(points: { lat: number; lon: number }[], email: string, arreter: () => boolean): Promise<(string | null)[]> {
+    const resultat: (string | null)[] = [];
+    for (const p of points) {
+      const cle = cleGeocodage(p.lat, p.lon);
+      if (!(cle in this.adresses)) {
+        if (arreter()) throw new DOMException('Géocodage arrêté', 'AbortError');
+        const r = await inverse(Number(p.lat.toFixed(4)), Number(p.lon.toFixed(4)), 'fr', email || undefined, 18);
+        this.adresses[cle] = adresseCourte(r.donnees);
+        await this.etat.ecrire(FICHIER_ADRESSES, this.adresses);
+      }
+      resultat.push(this.adresses[cle]);
+    }
+    return resultat;
   }
 
   connu(lat: number, lon: number): Entree | undefined {

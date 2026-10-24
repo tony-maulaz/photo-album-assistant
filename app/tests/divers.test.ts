@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nomAscii, nomDepuisAdresse, nomUtilisable } from '../src/lib/noms';
+import { adresseCourte, nomAscii, nomDepuisAdresse, nouvelIdLieu, nomUtilisable } from '../src/lib/noms';
 import { nomSauvegarde, sauvegardesEnTrop, validerConfig } from '../src/lib/config';
 import { coutUSD, jetonsImage } from '../src/lib/tarifs';
 import { categorie } from '../src/lib/fichiers';
@@ -27,6 +27,27 @@ describe('noms de lieux (incident I3)', () => {
       precis: true,
     });
     expect(nomDepuisAdresse({})).toBeNull();
+  });
+
+  it('donne une adresse courte pour reconnaître un lieu fréquent (D59)', () => {
+    expect(adresseCourte({ name: 'Collège des Tilleuls', address: { house_number: '12', road: 'Rue du Lac', town: 'Annecy', country: 'France' } })).toBe(
+      'Collège des Tilleuls, 12 Rue du Lac, Annecy',
+    );
+    // Un nom d'endroit qui répète la rue n'est pas écrit deux fois.
+    expect(adresseCourte({ name: 'Rue du Lac', address: { road: 'Rue du Lac', city: 'Lyon' } })).toBe('Rue du Lac, Lyon');
+    expect(adresseCourte({ address: { town: 'Annecy' } })).toBe('Annecy');
+    // Réponse réelle (Annecy) : la localité reste, même si la rue contient son nom.
+    expect(adresseCourte({ name: 'Hôtel de Ville', address: { road: 'Voie Verte Tour du Lac d’Annecy', hamlet: 'Les Balmettes', city: 'Annecy' } })).toBe(
+      'Hôtel de Ville, Voie Verte Tour du Lac d’Annecy, Annecy',
+    );
+    expect(adresseCourte({ name: '', address: {} })).toBeNull();
+    expect(adresseCourte({})).toBeNull();
+  });
+
+  it('donne un identifiant libre à un nouveau lieu connu', () => {
+    expect(nouvelIdLieu('Chez Grands-Parents', [])).toBe('chez_grands-parents');
+    expect(nouvelIdLieu('Maison', ['maison', 'maison-2'])).toBe('maison-3');
+    expect(nouvelIdLieu('บ้าน', [])).toBe('lieu');
   });
 });
 

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { validerConfig, VERSION_CONFIG, type Config, type LieuConnu } from '../../lib/config';
 import { lienCourt, lireCoordonnees } from '../../lib/coordonnees';
 import { lireIcs, resumeCalendrier, type EvenementCalendrier } from '../../lib/ics';
-import { nomAscii } from '../../lib/noms';
+import { nomAscii, nouvelIdLieu } from '../../lib/noms';
 import { DossierConfig, ModifieAilleurs } from '../../navigateur/configuration';
 import { choisirDossier, choisirFichier, memoriserDossier } from '../../navigateur/dossiers';
 import { lireExif } from '../../navigateur/exif';
@@ -50,13 +50,6 @@ function telecharger(nom: string, texte: string, type = 'text/csv') {
   a.download = nom;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-function nouvelId(nom: string, pris: string[]): string {
-  const base = nomAscii(nom).toLowerCase() || 'lieu';
-  let id = base;
-  for (let n = 2; pris.includes(id); n++) id = `${base}-${n}`;
-  return id;
 }
 
 export function PageConfiguration() {
@@ -148,7 +141,7 @@ export function PageConfiguration() {
     });
   const ajouterLieu = (nom: string, lat: number, lon: number, rayon = 80) =>
     modifier((b) => {
-      b.lieux_connus.push({ id: nouvelId(nom, b.lieux_connus.map((x) => x.id)), nom: nomAscii(nom) || `Lieu_${b.lieux_connus.length + 1}`, lat, lon, rayon_m: rayon, domicile: false, un_seul_dossier: false, notes: '' });
+      b.lieux_connus.push({ id: nouvelIdLieu(nom, b.lieux_connus.map((x) => x.id)), nom: nomAscii(nom) || `Lieu_${b.lieux_connus.length + 1}`, lat, lon, rayon_m: rayon, domicile: false, un_seul_dossier: false, notes: '' });
     });
 
   const depuisPhoto = async () => {
@@ -183,7 +176,7 @@ export function PageConfiguration() {
     modifier((b) => {
       for (const l of lieux) {
         if (b.lieux_connus.some((x) => x.nom === l.nom)) continue;
-        b.lieux_connus.push({ id: nouvelId(l.nom, b.lieux_connus.map((x) => x.id)), ...l, domicile: false, un_seul_dossier: false, notes: '' });
+        b.lieux_connus.push({ id: nouvelIdLieu(l.nom, b.lieux_connus.map((x) => x.id)), ...l, domicile: false, un_seul_dossier: false, notes: '' });
       }
     });
     notifier('ok', `${lieux.length} lieu(x) lus dans « ${f.name} » : vérifiez le domicile, puis enregistrez.`);
@@ -337,7 +330,7 @@ export function PageConfiguration() {
                   onClick={() =>
                     modifier((b) => {
                       const nom = `Lieu ${b.lieux_connus.length + 1}`;
-                      b.lieux_connus.push({ id: nouvelId(nom, b.lieux_connus.map((x) => x.id)), nom, lat: coordonnees!.lat, lon: coordonnees!.lon, rayon_m: 80, domicile: false, un_seul_dossier: false, notes: '' });
+                      b.lieux_connus.push({ id: nouvelIdLieu(nom, b.lieux_connus.map((x) => x.id)), nom, lat: coordonnees!.lat, lon: coordonnees!.lon, rayon_m: 80, domicile: false, un_seul_dossier: false, notes: '' });
                       setColle('');
                     })
                   }

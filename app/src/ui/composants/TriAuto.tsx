@@ -120,7 +120,7 @@ export function TriAuto() {
           'Regrouper les voyages',
           <>
             Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « Voyage_… », avec une sortie par étape.
-            {!domicile && <strong> Sans effet pour l’instant : indiquez le domicile parmi les lieux connus (Configuration).</strong>}
+            {!domicile && <strong> Sans effet pour l’instant : cochez « C’est notre domicile » sur un lieu ci-dessus, ou indiquez-le dans la Configuration.</strong>}
           </>,
         )}
         {caseACocher(

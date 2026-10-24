@@ -37,13 +37,16 @@ function requete<T>(chemin: string, parametres: Record<string, string>, email?: 
 }
 
 export interface Adresse {
+  /** Nom de l'endroit trouvé (école, stade, magasin…), s'il en a un. */
+  name?: string;
   address?: Record<string, string>;
   display_name?: string;
   error?: string;
 }
 
-export function inverse(lat: number, lon: number, langue: string, email?: string) {
-  return requete<Adresse>('reverse', { lat: String(lat), lon: String(lon), zoom: '14', addressdetails: '1', 'accept-language': langue }, email);
+/** Géocodage inverse : zoom 14 pour le nom d'une localité, 18 pour l'adresse précise. */
+export function inverse(lat: number, lon: number, langue: string, email?: string, zoom = 14) {
+  return requete<Adresse>('reverse', { lat: String(lat), lon: String(lon), zoom: String(zoom), addressdetails: '1', 'accept-language': langue }, email);
 }
 
 export function rechercher(texte: string, langue: string, email?: string) {

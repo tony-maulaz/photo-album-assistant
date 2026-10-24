@@ -23,6 +23,31 @@ export function nomUtilisable(nom: unknown): nom is string {
 export const CLES_PRECISES = ['village', 'town', 'city', 'hamlet', 'municipality', 'suburb', 'county', 'district'];
 export const CLES_LARGES = ['state_district', 'province', 'state', 'region', 'country'];
 
+/**
+ * Adresse courte d'une réponse Nominatim précise (zoom 18), pour reconnaître un
+ * lieu : nom de l'endroit s'il en a un, rue et numéro, localité
+ * (« Collège des Tilleuls, 12 Rue du Lac, Annecy »), ou `null`.
+ */
+export function adresseCourte(reponse: { name?: unknown; address?: Record<string, unknown> }): string | null {
+  const texte = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  const a = reponse.address ?? {};
+  const rue = ['road', 'pedestrian', 'footway', 'path', 'square'].map((k) => texte(a[k])).find(Boolean) ?? null;
+  const numero = texte(a.house_number);
+  const localite = ['village', 'town', 'city', 'hamlet', 'municipality', 'suburb'].map((k) => texte(a[k])).find(Boolean) ?? null;
+  const parties = [texte(reponse.name), rue && numero ? `${numero} ${rue}` : rue, localite].filter((p): p is string => !!p);
+  // Le nom de l'endroit est souvent celui de la rue ou de la localité : pas de répétition.
+  const uniques = parties.filter((p, i) => !parties.slice(0, i).some((q) => q.toLowerCase() === p.toLowerCase()));
+  return uniques.length ? uniques.join(', ') : null;
+}
+
+/** Identifiant d'un nouveau lieu connu, d'après son nom, différent de ceux déjà pris. */
+export function nouvelIdLieu(nom: string, pris: string[]): string {
+  const base = nomAscii(nom).toLowerCase() || 'lieu';
+  let id = base;
+  for (let n = 2; pris.includes(id); n++) id = `${base}-${n}`;
+  return id;
+}
+
 /** Nom le plus précis utilisable d'une adresse Nominatim, et s'il est précis ou large. */
 export function nomDepuisAdresse(adresse: Record<string, unknown>): { nom: string; precis: boolean } | null {
   for (const cle of CLES_PRECISES) if (nomUtilisable(adresse[cle])) return { nom: adresse[cle] as string, precis: true };

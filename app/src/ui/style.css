@@ -3320,6 +3320,10 @@ button.bouton-ia:disabled {
   gap: 10px;
 }
 
+.adresse-lieu {
+  color: var(--texte);
+}
+
 /* Bascule à deux positions (segment) : fond gris, position active en blanc. */
 .bascule-vue {
   display: inline-flex;

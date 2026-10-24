@@ -131,7 +131,7 @@ try {
     await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
     if (CAPTURES) {
       // Lieux fréquents : on laisse arriver les miniatures et les noms proches (OpenStreetMap simulé).
-      await page.getByText(/près de « /).first().waitFor({ timeout: 20_000 }).catch(() => undefined);
+      await page.getByText('Recherche de l’adresse…').first().waitFor({ state: 'detached', timeout: 20_000 }).catch(() => undefined);
       await page.waitForTimeout(2000);
       await page.screenshot({ path: join(CAPTURES, 'echelle_lieux_frequents.png') });
       await page.locator('.tri-auto').last().screenshot({ path: join(CAPTURES, 'echelle_tri_reglages.png') });
