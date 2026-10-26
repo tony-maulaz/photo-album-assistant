@@ -465,6 +465,13 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   sont voulues (une sélection `BESTOF`, D85). Tous les exemplaires
   peuvent être écartés. Les vidéos et autres fichiers ne sont que copiés,
   contrôlés par leur taille.
+- **Rafales et mêmes scènes, sans IA** (D99) : sous une photo, une
+  remarque au plus quand elle se distingue nettement des autres du groupe
+  (« plus nette », « plus sombre », « trop claire (zones blanches) »,
+  « contre-jour »), d'après la netteté et l'exposition mesurées par
+  l'analyse. La ★ d'une rafale reste la plus nette ; quand les photos se
+  valent, la proposition le dit (« gardez celle que vous préférez »). Un
+  « Accepter » groupé ne vide jamais un groupe dont la ★ a été écartée.
 - Réglage simple de l'IA : **Prudent** (défaut, les expressions différentes
   sont gardées) ou **Strict**. Son coût est affiché dans l'onglet « Même
   scène (IA) », où elle se lance.

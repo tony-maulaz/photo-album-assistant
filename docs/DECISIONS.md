@@ -1063,6 +1063,35 @@ bouton plein ; comme lui, elles replient les cartes acceptées. Au passage :
 l'en-tête de section compte comme la jauge (les photos dans plusieurs
 dossiers à part), les flèches sans section voisine disparaissent.
 
+**D99 — Doublons : comparer les photos d'un groupe sans IA (lot 1).** Demande
+de Tony : l'IA pour choisir la meilleure photo d'une rafale (yeux fermés,
+sourire, contre-jour, ombre). Analyse par cinq agents (existant, technique,
+interface et avocat du diable, applications de référence, critique) ; plan
+en quatre lots : mesures gratuites, essai de l'IA sur de vraies rafales,
+aide IA des rafales (séparée de « Même scène », portées « cette rafale » /
+sélection de gauche / tout), visages en grand si l'essai le justifie. Lot 1 :
+la ★ d'une rafale était « la plus nette », alors que sur 2025 la netteté ne
+départage presque rien (202 rafales sur 257 : la 2e a au moins 90 % de la
+netteté de la 1re). Les mesures de l'analyse (netteté, exposition) sont
+maintenant **comparées entre les photos du groupe**, dans Rafales et Même
+scène (`lib/comparerPhotos.ts`), écartées comprises pour que rien ne change
+au clic : « plus nette » (au moins 1,5× la netteté de chaque autre, 2× pour
+une même scène dont le cadrage change, mesurée telle quelle et corrigée de
+l'exposition, la netteté croissant comme le carré du contraste), « plus
+sombre » (12 niveaux et 15 % de moins que la plus claire, sous 100), « trop
+claire (zones blanches) » (5 points de pixels brûlés de plus, au moins 10 %),
+« contre-jour » (rafales seulement, une photo l'a et pas l'autre). Une
+remarque au plus par photo, le défaut d'abord, en pastille neutre ; rien si
+une photo n'est pas analysée. **La ★ ne bouge pas** : la départager par
+l'exposition changeait 77 rafales pour des écarts invisibles, et la ★ entre
+dans la clé du groupe et dans celle de la vue d'ensemble de l'IA (décisions
+retournées, analyse repayée). La proposition le dit : « garder la plus nette
+★ » seulement si c'est vrai, sinon « Elles se valent : gardez celle que vous
+préférez (★ par défaut) ». Le titre donne l'écart réel (« Rafale de 3 photos
+en 12 s ») ; « à quelques secondes » était faux (fenêtre de 10 min).
+Bogue corrigé : un « Accepter » groupé (section, onglet) écartait tout un
+groupe dont la ★ avait été écartée ; il le laisse à relire, avec son alerte.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
@@ -1077,6 +1106,7 @@ dossiers à part), les flèches sans section voisine disparaissent.
 | Phash sur l'image à l'endroit plutôt que couchée (8568 paires < 10 min, phase 0) | Même orientation : verdict changé pour 0,2 % (seuil 12) et 1,7 % (seuil 20) des paires | Seuils 12 et 20 conservés (D29) |
 | Tri 2025, taille d'un lieu (1 441 fichiers triés, 6 lieux connus) | 0,5 / 1 / 2 / 5 / 10 km → 130 / 104 / 87 / 68 / 56 dossiers | Cinq crans, 2 km par défaut (D87) |
 | Tri 2025, écart d'une sortie (durée maximale 21 j) | 1 / 3 / 7 / 14 / 30 j → 140 / 111 / 93 / 87 / 87 dossiers ; au-delà de 21 j, aucun effet | 7 jours (D87) |
+| Doublons 2025, écarts dans un groupe (257 rafales, 34 mêmes scènes) | Luminosité : 0,5 niveau en médiane dans une rafale (9e décile 4,5), 7 dans une même scène (19) ; netteté ≥ 1,25× : 27 rafales, ≥ 1,5× : 11 ; la plus claire est aussi la plus nette dans 166 rafales | Écarts relatifs, netteté 1,5× corrigée de l'exposition, ★ inchangée (D99) |
 | Tri 2025, distance d'un voyage | 10 / 20 / 30 / 50 / 100 / 200 km → 8 / 7 / 6 / 5 / 5 / 3 voyages ; à 30, un faux voyage de deux excursions ; à 100, des étapes perdues | 50 km (D87) |
 
 ## 3. Incidents et corrections (tests de non-régression)

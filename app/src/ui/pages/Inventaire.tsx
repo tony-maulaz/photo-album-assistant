@@ -45,7 +45,7 @@ function AVerifier() {
   const points = [
     sousDossiers > 0 && t`${pluriel(sousDossiers, 'sous-dossier', 'sous-dossiers')} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.`,
     nbCopies > 0 && t`${pluriel(nbCopies, 'copie exacte', 'copies exactes')} (même photo en plusieurs exemplaires) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » les exemplaires à garder.`,
-    nbRafales > 0 && t`${pluriel(nbRafales, 'rafale', 'rafales')} (photos quasi identiques prises à quelques secondes) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » celles à garder.`,
+    nbRafales > 0 && t`${pluriel(nbRafales, 'rafale', 'rafales')} (photos quasi identiques prises à la suite) : vous choisirez à l’étape « ${nomEtape(ETAPE.doublons)} » celles à garder.`,
     sansDate > 0 && s.projet.mode === 'vrac' && t`${pluriel(sansDate, 'photo sans date', 'photos sans date')} : elles iront dans « ${nomsSortie().sansDate} », à placer à la main.`,
   ].filter((x): x is string => !!x);
   return (

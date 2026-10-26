@@ -189,6 +189,15 @@ export function accepter(plan: Plan, groupes: GroupeDoublons[]): Modification | 
   return combiner(t`Accepter ${pluriel(n, 'proposition')}`, ...modifications);
 }
 
+/**
+ * Groupes qu'un « Accepter » groupé peut traiter sans les vider : il reste une
+ * photo gardée. Celui dont la ★ a été écartée (au clic, ou floue) écarterait
+ * tout sans avoir été vu ; il reste à relire, avec son alerte (D99).
+ */
+export function acceptablesSansVider(groupes: GroupeDoublons[], fichier: Fichiers): GroupeDoublons[] {
+  return groupes.filter((g) => photosDuGroupe(g, fichier).some((x) => x.etat === 'gardee'));
+}
+
 /** « Tout garder » : les photos écartées reviennent, celles « à écarter » sont gardées. */
 export function garderTout(plan: Plan, groupes: GroupeDoublons[]): Modification | null {
   const fichier = (id: string) => plan.fichiers.get(id);

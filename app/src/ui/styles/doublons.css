@@ -483,6 +483,24 @@
   font-weight: 600;
 }
 
+/* Écart visible avec les autres photos du groupe (D99) : pastille neutre, distincte de Gardée / à écarter. */
+.legende-doublon .remarque-doublon {
+  align-self: flex-start;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.legende-doublon .remarque-doublon.qualite {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+}
+
+.legende-doublon .remarque-doublon.defaut {
+  background: var(--attention-doux);
+  color: var(--attention);
+}
+
 .legende-doublon .refus,
 .legende-doublon .alerte-legende {
   color: var(--attention);

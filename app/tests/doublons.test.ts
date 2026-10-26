@@ -27,7 +27,7 @@ describe('rafales (étage local du script 06)', () => {
       { id: 'c', date: '2026-07-21T11:20:00', phash: h(0), nettete: 500 },
       { id: 'd', date: '2026-07-21T11:01:00', phash: 'ffffffffffffffff', nettete: 100 },
     ];
-    expect(rafales(photos)).toEqual([{ garde: 'b', doublons: [{ id: 'a', raison: 'quasi identique à quelques secondes' }], source: 'rafale' }]);
+    expect(rafales(photos)).toEqual([{ garde: 'b', doublons: [{ id: 'a', raison: 'quasi identique, prise à la suite' }], source: 'rafale' }]);
   });
 
   it('un groupe ne dépend que des photos : une décision ne le change pas (D71, l’état est dans le plan)', () => {
@@ -35,7 +35,7 @@ describe('rafales (étage local du script 06)', () => {
       { id: 'a', date: '2026-07-21T11:00:00', phash: h(0), nettete: 300 },
       { id: 'b', date: '2026-07-21T11:00:05', phash: h(1), nettete: 900 },
     ];
-    expect(rafales(photos)).toEqual([{ garde: 'b', doublons: [{ id: 'a', raison: 'quasi identique à quelques secondes' }], source: 'rafale' }]);
+    expect(rafales(photos)).toEqual([{ garde: 'b', doublons: [{ id: 'a', raison: 'quasi identique, prise à la suite' }], source: 'rafale' }]);
   });
 
   it('repère les scènes locales (distance ≤ 20) parmi les photos non groupées', () => {

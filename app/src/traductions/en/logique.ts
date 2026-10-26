@@ -68,7 +68,7 @@ export const TEXTES: Record<string, string> = {
   'Appareil {0} : décalage attendu au format +HH:MM.': 'Camera {0}: time offset expected in the format +HH:MM.',
 
   // doublons.ts
-  'quasi identique à quelques secondes': 'almost identical, a few seconds apart',
+  'quasi identique, prise à la suite': 'almost identical, taken in a row',
   'écartée à la main': 'set aside by hand',
 
   // floues.ts

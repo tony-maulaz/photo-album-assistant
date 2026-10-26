@@ -72,7 +72,7 @@ export function rafales(photos: PhotoDoublon[], p = PARAMETRES_DOUBLONS): Propos
   for (const g of groupes) {
     if (g.length < 2) continue;
     const meilleure = g.reduce((a, b) => ((b.nettete ?? 0) > (a.nettete ?? 0) ? b : a));
-    const doublons = g.filter((r) => r !== meilleure).map((r) => ({ id: r.id, raison: t`quasi identique à quelques secondes` }));
+    const doublons = g.filter((r) => r !== meilleure).map((r) => ({ id: r.id, raison: t`quasi identique, prise à la suite` }));
     propositions.push({ garde: meilleure.id, doublons, source: 'rafale' });
   }
   return propositions;

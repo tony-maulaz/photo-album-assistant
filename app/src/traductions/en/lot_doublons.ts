@@ -19,11 +19,19 @@ export const TEXTES: Record<string, string> = {
   exemplaire: 'copy',
   exemplaires: 'copies',
   'Rafale de {0} photos': 'Burst of {0} photos',
+  'Rafale de {0} photos {1}': 'Burst of {0} photos {1}',
+  'en moins d’une seconde': 'in less than a second',
+  'en {0} s': 'in {0} s',
+  'en {0} min': 'in {0} min',
   'Même scène · {0} photos': 'Same scene · {0} photos',
   'Proposition : garder la plus nette ★': 'Suggestion: keep the sharpest ★',
+  'Proposition : garder la photo ★ (une autre paraît plus nette)': 'Suggestion: keep the ★ photo (another one looks sharper)',
+  'Elles se valent : gardez celle que vous préférez (★ par défaut)': 'They are equally good: keep the one you prefer (★ by default)',
   'Proposition de l’IA : garder la photo ★': 'AI suggestion: keep the ★ photo',
   'Proposition : écarter {0}': 'Suggestion: set aside {0}',
-  '{0} · la plus nette': '{0} · the sharpest',
+  'plus nette': 'sharper',
+  'plus sombre': 'darker',
+  'trop claire (zones blanches)': 'too bright (white areas)',
   'Gardée par le garde-fou : l’IA la décrit autrement.': 'Kept by the safeguard: the AI describes it differently.',
   'dossier gardé, nettoyé': 'folder kept, cleaned',
   'placée dans « {0} », à la place de la copie réduite': 'placed in “{0}”, instead of the smaller copy',
@@ -45,6 +53,7 @@ export const TEXTES: Record<string, string> = {
   'Cliquer pour l’écarter': 'Click to set it aside',
   'Cliquer pour la garder': 'Click to keep it',
   'La plus nette : proposée': 'The sharpest: suggested',
+  'Proposée par défaut : les photos se valent': 'Suggested by default: the photos are equally good',
   'La photo proposée': 'The suggested photo',
   gardées: 'kept',
   Revoir: 'Review',
@@ -119,9 +128,9 @@ export const TEXTES: Record<string, string> = {
   'Accepter les {0} propositions': 'Accept the {0} suggestions',
   'Tous les exemplaires sont gardés.': 'All the copies are kept.',
   'Recherche des rafales dès que l’analyse des photos est finie…': 'Bursts are looked for as soon as the photo analysis is finished…',
-  'Aucune rafale : pas de photos quasi identiques prises à quelques secondes d’intervalle.': 'No burst: no nearly identical photos taken a few seconds apart.',
-  'Photos quasi identiques prises à quelques secondes d’intervalle, repérées sur l’ordinateur (gratuit). Proposition : garder la plus nette ★ de chaque rafale.':
-    'Nearly identical photos taken a few seconds apart, found on this computer (free). Suggestion: keep the sharpest ★ of each burst.',
+  'Aucune rafale : pas de photos quasi identiques prises à la suite.': 'No burst: no nearly identical photos taken in a row.',
+  'Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible.':
+    'Nearly identical photos taken in a row (a few minutes at most), found on this computer (free). The ★ goes to the sharpest; when the photos are equally good, keep the one you prefer. “Sharper”, “darker”… under a photo point out a visible difference.',
   'Facultatif : l’IA repère la même scène photographiée plusieurs fois (pas seulement les rafales), puis vérifie chaque groupe en grand. Coût :':
     'Optional: the AI finds the same scene photographed several times (not only bursts), then checks each group full size. Cost:',
   'Analyse IA faite — la relancer : {0}': 'AI analysis done — run it again: {0}',
@@ -148,8 +157,8 @@ export const TEXTES: Record<string, string> = {
   'par mois': 'by month',
   'par dossier': 'by folder',
   rafale: 'burst',
-  '{0} (photos quasi identiques prises à quelques secondes) : vous choisirez à l’étape « {1} » celles à garder.':
-    '{0} (nearly identical photos taken a few seconds apart): you will choose which to keep at the “{1}” step.',
+  '{0} (photos quasi identiques prises à la suite) : vous choisirez à l’étape « {1} » celles à garder.':
+    '{0} (nearly identical photos taken in a row): you will choose which to keep at the “{1}” step.',
 
   // Nommage.tsx : noms tirés du calendrier (D83)
   'D’après le calendrier': 'From the calendar',

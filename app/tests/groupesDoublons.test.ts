@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  acceptablesSansVider,
   accepter,
   aRelire,
   avancementGroupes,
@@ -101,6 +102,14 @@ describe('décisions (un clic, Accepter, Tout garder, Tout écarter)', () => {
     expect(p.fichiers.get('c.jpg')!.doublon).toMatchObject({ garde: 'a.jpg', raison: 'quasi identique' });
     h.annuler(p);
     expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'a_ecarter']);
+  });
+
+  it('un « Accepter » groupé laisse à relire le groupe qu’il viderait : la ★ a été écartée (D99)', () => {
+    const p = plan();
+    basculer(p, rafale, 'a.jpg');
+    expect(etats(p, rafale)).toEqual(['ecartee', 'a_ecarter', 'a_ecarter']);
+    const autre: GroupeDoublons = { ...rafale, cle: 'rafale:IMG_1', etoile: 'IMG_1.jpg', membres: [{ id: 'IMG_1.jpg', garder: true }, { id: 'c.jpg', garder: false }] };
+    expect(acceptablesSansVider([rafale, autre], fichiers(p))).toEqual([autre]);
   });
 
   it('« Tout écarter » écarte aussi la ★ ; « Tout garder » remet tout', () => {

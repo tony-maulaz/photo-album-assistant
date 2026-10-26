@@ -10,6 +10,7 @@ import { signal } from '@preact/signals';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  acceptablesSansVider,
   accepter,
   aEcarter,
   aRelire,
@@ -30,6 +31,7 @@ import {
   type Sorte,
 } from '../../lib/groupesDoublons';
 import { aTraduire, t } from '../../lib/langue';
+import { comparerPhotos, LIBELLES_REMARQUES, type Comparaison, type Remarque } from '../../lib/comparerPhotos';
 import { cheminDossier, comparerNoms, dossierSource, ecarterDoublons, garderAussi, RACINE, traitementDe, type FichierPlan, type InfoDoublon, type Modification, type Plan } from '../../lib/plan';
 import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { MODELES } from '../../lib/tarifs';
@@ -344,14 +346,43 @@ function lieuDe(s: Session, f: FichierPlan | undefined): string {
   return cheminDossier(s.plan, f.dossier);
 }
 
-function titreGroupe(g: GroupeDoublons, n: number, etoile: FichierPlan | undefined): string {
+/** Temps écoulé entre la première et la dernière photo d'une rafale : « en 12 s », « en 3 min ». */
+function dureeRafale(photos: PhotoDuGroupe[]): string {
+  const temps = photos.map((x) => (x.f.date && x.f.date.length > 10 ? Date.parse(x.f.date) : NaN)).filter((x) => !Number.isNaN(x));
+  if (temps.length < 2) return '';
+  const secondes = Math.round((Math.max(...temps) - Math.min(...temps)) / 1000);
+  if (secondes < 1) return t`en moins d’une seconde`;
+  return secondes < 60 ? t`en ${nombre(secondes)} s` : t`en ${nombre(Math.round(secondes / 60))} min`;
+}
+
+function titreGroupe(g: GroupeDoublons, photos: PhotoDuGroupe[], etoile: FichierPlan | undefined): string {
+  const n = photos.length;
   if (g.sorte === 'copies' || g.sorte === 'dossiers') return `${etoile?.nom ?? ''} · ${pluriel(n, 'exemplaire')}`;
-  if (g.sorte === 'rafales') return t`Rafale de ${nombre(n)} photos`;
+  if (g.sorte === 'rafales') {
+    const duree = dureeRafale(photos);
+    return duree ? t`Rafale de ${nombre(n)} photos ${duree}` : t`Rafale de ${nombre(n)} photos`;
+  }
   return t`Même scène · ${nombre(n)} photos`;
 }
 
-function texteProposition(g: GroupeDoublons, n: number): string {
-  if (g.sorte === 'rafales') return t`Proposition : garder la plus nette ★`;
+/**
+ * Netteté et exposition des photos du groupe, comparées entre elles (D99),
+ * écartées comprises : les remarques ne changent pas au clic.
+ */
+function comparaisonDe(s: Session, g: GroupeDoublons, photos: PhotoDuGroupe[]): Comparaison {
+  if (g.sorte !== 'rafales' && g.sorte !== 'ia') return { remarques: new Map() };
+  return comparerPhotos(
+    photos.map((x) => ({ id: x.m.id, indicateurs: s.analyses.get(x.f) })),
+    g.sorte,
+  );
+}
+
+function texteProposition(g: GroupeDoublons, n: number, c: Comparaison): string {
+  if (g.sorte === 'rafales') {
+    if (c.plusNette === g.etoile) return t`Proposition : garder la plus nette ★`;
+    if (c.plusNette) return t`Proposition : garder la photo ★ (une autre paraît plus nette)`;
+    return t`Elles se valent : gardez celle que vous préférez (★ par défaut)`;
+  }
   if (g.sorte === 'ia') return t`Proposition de l’IA : garder la photo ★`;
   return t`Proposition : écarter ${pluriel(n, 'exemplaire')}`;
 }
@@ -374,14 +405,21 @@ function Emplacement({ f }: { f: FichierPlan }) {
   );
 }
 
-function Legende({ g, x }: { g: GroupeDoublons; x: PhotoDuGroupe }) {
+/** Ce qui distingue la photo des autres du groupe : une remarque au plus, en mots comparatifs (D99). */
+function RemarquePhoto({ remarque }: { remarque: Remarque | undefined }) {
+  if (!remarque) return null;
+  return <span class={`remarque-doublon ${remarque === 'plus_nette' ? 'qualite' : 'defaut'}`}>{t(LIBELLES_REMARQUES[remarque])}</span>;
+}
+
+function Legende({ g, x, c }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparaison }) {
   const s = session.value!;
   const { m, f } = x;
   const heure = f.date && f.date.length > 10 ? f.date.slice(11, 19) : '';
   if (g.sorte === 'rafales')
     return (
       <span class="legende-doublon">
-        <span>{m.id === g.etoile ? t`${heure} · la plus nette` : heure}</span>
+        <span>{heure}</span>
+        <RemarquePhoto remarque={c.remarques.get(m.id)} />
         <Emplacement f={f} />
       </span>
     );
@@ -392,6 +430,7 @@ function Legende({ g, x }: { g: GroupeDoublons; x: PhotoDuGroupe }) {
           {heure.slice(0, 5)}
           {m.description && ` · ${m.description}`}
         </span>
+        <RemarquePhoto remarque={c.remarques.get(m.id)} />
         <Emplacement f={f} />
         {m.refus && <em class="refus">{t`Gardée par le garde-fou : l’IA la décrit autrement.`}</em>}
       </span>
@@ -415,7 +454,7 @@ function Legende({ g, x }: { g: GroupeDoublons; x: PhotoDuGroupe }) {
   );
 }
 
-function TuileDoublon({ g, x, cote, agir }: { g: GroupeDoublons; x: PhotoDuGroupe; cote: number; agir: (m: Modification | null) => void }) {
+function TuileDoublon({ g, x, c, cote, agir }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparaison; cote: number; agir: (m: Modification | null) => void }) {
   const { m, f, etat } = x;
   const libelle = etat === 'gardee' ? t`Gardée` : etat === 'ecartee' ? t`Écartée` : t`à écarter`;
   return (
@@ -433,12 +472,12 @@ function TuileDoublon({ g, x, cote, agir }: { g: GroupeDoublons; x: PhotoDuGroup
         </span>
         <span class={`etat-photo ${etat}`}>{libelle}</span>
         {m.id === g.etoile && (
-          <span class="etoile-doublon" title={g.sorte === 'rafales' ? t`La plus nette : proposée` : t`La photo proposée`}>
+          <span class="etoile-doublon" title={g.sorte !== 'rafales' ? t`La photo proposée` : c.plusNette === g.etoile ? t`La plus nette : proposée` : t`Proposée par défaut : les photos se valent`}>
             ★
           </span>
         )}
       </button>
-      <Legende g={g} x={x} />
+      <Legende g={g} x={x} c={c} />
     </div>
   );
 }
@@ -472,7 +511,8 @@ function CarteGroupe({
   const copie = g.sorte === 'copies' || g.sorte === 'dossiers';
   const heureSeule = etoile?.date && etoile.date.length > 10 ? etoile.date.slice(11, 16) : '';
   const heure = avecJour && etoile?.date ? [nomJour(etoile.date.slice(0, 10)), heureSeule].filter(Boolean).join(' · ') : heureSeule;
-  const titre = titreGroupe(g, photos.length, etoile);
+  const titre = titreGroupe(g, photos, etoile);
+  const comparaison = comparaisonDe(s, g, photos);
   const resume = `${pluriel(gardees, 'gardée', 'gardées')}, ${pluriel(ecartees, 'écartée', 'écartées')}`;
 
   if (!ouverte)
@@ -499,7 +539,7 @@ function CarteGroupe({
         {!copie && <span class="discret">{lieuDe(s, etoile)}</span>}
         <span class="espace" />
         {enAttente ? (
-          <span class="pastille-proposition">{texteProposition(g, enAttente)}</span>
+          <span class="pastille-proposition">{texteProposition(g, enAttente, comparaison)}</span>
         ) : g.sorte === 'dossiers' && !ecartees ? (
           <span class="pastille-relue">{t`Gardée dans chaque dossier`}</span>
         ) : (
@@ -509,7 +549,7 @@ function CarteGroupe({
       {g.sorte === 'ia' && g.scene && <p class="scene-doublons">{g.scene}</p>}
       <div class="photos-doublons">
         {photos.map((x) => (
-          <TuileDoublon key={x.m.id} g={g} x={x} cote={reglages.value.tailleMiniatures} agir={agir} />
+          <TuileDoublon key={x.m.id} g={g} x={x} c={comparaison} cote={reglages.value.tailleMiniatures} agir={agir} />
         ))}
       </div>
       {gardees === 0 && <p class="alerte-doublons">{t`Aucune photo gardée : tout le groupe ira dans « ${dossierMisDeCote(raisonDe(g))} ».`}</p>}
@@ -630,11 +670,12 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
     notifier('ok', message, { libelle: t`Annuler`, faire: annuler });
   };
   const accepterSection = () => {
-    const n = enAttente.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
+    const acceptes = acceptablesSansVider(enAttente, fichier);
+    const n = acceptes.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
     const raison = onglet === 'copies' ? 'doublons_exacts' : 'doublons';
     agirGroupe(
-      enAttente.map((g) => g.cle),
-      accepter(plan, enAttente),
+      acceptes.map((g) => g.cle),
+      accepter(plan, acceptes),
       texteEcartees(n, raison),
     );
   };
@@ -711,8 +752,8 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
               class="contour"
               onClick={() =>
                 agirGroupe(
-                  enAttenteOnglet.map((g) => g.cle),
-                  accepter(plan, enAttenteOnglet),
+                  acceptablesSansVider(enAttenteOnglet, fichier).map((g) => g.cle),
+                  accepter(plan, acceptablesSansVider(enAttenteOnglet, fichier)),
                   texteEcartees(photosOnglet, 'doublons_exacts'),
                 )
               }
@@ -846,7 +887,7 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
       {gComparee && (
         <Comparateur
           key={gComparee.cle}
-          titre={titreGroupe(gComparee, photosDuGroupe(gComparee, fichier).length, fichier(gComparee.etoile))}
+          titre={titreGroupe(gComparee, photosDuGroupe(gComparee, fichier), fichier(gComparee.etoile))}
           photos={photosDuGroupe(gComparee, fichier).map((x) => x.f)}
           fermer={() => setComparee(null)}
           entete={(f) => {
@@ -1200,11 +1241,11 @@ export function PageDoublons() {
         (!s.doublons ? (
           <p class="encart">{t`Recherche des rafales dès que l’analyse des photos est finie…`}</p>
         ) : !groupes.rafales.length ? (
-          <p class="encart">{t`Aucune rafale : pas de photos quasi identiques prises à quelques secondes d’intervalle.`}</p>
+          <p class="encart">{t`Aucune rafale : pas de photos quasi identiques prises à la suite.`}</p>
         ) : (
           <>
             <p class="encart encart-onglet">
-              {t`Photos quasi identiques prises à quelques secondes d’intervalle, repérées sur l’ordinateur (gratuit). Proposition : garder la plus nette ★ de chaque rafale.`}
+              {t`Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible.`}
             </p>
             <ListeGroupes key="rafales" onglet="rafales" groupes={groupes.rafales} titre={t`Toutes les rafales`} />
           </>
