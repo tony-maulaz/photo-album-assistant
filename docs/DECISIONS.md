@@ -803,7 +803,7 @@ recopié), et « Remettre » les rend. Une copie réduite (WhatsApp) seule dans 
 dossier gardé suit la même règle et y reste ; à trier, elle reste proposée à
 l'écart. Un résumé par paire de dossiers a été écarté : trop compliqué.
 
-**D87 — Tri automatique : trois questions et le résultat sous les yeux.**
+**D87 — Tri automatique : trois questions et le résultat sous les yeux.** (Découpage et réglages remplacés par D103.)
 L'utilisateur trouvait les réglages compliqués : douze options, trois cases
 pour des façons de ranger qui s'excluent, des effets invisibles avant le
 calcul, et un essai qui coûtait les noms OpenStreetMap. Une analyse (le code,
@@ -838,7 +838,7 @@ autres options reprennent leur valeur, et la distance de 30 km enregistrée
 par défaut devient 50.
 
 **D88 — Le calendrier sépare dans les lieux connus et propose des noms ; le
-GPS découpe.** L'utilisateur voulait que le calendrier serve au tri. Quatre
+GPS découpe.** (Découpage par le calendrier retiré par D103 ; les noms restent.) L'utilisateur voulait que le calendrier serve au tri. Quatre
 analyses sur 2025 (moteur, noms, interface, avocat du diable) ont montré que
 le calendrier familial est saturé : un événement presque chaque jour (348 jours
 sur 365), 82 % à l'heure, la moitié tirés de l'agenda d'une seule personne
@@ -1174,6 +1174,56 @@ justification s'affiche sur la carte, « IA : … » sous chaque photo ; la
 photo choisie par défaut (clé du groupe) ne change pas. Choix annulé : la
 carte dit « L'IA préfère la photo ★ : cliquez-la pour la choisir ».
 
+**D103 — Tri automatique dans l'ordre du temps ; liste « À faire » et
+résultat en onglets.** L'utilisateur jugeait l'aperçu du tri (frise à
+pastilles lettrées, barres qui se chevauchent) incompréhensible pour un non
+informaticien et proposait de trier seulement par date et position, le
+calendrier ne servant qu'aux noms. Cinq analyses (moteur mesuré sur 2025
+contre le rangement fait à la main par la famille, interface intuitive,
+interface moderne, critique, avocat du diable) : le tri par endroits (DBSCAN
+puis écart de 7 jours) mélangeait peu de photos mais découpait trop — le plus
+long voyage de 2025 en 23 étapes dont 10 de 4 photos ou moins (arrêts sur la
+route, quartiers d'une même ville, `_b`), 54 dossiers qui se chevauchent —, et
+la frise rendait le tout illisible. Retenu : **l'ordre du temps d'abord**. Un
+moment = des photos sans trou de plus de 3 h ni passage maison ↔ dehors ; des
+moments à plus de 50 km de la maison sur au moins deux jours, sans photo à la
+maison entre eux, font un voyage (photos de la route comprises), dont les
+étapes sont les lieux à 10 km près (un arrêt de moins de 3 photos rejoint
+l'étape voisine) ; les autres moments dehors sont des sorties (même endroit à
+5 km le lendemain : la même) ; la maison est rangée par mois, une journée d'au
+moins 10 photos à part (journées chargées consécutives réunies) ; une date
+sans heure compte pour midi. Le calendrier ne découpe plus rien (D88 retiré :
+il ne retrouvait pas mieux les sous-dossiers « maison » de la famille, 19 sur
+22 manqués avec ou sans lui) ; l'événement qui couvre la moitié des photos
+d'un dossier est montré sur sa carte et proposé au Nommage. Sur 2025 : aucun
+chevauchement (54), aucune étape de 4 photos ou moins dans les 14 voyages
+(24), 66 dossiers de la famille retrouvés au premier niveau sur 95 (43), autant
+au niveau des sous-dossiers (76 sur 146, contre 71) ; le plus long voyage fait
+11 étapes, la plus petite de 17 photos ; 23 + 35 ms pour l'année. Le résultat
+bouge à peine entre 2 et 4 h, 30 et 80 km, 8 et 15 photos par journée : plus
+de taille d'endroit ni de durée de sortie à l'écran. Défauts connus : trois
+fêtes le même jour sans retour à la maison font un dossier ; une fête de
+plusieurs jours où l'on rentre le soir est coupée (la Consolidation les
+réunit). La Consolidation et le badge « même sortie ? » gardent leur distance
+(2 × l'ancienne taille d'endroit, 2 km par défaut). **Page** : une liste « À
+faire » où chaque ligne dit son état (● à faire, ✓ fait, ○ facultatif écrit
+en toutes lettres) — la maison (sans elle, aucun voyage), les photos en
+double (« Mettre N copies de côté », rien n'est supprimé), les captures
+d'écran (« Les voir », « Les mettre à part » : elles ne quittent plus le tri
+sans un clic), les lieux fréquents (facultatif), ranger avec une seule
+question (un voyage avec un sous-dossier par étape, conseillé, ou en un seul
+dossier ; la distance d'un voyage en avancé), puis « Afficher les dossiers → »
+et, facultatif, les photos sans GPS (avant, en bas de page et sans dire
+qu'elles étaient facultatives) ; la barre du bas reprend ce qui reste ●.
+Dessous, le résultat en cartes dans l'ordre du temps, avec des onglets comme
+aux Doublons (Tout, Voyages, Sorties, À la maison, À vérifier, Mis à part) :
+l'utilisateur les voulait pour toute la page ; les quatre analystes
+interrogés les ont gardés pour le résultat seulement (des préalables en
+onglets s'oublient, et il n'en reste presque plus). « Réunir avec le
+précédent », « Couper… » (ouvre l'étape suivante), petites sorties d'une ou
+deux photos à mettre avec leur mois ou à garder seules. Maquette validée :
+https://claude.ai/artifact/9Nm2tPWoKnSCAMTJJ98PQ9.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
@@ -1186,11 +1236,12 @@ carte dit « L'IA préfère la photo ★ : cliquez-la pour la choisir ».
 | Netteté relative | 15 % les moins nets d'un dossier net = photos nettes | Seuil `[flou?]` relatif **et** absolu (I8) |
 | Netteté à 800 px comparée à 1024 px (300 photos, phase 0) | +36 % en médiane, de +8 à +111 % | Pas de conversion simple : mesurer à 1024 px comme le script 01 (D29) |
 | Phash sur l'image à l'endroit plutôt que couchée (8568 paires < 10 min, phase 0) | Même orientation : verdict changé pour 0,2 % (seuil 12) et 1,7 % (seuil 20) des paires | Seuils 12 et 20 conservés (D29) |
-| Tri 2025, taille d'un lieu (1 441 fichiers triés, 6 lieux connus) | 0,5 / 1 / 2 / 5 / 10 km → 130 / 104 / 87 / 68 / 56 dossiers | Cinq crans, 2 km par défaut (D87) |
-| Tri 2025, écart d'une sortie (durée maximale 21 j) | 1 / 3 / 7 / 14 / 30 j → 140 / 111 / 93 / 87 / 87 dossiers ; au-delà de 21 j, aucun effet | 7 jours (D87) |
+| Tri 2025, taille d'un lieu (1 441 fichiers triés, 6 lieux connus ; avant D103) | 0,5 / 1 / 2 / 5 / 10 km → 130 / 104 / 87 / 68 / 56 dossiers | Cinq crans, 2 km par défaut (D87) |
+| Tri 2025, écart d'une sortie (durée maximale 21 j ; avant D103) | 1 / 3 / 7 / 14 / 30 j → 140 / 111 / 93 / 87 / 87 dossiers ; au-delà de 21 j, aucun effet | 7 jours (D87) |
 | Doublons 2025, écarts dans un groupe (257 rafales, 34 mêmes scènes) | Luminosité : 0,5 niveau en médiane dans une rafale (9e décile 4,5), 7 dans une même scène (19) ; netteté ≥ 1,25× : 27 rafales, ≥ 1,5× : 11 ; la plus claire est aussi la plus nette dans 166 rafales | Écarts relatifs, netteté 1,5× corrigée de l'exposition, ★ inchangée (D99) |
 | Rafales 2025, essai de l'IA (26 rafales, 22 départagées par Tony) | Photo acceptable : la plus nette 16, Haiku 1024 px 19, **Haiku 1568 px 21**, Haiku + visages 21, Sonnet 20-21 ; yeux fermés reconnus sur 59 photos : 1568 px 50, visages recadrés 35 | Haiku, 1568 px, sans visages (D102) |
 | Tri 2025, distance d'un voyage | 10 / 20 / 30 / 50 / 100 / 200 km → 8 / 7 / 6 / 5 / 5 / 3 voyages ; à 30, un faux voyage de deux excursions ; à 100, des étapes perdues | 50 km (D87) |
+| Tri 2025 dans l'ordre du temps (D103), 3 080 photos datées, contre le rangement de la famille | Trou 2 / 3 / 4 h, voyage 30 / 50 / 80 km, journée chargée 8 / 10 / 15 photos : F1 au premier niveau 0,84-0,85, 66 à 69 dossiers retrouvés sur 95 | Plateau : 3 h, 50 km, 10 photos, rien à l'écran |
 
 ## 3. Incidents et corrections (tests de non-régression)
 

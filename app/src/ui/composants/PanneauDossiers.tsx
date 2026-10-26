@@ -5,7 +5,7 @@ import { estNomDeSortie, nomsSortie } from '../../lib/sortie';
 import { signal } from '@preact/signals';
 import { Fragment, type ComponentChildren } from 'preact';
 import { useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { lireReglages, rencontres, rencontreSuffisante, reglagesParDefaut, type DossierInfo, type ReglagesConsolidation } from '../../lib/consolidation';
+import { lireReglages, rayonDuProjet, rencontres, rencontreSuffisante, reglagesParDefaut, type DossierInfo, type ReglagesConsolidation } from '../../lib/consolidation';
 import { SEUIL_PETIT_DOSSIER } from '../../lib/fragments';
 import { evenementPrincipal, type EvenementCalendrier } from '../../lib/ics';
 import { aTraduire, t } from '../../lib/langue';
@@ -13,7 +13,6 @@ import { cleNom } from '../../lib/noms';
 import { dossiersNouveaux } from '../../lib/rangement';
 import { cheminDossier, estDescendant, fusionnerDossiers, gardeSaPlace, nePasToucher, renommerDossier, resumes, RACINE, supprimerDossierVide, type DossierPlan, type FichierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
 import { minutes } from '../../lib/selection';
-import { optionsDuProjet } from '../../lib/tri';
 import { appliquer, changerReglages, evenements, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { nombre, periode, pluriel } from '../format';
@@ -425,7 +424,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       }
     }
     const petits = s.projet.mode !== 'vrac';
-    const alertes = alertesDossiers(s.plan, r, lireReglages(s.aides.get('consolidation_reglages'), optionsDuProjet(s.projet.tri).rayonKm));
+    const alertes = alertesDossiers(s.plan, r, lireReglages(s.aides.get('consolidation_reglages'), rayonDuProjet(s.projet.tri)));
     if (seulementAlertes) {
       const avec = new Set([RACINE]);
       for (const d of s.plan.dossiers.values()) {

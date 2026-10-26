@@ -441,42 +441,44 @@ try {
   await page.evaluate(() => sessionStorage.removeItem('album:cle_api'));
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
-  // Étape 6 : tri automatique ; les captures d'écran parmi les photos à trier se rangent d'abord.
+  // Étape 6 : tri automatique (D103) ; la liste « À faire » : captures d'écran, copies, maison, puis ranger.
   await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
-  await page.getByRole('button', { name: /Ranger 1 capture dans/ }).click();
-  await page.getByText('1 capture rangée').waitFor();
-  verifier(true, `capture d’écran rangée dans ${N.captures}, depuis le tri automatique`);
-  const avertissement = page.locator('.copies-avant-tri');
-  verifier((await avertissement.innerText()).includes('Copies exactes pas encore écartées : 2'), 'avant le tri : les 2 copies pas encore écartées sont signalées');
-  await avertissement.getByRole('button', { name: 'Écarter 2 copies' }).click();
-  await avertissement.waitFor({ state: 'detached' });
-  verifier(true, 'un clic écarte les copies avant le tri');
-  // Trois questions, et le résultat calculé avec les photos avant de ranger (D87).
-  const bouton = page.getByRole('button', { name: /^Ranger les photos dans ces \d+ dossiers?$/ });
-  const prevus = Number((await bouton.innerText()).match(/\d+/)[0]);
-  verifier((await page.locator('.apercu-tri .apt-chiffres').innerText()).includes(`${prevus} dossiers`) && (await page.locator('.apercu-tri svg.apt-frise').count()) === 1, `aperçu avant de ranger : ${prevus} dossiers, une frise d’exemple`);
-  await page.locator('.apercu-tri .apt-liste > summary').click();
-  await page.getByRole('radio', { name: 'Par mois' }).click();
-  // Les dossiers prévus portent le mois (« Lieu_03.25 ») au lieu de la journée, avant tout rangement.
-  await page.waitForFunction(() => [...document.querySelectorAll('.apercu-tri .apt-liste tr td:first-child')].every((td) => /_\d{2}\.\d{2}$/.test(td.textContent.trim())));
-  verifier(true, 'aperçu : « Par mois » change les dossiers prévus, avant de ranger');
-  await page.getByRole('radio', { name: 'Par sortie (conseillé)' }).click();
-  await page.getByRole('button', { name: `Ranger les photos dans ces ${prevus} dossiers` }).waitFor();
+  const captures = page.locator('.captures-avant-tri');
+  verifier((await captures.innerText()).includes('1 photo ressemble à des captures d’écran') && (await captures.locator('.puce-afaire').innerText()) === '●', 'à faire : 1 capture d’écran trouvée, marquée ●');
+  await captures.getByRole('button', { name: 'Les mettre à part' }).click();
+  await page.getByText('1 capture d’écran mise à part').waitFor();
+  verifier(true, `capture d’écran rangée dans ${N.captures}, la ligne passe à ✓`);
+  const copies = page.locator('.copies-avant-tri');
+  verifier((await copies.innerText()).includes('2 photos en double'), 'à faire : les 2 copies pas encore écartées sont signalées');
+  await copies.getByRole('button', { name: 'Mettre 2 copies de côté' }).click();
+  await copies.waitFor({ state: 'detached' });
+  verifier(true, 'un clic met les copies de côté avant le tri');
+  verifier((await page.locator('.ligne-afaire.afaire', { hasText: 'Votre maison n’est pas encore indiquée' }).count()) === 1, 'sans domicile : la maison est à indiquer (●)');
+  verifier((await page.locator('.barre-validation .alerte').innerText()).includes('indiquer votre maison'), `barre du bas : ${await page.locator('.barre-validation .alerte').innerText()}`);
+  verifier((await page.locator('.resultat-tri .onglet-doublons:disabled').count()) === 6, 'avant de ranger : les onglets du résultat sont grisés');
+  // Une seule question, et les chiffres calculés avec les photos avant de ranger.
+  const chiffres = await page.locator('.ligne-ranger .apercu-tri-chiffres').innerText();
+  const prevus = Number(chiffres.match(/(\d+) dossiers? en tout/)[1]);
+  verifier(prevus > 0 && (await page.getByRole('radio', { name: /avec un sous-dossier par étape/ }).isChecked()), `avant de ranger : ${chiffres}`);
   await capturer(page, 'v3a_reglages_tri');
-  if (CAPTURES) await page.locator('.apercu-tri').screenshot({ path: join(CAPTURES, 'v3b_apercu_tri.png') });
-  await bouton.click();
-  await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 60_000 });
-  const resume = await page.locator('.resume-tri').innerText();
-  verifier(/dossiers? proposés?/.test(resume), `résumé du tri : ${resume.split('.')[0]}`);
+  await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
+  await page.locator('.ligne-ranger.fait').waitFor({ timeout: 60_000 });
+  const resume = await page.locator('.ligne-ranger .texte-afaire > strong').innerText();
+  verifier(/photos? rangées? dans \d+ dossiers?/.test(resume), `rangé : ${resume}`);
   verifier(requetesNominatim.length > 0, `${requetesNominatim.length} requête(s) à OpenStreetMap (simulé)`);
+  const cartesTri = await page.locator('.resultat-tri .carte-tri').count();
+  verifier(cartesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout'), `résultat : ${cartesTri} cartes dans l’onglet « Tout »`);
+  verifier((await page.getByRole('button', { name: 'Afficher les dossiers →' }).count()) >= 1, 'après le rangement : « Afficher les dossiers → »');
   await capturer(page, 'v3_tri');
+  await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Mis à part' }).click();
+  verifier((await page.locator('.mis-a-part').innerText()).includes('Captures d’écran'), 'onglet « Mis à part » : la capture d’écran');
+  await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Tout' }).click();
   const avant = requetesNominatim.length;
-  await page.locator('.tri-auto > summary').first().click();
-  await page.getByRole('button', { name: /^Ranger à nouveau dans ces/ }).click();
-  await page.getByRole('button', { name: 'Ranger à nouveau', exact: true }).click();
+  await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger à nouveau' }).click();
+  await page.locator('.dialogue').getByRole('button', { name: 'Ranger à nouveau' }).click();
   await page.waitForTimeout(500);
   verifier(requetesNominatim.length === avant, 'recalculer ne redemande pas les noms (cache)');
-  verifier((await page.locator('.resume-tri').innerText()) === resume, 'recalculer avec les mêmes réglages donne la même arborescence');
+  verifier((await page.locator('.ligne-ranger .texte-afaire > strong').innerText()) === resume, 'recalculer avec les mêmes réglages donne la même arborescence');
   // Configuration avec le calendrier familial, choisie depuis le menu (Fonctions IA, Configuration, …).
   await page.locator('.bouton-menu').click();
   await page.locator('.menu-deroulant [role=menuitem]').nth(1).click();
@@ -575,7 +577,7 @@ try {
   // Le titre d'un événement du calendrier, suivi du lieu, est proposé comme nom (D83, D88) ; le lieu et l'IA restent à un clic.
   const champs = await page.locator('input.nom-propose').evaluateAll((l) => l.map((x) => x.value));
   verifier(
-    champs.includes('18 ans de Lea Ko Samui 18.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 15.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 2 15.07.26') && champs.includes('Voyage Thaïlande Mu Ko Ang Thong 21.07.26'),
+    champs.includes('18 ans de Lea Ko Samui 18.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 15.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 16.07.26') && champs.includes('Voyage Thaïlande Mu Ko Ang Thong 21.07.26'),
     `noms tirés du calendrier (titre puis lieu) : ${champs.filter((v) => /Lea|Voyage/.test(v)).join(', ')}`,
   );
   verifier(appelsIA.monumentsDemandes === appelsIA.nommage && (await page.locator('.monuments').first().innerText()).includes('Plage de Chaweng'), 'monuments demandés dans le même appel que le nom et affichés');
@@ -667,9 +669,10 @@ try {
   verifier(true, 'inventaire mis à jour : 2 fichiers ajoutés, le reste gardé');
   await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
-  await page.getByRole('button', { name: 'Ranger les 1 nouvelle photo' }).click();
-  // Rangée quand l'alerte « pas encore rangée » disparaît (le nom du nouveau lieu est demandé à OpenStreetMap).
-  await page.getByText('1 nouvelle photo pas encore rangée').waitFor({ state: 'detached', timeout: 60_000 });
+  verifier((await page.locator('.barre-validation .alerte').innerText()).includes('ranger 1 nouvelle photo'), 'à faire : la nouvelle photo à ranger (barre du bas)');
+  await page.getByRole('button', { name: 'Ranger 1 nouvelle photo' }).click();
+  // Rangée quand la ligne « Ranger » passe à ✓ (le nom du nouveau lieu est demandé à OpenStreetMap).
+  await page.locator('.ligne-ranger.fait').waitFor({ timeout: 60_000 });
   await capturer(page, 'v9_rangement');
   verifier(true, 'tri automatique : seule la nouvelle photo à trier est rangée');
   const bilanApres = await ecrireSortie();

@@ -284,12 +284,8 @@ export const TEXTES: Record<string, string> = {
   'Ce dossier est déjà trié : ses sous-dossiers sont les sorties, il n’y a rien à calculer. Vous pouvez les réorganiser à l’étape suivante.':
     'This folder is already sorted: its subfolders are the outings, there is nothing to calculate. You can rearrange them in the next step.',
   'Aller aux lieux et sorties': 'Go to places and outings',
-  'Tri automatique par lieux et sorties': 'Automatic sorting by places and outings',
   'dossier proposé': 'folder proposed',
   'dossiers proposés': 'folders proposed',
-  ' pour {0}{1}. Vérifiez-les et corrigez-les à l’étape suivante, en glissant les photos d’un dossier à l’autre.':
-    ' for {0}{1}. Check and correct them in the next step, by dragging photos from one folder to another.',
-  ' · {0} (moins de {1} photos), à rattacher plus loin': ' · {0} (fewer than {1} photos), to be attached later on',
 
   // App.tsx
   'Création de la sortie': 'Creating the output',
@@ -354,7 +350,5 @@ export const TEXTES: Record<string, string> = {
   '{0} (choisie à la création du projet)': '{0} (chosen when the project was created)',
 
   // Tri.tsx, projets.ts : trier en plusieurs fois (D63)
-  'nouvelle photo pas encore rangée': 'new photo not arranged yet',
-  'nouvelles photos pas encore rangées': 'new photos not arranged yet',
   'Mise à jour de l’inventaire : {0} ajoutés, {1} modifiés, {2} retirés en {3} s': 'Inventory update: {0} added, {1} changed, {2} removed in {3} s',
 };

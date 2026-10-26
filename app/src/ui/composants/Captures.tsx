@@ -1,6 +1,7 @@
 // Captures d'écran (étape « Tri automatique », D61) : parmi les photos à trier
-// seulement. Une capture rangée dans un dossier qui garde sa place y a été mise
-// exprès : c'est une photo comme une autre. Celles qui restent à trier sont
+// seulement, montrées sous leur ligne de la liste « À faire » (D103). Une
+// capture rangée dans un dossier qui garde sa place y a été mise exprès :
+// c'est une photo comme une autre. Celles qui restent à trier sont
 // proposées au rangement dans « Captures_ecran », hors du tri et de l'album ;
 // chacune peut être décochée (agrandie d'un clic pour en juger), elle reste
 // alors dans le tri et n'est plus proposée.
@@ -51,13 +52,9 @@ export function Captures() {
   // À l'échelle du curseur de taille : 112 px au réglage par défaut (160).
   const cote = Math.round(reglages.value.tailleMiniatures * 0.7);
   return (
-    <section id="captures" class="encart">
-      <h2>{t`Captures d’écran`}</h2>
+    <div id="captures" class="captures-a-choisir">
       {candidates.length > 0 ? (
         <>
-          <p>
-            {t`${pluriel(candidates.length, 'capture d’écran trouvée', 'captures d’écran trouvées')} parmi les photos à trier (nom de fichier, dimensions d’écran, pas de marque d’appareil). Proposition : les ranger dans « ${nomsSortie().captures} », hors du tri et de l’album. Celles qui sont dans un dossier gardé restent à leur place.`}
-          </p>
           <p class="discret">{t`Décochez une vraie photo pour la garder dans le tri ; cliquez sur une image pour l’agrandir.`}</p>
           <ul class="captures-proposees">
             {montrees.map((f) => {
@@ -97,6 +94,6 @@ export function Captures() {
       ) : (
         <p class="discret">{t`${pluriel(rangees, 'capture rangée', 'captures rangées')} dans « ${nomsSortie().captures} ».`}</p>
       )}
-    </section>
+    </div>
   );
 }

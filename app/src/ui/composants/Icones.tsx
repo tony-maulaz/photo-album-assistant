@@ -9,6 +9,25 @@ const TRACES = {
     </>
   ),
   coche: <path d="M5 12l5 5 9-10" />,
+  voyage: (
+    <>
+      <path d="M2 16l20-6-4-3-8 4-4-2-2 1 3 3-5 3z" />
+      <path d="M4 20h16" />
+    </>
+  ),
+  sortie: (
+    <>
+      <path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </>
+  ),
+  maison: (
+    <>
+      <path d="M3 11l9-7 9 7" />
+      <path d="M5 10v10h14V10" />
+      <path d="M10 20v-5h4v5" />
+    </>
+  ),
   croix: <path d="M6 6l12 12M18 6L6 18" />,
   info: (
     <>

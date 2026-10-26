@@ -335,6 +335,16 @@ export function reglagesParDefaut(rayonKm = 2): ReglagesConsolidation {
   return { heures: 3, km: cranProche(2 * rayonKm, CRANS_KM), voyages: true, joursVoyage: 4, noms: true };
 }
 
+/**
+ * Taille d'un endroit choisie au tri avant D103 (2 km par défaut) : le tri
+ * suit désormais l'ordre du temps et n'en a plus, mais la Consolidation et le
+ * badge « même sortie ? » de l'étape 7 gardent leur distance (2 × cette taille).
+ */
+export function rayonDuProjet(tri: unknown): number {
+  const r = typeof tri === 'object' && tri !== null ? (tri as { rayonKm?: unknown }).rayonKm : undefined;
+  return typeof r === 'number' && Number.isFinite(r) && r > 0 ? r : 2;
+}
+
 /** Réglages enregistrés, complétés par défaut et ramenés aux crans. */
 export function lireReglages(v: unknown, rayonKm = 2): ReglagesConsolidation {
   const d = reglagesParDefaut(rayonKm);

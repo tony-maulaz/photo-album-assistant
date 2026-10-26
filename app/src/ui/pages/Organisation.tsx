@@ -25,6 +25,7 @@ import {
   nomPropose,
   paires,
   propositions,
+  rayonDuProjet,
   requeteConsolidation,
   voisinage,
   type Consolidation,
@@ -37,7 +38,7 @@ import {
 import { estNomAutomatique } from '../../lib/nommage';
 import { gardeSaPlace, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
 import { defaireReunion, rangerEnVoyage, reunionEnPlace, reunirEnUn, type Reunion } from '../../lib/reunions';
-import { estDossierMois, optionsDuProjet } from '../../lib/tri';
+import { estDossierMois } from '../../lib/tri';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
@@ -454,7 +455,7 @@ export function PageConsolidation() {
   const s = session.value!;
   versionPlan.value;
   versionIA.value;
-  const rayonKm = optionsDuProjet(s.projet.tri).rayonKm;
+  const rayonKm = rayonDuProjet(s.projet.tri);
   const [r, setR] = useState<ReglagesConsolidation>(() => lireReglages(s.aides.get(CLES.reglages), rayonKm));
   const changerReglages = (m: Partial<ReglagesConsolidation>) => {
     const nouveaux = { ...r, ...m };

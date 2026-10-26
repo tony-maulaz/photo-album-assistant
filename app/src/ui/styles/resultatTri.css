@@ -1,0 +1,361 @@
+/* Étape « Tri automatique » (D103) : liste « À faire » en haut, résultat en cartes et onglets dessous. */
+
+.page-tri {
+  max-width: 1120px;
+}
+
+/* Liste « À faire » : ● à faire, ✓ fait, ○ facultatif. */
+.a-faire-tri h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.liste-afaire {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ligne-afaire {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--bord);
+}
+
+.ligne-afaire:first-child {
+  border-top: 0;
+}
+
+.puce-afaire {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ligne-afaire.afaire .puce-afaire {
+  background: var(--attention-doux);
+  color: var(--attention);
+}
+
+.ligne-afaire.fait .puce-afaire {
+  background: var(--accent-doux);
+  color: var(--ok);
+}
+
+.ligne-afaire.facultatif .puce-afaire {
+  background: var(--bord);
+  color: var(--discret);
+}
+
+.texte-afaire {
+  display: flex;
+  flex: 999 1 360px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ligne-afaire.fait .texte-afaire > strong {
+  font-weight: 500;
+  color: var(--discret);
+}
+
+.detail-afaire {
+  color: var(--discret);
+  font-size: 14px;
+}
+
+.note-afaire {
+  color: var(--discret);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.boutons-afaire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.panneau-afaire {
+  flex-basis: 100%;
+  margin-left: 42px;
+  padding: 12px 14px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  background: var(--fond);
+}
+
+.question-tri {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 4px;
+  padding: 0;
+  border: 0;
+  color: var(--texte);
+}
+
+.question-tri legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-weight: 600;
+}
+
+.question-tri .conseille {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.question-tri .avances {
+  margin-top: 4px;
+}
+
+.apercu-tri-chiffres {
+  display: block;
+  margin-top: 6px;
+  color: var(--texte);
+}
+
+.alerte-texte {
+  display: block;
+  color: var(--attention);
+}
+
+.autrement > summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.progression-tri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  min-width: 280px;
+}
+
+/* Résultat : en-tête, onglets (ceux des Doublons), cartes par mois. */
+.resultat-tri {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  scroll-margin-top: 16px;
+}
+
+.tete-resultat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tete-resultat h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.resultat-tri .onglet-doublons:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vide-resultat {
+  padding: 24px;
+  text-align: center;
+}
+
+.cartes-tri {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mois-cartes {
+  margin: 12px 0 6px;
+  color: var(--discret);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.carte-tri {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-carte);
+  background: var(--surface);
+  box-shadow: var(--ombre-douce);
+}
+
+.tete-carte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-start;
+}
+
+.icone-carte {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+}
+
+.carte-tri.maison .icone-carte,
+.carte-tri.maison .sorte-carte {
+  background: var(--attention-doux);
+  color: var(--attention);
+}
+
+.carte-tri.sortie .icone-carte,
+.carte-tri.sortie .sorte-carte {
+  background: var(--ia-fond);
+  color: var(--ia-texte);
+}
+
+.titre-carte {
+  display: flex;
+  flex: 999 1 380px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ligne-titre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+}
+
+.ligne-titre h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+}
+
+.sorte-carte {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.actions-carte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vignettes-carte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.etapes-carte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pastille-etape {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-size: 13px;
+}
+
+.liste-etapes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+}
+
+.liste-etapes li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid var(--bord);
+}
+
+.liste-etapes li:first-child {
+  border-top: 0;
+}
+
+.liste-etapes li > div:first-child {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+}
+
+/* À vérifier et Mis à part. */
+.a-verifier,
+.mis-a-part {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a-verifier h3,
+.mis-a-part h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.petites-sorties {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.petites-sorties li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--bord);
+}
+
+.petites-sorties li > div:nth-child(2) {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .panneau-afaire {
+    margin-left: 0;
+  }
+}

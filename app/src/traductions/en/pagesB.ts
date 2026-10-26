@@ -279,8 +279,6 @@ export const TEXTES: Record<string, string> = {
   'Vidéos': 'Videos',
   'Que faire ?': 'What to do?',
   'Que faire de {0}': 'What to do with {0}',
-  'capture d’écran trouvée': 'screenshot found',
-  'captures d’écran trouvées': 'screenshots found',
   'photo sans date': 'photo without a date',
   'photos sans date': 'photos without a date',
   '✓ Analyse des photos terminée.': '✓ Photo analysis finished.',

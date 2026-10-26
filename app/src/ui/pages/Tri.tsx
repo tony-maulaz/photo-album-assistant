@@ -1,18 +1,17 @@
-// Étape « Tri automatique » (SPEC § 6.4, script 01) : pour un dossier en
-// vrac, les photos sont rangées par lieu et par sortie. Les lieux fréquents
-// s'enregistrent d'abord, puis le calcul ; l'étape suivante, « Lieux et
-// sorties », sert à vérifier et corriger le résultat (D54).
+// Étape « Tri automatique » (SPEC § 6.4, D103) : pour un dossier en vrac, les
+// photos sont rangées dans l'ordre du temps — un dossier par voyage (avec ses
+// étapes), par sortie, et la maison mois par mois. En haut, la liste « À
+// faire » ; dessous, le résultat en cartes, avec des onglets comme aux
+// Doublons. L'étape suivante, « Lieux et sorties », sert à corriger photo par
+// photo (D54).
 
 import { t } from '../../lib/langue';
 import { resumes } from '../../lib/plan';
 import { ETAPE } from '../../navigateur/projet';
-import { SansGps } from '../composants/AidesTri';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
-import { Captures } from '../composants/Captures';
 import { CurseurTaille } from '../composants/GrillePhotos';
-import { LieuxFrequents } from '../composants/LieuxFrequents';
-import { SEUIL_PETIT } from '../composants/PanneauDossiers';
-import { CopiesAvantTri, dossiersProposes, fichiersARanger, TriAuto } from '../composants/TriAuto';
+import { ResultatTri } from '../composants/ResultatTri';
+import { dossiersProposes, restantsTri, TriAuto, useEtatTri } from '../composants/TriAuto';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { pluriel } from '../format';
 
@@ -30,37 +29,30 @@ export function PageTri() {
         </button>
       </div>
     );
+  return <PageTriVrac />;
+}
 
+function PageTriVrac() {
+  const s = session.value!;
+  const e = useEtatTri();
   const r = resumes(s.plan);
   const proposes = dossiersProposes(s.plan);
-  const calcule = [...s.plan.dossiers.values()].some((d) => d.origine === 'tri');
   const photos = proposes.reduce((a, d) => a + r.get(d.id)!.photos, 0);
-  const petits = proposes.filter((d) => r.get(d.id)!.photos + r.get(d.id)!.videos < SEUIL_PETIT).length;
-  // Photos arrivées après le premier tri (D63) : à ranger avant de continuer.
-  const nonRangees = calcule ? fichiersARanger(s.plan).length : 0;
+  const restants = restantsTri(e);
 
   return (
-    <div class="page etroite avec-barre">
-      <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique par lieux et sorties`} outils={<CurseurTaille />}>
-        {t`L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Écartez d’abord les copies s’il en reste, rangez à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…). Choisissez ensuite comment ranger : le résultat se voit tout de suite avec vos photos. Vous le vérifierez et le corrigerez à l’étape suivante.`}
+    <div class="page avec-barre page-tri">
+      <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique`} cle="tri" outils={<CurseurTaille />}>
+        {t`L’application range vos photos dans l’ordre du temps : un dossier par voyage (avec ses étapes), un par sortie, et la maison mois par mois. Le calendrier ne découpe rien : il propose des noms, que vous choisirez au Nommage. Faites d’abord ce qui est marqué ● ; ce qui est marqué ○ est facultatif.`}
       </TeteEtape>
-      <CopiesAvantTri />
-      <Captures />
-      <LieuxFrequents ouvert={!calcule} />
-      <TriAuto />
-      {calcule && (
-        <div class="encart resume-tri">
-          <strong>{pluriel(proposes.length, 'dossier proposé', 'dossiers proposés')}</strong>
-          {t` pour ${pluriel(photos, 'photo')}${petits ? t` · ${pluriel(petits, 'petit dossier', 'petits dossiers')} (moins de ${SEUIL_PETIT} photos), à rattacher plus loin` : ''}. Vérifiez-les et corrigez-les à l’étape suivante, en glissant les photos d’un dossier à l’autre.`}
-        </div>
-      )}
-      {calcule && <SansGps />}
+      <TriAuto e={e} />
+      <ResultatTri range={e.range} />
       <BarreValidation
-        resume={calcule ? `${pluriel(proposes.length, 'dossier proposé', 'dossiers proposés')} · ${pluriel(photos, 'photo')}` : t`Photos pas encore rangées`}
-        alertes={!calcule ? [t`Rangez les photos pour continuer`] : nonRangees ? [pluriel(nonRangees, 'nouvelle photo pas encore rangée', 'nouvelles photos pas encore rangées')] : []}
+        resume={e.range ? `${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(proposes.length, 'dossier')}` : t`Photos pas encore rangées`}
+        alertes={restants.length ? [restants.length === 1 ? t`● Encore 1 chose à faire : ${restants[0]}` : t`● Encore ${restants.length} choses à faire : ${restants.join(', ')}`] : []}
         revenir={() => revenirDe('tri')}
         valider={() => validerEtape('tri')}
-        validerActif={calcule}
+        validerActif={e.range}
       />
     </div>
   );

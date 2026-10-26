@@ -40,7 +40,6 @@ export const TEXTES: Record<string, string> = {
 
   // TriAuto.tsx
   'Noms des lieux indisponibles (OpenStreetMap) : {0}': 'Place names unavailable (OpenStreetMap): {0}',
-  '{0} dans {1} : vérifiez-les à l’étape suivante, « Lieux et sorties ».': '{0} in {1}: check them in the next step, “Places and outings”.',
   'Sans effet pour l’instant : aucun domicile n’est enregistré.': 'No effect for now: no home is saved.',
   'Indiquer le domicile dans la Configuration': 'Set the home in the Configuration',
 

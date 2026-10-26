@@ -71,7 +71,7 @@ stable (`ETAPE.lieux`), indépendant de son numéro.
 | 3 | **Dossiers** | Pour chaque sous-dossier d'un dossier en vrac : Trier, Garder et nettoyer, ou Ne pas toucher ; sautée sans sous-dossier et pour un dossier déjà trié | Tableau des sous-dossiers, trois boutons par ligne, photos au clic (§ 6.2) | — |
 | 4 | **Photos floues** | Classement par netteté | Grille des floues, curseur avec mise à jour en direct | Option : vérification IA des cas limites |
 | 5 | **Doublons** | Copies exactes, rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Onglets par sorte, relecture journée par journée, un clic par photo | Oui |
-| 6 | **Tri automatique** | Captures d'écran rangées à part, lieux fréquents à enregistrer, réglages, regroupement GPS, sorties, voyages, noms de lieux ; inutile pour un dossier déjà trié | Résumé du tri (§ 6.4) | Option : lieu des photos sans GPS |
+| 6 | **Tri automatique** | Liste « À faire » (maison, copies, captures d'écran, lieux fréquents), rangement dans l'ordre du temps : voyages avec leurs étapes, sorties, maison par mois ; noms de lieux ; inutile pour un dossier déjà trié | Résultat en cartes, onglets par sorte (§ 6.4) | Option : lieu des photos sans GPS |
 | 7 | **Lieux et sorties** | Vérifier et corriger l'arborescence | **Arborescence prévue** éditable (§ 6.4) | — |
 | 8 | **Petits dossiers** | Rattachement des petits dossiers à une sortie voisine | Propositions à accepter ou refuser | Oui |
 | 9 | **Nommage** | Noms parlants (calendrier, recherche web, monuments reconnus) | Tableau des noms | Oui |
@@ -277,45 +277,69 @@ n'existe plus (un projet qui l'avait le lit comme « Ne pas toucher »).
 ### 6.4 Étapes 6 et 7 — Tri automatique, puis Lieux et sorties (aperçu central)
 Après une mise à jour de l'inventaire (D63), le tri automatique propose
 « Ranger les N nouvelles photos » : seules les photos pas encore rangées sont
-groupées, les dossiers déjà faits ne bougent pas.
+rangées, les dossiers déjà faits ne bougent pas.
 
-Si des copies exactes parmi les photos à trier ne sont pas encore écartées
-(proposition de l'étape Doublons pas acceptée), un encart le signale avant
-le calcul, avec « Écarter N copies » : sinon, le tri range une seconde fois
-des photos déjà gardées ailleurs (D85).
+Deux pages (D54) : le **tri automatique**, puis **Lieux et sorties**, la page
+de travail (panneau des dossiers et photos sur toute la hauteur, explication
+ouverte à la première visite seulement).
 
-Deux pages (D54) : le **tri automatique** (captures d'écran parmi les photos
-à trier, rangées à part dans `Captures_ecran/` hors de l'album ; lieux
-fréquents à enregistrer ; réglages, calcul, résumé, photos sans GPS), puis **Lieux et
-sorties**, la page de travail (panneau des dossiers et photos sur toute la
-hauteur, explication ouverte à la première visite seulement).
+**Le principe** (D103, remplace D87 et D88) : les photos sont prises dans
+l'ordre du temps. Un **moment** est une suite de photos sans trou de plus de
+3 h, ni passage de la maison au dehors. Des moments à plus de 50 km de la
+maison (réglage avancé), sur au moins deux jours, sans photo prise à la maison
+entre eux, forment un **voyage** : tout ce qui est pris entre le premier et le
+dernier en fait partie, photos de la route comprises ; ses **étapes** sont ses
+lieux (à 10 km près), un petit arrêt (moins de 3 photos) rejoint l'étape la
+plus proche dans le temps. Tout autre moment dehors est une **sortie** ; le
+même endroit (5 km) le lendemain, sans retour à la maison, reste la même
+sortie. **À la maison** : un dossier par mois, et une journée d'au moins
+10 photos (les journées chargées qui se suivent, comme Noël, réunies) forme le
+sien. Une photo sans GPS suit l'heure à laquelle elle a été prise. Les lieux
+connus autres que le domicile donnent leur nom aux sorties qui s'y passent.
+**Le calendrier ne découpe rien** : l'événement pendant lequel la moitié au
+moins des photos d'un dossier ont été prises est montré sur sa carte, et
+proposé comme nom au Nommage. Sans domicile, aucun voyage n'est reconnu et
+chaque moment devient une sortie : la page le dit.
 
-**Trois questions** (D87) : **comment ranger ?** (par sortie, conseillé ;
-par jour ; par mois), **deux photos sont au même endroit si elles sont
-dans…** (une rue, un quartier, un village, une ville, une région : 0,5 / 1 /
-2 / 5 / 10 km), **réunir les étapes d'un voyage** (grisé sans domicile).
-Réglages avancés : durée maximale d'une sortie, distance d'un voyage. Les
-lieux connus et les noms de fichiers parlants servent toujours ; les autres
-options du script gardent leur valeur. **Le résultat se voit avant de
-ranger**, recalculé avec les photos à chaque réglage (moins de 0,1 s pour une
-année) : nombre de dossiers, de voyages, de très petits et très grands
-dossiers, répartition des tailles, et une frise d'exemples tirés des photos
-(la semaine la plus chargée, le plus long voyage, une semaine à la maison…).
-« Ranger les photos dans ces N dossiers » demande ensuite les noms à
-OpenStreetMap.
+**La liste « À faire »**, en haut de la page, une ligne par chose, chacune
+avec son état — ● à faire, ✓ fait, ○ facultatif (écrit en toutes lettres) :
+- **la maison** (le domicile) : à choisir parmi les lieux qui reviennent
+  souvent (photos, adresse OpenStreetMap, « C'est notre domicile ») ou dans la
+  Configuration ;
+- **les photos en double** (copies exactes pas encore mises de côté, D85) :
+  « Les voir » (étape Doublons), « Mettre les N copies de côté » ; rien n'est
+  supprimé, elles vont dans `_mis_de_cote/` ;
+- **les captures d'écran** parmi les photos à trier : « Les voir » ouvre
+  leurs miniatures sous la ligne (décocher une vraie photo, l'agrandir),
+  « Les mettre à part » les range dans `Captures_ecran/`, hors du tri et de
+  l'album ;
+- facultatif, **les autres lieux qui reviennent souvent** (chez des proches,
+  le club), à enregistrer pour de meilleurs noms ;
+- **ranger les photos**, avec une seule question : « Un voyage de plusieurs
+  jours se range… » dans un dossier avec un sous-dossier par étape
+  (conseillé) ou tout dans un seul dossier ; en avancé, la distance d'un
+  voyage. Avant de ranger, les chiffres (« 14 voyages, 119 sorties, la maison
+  en 26 dossiers »). Une fois rangé : « Afficher les dossiers → » (étape
+  suivante) et « Ranger à nouveau » ;
+- après le rangement, facultatif, **les photos sans GPS** (IA, coût affiché).
+La barre du bas reprend ce qui reste ● (« Encore 2 choses à faire : … »).
 
-**Le calendrier dans le tri** (D88) : le GPS découpe, le calendrier ne fait
-que séparer là où le GPS ne peut rien, **dans les lieux connus** (domicile,
-grands-parents). Par sortie, un sous-dossier d'un lieu connu qui couvre plus
-de 3 jours est coupé autour des événements utiles (pas récurrents, 21 jours
-au plus) pendant lesquels au moins 5 photos, qui se suivent, ont été prises :
-d'abord ceux qui en réunissent le plus ; les photos restantes forment les
-morceaux d'avant et d'après, un morceau de moins de 5 photos rejoint son
-voisin. Les dossiers gardent un nom fait de dates ; leur nom se choisit au
-Nommage. Une case, cochée par défaut, visible avec des lieux connus, grisée
-sans calendrier (lien vers la Configuration) ; l'aperçu montre l'effet.
+**Le résultat**, sous la liste, en **onglets comme aux Doublons** : Tout,
+Voyages, Sorties, À la maison, À vérifier, Mis à part, chacun avec son
+nombre ; grisés tant que rien n'est rangé. Une **carte** par dossier, dans
+l'ordre du temps, mois par mois : son nom, ses dates en clair, le nombre de
+photos, six miniatures réparties sur la période, l'événement du calendrier
+(« Calendrier : « … » — vous choisirez le nom au Nommage ») ; pour un voyage,
+ses étapes en pastilles, « Voir les étapes » les déplie (miniatures). Deux
+gestes : « Réunir avec le précédent » (dans « Tout » ; une sortie devient une
+étape du voyage voisin, une sortie rejoint la maison) et « Couper… » (ouvre
+le dossier à l'étape suivante). **À vérifier** : les sorties d'une ou deux
+photos (« Mettre N petites sorties avec leur mois », ou « Les garder seules »,
+l'étape Petits dossiers les montre alors une à une), puis l'aide facultative
+pour les photos sans GPS. **Mis à part** : captures d'écran, photos sans date,
+vidéos sans photo du même moment.
 
-**Aperçu : l'arborescence prévue.** Pour chaque dossier qui sera créé :
+**Lieux et sorties : l'arborescence.** Pour chaque dossier :
 - nom prévu, **dates (du–au)**, **nombre de photos**, lieu, origine (lieu
   connu, GPS, voyage, sans GPS, sous-dossier gardé), 4 à 6 miniatures ;
 - **badges d'alerte** : **petit dossier** (moins de 3 photos, réglable ;
@@ -341,9 +365,9 @@ ouverte d'office.
 (« Fusionner avec… », les dossiers les plus proches dans le temps en tête, ou
 en glissant un dossier sur un autre), sortir une journée, renommer, mettre
 dans `_autres/`, annuler.
-**Suggestion de lieux connus** : un groupe GPS qui revient sur de nombreux
-jours (maison, grands-parents, école, club) est proposé à l'enregistrement
-avant le calcul, sur la page du tri automatique.
+**Suggestion de lieux connus** : un endroit qui revient sur de nombreux
+jours (maison, grands-parents, école, club) est proposé dans la liste « À
+faire » de la page du tri automatique.
 **IA (option)** : **situer les photos sans GPS** d'après leur contenu et les
 photos prises juste avant et après ; proposition de rattachement.
 
@@ -395,7 +419,7 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
 - **En tête, ce qu'il faut proposer** (D91), avec le nombre de propositions
   qui change sous les yeux : une sortie coupée en plusieurs dossiers (des
   photos prises à moins de 1 h, 3 h, 6 h ou la journée, et de 1 à 20 km ; par
-  défaut 3 h et 2 × la taille d'un endroit du tri), les week-ends et petits
+  défaut 3 h et 4 km, 2 × la taille d'un endroit du tri d'avant D103), les week-ends et petits
   voyages (dossiers à plus de 10 km de la maison, jours qui se suivent, sans
   photo prise à la maison entre-temps, jusqu'à 3 jours, 4 jours, 1 ou 2
   semaines ; il faut un domicile). En avancé : les noms proches à 2 jours près
@@ -699,8 +723,9 @@ l'étape 5 (suggestions).
 Ajouter un `.ics` (copié dans `config/calendriers/`), voir le nombre
 d'événements et la période, activer ou désactiver, inclure les récurrents
 (avancé : les anniversaires d'une année sur l'autre). Utilisés à l'étape
-Lieux et sorties (ligne de temps, dossiers à réunir), au Nommage (titre de
-l'événement proposé comme nom) et pour les textes de l'album (D83).
+Lieux et sorties (ligne de temps, dossiers à réunir), sur les cartes du tri
+automatique (sans rien découper, D103), au Nommage (titre de l'événement
+proposé comme nom) et pour les textes de l'album (D83).
 
 ### 8.5 Appareils
 Modèles détectés, décalage d'horloge (`+HH:MM`), surnom (« téléphone
@@ -742,10 +767,10 @@ Tout ce que faisaient les scripts est repris. Accès : **S** = réglage simple,
 | Script | Fonction ou option (défaut) | Étape | Accès |
 |---|---|---|---|
 | 01 | `--seuil-flou` (60) | 3 | S, curseur en direct |
-| 01 | `--par-jour`, `--par-mois` (un seul choix : par sortie, par jour, par mois), `--rayon-km` (2, en cinq crans), `--sans-voyages` | 6 | S |
-| 01 | `--duree-max-jours` (21), `--distance-voyage` (50 au lieu de 30, D87) | 6 | A |
-| 01 | `--gap-jours` (7 au lieu de 30, D87), `--gap-voyage-max` (7), lieux connus et noms de fichiers toujours utilisés | 6 | Auto |
-| 01 | `--sans-evenement` (remplacé par un lieu connu « un seul dossier »), `--gap-voyage` (un retour à la maison coupe toujours le voyage) | — | Retirés (D87) |
+| 01 | Voyages : un sous-dossier par étape ou un seul dossier (remplace `--sans-voyages`, D103) | 6 | S |
+| 01 | `--distance-voyage` (50 au lieu de 30, D87) | 6 | A |
+| 01 | Tri dans l'ordre du temps (D103) : trou de 3 h, journée chargée de 10 photos à la maison, lieux connus et noms de fichiers toujours utilisés | 6 | Auto |
+| 01 | `--par-jour`, `--par-mois`, `--rayon-km`, `--gap-jours`, `--duree-max-jours`, `--gap-voyage-max` (le tri suit l'ordre du temps, D103) ; `--sans-evenement` (remplacé par un lieu connu « un seul dossier »), `--gap-voyage` (un retour à la maison coupe toujours le voyage, D87) | — | Retirés |
 | 01 | `--maison-un-seul-dossier` | 8.3 | Par lieu connu |
 | 01 | `--a-trier`, `--trier-mois`, `--tout-trier`, `--sans-copie-tries` | 2 | S, par sous-dossier |
 | 01 | Géocodage français puis anglais, collisions de noms, inventaire | 4, 11 | Auto |

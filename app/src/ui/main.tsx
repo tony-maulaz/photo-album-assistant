@@ -10,7 +10,7 @@ import './styles/doublons.css';
 import './styles/petits.css';
 import './styles/accueil.css';
 import './styles/general.css';
-import './styles/apercuTri.css';
+import './styles/resultatTri.css';
 import './styles/nommage.css';
 import './styles/consolidation.css';
 import { effect } from '@preact/signals';
