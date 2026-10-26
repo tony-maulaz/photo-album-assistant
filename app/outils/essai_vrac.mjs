@@ -470,7 +470,7 @@ try {
   verifier(requetesNominatim.length > 0, `${requetesNominatim.length} requête(s) à OpenStreetMap (simulé)`);
   const lignesTri = await page.locator('.resultat-tri .ligne-tri').count();
   verifier(lignesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout') && (await page.locator('.resultat-tri .tete-resultat').innerText()).includes('étape suivante'), `résultat : ${lignesTri} lignes dans l’onglet « Tout »`);
-  verifier((await page.getByRole('button', { name: 'Afficher les dossiers →' }).count()) >= 1, 'après le rangement : « Afficher les dossiers → »');
+  verifier((await page.locator('.colonnes-tri > .resultat-tri').count()) === 1 && (await page.getByRole('button', { name: 'Afficher les dossiers →' }).count()) === 0, 'les dossiers à droite de la page, sans changer d’étape (D105)');
   await capturer(page, 'v3_tri');
   await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Mis à part' }).click();
   verifier((await page.locator('.mis-a-part').innerText()).includes('Captures d’écran'), 'onglet « Mis à part » : la capture d’écran');

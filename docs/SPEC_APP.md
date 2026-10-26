@@ -320,16 +320,17 @@ avec son état — ● à faire, ✓ fait, ○ facultatif (écrit en toutes lett
   sous-dossier par étape (conseillé) ou tout dans un seul dossier ; « C'est
   un voyage à partir de… » 30, 50 (conseillé) ou 100 km, avec le nombre de
   voyages de chaque cran ; « À la maison, un dossier… » par mois (conseillé)
-  ou par semaine, avec le nombre de dossiers. Une fois rangé : « Afficher les
-  dossiers → » (étape suivante), « Ranger à nouveau », et sous « Ranger
-  autrement… » les mêmes choix : un autre réglage ne range rien en silence,
+  ou par semaine, avec le nombre de dossiers. Une fois rangé : « Ranger à
+  nouveau », et sous « Ranger autrement… » les mêmes choix : un autre réglage ne range rien en silence,
   l'écart s'affiche (« Avec ce réglage : 16 voyages (+2)… ») avec « Ranger
   avec ce réglage » et « Revenir au réglage actuel » ;
 - après le rangement, facultatif, **les photos sans GPS** (IA, coût affiché,
   « Demander à l'IA… » ouvre l'aide sous la ligne).
 La barre du bas reprend ce qui reste ● (« Encore 2 choses à faire : … »).
 
-**Le résultat**, sous la liste, en **onglets comme aux Doublons** : Tout,
+**Le résultat**, **à droite de la liste** (deux colonnes, D105 : il reste à
+l'écran et défile seul, et l'on voit l'effet d'un cran sans descendre ; sous
+1 200 px de large, il repasse dessous), en **onglets comme aux Doublons** : Tout,
 Voyages, Sorties, À la maison, Mis à part, chacun avec son nombre. **Avant de
 ranger, c'est un aperçu en direct** (D104), recalculé à chaque choix
 (quelques dizaines de millisecondes pour une année) : ce qui vient

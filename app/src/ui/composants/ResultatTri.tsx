@@ -1,5 +1,5 @@
-// Résultat du tri automatique (D103, D104) : une ligne par voyage, sortie ou
-// période à la maison, dans l'ordre du temps, avec des onglets comme aux
+// Résultat du tri automatique (D103, D104, D105) : à droite de la page, une
+// ligne par voyage, sortie ou période à la maison, dans l'ordre du temps, avec des onglets comme aux
 // Doublons (Tout, Voyages, Sorties, À la maison, Mis à part). Sans miniatures :
 // les dates, le nombre de photos, la distance de la maison, l'événement du
 // calendrier et, pour un voyage, ses étapes. Avant de ranger, c'est un aperçu

@@ -221,3 +221,54 @@ describe('événements montrés avec les photos (D94)', () => {
     expect(evenementPrincipal([noel], [])).toBeNull();
   });
 });
+
+describe('événements des photos sur un grand calendrier (D105)', () => {
+  // L'ancienne recherche, qui parcourait tout le calendrier : la nouvelle doit donner exactement la même chose.
+  const jourTexte = (j: number) => new Date(Date.UTC(2025, 0, 1) + j * 86_400_000).toISOString().slice(0, 10);
+  const prise = (e: EvenementCalendrier, d: string) => partPendant(e, [d]) > 0;
+  const duree = (e: EvenementCalendrier) =>
+    e.journee ? (Date.parse(e.fin.slice(0, 10)) - Date.parse(e.debut.slice(0, 10))) / 1000 + 86_400 : (Date.parse(`${e.fin}Z`) - Date.parse(`${e.debut}Z`)) / 1000;
+  function ancienne(evts: EvenementCalendrier[], dates: string[]) {
+    const triees = [...dates].sort();
+    const vus = new Set<string>();
+    const jours = (e: EvenementCalendrier) => {
+      const d1 = e.debut.slice(0, 10);
+      let d2 = e.fin.slice(0, 10);
+      if (!e.journee && e.fin.slice(11) === '00:00:00' && d2 > d1) d2 = new Date(Date.parse(`${d2}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+      return [d1, d2 < d1 ? d1 : d2];
+    };
+    return evts
+      .filter((e) => duree(e) <= 21 * 86_400 && jours(e)[0] <= triees.at(-1)!.slice(0, 10) && jours(e)[1] >= triees[0].slice(0, 10))
+      .map((evenement) => ({ evenement, n: dates.filter((d) => prise(evenement, d)).length }))
+      .filter((x) => x.n > 0)
+      .sort((a, b) => b.n - a.n || duree(a.evenement) - duree(b.evenement) || a.evenement.debut.localeCompare(b.evenement.debut))
+      .filter((x) => {
+        const cle = x.evenement.titre.trim().toLowerCase();
+        if (vus.has(cle)) return false;
+        vus.add(cle);
+        return true;
+      });
+  }
+
+  it('même résultat que la recherche dans tout le calendrier, bien plus vite', () => {
+    let graine = 11;
+    const hasard = (n: number) => Math.floor(((graine = (graine * 16807) % 2147483647) / 2147483647) * n);
+    const evts: EvenementCalendrier[] = Array.from({ length: 2500 }, (_, i) => {
+      const j = hasard(400);
+      const journee = hasard(3) === 0;
+      const longueur = hasard(10) === 0 ? 10 + hasard(40) : hasard(3);
+      const h = 6 + hasard(14);
+      return journee
+        ? { titre: `Événement ${i % 300}`, debut: jourTexte(j), fin: jourTexte(j + longueur), journee: true, recurrent: false }
+        : { titre: `Événement ${i % 300}`, debut: `${jourTexte(j)}T${String(h).padStart(2, '0')}:00:00`, fin: `${jourTexte(j + (longueur > 2 ? longueur : 0))}T${String(Math.min(23, h + 2)).padStart(2, '0')}:00:00`, journee: false, recurrent: false };
+    });
+    const dossiers = Array.from({ length: 150 }, () => {
+      const j = hasard(380);
+      return Array.from({ length: 1 + hasard(30) }, () => `${jourTexte(j + hasard(4))}T${String(8 + hasard(12)).padStart(2, '0')}:00:00`);
+    });
+    for (const dates of dossiers) expect(evenementsDesPhotos(evts, dates)).toEqual(ancienne(evts, dates));
+    const debut = performance.now();
+    for (let k = 0; k < 5; k++) for (const dates of dossiers) evenementsDesPhotos(evts, dates);
+    expect((performance.now() - debut) / 5).toBeLessThan(60);
+  });
+});

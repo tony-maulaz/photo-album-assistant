@@ -453,6 +453,45 @@ export interface EvenementDesPhotos {
   n: number;
 }
 
+/** Événements de 21 jours au plus, triés par premier jour, avec leur rang dans la liste d'origine. */
+interface IndexCourts {
+  evts: EvenementCalendrier[];
+  rangs: number[];
+  d1: string[];
+  d2: string[];
+}
+
+const indexCourts = new WeakMap<EvenementCalendrier[], IndexCourts>();
+
+/**
+ * Événements de 21 jours au plus qui chevauchent [du, au] (jours
+ * « AAAA-MM-JJ »), dans l'ordre de la liste d'origine. Un calendrier
+ * familial en compte des milliers et l'étape 7 le demande pour chaque
+ * dossier à chaque déplacement : la liste est indexée une fois par premier
+ * jour, puis lue par dichotomie (320 ms → quelques ms pour une année, D105).
+ */
+function candidatsCourts(evts: EvenementCalendrier[], du: string, au: string): EvenementCalendrier[] {
+  let ix = indexCourts.get(evts);
+  if (!ix) {
+    const courts = evts.map((e, rang) => ({ e, rang, j: jours(e) })).filter((x) => dureeEvenement(x.e) <= JOURS_MAX_EVENEMENT_UTILE * 86_400);
+    courts.sort((a, b) => (a.j[0] < b.j[0] ? -1 : a.j[0] > b.j[0] ? 1 : a.rang - b.rang));
+    ix = { evts: courts.map((x) => x.e), rangs: courts.map((x) => x.rang), d1: courts.map((x) => x.j[0]), d2: courts.map((x) => x.j[1]) };
+    indexCourts.set(evts, ix);
+  }
+  // Un événement de 21 jours au plus qui finit après `du` commence au plus 23 jours avant.
+  const depuis = texteJour(jourDepuis(du) - JOURS_MAX_EVENEMENT_UTILE - 2);
+  let bas = 0;
+  let haut = ix.d1.length;
+  while (bas < haut) {
+    const m = (bas + haut) >> 1;
+    if (ix.d1[m] < depuis) bas = m + 1;
+    else haut = m;
+  }
+  const trouves: { e: EvenementCalendrier; rang: number }[] = [];
+  for (let i = bas; i < ix.d1.length && ix.d1[i] <= au; i++) if (ix.d2[i] >= du) trouves.push({ e: ix.evts[i], rang: ix.rangs[i] });
+  return trouves.sort((a, b) => a.rang - b.rang).map((x) => x.e);
+}
+
 /**
  * Événements à montrer avec des photos (D94) : ceux pendant lesquels au moins
  * une a été prise (`prisePendant` : le jour même, une heure de marge pour un
@@ -465,9 +504,23 @@ export function evenementsDesPhotos(evts: EvenementCalendrier[], dates: string[]
   if (!dates.length) return [];
   const triees = [...dates].sort();
   const vus = new Set<string>();
-  return evts
-    .filter((e) => dureeEvenement(e) <= JOURS_MAX_EVENEMENT_UTILE * 86_400 && chevauche(e, triees[0], triees.at(-1)))
-    .map((evenement) => ({ evenement, n: dates.filter((d) => prisePendant(evenement, d)).length }))
+  // Les photos d'un événement sont parmi celles de ses jours : une tranche des dates triées.
+  const indice = (jour: string) => {
+    let bas = 0;
+    let haut = triees.length;
+    while (bas < haut) {
+      const m = (bas + haut) >> 1;
+      if (triees[m] < jour) bas = m + 1;
+      else haut = m;
+    }
+    return bas;
+  };
+  return candidatsCourts(evts, triees[0].slice(0, 10), triees.at(-1)!.slice(0, 10))
+    .map((evenement) => {
+      const [d1, d2] = jours(evenement);
+      const tranche = triees.slice(indice(d1), indice(`${d2}~`));
+      return { evenement, n: tranche.filter((d) => prisePendant(evenement, d)).length };
+    })
     .filter((x) => x.n > 0)
     .sort((a, b) => b.n - a.n || dureeEvenement(a.evenement) - dureeEvenement(b.evenement) || a.evenement.debut.localeCompare(b.evenement.debut))
     .filter((x) => {

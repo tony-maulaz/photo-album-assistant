@@ -7,7 +7,7 @@
 // l'ordre du temps (lib/tri.ts), demande les noms des lieux à OpenStreetMap,
 // puis l'arborescence remplace le vrac dans le plan (annulable). Sans
 // connexion, les lieux gardent des noms provisoires : le tri n'est jamais
-// bloqué. Le résultat se voit dessous (ResultatTri), en direct avant de ranger.
+// bloqué. Le résultat se voit à droite (ResultatTri), en direct avant de ranger.
 
 import type { ComponentChildren } from 'preact';
 import { useMemo, useRef, useState, type StateUpdater, type Dispatch } from 'preact/hooks';
@@ -232,8 +232,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
       // Même compte que la barre du bas : les photos rangées dans les dossiers du tri.
       const resume = resumes(s.plan);
       const photos = nouvelles ? liste.filter((f) => f.categorie === 'photo').length : dossiersProposes(s.plan).reduce((a, x) => a + resume.get(x.id)!.photos, 0);
-      notifier('ok', t`${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(nb, 'dossier')} : voyez-les ci-dessous.`);
-      document.getElementById('resultat-tri')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      notifier('ok', t`${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(nb, 'dossier')} : voyez-les à droite.`);
       if (sansNoms)
         notifier(
           'info',
@@ -499,9 +498,6 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
                 <>
                   <button type="button" onClick={() => void calculer()}>
                     {t`Ranger à nouveau`}
-                  </button>
-                  <button type="button" class="principal" onClick={() => allerEtape('lieux')}>
-                    {t`Afficher les dossiers →`}
                   </button>
                 </>
               )

@@ -30,7 +30,7 @@ export const TEXTES: Record<string, string> = {
   Fait: 'Done',
   Facultatif: 'Optional',
   'Tri dans l’ordre du temps : {0} pour {1}': 'Sorting in time order: {0} for {1}',
-  '{0} dans {1} : voyez-les ci-dessous.': '{0} in {1}: see them below.',
+  '{0} dans {1} : voyez-les à droite.': '{0} in {1}: see them on the right.',
   '{0} de côté dans « {1} ». Rangez à nouveau : des dossiers ont pu se vider.': '{0} aside in “{1}”. Arrange again: some folders may have become empty.',
   'copie mise': 'copy set',
   'copies mises': 'copies set',
@@ -77,7 +77,6 @@ export const TEXTES: Record<string, string> = {
   'Arrivées depuis le dernier rangement : les dossiers déjà faits ne bougent pas.': 'Arrived since the last arranging: the folders already made do not move.',
   '{0} dans {1}': '{0} in {1}',
   'Ranger autrement…': 'Arrange differently…',
-  'Afficher les dossiers →': 'Show the folders →',
   'Facultatif : {0}': 'Optional: {0}',
   'Rangées avec les photos prises juste avant ou après. L’IA peut proposer un meilleur dossier ; son coût est affiché avant de la lancer.':
     'Arranged with the photos taken just before or after. The AI can suggest a better folder; its cost is shown before starting it.',
@@ -102,8 +101,8 @@ export const TEXTES: Record<string, string> = {
   'Aucun dossier de cette sorte.': 'No folder of this kind.',
 
   // D104 : réglages en crans, maison par semaine, aperçu en direct sans miniatures
-  'L’application range vos photos dans l’ordre du temps : un dossier par voyage (avec ses étapes), un par sortie, et la maison mois par mois. Le calendrier ne découpe rien : il propose des noms, que vous choisirez au Nommage. Faites d’abord ce qui est marqué ● ; ce qui est marqué ○ est facultatif. Le résultat se voit dessous, et suit vos réglages.':
-    'The application arranges your photos in time order: one folder per trip (with its stages), one per outing, and home month by month. The calendar does not split anything: it suggests names, which you will choose at the Naming step. First do what is marked ●; what is marked ○ is optional. The result shows below and follows your settings.',
+  'L’application range vos photos dans l’ordre du temps : un dossier par voyage (avec ses étapes), un par sortie, et la maison mois par mois. Le calendrier ne découpe rien : il propose des noms, que vous choisirez au Nommage. Faites d’abord ce qui est marqué ● ; ce qui est marqué ○ est facultatif. Vos dossiers se voient à droite, et suivent vos réglages.':
+    'The application arranges your photos in time order: one folder per trip (with its stages), one per outing, and home month by month. The calendar does not split anything: it suggests names, which you will choose at the Naming step. First do what is marked ●; what is marked ○ is optional. Your folders show on the right and follow your settings.',
   'C’est un voyage à partir de…': 'It is a trip from…',
   'Distance d’un voyage': 'Distance of a trip',
   'À la maison, un dossier…': 'At home, one folder…',

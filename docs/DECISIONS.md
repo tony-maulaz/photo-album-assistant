@@ -1258,6 +1258,26 @@ réglage » ou « Revenir au réglage actuel ». Une photo mise de côté n'est 
 comptée dans l'aperçu ; un voyage d'un seul dossier prend la distance du
 centre de ses photos.
 
+**D105 — Tri automatique en deux colonnes ; l'étape 7 n'attend plus le
+calendrier.** « Afficher les dossiers → » menait à l'étape 7, jugé « long et
+nul ». Quatre analyses : le passage d'étape ne coûtait rien, mais l'étape 7
+cherchait l'événement du calendrier de chaque dossier en parcourant tout le
+calendrier (2 548 événements) pour chaque dossier, parents compris : 320 ms
+à l'arrivée et à chaque photo déplacée. Les événements de 21 jours au plus
+sont désormais indexés une fois par premier jour et lus par dichotomie, et
+seules les photos des jours de l'événement sont comptées : 13 ms pour 2025,
+même résultat (test d'équivalence sur un calendrier de 2 500 événements). Et
+l'on perdait le fil : le résultat de la page Tri était sous la liste « À
+faire », hors de l'écran quand on choisissait un cran. La page passe en
+**deux colonnes** : « À faire » à gauche, les dossiers à droite, collés à
+l'écran et défilant seuls (sous 1 200 px de large, ils repassent dessous) ;
+le bouton « Afficher les dossiers → » disparaît. Écartés : l'arborescence de
+l'étape 7 à droite (deux listes des mêmes dossiers, deux endroits pour
+corriger, à côté de « Ranger à nouveau » qui efface les corrections), un
+tiroir (il cache les réglages), la fusion des étapes 6 et 7 (D54, D104) ; les
+photos d'un dossier au clic, refusées par l'utilisateur (pas de photos sur
+cette page).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

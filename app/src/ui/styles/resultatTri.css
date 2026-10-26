@@ -1,7 +1,36 @@
 /* Étape « Tri automatique » (D103, D104) : liste « À faire » en haut, résultat ligne par ligne et onglets dessous. */
 
 .page-tri {
-  max-width: 1120px;
+  max-width: 1600px;
+}
+
+/* Deux colonnes (D105) : « À faire » à gauche, les dossiers à droite, toujours sous les yeux. */
+.colonnes-tri {
+  display: grid;
+  grid-template-columns: minmax(0, 620px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.colonnes-tri > .resultat-tri {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 170px);
+  margin-top: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 1200px) {
+  .colonnes-tri {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .colonnes-tri > .resultat-tri {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 /* Liste « À faire » : ● à faire, ✓ fait, ○ facultatif. */
