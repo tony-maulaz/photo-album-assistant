@@ -1146,6 +1146,34 @@ deviennent « À valider / Validés ». Le tri automatique (D85) n'accepte
 jamais un groupe de copies où aucun exemplaire n'est choisi. Sur 2025 :
 86 % des rafales sont des paires, aucun groupe de plus de 6 photos.
 
+**D102 — Doublons : l'IA choisit dans les rafales (IA16).** Suite de D99
+(lots 2 et 3). Dans une rafale, la ★ « la plus nette » tombe au hasard, et
+l'IA « Même scène » ne voit jamais l'intérieur des rafales. Essai avant de
+coder, sur 26 vraies rafales de 2025 annotées par Tony (22 départagées ; il
+juge les grands groupes impossibles à départager), trois envois (photos en
+1024 px, en 1568 px, 1024 px plus visages recadrés par MediaPipe) et deux
+modèles, 0,83 CHF : photo acceptable pour Tony dans 21 cas sur 22 avec Haiku
+en 1568 px, 16 pour « la plus nette » (le hasard en donnerait 15) ; Sonnet ne
+fait pas mieux pour dix fois le prix ; les visages recadrés trompent l'IA sur
+les yeux (lunettes, masques) et coûteraient 10 Mo de bibliothèque. Choix :
+**Haiku, photos en 1568 px, sans détection des visages**, consigne de la
+meilleure de la pile (IA10) reprise telle quelle, plus une raison par photo
+(yeux fermés, flou de bougé, tête coupée, regards vers l'appareil) et le
+nombre de personnes ; environ 0,1 centime par rafale. Là où l'IA hésite entre
+la spontanéité et le regard vers l'appareil, Tony valide ses choix ; ce qui
+compte est de ne jamais garder la photo où il manque quelqu'un. Au-delà de
+5 personnes, l'avis ne choisit rien (« à vous de choisir »). Portées : toutes
+les rafales à valider (rangée de l'onglet), celles de la section (son
+en-tête), une seule (« Comparer en grand ») ; coût affiché, cache (relancer
+ne repaie pas), budget et confirmation comme les autres aides. L'avis est
+gardé dans `aides.json` sous la signature des photos de la rafale (une photo
+partie l'annule en entier) ; il s'applique comme un clic de l'utilisateur
+(D101), en une modification annulable, seulement sur les rafales à valider
+qu'il n'a pas touchées, même pendant l'attente. Sa photo porte la ★ et sa
+justification s'affiche sur la carte, « IA : … » sous chaque photo ; la
+photo choisie par défaut (clé du groupe) ne change pas. Choix annulé : la
+carte dit « L'IA préfère la photo ★ : cliquez-la pour la choisir ».
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
@@ -1161,6 +1189,7 @@ jamais un groupe de copies où aucun exemplaire n'est choisi. Sur 2025 :
 | Tri 2025, taille d'un lieu (1 441 fichiers triés, 6 lieux connus) | 0,5 / 1 / 2 / 5 / 10 km → 130 / 104 / 87 / 68 / 56 dossiers | Cinq crans, 2 km par défaut (D87) |
 | Tri 2025, écart d'une sortie (durée maximale 21 j) | 1 / 3 / 7 / 14 / 30 j → 140 / 111 / 93 / 87 / 87 dossiers ; au-delà de 21 j, aucun effet | 7 jours (D87) |
 | Doublons 2025, écarts dans un groupe (257 rafales, 34 mêmes scènes) | Luminosité : 0,5 niveau en médiane dans une rafale (9e décile 4,5), 7 dans une même scène (19) ; netteté ≥ 1,25× : 27 rafales, ≥ 1,5× : 11 ; la plus claire est aussi la plus nette dans 166 rafales | Écarts relatifs, netteté 1,5× corrigée de l'exposition, ★ inchangée (D99) |
+| Rafales 2025, essai de l'IA (26 rafales, 22 départagées par Tony) | Photo acceptable : la plus nette 16, Haiku 1024 px 19, **Haiku 1568 px 21**, Haiku + visages 21, Sonnet 20-21 ; yeux fermés reconnus sur 59 photos : 1568 px 50, visages recadrés 35 | Haiku, 1568 px, sans visages (D102) |
 | Tri 2025, distance d'un voyage | 10 / 20 / 30 / 50 / 100 / 200 km → 8 / 7 / 6 / 5 / 5 / 3 voyages ; à 30, un faux voyage de deux excursions ; à 100, des étapes perdues | 50 km (D87) |
 
 ## 3. Incidents et corrections (tests de non-régression)

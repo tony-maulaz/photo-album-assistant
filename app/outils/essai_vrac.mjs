@@ -64,7 +64,7 @@ try {
     await route.fulfill({ status: 200, headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' }, body: JSON.stringify({ address: { town: nom, country: 'Pays' }, display_name: nom }) });
   });
   // API Claude simulée (aucun appel réseau) : une réponse plausible selon la consigne.
-  const appelsIA = { nommage: 0, fragments: 0, consolidation: 0, monumentsDemandes: 0, enAnglais: 0, total: 0 };
+  const appelsIA = { rafales: 0, nommage: 0, fragments: 0, consolidation: 0, monumentsDemandes: 0, enAnglais: 0, total: 0 };
   const entetes = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
   await contexte.route('https://api.anthropic.com/**', async (route) => {
     const req = route.request();
@@ -74,7 +74,19 @@ try {
     appelsIA.total++;
     if (String(corps.system ?? '').includes('écris en anglais')) appelsIA.enAnglais++;
     let reponse = {};
-    if (texte.includes('"fusions"')) {
+    if (texte.includes('rafale/série') && texte.includes('"personnes"')) {
+      appelsIA.rafales++;
+      const n = corps.messages[0].content.filter((b) => b.type === 'image').length;
+      reponse = {
+        meilleure: 2,
+        notes: Array(n).fill(7),
+        pleine_page: false,
+        justification: 'tout le monde est là',
+        equivalentes: false,
+        personnes: 2,
+        photos: Array.from({ length: n }, (_, i) => ({ photo: i + 1, yeux_fermes: i === 0, flou_de_bouge: false, tete_coupee: false, vers_appareil: 2, raison: i === 0 ? 'yeux fermés' : 'regard vers l’appareil' })),
+      };
+    } else if (texte.includes('"fusions"')) {
       appelsIA.consolidation++;
       reponse = { fusions: [], renommages: [] };
     } else if (texte.includes('"absorber"')) {
@@ -407,6 +419,26 @@ try {
   await page.keyboard.press('Control+z');
   await page.keyboard.press('Control+z');
   await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+  // IA des rafales (D102) : sa photo porte la ★, avec sa raison sous chaque photo ; un seul Ctrl+Z annule son choix.
+  await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
+  await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA dans 1 rafale/ }).click();
+  await rafale.locator('.avis-ia').waitFor();
+  await capturer(page, 'v2d_rafales_ia');
+  const tuilesIA = rafale.locator('.photo-doublon');
+  verifier(
+    appelsIA.rafales === 1 && (await tuilesIA.nth(1).locator('.etoile-doublon').count()) === 1 && (await tuilesIA.nth(0).locator('.raison-ia').innerText()).includes('yeux fermés'),
+    'IA des rafales : la photo choisie par l’IA porte la ★, sa raison sous chaque photo',
+  );
+  if (await rafale.locator('.pastille-attente').count()) {
+    verifier((await rafale.locator('.pastille-attente').innerText()).includes('Choix de l’IA') && (await rafale.locator('.tuile-doublon.choisie').count()) === 1, 'IA des rafales : son choix est posé, à valider');
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+    verifier((await rafale.locator('.pastille-proposition').innerText()).includes('L’IA préfère la photo ★'), 'IA des rafales : choix annulé, la carte dit que l’IA préfère une autre photo');
+  }
+  await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA/ }).waitFor({ state: 'detached' });
+  verifier(true, 'IA des rafales : déjà examinée, la rafale n’est plus proposée (relancer ne repaie pas)');
+  await page.evaluate(() => sessionStorage.removeItem('album:cle_api'));
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
   // Étape 6 : tri automatique ; les captures d'écran parmi les photos à trier se rangent d'abord.

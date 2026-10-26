@@ -118,8 +118,8 @@ export const TEXTES: Record<string, string> = {
   'Tous les exemplaires sont gardés.': 'All the copies are kept.',
   'Recherche des rafales dès que l’analyse des photos est finie…': 'Bursts are looked for as soon as the photo analysis is finished…',
   'Aucune rafale : pas de photos quasi identiques prises à la suite.': 'No burst: no nearly identical photos taken in a row.',
-  'Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible.':
-    'Nearly identical photos taken in a row (a few minutes at most), found on this computer (free). The ★ goes to the sharpest; when the photos are equally good, keep the one you prefer. “Sharper”, “darker”… under a photo point out a visible difference.',
+  'Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible. « Choisir avec l’IA » : l’IA choisit dans chaque rafale et dit pourquoi, vous validez.':
+    'Nearly identical photos taken in a row (a few minutes at most), found on this computer (free). The ★ goes to the sharpest; when the photos are equally good, keep the one you prefer. “Sharper”, “darker”… under a photo point out a visible difference. “Choose with AI”: the AI chooses in each burst and says why, you validate.',
   'Facultatif : l’IA repère la même scène photographiée plusieurs fois (pas seulement les rafales), puis vérifie chaque groupe en grand. Coût :':
     'Optional: the AI finds the same scene photographed several times (not only bursts), then checks each group full size. Cost:',
   'Analyse IA faite — la relancer : {0}': 'AI analysis done — run it again: {0}',
@@ -185,4 +185,33 @@ export const TEXTES: Record<string, string> = {
   'Garder plusieurs photos': 'Keep several photos',
   'dont {0} où vous n’avez rien choisi': 'including {0} where you chose nothing',
   'Garder celle-ci': 'Keep this one',
+  // D102 — choisir dans les rafales avec l'IA
+  'Choisir avec l’IA dans {0} ?': 'Choose with AI in {0}?',
+  'Environ {0} CHF (au plus). Les photos de chaque rafale sont envoyées en 1568 px à l’IA (api.anthropic.com).':
+    'About {0} CHF (at most). The photos of each burst are sent at 1568 px to the AI (api.anthropic.com).',
+  'IA interrompue : {0}': 'AI stopped: {0}',
+  'Choix de l’IA dans {0}': 'AI choice in {0}',
+  'Rafales (IA, {0}) : {1}': 'Bursts (AI, {0}): {1}',
+  'rafale examinée': 'burst examined',
+  'rafales examinées': 'bursts examined',
+  ' {0} avec trop de monde : à vous de choisir.': ' {0} with too many people: your choice.',
+  'L’IA a examiné {0} : sa photo est choisie, à valider.{1}{2}': 'The AI examined {0}: its photo is chosen, to be validated.{1}{2}',
+  'IA : {0} rafales sur {1}…': 'AI: {0} bursts of {1}…',
+  'L’IA choisit la meilleure photo de chaque rafale (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous validez.':
+    'The AI chooses the best photo of each burst (closed eyes, gazes, blur, someone missing) and says why; you validate.',
+  'Choisir dans les rafales (IA)': 'Choose within bursts (AI)',
+  'Dans chaque rafale pas encore validée, l’IA choisit la meilleure photo (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous validez.':
+    'In each burst not yet validated, the AI chooses the best photo (closed eyes, gazes, blur, someone missing) and says why; you validate.',
+  'les photos de chaque rafale en 1568 px, 6 au plus': 'the photos of each burst at 1568 px, 6 at most',
+  'Lancez l’aide depuis l’onglet « Rafales » de l’étape {0}.': 'Run the help from the “Bursts” tab of step {0}.',
+  'L’IA ne départage pas (trop de monde) : à vous de choisir': 'The AI does not decide (too many people): your choice',
+  'Choisie par l’IA': 'Chosen by the AI',
+  'L’IA préfère la photo ★ : cliquez-la pour la choisir': 'The AI prefers the ★ photo: click it to choose it',
+  'Choix de l’IA · pas encore validé': 'AI choice · not validated yet',
+  ' (photos presque équivalentes)': ' (photos almost equivalent)',
+  'Choisir avec l’IA dans {0}': 'Choose with AI in {0}',
+  'Choisir avec l’IA {0}': 'Choose with AI {0}',
+  'Choisir avec l’IA': 'Choose with AI',
+  'Choisir dans les rafales': 'Choose within bursts',
+  'Photos de chaque rafale en 1568 px': 'Photos of each burst at 1568 px',
 };

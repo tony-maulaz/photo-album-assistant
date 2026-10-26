@@ -488,6 +488,13 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   réduite) ; quand les photos se valent, une photo est choisie sans ★ et la
   proposition le dit (D101). Un « Accepter » groupé ne valide jamais un
   groupe où aucune photo n'est choisie.
+- **Choisir dans les rafales (IA16, D102)** : « Choisir avec l'IA » dans la
+  rangée de l'onglet Rafales (toutes les rafales à valider), dans l'en-tête
+  de la section, ou dans « Comparer en grand » (cette rafale), coût affiché.
+  L'IA (modèle rapide, photos en 1568 px) choisit la meilleure photo et dit
+  pourquoi, « IA : … » sous chaque photo ; son choix est posé comme un clic,
+  à valider, seulement sur les rafales pas encore touchées. Au-delà de
+  5 personnes, elle ne choisit rien.
 - Réglage simple de l'IA : **Prudent** (défaut, les expressions différentes
   sont gardées) ou **Strict**. Son coût est affiché dans l'onglet « Même
   scène (IA) », où elle se lance.
@@ -596,6 +603,7 @@ Les mêmes aides apparaissent comme boutons dans les étapes concernées.
 | IA5 | Reconnaissance de lieux et monuments : **intégrée à IA4** (même appel, D51) | 6 | — | — |
 | IA6 | Consolidation | 7 | Liste des dossiers + planches des petits | — |
 | IA7 | Doublons | 8 | Planches vue d'ensemble + vérifications | — |
+| IA16 | Choisir dans les rafales (D102) | 5 | Photos de chaque rafale en 1568 px | — |
 | IA8 | Étiquettes et description | 9 | Planches de miniatures | — |
 | IA9 | Appréciation | 9 | Miniatures moyennes | — |
 | IA10 | Meilleure de la pile | 9 | Photos de la pile en grand | — |

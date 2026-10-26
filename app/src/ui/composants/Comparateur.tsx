@@ -99,6 +99,8 @@ export interface NavigationGroupes {
   suivant?: () => void;
   /** Accepter la proposition du groupe, puis passer au suivant. */
   accepter?: () => void;
+  /** Outils du groupe affiché, après la navigation (« Choisir avec l'IA », D102). */
+  outils?: ComponentChildren;
 }
 
 export function Comparateur({
@@ -205,6 +207,7 @@ export function Comparateur({
                 {t`Accepter et groupe suivant`}
               </button>
             )}
+            {navigation.outils}
           </span>
         )}
         <span class="espace" />

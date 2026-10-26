@@ -485,6 +485,25 @@
   font-weight: 600;
 }
 
+/* Avis de l'IA sur une rafale (D102) : à part des mesures de l'application, préfixé « IA : ». */
+.legende-doublon .raison-ia {
+  color: var(--ia-texte);
+}
+
+.scene-doublons.avis-ia {
+  margin: -4px 0 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ia-fond);
+  color: var(--ia-texte);
+  font-style: normal;
+}
+
+.ia-rafales-en-cours {
+  color: var(--discret);
+  font-size: 13px;
+}
+
 /* Écart visible avec les autres photos du groupe (D99) : pastille neutre, distincte de Gardée / à écarter. */
 .legende-doublon .remarque-doublon {
   align-self: flex-start;

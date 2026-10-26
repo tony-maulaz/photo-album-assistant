@@ -54,6 +54,8 @@ import { allerEtape, annuler, appliquer, changerEtape, changerReglages, journal,
 import { nombre, nomJour, nomMois, pluriel, taille as texteTaille } from '../format';
 import { simplifier } from '../organiser';
 import { enregistrerAide } from './AidesIA';
+import { avisDe, BoutonIARafales, ciblesIA, estimationIA } from '../iaRafales';
+import type { AvisRafale } from '../../lib/iaRafales';
 
 /** Les photos dans plusieurs dossiers gardés (`dossiers`) se relisent avec les copies exactes (D86). */
 type Onglet = Exclude<Sorte, 'dossiers'> | 'mis_de_cote';
@@ -97,6 +99,29 @@ enregistrerAide({
     if (s) choisirOnglet(s.projet.nom, 'ia');
     allerEtape('doublons');
     return t`Lancez l’analyse depuis l’étape ${ETAPE.doublons}.`;
+  },
+});
+
+// IA16 au catalogue : l'estimation pour tout le projet ; le lancement se fait depuis l'onglet « Rafales » (D102).
+enregistrerAide({
+  id: 'IA16',
+  nom: aTraduire('Choisir dans les rafales (IA)'),
+  etape: ETAPE.doublons,
+  description: aTraduire('Dans chaque rafale pas encore validée, l’IA choisit la meilleure photo (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous validez.'),
+  envoi: aTraduire('les photos de chaque rafale en 1568 px, 6 au plus'),
+  web: false,
+  usage: 'rapide',
+  estimer: (s) => {
+    if (!s.doublons) return null;
+    const cibles = ciblesIA(s, groupesScenes(s.doublons.dossiers, (id) => s.plan.fichiers.get(id)));
+    if (!cibles.length) return null;
+    return { ...estimationIA(s, cibles), detail: pluriel(cibles.length, 'rafale') };
+  },
+  lancer: async () => {
+    const s = session.value;
+    if (s) choisirOnglet(s.projet.nom, 'rafales');
+    allerEtape('doublons');
+    return t`Lancez l’aide depuis l’onglet « Rafales » de l’étape ${ETAPE.doublons}.`;
   },
 });
 
@@ -365,7 +390,9 @@ function comparaisonDe(s: Session, g: GroupeDoublons, photos: PhotoDuGroupe[]): 
   );
 }
 
-function texteProposition(g: GroupeDoublons, n: number, c: Comparaison): string {
+function texteProposition(g: GroupeDoublons, n: number, c: Comparaison, avis?: AvisRafale): string {
+  // Sans choix posé, c'est g.etoile qui est gardée : si l'IA en préfère une autre (son choix annulé), on le dit.
+  if (avis) return !avis.meilleure ? t`L’IA ne départage pas (trop de monde) : à vous de choisir` : avis.meilleure === g.etoile ? t`Proposition de l’IA : garder la photo ★` : t`L’IA préfère la photo ★ : cliquez-la pour la choisir`;
   if (g.sorte === 'rafales') {
     if (c.plusNette === g.etoile) return t`Proposition : garder la plus nette ★`;
     if (c.plusNette) return t`Une photo est choisie ; une autre paraît plus nette`;
@@ -399,7 +426,13 @@ function RemarquePhoto({ remarque }: { remarque: Remarque | undefined }) {
   return <span class={`remarque-doublon ${remarque === 'plus_nette' ? 'qualite' : 'defaut'}`}>{t(LIBELLES_REMARQUES[remarque])}</span>;
 }
 
-function Legende({ g, x, c }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparaison }) {
+/** Ce que l'IA dit de la photo (D102), distinct des mesures de l'application. */
+function RaisonIA({ avis, id }: { avis?: AvisRafale; id: string }) {
+  const raison = avis?.photos[id]?.raison;
+  return raison ? <span class="raison-ia">{t`IA : ${raison}`}</span> : null;
+}
+
+function Legende({ g, x, c, avis }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparaison; avis?: AvisRafale }) {
   const s = session.value!;
   const { m, f } = x;
   const heure = f.date && f.date.length > 10 ? f.date.slice(11, 19) : '';
@@ -408,6 +441,7 @@ function Legende({ g, x, c }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparai
       <span class="legende-doublon">
         <span>{heure}</span>
         <RemarquePhoto remarque={c.remarques.get(m.id)} />
+        <RaisonIA avis={avis} id={m.id} />
         <Emplacement f={f} />
       </span>
     );
@@ -452,7 +486,28 @@ function libelleEtat(etat: EtatPhoto, valide: boolean): [classe: EtatPhoto, libe
  * Une photo : un clic la choisit (D101). Dans une rafale ou une même scène, sans « Garder plusieurs
  * photos », elle est choisie seule ; Ctrl+clic l'ajoute ou la retire sans toucher aux autres.
  */
-function TuileDoublon({ g, x, c, cote, agir, valide, seule, etoile }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparaison; cote: number; agir: (m: Modification | null) => void; valide: boolean; seule: boolean; etoile: boolean }) {
+function TuileDoublon({
+  g,
+  x,
+  c,
+  avis,
+  cote,
+  agir,
+  valide,
+  seule,
+  etoile,
+}: {
+  g: GroupeDoublons;
+  x: PhotoDuGroupe;
+  c: Comparaison;
+  avis?: AvisRafale;
+  cote: number;
+  agir: (m: Modification | null) => void;
+  valide: boolean;
+  seule: boolean;
+  /** La photo marquée ★ (proposée parce que vraiment meilleure), s'il y en a une. */
+  etoile: string | undefined;
+}) {
   const { m, f, etat } = x;
   const [classe, libelle] = libelleEtat(etat, valide);
   const garde = aGarder(etat);
@@ -470,13 +525,13 @@ function TuileDoublon({ g, x, c, cote, agir, valide, seule, etoile }: { g: Group
           <Miniature f={f} taille={cote} rotation={f.rotation} />
         </span>
         <span class={`etat-photo ${classe}`}>{libelle}</span>
-        {etoile && m.id === g.etoile && (
-          <span class="etoile-doublon" title={g.sorte === 'rafales' ? t`La plus nette : proposée` : t`La photo proposée`}>
+        {m.id === etoile && (
+          <span class="etoile-doublon" title={avis ? t`Choisie par l’IA` : g.sorte === 'rafales' ? t`La plus nette : proposée` : t`La photo proposée`}>
             ★
           </span>
         )}
       </button>
-      <Legende g={g} x={x} c={c} />
+      <Legende g={g} x={x} c={c} avis={avis} />
     </div>
   );
 }
@@ -528,6 +583,10 @@ function CarteGroupe({
   const seule = unePhoto && !multiple;
   // ★ seulement quand une photo est vraiment meilleure : la plus nette d'une rafale, le choix de l'IA, l'original d'une copie réduite.
   const etoileVisible = g.sorte === 'rafales' ? comparaisonDe(s, g, photos).plusNette === g.etoile : g.sorte === 'ia' || g.membres.some((m) => m.reduite);
+  // Avis de l'IA sur une rafale (D102) : sa photo porte la ★, avec sa raison ; g.etoile (la clé du groupe) ne change pas.
+  const avis = avisDe(s, g);
+  const etoileId = avis ? avis.meilleure : etoileVisible ? g.etoile : undefined;
+  const choixIA = !!avis?.meilleure && photos.every((x) => aGarder(x.etat) === (x.m.id === avis.meilleure));
   const copie = g.sorte === 'copies' || g.sorte === 'dossiers';
   const heureSeule = etoile?.date && etoile.date.length > 10 ? etoile.date.slice(11, 16) : '';
   const heure = avecJour && etoile?.date ? [nomJour(etoile.date.slice(0, 10)), heureSeule].filter(Boolean).join(' · ') : heureSeule;
@@ -559,9 +618,9 @@ function CarteGroupe({
         {!copie && <span class="discret">{lieuDe(s, etoile)}</span>}
         <span class="espace" />
         {touche ? (
-          <span class="pastille-attente">{t`Votre choix · pas encore validé`}</span>
+          <span class="pastille-attente">{choixIA ? t`Choix de l’IA · pas encore validé` : t`Votre choix · pas encore validé`}</span>
         ) : !valide ? (
-          <span class="pastille-proposition">{texteProposition(g, enAttente, comparaison)}</span>
+          <span class="pastille-proposition">{texteProposition(g, enAttente, comparaison, avis)}</span>
         ) : g.sorte === 'dossiers' && !ecartees ? (
           <span class="pastille-relue">{t`Gardée dans chaque dossier`}</span>
         ) : (
@@ -569,9 +628,15 @@ function CarteGroupe({
         )}
       </header>
       {g.sorte === 'ia' && g.scene && <p class="scene-doublons">{g.scene}</p>}
+      {avis?.justification && (
+        <p class="scene-doublons avis-ia">
+          {t`IA : ${avis.justification}`}
+          {avis.equivalentes && <span class="discret">{t` (photos presque équivalentes)`}</span>}
+        </p>
+      )}
       <div class="photos-doublons">
         {photos.map((x) => (
-          <TuileDoublon key={x.m.id} g={g} x={x} c={comparaison} cote={reglages.value.tailleMiniatures} agir={agir} valide={valide} seule={seule} etoile={etoileVisible} />
+          <TuileDoublon key={x.m.id} g={g} x={x} c={comparaison} avis={avis} cote={reglages.value.tailleMiniatures} agir={agir} valide={valide} seule={seule} etoile={etoileId} />
         ))}
       </div>
       {nGarder === 0 && <p class="alerte-doublons">{t`Aucune photo choisie : tout le groupe ira dans « ${dossierMisDeCote(raisonDe(g))} ».`}</p>}
@@ -777,6 +842,9 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   const pct = total ? Math.round((relus / total) * 100) : 100;
 
   const photosOnglet = enAttenteOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  // L'IA de la section : seulement si elle ne couvre pas déjà tout l'onglet (le bouton de la rangée suffit).
+  const ciblesSectionBrutes = onglet === 'rafales' ? ciblesIA(s, enAttente) : [];
+  const ciblesSection = ciblesSectionBrutes.length < ciblesIA(s, groupes).length ? ciblesSectionBrutes : [];
   const ceci = section?.cle.startsWith('jour:') ? t`de cette journée` : section?.cle.startsWith('mois:') ? t`de ce mois` : section && estDossier(section) ? t`de ce dossier` : t`ci-dessous`;
 
   return (
@@ -794,6 +862,11 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
           )}
         </span>
         <span class="espace" />
+        {onglet === 'rafales' && (
+          <span class="actions">
+            <BoutonIARafales cibles={ciblesIA(s, groupes)} libelle={t`Choisir avec l’IA dans ${pluriel(ciblesIA(s, groupes).length, 'rafale')}`} />
+          </span>
+        )}
         {enAttenteOnglet.length > 0 && (
           <span class="actions">
             <button
@@ -857,12 +930,15 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
           section={section}
           detail={detail}
           actions={
-            boutonSection && (
+            (boutonSection || ciblesSection.length > 0) && (
               <span class="actions">
-                <button type="button" class="contour" onClick={accepterSection} disabled={!validables.length}>
-                  {t`Valider les ${nombre(validables.length)} groupes ${ceci}`}
-                </button>
-                {sansChoix > 0 && <span class="discret">{t`dont ${nombre(sansChoix)} où vous n’avez rien choisi`}</span>}
+                {ciblesSection.length > 0 && <BoutonIARafales cibles={ciblesSection} libelle={t`Choisir avec l’IA ${ceci}`} />}
+                {boutonSection && (
+                  <button type="button" class="contour" onClick={accepterSection} disabled={!validables.length}>
+                    {t`Valider les ${nombre(validables.length)} groupes ${ceci}`}
+                  </button>
+                )}
+                {boutonSection && sansChoix > 0 && <span class="discret">{t`dont ${nombre(sansChoix)} où vous n’avez rien choisi`}</span>}
               </span>
             )
           }
@@ -925,6 +1001,7 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
                 <>
                   <span class={`etat-photo ${libelleEtat(x.etat, !aRelire(gComparee, fichier))[0]}`}>{libelleEtat(x.etat, !aRelire(gComparee, fichier))[1]}</span>
                   <span class="legende-doublon">
+                    <RaisonIA avis={avisDe(s, gComparee)} id={f.id} />
                     <Emplacement f={f} />
                   </span>
                 </>
@@ -953,6 +1030,7 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
                   setComparee(visibles[iComparee + 1]?.g.cle ?? null);
                 }
               : undefined,
+            outils: <BoutonIARafales cibles={ciblesIA(s, [gComparee])} libelle={t`Choisir avec l’IA`} />,
           }}
         />
       )}
@@ -1283,7 +1361,7 @@ export function PageDoublons() {
         ) : (
           <>
             <p class="encart encart-onglet">
-              {t`Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible.`}
+              {t`Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible. « Choisir avec l’IA » : l’IA choisit dans chaque rafale et dit pourquoi, vous validez.`}
             </p>
             <ListeGroupes key="rafales" onglet="rafales" groupes={groupes.rafales} titre={t`Toutes les rafales`} />
           </>

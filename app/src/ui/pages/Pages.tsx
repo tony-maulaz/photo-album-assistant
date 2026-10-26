@@ -254,6 +254,7 @@ export function PageJournal() {
 const FONCTIONS_IA: [string, string, number, string, string][] = [
   ['IA1', aTraduire('Cas limites de netteté'), ETAPE.floues, aTraduire('Miniatures des photos à la limite'), '—'],
   ['IA7', aTraduire('Doublons'), ETAPE.doublons, aTraduire('Planches vue d’ensemble + vérifications'), '—'],
+  ['IA16', aTraduire('Choisir dans les rafales'), ETAPE.doublons, aTraduire('Photos de chaque rafale en 1568 px'), '—'],
   ['IA2', aTraduire('Situer les photos sans GPS'), ETAPE.tri, aTraduire('Miniatures + photos voisines dans le temps'), aTraduire('Oui')],
   ['IA3', aTraduire('Petits dossiers'), ETAPE.petits, aTraduire('Planches du fragment et de ses voisins'), '—'],
   ['IA4', aTraduire('Nommage des sorties (avec les monuments reconnus)'), ETAPE.nommage, aTraduire('5 photos par dossier, GPS, calendrier, contexte'), aTraduire('Oui')],

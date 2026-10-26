@@ -20,7 +20,7 @@ import { jetonsImage, PRIX_RECHERCHE_WEB, type Modele } from './tarifs';
 // Demandes communes aux aides de la sélection et de l'album
 // ---------------------------------------------------------------------------
 
-export type FonctionIA = 'IA8' | 'IA9' | 'IA10' | 'IA11' | 'IA12' | 'IA13' | 'IA14' | 'IA15';
+export type FonctionIA = 'IA8' | 'IA9' | 'IA10' | 'IA11' | 'IA12' | 'IA13' | 'IA14' | 'IA15' | 'IA16';
 
 /** Photo transmise à une aide : son identité stable sert aux clés de cache (jamais le chemin). */
 export interface PhotoIA {
