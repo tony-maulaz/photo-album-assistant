@@ -28,19 +28,18 @@ import {
   racineNom,
   rapprochementsLocaux,
   requeteConsolidation,
-  type GroupeFreres,
 } from '../src/lib/consolidation';
 import {
   candidatsRattachement,
+  cibleEvidente,
   consigneFragmentDossier,
+  dossiersAvecPhotos,
   fragments,
   lireFragment,
   niveauRessemblance,
   noterRattachement,
   OPTIONS_FRAGMENTS,
-  petitsDuMemeJour,
   photosVoisin,
-  receveur,
   requeteFragment,
   ressortirFragment,
   SEUIL_PETIT_DOSSIER,
@@ -321,7 +320,7 @@ describe('consolidation (étape 7, script 05)', () => {
   });
 });
 
-describe('petits dossiers (étape 5, script 05 --fragments)', () => {
+describe('petits dossiers (étape 8, script 05 --fragments, D90)', () => {
   const p = plan({
     Bateau: ['2026-07-24T12:00:00', '2026-07-24T12:05:00'],
     Plage: Array.from({ length: 10 }, (_, i) => `2026-07-24T10:${String(i * 5).padStart(2, '0')}:00`),
@@ -329,22 +328,56 @@ describe('petits dossiers (étape 5, script 05 --fragments)', () => {
     Lendemain: Array.from({ length: 6 }, () => '2026-07-25T08:30:00'),
     Petit: ['2026-07-24T12:30:00', '2026-07-24T12:31:00', '2026-07-24T12:32:00'],
   });
-  const g: GroupeFreres = groupesDeFreres(p)[0];
   // Empreintes : le bateau ressemble à la plage, pas au temple.
   const empreintes: Record<string, string> = { Bateau: h(0), Plage: h(3), Temple: 'ffffffffffffffff', Lendemain: h(1), Petit: h(0) };
   const empreinte = (f: FichierPlan) => empreintes[f.id.split('/')[0]];
-  const liste = fragments(g, empreinte);
+  const cibles = dossiersAvecPhotos(p);
+  const liste = fragments(
+    cibles.filter((d) => d.photos.length < SEUIL_PETIT_DOSSIER),
+    cibles,
+    p,
+    empreinte,
+  );
   const bateau = liste.find((f) => f.dossier.nom === 'Bateau')!;
+  const petit = liste.find((f) => f.dossier.nom === 'Petit')!;
 
-  it('voisins temporels (moins de 12 h, au moins 5 photos), les plus ressemblants d’abord', () => {
+  it('le dossier juste avant et juste après, photo à photo, quel que soit l’écart ; petits compris', () => {
     expect(liste.map((f) => f.dossier.nom).sort()).toEqual(['Bateau', 'Petit']);
-    expect(bateau.voisins.map((v) => [v.dossier.nom, v.ressemblance])).toEqual([
-      ['Plage', 2],
-      ['Temple', 64],
+    expect(bateau.voisins.map((v) => [v.cote, v.dossier.nom, v.ecart, v.petit, v.pendant])).toEqual([
+      ['avant', 'Plage', 75, false, false],
+      ['apres', 'Petit', 25, true, false],
+    ]);
+    expect(petit.voisins.map((v) => [v.cote, v.dossier.nom, v.ecart])).toEqual([
+      ['avant', 'Bateau', 25],
+      ['apres', 'Temple', 28],
+    ]);
+    // Les photos du voisin prises au plus près, dans l'ordre ; la ressemblance reste un indice.
+    expect(bateau.voisins[0].proches.map((f) => f.date!.slice(11, 16))).toEqual(['10:30', '10:35', '10:40', '10:45']);
+    expect(bateau.voisins[0].ressemblance).toBe(2);
+    expect([2, 12, 16, 26, 99].map(niveauRessemblance)).toEqual(['tres', 'tres', 'oui', 'peu', null]);
+    expect(SEUIL_PETIT_DOSSIER).toBe(OPTIONS_FRAGMENTS.seuilFragment);
+  });
+
+  it('pris pendant une sortie : elle prend la place d’avant, le suivant celle d’après', () => {
+    const q = plan({
+      Ko_Samui: ['2026-07-18T10:00:00', '2026-07-20T10:00:00', '2026-07-22T10:00:00', '2026-07-23T10:00:00', '2026-07-24T10:00:00'],
+      Arret: ['2026-07-21T12:00:00'],
+      Retour: Array.from({ length: 5 }, () => '2026-07-26T09:00:00'),
+    });
+    const c = dossiersAvecPhotos(q);
+    const [f] = fragments(
+      c.filter((d) => d.nom === 'Arret'),
+      c,
+      q,
+      () => undefined,
+    );
+    expect(f.voisins.map((v) => [v.cote, v.dossier.nom, v.pendant])).toEqual([
+      ['avant', 'Ko_Samui', true],
+      ['apres', 'Retour', false],
     ]);
   });
 
-  it('planches : fragment, puis chaque voisin, puis la consigne', () => {
+  it('planches : le petit dossier, puis ses deux voisins, puis la consigne', () => {
     expect(consigneFragmentDossier(bateau)).toContain('Dossier isolé : « Bateau » (24.07 12:00 - 12:05)');
     expect(consigneFragmentDossier(bateau)).toContain('- Plage (10 photos, 24.07 10:00 - 10:45)');
     const r = requeteFragment(bateau, 'claude-sonnet-5-5', identite)!;
@@ -353,20 +386,19 @@ describe('petits dossiers (étape 5, script 05 --fragments)', () => {
       'planche',
       'Planche du voisin « Plage » :',
       'planche',
-      'Planche du voisin « Temple » :',
+      'Planche du voisin « Petit » :',
       'planche',
       'Un petit dossier de 2 photo(s)',
     ]);
     expect(r.contenu[1]).toMatchObject({ cellule: 260, colonnes: 3 });
-    expect((r.contenu[1] as { numeros?: unknown }).numeros).toBeUndefined();
-    expect(photosVoisin(g.dossiers.find((d) => d.nom === 'Plage')!, bateau.dossier).map((f) => f.date!.slice(11, 16))).toEqual(['10:20', '10:25', '10:30', '10:35', '10:40', '10:45']);
+    expect(photosVoisin(cibles.find((d) => d.nom === 'Plage')!, bateau.dossier).map((f) => f.date!.slice(11, 16))).toEqual(['10:20', '10:25', '10:30', '10:35', '10:40', '10:45']);
     expect(requeteFragment({ ...bateau, voisins: [] }, 'claude-sonnet-5-5', identite)).toBeNull();
   });
 
-  it('valide la décision : seul un voisin envoyé peut recevoir le fragment', () => {
+  it('valide la décision : seul un voisin envoyé peut recevoir le petit dossier', () => {
     expect(lireFragment([{ absorber: 'true', cible: 'plage', confiance: 9, raison: 'même décor' }], bateau)).toEqual({
       absorber: true,
-      cible: g.dossiers.find((d) => d.nom === 'Plage')!.id,
+      cible: cibles.find((d) => d.nom === 'Plage')!.id,
       nomPropose: null,
       confiance: 9,
       raison: 'même décor',
@@ -380,27 +412,25 @@ describe('petits dossiers (étape 5, script 05 --fragments)', () => {
     expect(lireFragment('n’importe quoi', bateau)).toBeNull();
   });
 
-  it('écart entre les périodes (0 pendant la sortie voisine) et ressemblance en mots', () => {
-    expect(bateau.voisins.map((v) => [v.dossier.nom, v.ecart])).toEqual([
-      ['Plage', 75],
-      ['Temple', 55],
-    ]);
-    // Un arrêt le 21.07 pendant une sortie du 18 au 24.07 : « pendant cette sortie », pas « à 72 h ».
-    const q = plan({ Ko_Samui: ['2026-07-18T10:00:00', '2026-07-20T10:00:00', '2026-07-22T10:00:00', '2026-07-23T10:00:00', '2026-07-24T10:00:00'], Arret: ['2026-07-21T12:00:00'] });
-    expect(fragments(groupesDeFreres(q)[0], () => undefined)[0].voisins.map((v) => [v.dossier.nom, v.ecart])).toEqual([['Ko_Samui', 0]]);
-    expect([2, 12, 16, 26, 99].map(niveauRessemblance)).toEqual(['tres', 'tres', 'oui', 'peu', null]);
-    expect(SEUIL_PETIT_DOSSIER).toBe(OPTIONS_FRAGMENTS.seuilFragment);
+  it('dossier évident : à moins d’1 h et de 10 km, jamais un lieu connu ni un dossier de mois', () => {
+    // Sans position : jamais évident.
+    expect(cibleEvidente(petit, p)).toBeNull();
+    const q = plan({ Bateau: ['2026-07-24T12:00:00', '2026-07-24T12:05:00'], Petit: ['2026-07-24T12:30:00'], Temple: Array.from({ length: 6 }, () => '2026-07-24T18:00:00') });
+    for (const f of q.fichiers.values()) q.fichiers.set(f.id, { ...f, gps: { lat: f.id.startsWith('Petit') ? 46.505 : 46.5, lon: 6.6 } });
+    const c = dossiersAvecPhotos(q);
+    const evident = () => cibleEvidente(fragments(c.filter((d) => d.nom === 'Petit'), c, q, () => undefined)[0], q);
+    expect(evident()?.dossier.nom).toBe('Bateau');
+    expect(evident()?.distanceKm).toBeCloseTo(0.56, 1);
+    q.dossiers.set('d:Bateau', { ...q.dossiers.get('d:Bateau')!, tri: { origine: 'lieu_connu', lieu: 'Maison' } });
+    expect(evident()).toBeNull();
   });
 
-  it('petits dossiers d’une même journée, et dossiers où rattacher, les plus proches d’abord', () => {
-    const groupes = petitsDuMemeJour(liste);
-    expect(groupes.map((g) => g.map((f) => f.dossier.nom))).toEqual([['Bateau', 'Petit']]);
-    expect(receveur(groupes[0]).dossier.nom).toBe('Petit');
-    expect(candidatsRattachement(p, bateau.dossier).map((c) => [c.nom, c.jours])).toEqual([
-      ['Petit', 0],
-      ['Plage', 0],
-      ['Temple', 0],
-      ['Lendemain', 1],
+  it('« Autre dossier… » : les dossiers pris au plus près dans le temps d’abord, photo à photo', () => {
+    expect(candidatsRattachement(p, bateau.dossier, cibles).map((c) => [c.nom, c.ecart])).toEqual([
+      ['Petit', 25],
+      ['Temple', 55],
+      ['Plage', 75],
+      ['Lendemain', 1225],
     ]);
   });
 

@@ -431,9 +431,14 @@ try {
   await page.keyboard.press('ArrowRight');
   verifier((await page.locator('.page-selection .tuile.choisie').count()) === 1 && (await page.locator('.page-selection .tuile').nth(2).getAttribute('class')).includes('choisie'), 'flèches du clavier : la sélection avance d’une photo à l’autre');
   await page.locator('.options-panneau select').selectOption('periode');
-  const plats = await page.locator('.arbre.plat .nom-dossier').allInnerTexts();
+  verifier((await page.locator('.arbre.plat').count()) === 0 && (await page.locator('.arbre .nom-dossier').count()) > 3, 'panneau « Par période » : l’arborescence est gardée, dans l’ordre du temps (D89)');
+  await page.locator('.options-panneau select').selectOption('taille');
+  const tailles = (await page.locator('.arbre.plat .nombre-dossier').allInnerTexts()).map((n) => Number(n.replace(/\D/g, '')));
   const parents = await page.locator('.arbre.plat .chemin-dossier').allInnerTexts();
-  verifier(plats.length > 3 && parents.some((n) => n.includes('Thailande')), `panneau « Par période » : ${plats.length} dossiers à plat, le dossier parent sous le nom`);
+  verifier(
+    tailles.length >= 3 && tailles.every((n, i) => i === 0 || tailles[i - 1] <= n) && parents.some((n) => n.includes('Thailande')),
+    `panneau « Par taille » : ${tailles.length} dossiers à plat, les plus petits d’abord, le dossier parent sous le nom`,
+  );
   await page.locator('.options-panneau select').selectOption('arbre');
   await page.locator('.page-selection .barre-outils .curseur input').fill('500');
   await page.waitForTimeout(300);

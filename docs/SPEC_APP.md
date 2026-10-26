@@ -155,7 +155,11 @@ Présent dans toutes les pages où l'on voit des photos (étapes 3 à 10).
 - **Panneau latéral** : la liste des dossiers de destination (arborescence),
   chacun avec son nom sur une ligne, ses dates et ses alertes dessous, et son
   nombre de photos, mis à jour en direct. Champ de recherche pour filtrer les
-  dossiers. Le panneau s'élargit en tirant son bord droit (largeur gardée).
+  dossiers. Trois ordres (D89) : **par nom** et **par période** (la même
+  arborescence, chaque niveau par nom ou dans l'ordre du temps), **par
+  taille** (à plat, les plus petits d'abord). Un dossier créé par le tri ou à
+  la main porte l'étiquette « nouveau » ; ceux de la source, non. Le panneau
+  s'élargit en tirant son bord droit (largeur gardée).
 - **Sélectionner** des photos dans la grille : clic, Maj+clic (plage),
   Ctrl+clic, rectangle de sélection, « toute la journée », « toutes les photos
   de cette heure ».
@@ -190,7 +194,6 @@ Présent dans toutes les pages où l'on voit des photos (étapes 3 à 10).
 ### 6.1 Étape 1 — Projet
 - **Dossier à trier** (lecture seule, rappelé) et **dossier de sortie**
   (refus si l'un contient l'autre).
-- **Préréglage** : Année, Voyage, ou personnalisé (§ 8.6).
 - **Contexte** (texte libre, facultatif) : « Vacances au bord de la mer en
   famille, 2 adultes et 2 enfants, juillet 2026 ». Il est transmis aux fonctions IA ;
   l'interface le signale.
@@ -242,8 +245,10 @@ chaque sous-dossier déjà présent dans la source, trois boutons côte à côte
 - **Trier** : ses photos rejoignent le tri par lieux et sorties ;
 - **Garder, nettoyer** (par défaut) : le dossier garde son nom et sa place ;
   ses floues et ses doublons sont proposés aux étapes suivantes ;
-- **Ne pas toucher** : recopié tel quel, ni floues ni rafales cherchées (une
-  sélection « Best of », des scans).
+- **Ne pas toucher** : recopié tel quel, ni floues, ni rafales, ni copies
+  cherchées (une sélection « Best of », des scans).
+Les sous-dossiers sont par nom (ou par période, au choix), avec une
+recherche ; « Pour tous » s'applique aux dossiers trouvés.
 Le vrac de la racine est toujours trié. L'ancien choix « hors de l'album »
 n'existe plus (un projet qui l'avait le lit comme « Ne pas toucher »).
 
@@ -262,14 +267,41 @@ Après une mise à jour de l'inventaire (D63), le tri automatique propose
 « Ranger les N nouvelles photos » : seules les photos pas encore rangées sont
 groupées, les dossiers déjà faits ne bougent pas.
 
+Si des copies exactes parmi les photos à trier ne sont pas encore écartées
+(proposition de l'étape Doublons pas acceptée), un encart le signale avant
+le calcul, avec « Écarter N copies » : sinon, le tri range une seconde fois
+des photos déjà gardées ailleurs (D85).
+
 Deux pages (D54) : le **tri automatique** (captures d'écran parmi les photos
 à trier, rangées à part dans `Captures_ecran/` hors de l'album ; lieux
 fréquents à enregistrer ; réglages, calcul, résumé, photos sans GPS), puis **Lieux et
 sorties**, la page de travail (panneau des dossiers et photos sur toute la
 hauteur, explication ouverte à la première visite seulement).
 
-**Réglages simples** : précision des lieux (curseur → rayon en km), un
-dossier par jour, détecter les voyages, utiliser les lieux connus.
+**Trois questions** (D87) : **comment ranger ?** (par sortie, conseillé ;
+par jour ; par mois), **deux photos sont au même endroit si elles sont
+dans…** (une rue, un quartier, un village, une ville, une région : 0,5 / 1 /
+2 / 5 / 10 km), **réunir les étapes d'un voyage** (grisé sans domicile).
+Réglages avancés : durée maximale d'une sortie, distance d'un voyage. Les
+lieux connus et les noms de fichiers parlants servent toujours ; les autres
+options du script gardent leur valeur. **Le résultat se voit avant de
+ranger**, recalculé avec les photos à chaque réglage (moins de 0,1 s pour une
+année) : nombre de dossiers, de voyages, de très petits et très grands
+dossiers, répartition des tailles, et une frise d'exemples tirés des photos
+(la semaine la plus chargée, le plus long voyage, une semaine à la maison…).
+« Ranger les photos dans ces N dossiers » demande ensuite les noms à
+OpenStreetMap.
+
+**Le calendrier dans le tri** (D88) : le GPS découpe, le calendrier ne fait
+que séparer là où le GPS ne peut rien, **dans les lieux connus** (domicile,
+grands-parents). Par sortie, un sous-dossier d'un lieu connu qui couvre plus
+de 3 jours est coupé autour des événements utiles (pas récurrents, 21 jours
+au plus) pendant lesquels au moins 5 photos, qui se suivent, ont été prises :
+d'abord ceux qui en réunissent le plus ; les photos restantes forment les
+morceaux d'avant et d'après, un morceau de moins de 5 photos rejoint son
+voisin. Les dossiers gardent un nom fait de dates ; leur nom se choisit au
+Nommage. Une case, cochée par défaut, visible avec des lieux connus, grisée
+sans calendrier (lien vers la Configuration) ; l'aperçu montre l'effet.
 
 **Aperçu : l'arborescence prévue.** Pour chaque dossier qui sera créé :
 - nom prévu, **dates (du–au)**, **nombre de photos**, lieu, origine (lieu
@@ -293,10 +325,26 @@ avant le calcul, sur la page du tri automatique.
 photos prises juste avant et après ; proposition de rattachement.
 
 ### 6.5 Étape 8 — Petits dossiers (IA)
-Chaque petit dossier à côté du dossier proposé, avec la raison :
-« Rattacher », « Garder à part », « Rattacher à un autre… ». « Tout accepter »
-pour les propositions sûres. Sans IA : les voisins dans le temps sont
-présentés, l'utilisateur décide.
+Un petit dossier à la fois (D90), comme les Doublons : à gauche, la liste des
+petits dossiers dans l'ordre du temps, chacun avec son état (à décider, ✓) ;
+au centre, ses photos en grand (curseur de taille, clic : visionneuse), entre
+le dossier **juste avant** et **juste après** lui dans le temps, photo à
+photo, quel que soit l'écart (« Pendant cette sortie » s'il a été pris
+pendant un dossier). Pour chaque voisin : l'écart (« 31 min plus tôt », « le
+lendemain »), la distance, ses photos prises au plus près avec leur heure,
+« petit aussi » s'il est petit, et sous lui « ◀ Mettre avec ce dossier »
+(« Ses 2 photos iront dans « … » (14 photos ensuite). Le petit dossier
+disparaît. »). Au centre : « Garder seul », « Autre dossier… » (les dossiers
+pris au plus près dans le temps d'abord, avec une vignette ; ni dossiers
+techniques, ni « Ne pas toucher », ni parents sans photos à eux). Après un
+choix, on passe au suivant ; rien ne disparaît de la liste, « Annuler ce
+choix » et Ctrl+Z défont. Clavier : ← et →, G, J et K. **Cas évidents** (un
+voisin à moins d'1 h et de 10 km, ni lieu connu ni dossier de mois) : un
+bandeau ouvre leur liste, « Retirer » par ligne, puis un bouton les range
+tous. **Aide IA** facultative : elle compare chaque petit dossier à ses deux
+voisins ; sa proposition s'affiche sur le voisin choisi, « Accepter les N
+propositions sûres » pour celles à 8 sur 10 ou plus. Un dossier qui a des
+sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
 
 ### 6.6 Étape 9 — Nommage (IA)
 - Tableau : miniatures, nom actuel, **nom proposé modifiable**, confiance,
@@ -306,11 +354,17 @@ présentés, l'utilisateur décide.
   une **recherche web** (événements locaux, lieux touristiques, résultats de
   course…).
 - Tri par confiance croissante ; « Accepter les noms de confiance ≥ 8 ».
-- **Sans IA, le calendrier** (D83) : quand les photos d'un dossier ont été
-  prises pendant un événement du calendrier, son titre est proposé avec les
-  dates du dossier (« 18 ans de Lea 26.01.26 ») ; couvrant toutes les photos,
-  il passe devant la proposition de l'IA, qui reste à un clic. Un événement
-  partagé par plusieurs dossiers (un voyage) est suivi du lieu.
+- **Choisir le nom** (D83, D88) : sous chaque dossier, les noms possibles à
+  prendre d'un clic : 📅 un par événement du calendrier (pas récurrent,
+  21 jours au plus, couvrant au moins 80 % des photos ; titre suivi du lieu,
+  `Theme_Lieu_JJ.MM.AA`, le lieu omis s'il est dans le titre ou dans le
+  dossier parent), 📍 le lieu, ✨ la proposition de l'IA ; le champ reste
+  libre. Le champ est pré-rempli avec le meilleur événement (la plus grande
+  part, puis le plus court : « 18 ans de Lea » plutôt que le voyage qui
+  l'entoure), sauf égalité parfaite, sinon avec la proposition de l'IA.
+  « Prendre le nom du calendrier » renomme d'un coup les dossiers qui n'ont
+  qu'un seul événement (titre de 40 caractères au plus) ; avec plusieurs,
+  l'utilisateur vérifie.
 - Convention `Theme_Lieu_JJ.MM.AA`, sans accents ni espaces, correction
   proposée.
 
@@ -321,16 +375,18 @@ IA : noms proches et chevauchements présentés côte à côte.
 
 ### 6.8 Étape 5 — Doublons (IA)
 - **Onglets** (D71), un par sorte de doublons, chacun avec ce qui reste à
-  relire : **Copies exactes**, **Dans plusieurs dossiers**, **Rafales**,
-  **Même scène (IA)**, **Mis de côté** (tout ce que l'étape a écarté, à
-  remettre d'un clic). En haut, toujours visibles : Afficher (À relire,
+  relire : **Copies exactes** (avec les photos présentes dans plusieurs
+  dossiers gardés, D86), **Rafales**, **Même scène (IA)**, **Mis de côté**
+  (tout ce que l'étape a écarté, à remettre d'un clic). En haut, toujours visibles : Afficher (À relire,
   Relus, Tous), Classer, l'avancement et « Accepter les propositions » de la
   journée affichée. À gauche, la liste des journées (puis des dossiers
   gardés, puis des photos sans date) ; on relit une journée à la fois.
   « Grouper » : par journée, par mois ou par dossier (par défaut par
   journée, par mois au-delà de 20 journées) ; par dossier, une copie se
-  range sous chaque dossier où elle a un exemplaire. Un curseur règle la
-  taille des photos (le même réglage qu'à la Sélection).
+  range sous chaque dossier de la source où elle a un exemplaire (même
+  après le tri), et les dossiers sont par ordre alphabétique, avec une
+  recherche. Un curseur règle la taille des photos (le même réglage qu'à la
+  Sélection).
 - **Un groupe par carte** : heure, sorte, emplacement, proposition. Chaque
   photo a une proposition (garder ou écarter) et un état lu dans le plan :
   gardée, écartée, ou « à écarter » tant que la proposition n'est pas
@@ -343,14 +399,19 @@ IA : noms proches et chevauchements présentés côte à côte.
 - **Copies exactes** sur tout le projet, quels que soient le dossier et la
   date (D61) : même contenu (empreinte du fichier) ou **même photo en
   version réduite** (WhatsApp : très semblable, dimensions plus petites,
-  sans EXIF). Proposition : le meilleur exemplaire de chaque emplacement (un
-  dossier qui garde sa place, ou les photos à trier) est gardé ; les copies
-  d'un même emplacement et les versions réduites vont dans
+  sans EXIF). Proposition : n'écarter que ce qui ferait double emploi au
+  même endroit. Le meilleur exemplaire de chaque emplacement (un dossier qui
+  garde sa place, ou les photos à trier) est gardé, version réduite comprise
+  quand elle y est seule ; les autres copies d'un même emplacement vont dans
   `_mis_de_cote/doublons_exacts/`. Une photo déjà rangée dans un dossier
   « Garder, nettoyer » n'est pas triée une seconde fois ; si ce dossier n'en
   a qu'une version réduite, l'original y prend sa place. Une photo présente
-  dans plusieurs dossiers gardés (une sélection `BESTOF` faite de copies)
-  reste entière : onglet « Dans plusieurs dossiers ». Tous les exemplaires
+  dans plusieurs dossiers gardés y reste partout : ses groupes, rien à
+  relire, se montrent sous ceux à relire (« Aussi dans d'autres dossiers
+  gardés : tout est gardé ») ; groupé par dossier, « Écarter N exemplaires
+  de ce dossier » écarte d'un coup ceux qui restent gardés ailleurs (jamais
+  le dernier exemplaire), « Remettre » les rend. Un dossier « Ne pas toucher » n'est pas examiné : ses copies
+  sont voulues (une sélection `BESTOF`, D85). Tous les exemplaires
   peuvent être écartés. Les vidéos et autres fichiers ne sont que copiés,
   contrôlés par leur taille.
 - Réglage simple de l'IA : **Prudent** (défaut, les expressions différentes
@@ -564,8 +625,9 @@ Modèles détectés, décalage d'horloge (`+HH:MM`), surnom (« téléphone
 d'Anna »).
 
 ### 8.6 Préréglages
-« Année » et « Voyage » modifiables ; on peut en créer d'autres
-(« Week-end », « Camp de ski »).
+Les préréglages « Année » et « Voyage » de `config.json` ne sont plus lus
+(D58, D87) : les trois questions du Tri automatique les remplacent.
+`prereglages` reste accepté dans le fichier, sans effet.
 
 ### 8.7 Propre au projet
 Contexte (§ 6.1), budget, et **instantané de la configuration utilisée**
@@ -598,9 +660,10 @@ Tout ce que faisaient les scripts est repris. Accès : **S** = réglage simple,
 | Script | Fonction ou option (défaut) | Étape | Accès |
 |---|---|---|---|
 | 01 | `--seuil-flou` (60) | 3 | S, curseur en direct |
-| 01 | `--rayon-km` (2), `--par-jour`, `--sans-voyages`, `--lieux-connus` | 4 | S |
-| 01 | `--sans-evenement`, `--par-mois`, `--gap-jours` (30), `--duree-max-jours` (21) | 4 | A |
-| 01 | `--distance-voyage` (30), `--gap-voyage` (1), `--gap-voyage-max` (7), `--sans-noms-fichiers` | 4 | A |
+| 01 | `--par-jour`, `--par-mois` (un seul choix : par sortie, par jour, par mois), `--rayon-km` (2, en cinq crans), `--sans-voyages` | 6 | S |
+| 01 | `--duree-max-jours` (21), `--distance-voyage` (50 au lieu de 30, D87) | 6 | A |
+| 01 | `--gap-jours` (7 au lieu de 30, D87), `--gap-voyage-max` (7), lieux connus et noms de fichiers toujours utilisés | 6 | Auto |
+| 01 | `--sans-evenement` (remplacé par un lieu connu « un seul dossier »), `--gap-voyage` (un retour à la maison coupe toujours le voyage) | — | Retirés (D87) |
 | 01 | `--maison-un-seul-dossier` | 8.3 | Par lieu connu |
 | 01 | `--a-trier`, `--trier-mois`, `--tout-trier`, `--sans-copie-tries` | 2 | S, par sous-dossier |
 | 01 | Géocodage français puis anglais, collisions de noms, inventaire | 4, 11 | Auto |

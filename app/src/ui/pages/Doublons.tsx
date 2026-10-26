@@ -1,7 +1,7 @@
 // Étape « Doublons » (SPEC § 6.8, D71) : un onglet par sorte de doublons —
-// copies exactes, photos présentes dans plusieurs dossiers, rafales (repérées
-// sur l'ordinateur, gratuit), même scène (IA, à la demande) — et un onglet des
-// photos mises de côté. Les groupes se relisent journée par journée (ou
+// copies exactes (avec les photos présentes dans plusieurs dossiers gardés,
+// D86), rafales (repérées sur l'ordinateur, gratuit), même scène (IA, à la
+// demande) — et un onglet des photos mises de côté. Les groupes se relisent journée par journée (ou
 // dossier par dossier) ; un clic sur une photo la garde ou l'écarte, rien ne
 // disparaît de l'écran et tout s'annule (Ctrl+Z). Rien n'est écarté sans
 // action de l'utilisateur (règle d'or 3).
@@ -16,6 +16,8 @@ import {
   avancementGroupes,
   basculer,
   ecarterTout,
+  exemplairesAEcarterDans,
+  exemplairesEcartesDans,
   garderTout,
   groupesCopies,
   groupesScenes,
@@ -28,7 +30,7 @@ import {
   type Sorte,
 } from '../../lib/groupesDoublons';
 import { aTraduire, t } from '../../lib/langue';
-import { cheminDossier, ecarterDoublons, garderAussi, RACINE, traitementDe, type FichierPlan, type InfoDoublon, type Modification, type Plan } from '../../lib/plan';
+import { cheminDossier, comparerNoms, dossierSource, ecarterDoublons, garderAussi, RACINE, traitementDe, type FichierPlan, type InfoDoublon, type Modification, type Plan } from '../../lib/plan';
 import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { MODELES } from '../../lib/tarifs';
 import { cleApi } from '../../navigateur/cle';
@@ -45,9 +47,11 @@ import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
 import { useCopiesExactes } from '../copiesExactes';
 import { allerEtape, annuler, appliquer, changerEtape, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { nombre, nomJour, nomMois, pluriel, taille as texteTaille } from '../format';
+import { simplifier } from '../organiser';
 import { enregistrerAide } from './AidesIA';
 
-type Onglet = Sorte | 'mis_de_cote';
+/** Les photos dans plusieurs dossiers gardés (`dossiers`) se relisent avec les copies exactes (D86). */
+type Onglet = Exclude<Sorte, 'dossiers'> | 'mis_de_cote';
 type Filtre = 'a_relire' | 'relus' | 'tous';
 type Ordre = 'heure' | 'taille';
 type Groupement = 'jour' | 'mois' | 'dossier';
@@ -108,6 +112,11 @@ function estChampDeSaisie(e: KeyboardEvent): boolean {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
 }
 
+/** Les photos de la racine : celles à trier, tant que le dossier est en vrac. */
+function nomRacine(vrac: boolean): string {
+  return vrac ? t`Photos à trier` : t`Photos (racine)`;
+}
+
 /** « 2 photos écartées → « _mis_de_cote/doublons » ». */
 function texteEcartees(n: number, raison: 'doublons' | 'doublons_exacts'): string {
   return t`${pluriel(n, 'photo écartée', 'photos écartées')} → « ${dossierMisDeCote(raison)} »`;
@@ -155,16 +164,19 @@ interface Section {
   titre: string;
   total: number;
   aRelire: number;
-  debut: string;
 }
 
-function sections(elements: { section: string; date?: string; aRelire: boolean }[], plan: Plan, vrac: boolean): Section[] {
+/** Section d'un dossier : du plan (« dossier:<id> »), ou de la source pour les copies (« source:<chemin> »). */
+function estDossier(x: Section): boolean {
+  return x.cle.startsWith('dossier:') || x.cle.startsWith('source:');
+}
+
+function sections(elements: { section: string; aRelire: boolean }[], plan: Plan, vrac: boolean): Section[] {
   const parCle = new Map<string, Section>();
   for (const e of elements) {
-    const x = parCle.get(e.section) ?? { cle: e.section, nom: '', titre: '', total: 0, aRelire: 0, debut: '9999' };
+    const x = parCle.get(e.section) ?? { cle: e.section, nom: '', titre: '', total: 0, aRelire: 0 };
     x.total++;
     if (e.aRelire) x.aRelire++;
-    if (e.date && e.date < x.debut) x.debut = e.date;
     parCle.set(e.section, x);
   }
   const liste = [...parCle.values()];
@@ -176,23 +188,41 @@ function sections(elements: { section: string; date?: string; aRelire: boolean }
     } else if (x.cle.startsWith('mois:')) x.nom = x.titre = nomMois(x.cle.slice(5));
     else if (x.cle.startsWith('dossier:'))
       // Avant le tri, les photos en vrac à la racine n'ont pas encore de dossier.
-      x.nom = x.titre = x.cle.slice(8) === RACINE ? (vrac ? t`Photos à trier` : t`Photos (racine)`) : cheminDossier(plan, x.cle.slice(8));
+      x.nom = x.titre = x.cle.slice(8) === RACINE ? nomRacine(vrac) : cheminDossier(plan, x.cle.slice(8));
+    else if (x.cle.startsWith('source:')) x.nom = x.titre = x.cle.slice(7) || nomRacine(vrac);
     else x.nom = x.titre = t`Photos sans date`;
   }
-  const rang = (x: Section) => (x.cle.startsWith('jour:') || x.cle.startsWith('mois:') ? 0 : x.cle.startsWith('dossier:') ? 1 : 2);
-  return liste.sort((a, b) => rang(a) - rang(b) || (rang(a) === 0 ? a.cle.localeCompare(b.cle) : a.debut.localeCompare(b.debut) || a.nom.localeCompare(b.nom)));
+  // Journées et mois dans l'ordre du temps ; dossiers par nom, comme dans l'explorateur, la racine en tête.
+  const racine = (x: Section) => x.cle === `dossier:${RACINE}` || x.cle === 'source:';
+  const rang = (x: Section) => (x.cle.startsWith('jour:') || x.cle.startsWith('mois:') ? 0 : racine(x) ? 1 : estDossier(x) ? 2 : 3);
+  return liste.sort((a, b) => rang(a) - rang(b) || (rang(a) === 0 ? a.cle.localeCompare(b.cle) : comparerNoms(a.nom, b.nom)));
 }
 
-/** Liste de gauche : chaque journée (ou dossier), ce qui reste à relire, ✓ quand c'est fait. */
+/** Liste de gauche : chaque journée (ou dossier), ce qui reste à relire, ✓ quand c'est fait ; les dossiers se cherchent par leur nom. */
 function ListeSections({ liste, choisie, choisir, avancement = true }: { liste: Section[]; choisie?: string; choisir: (cle: string) => void; avancement?: boolean }) {
+  const [cherche, setCherche] = useState('');
+  const q = simplifier(cherche.trim());
+  const trouves = liste.filter((x) => estDossier(x) && simplifier(x.nom).includes(q));
   const blocs: [string, Section[]][] = [
     [t`Journées`, liste.filter((x) => x.cle.startsWith('jour:'))],
     [t`Mois`, liste.filter((x) => x.cle.startsWith('mois:'))],
-    [t`Dossiers`, liste.filter((x) => x.cle.startsWith('dossier:'))],
+    [t`Dossiers`, trouves],
     [t`Sans date`, liste.filter((x) => x.cle === 'sans')],
   ];
   return (
     <nav class="sections-doublons" aria-label={t`Journées et dossiers`}>
+      {liste.some(estDossier) && (
+        <input
+          type="search"
+          class="recherche-sections"
+          placeholder={t`Chercher…`}
+          aria-label={t`Chercher un dossier`}
+          value={cherche}
+          onInput={(e) => setCherche(e.currentTarget.value)}
+          onKeyDown={(e) => e.key === 'Enter' && trouves[0] && choisir(trouves[0].cle)}
+        />
+      )}
+      {q && !trouves.length && <p class="discret">{t`Aucun dossier ne correspond.`}</p>}
       {blocs
         .filter(([, l]) => l.length)
         .map(([titre, l]) => (
@@ -258,7 +288,7 @@ function useSection(onglet: Onglet, liste: Section[]): [Section | undefined, (cl
 /** Où est la photo ★ d'une rafale : son dossier, ou les photos à trier. */
 function lieuDe(s: Session, f: FichierPlan | undefined): string {
   if (!f) return '';
-  if (f.dossier === RACINE) return s.projet.mode === 'vrac' ? t`Photos à trier` : t`Photos (racine)`;
+  if (f.dossier === RACINE) return nomRacine(s.projet.mode === 'vrac');
   return cheminDossier(s.plan, f.dossier);
 }
 
@@ -291,11 +321,14 @@ function Legende({ g, x }: { g: GroupeDoublons; x: PhotoDuGroupe }) {
   const r = g.remplacement;
   const nomDossier = (id: string) => cheminDossier(s.plan, id) || t`Photos (racine)`;
   const tr = traitementDe(s.plan, f.dossier);
+  // Une copie se désigne par son dossier dans la source ; le tri (ou un déplacement) a pu la ranger ailleurs.
+  const source = dossierSource(f);
+  const rangee = cheminDossier(s.plan, f.dossier);
   return (
     <span class="legende-doublon">
-      <strong>{lieuDe(s, f)}</strong>
+      <strong>{source || nomRacine(s.projet.mode === 'vrac')}</strong>
+      {f.statut === 'archive' && rangee !== source && <span>{t`rangée dans « ${nomDossier(f.dossier)} »`}</span>}
       {s.projet.mode === 'vrac' && tr === 'nettoyer' && <span>{t`dossier gardé, nettoyé`}</span>}
-      {s.projet.mode === 'vrac' && (tr === 'garder' || tr === 'ignorer') && <span>{t`dossier à ne pas toucher`}</span>}
       <span>
         {f.dims ? `${nombre(f.dims.l)} × ${nombre(f.dims.h)} · ` : ''}
         {texteTaille(f.taille)}
@@ -390,7 +423,13 @@ function CarteGroupe({
         <span class="titre">{titre}</span>
         {!copie && <span class="discret">{lieuDe(s, etoile)}</span>}
         <span class="espace" />
-        {enAttente ? <span class="pastille-proposition">{texteProposition(g, enAttente)}</span> : <span class="pastille-relue">{t`✓ Relu`}</span>}
+        {enAttente ? (
+          <span class="pastille-proposition">{texteProposition(g, enAttente)}</span>
+        ) : g.sorte === 'dossiers' && !ecartees ? (
+          <span class="pastille-relue">{t`Gardée dans chaque dossier`}</span>
+        ) : (
+          <span class="pastille-relue">{t`✓ Relu`}</span>
+        )}
       </header>
       {g.sorte === 'ia' && g.scene && <p class="scene-doublons">{g.scene}</p>}
       <div class="photos-doublons">
@@ -423,12 +462,12 @@ function CarteGroupe({
 // Les groupes d'un onglet
 // ---------------------------------------------------------------------------
 
-function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoublons[] }) {
+function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cote'>; groupes: GroupeDoublons[] }) {
   const s = session.value!;
   versionPlan.value;
   const plan = s.plan;
   const fichier = (id: string) => plan.fichiers.get(id);
-  const [filtre, setFiltre] = useState<Filtre>(onglet === 'dossiers' ? 'tous' : 'a_relire');
+  const [filtre, setFiltre] = useState<Filtre>('a_relire');
   const [ordre, setOrdre] = useState<Ordre>('heure');
   // Cartes repliées après « Accepter », « Tout garder »… ; et cartes déjà relues rouvertes (« Revoir »).
   const [fermees, setFermees] = useState<ReadonlySet<string>>(new Set());
@@ -440,16 +479,20 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
     onglet,
     groupes.map((g) => fichier(g.etoile)),
   );
-  const copies = onglet === 'copies' || onglet === 'dossiers';
-  // Par dossier, une copie se range sous chacun des dossiers où elle a un exemplaire.
+  const copies = onglet === 'copies';
+  // Une photo dans plusieurs dossiers gardés : rien à relire, tout est gardé ; elle se montre sous les groupes
+  // à relire de la section, quel que soit le filtre, pour qu'on puisse en écarter un exemplaire (D86).
+  const partout = (g: GroupeDoublons) => g.sorte === 'dossiers';
+  // Par dossier, une copie se range sous chacun des dossiers de la source où elle a un exemplaire : ceux
+  // que l'utilisateur connaît, même après le tri, qui range les photos à trier dans de nouveaux dossiers.
   const elements = groupes.flatMap((g) => {
     const etoile = fichier(g.etoile);
     const base = { g, relire: aRelire(g, fichier), date: etoile?.date };
-    if (groupement === 'dossier' && copies) return [...new Set(photosDuGroupe(g, fichier).map((x) => x.f.dossier))].map((d) => ({ ...base, section: `dossier:${d}` }));
+    if (groupement === 'dossier' && copies) return [...new Set(photosDuGroupe(g, fichier).map((x) => `source:${dossierSource(x.f)}`))].map((section) => ({ ...base, section }));
     return [{ ...base, section: sectionSelon(groupement, etoile) }];
   });
   const liste = sections(
-    elements.map((e) => ({ section: e.section, date: e.date, aRelire: e.relire })),
+    elements.map((e) => ({ section: e.section, aRelire: e.relire })),
     plan,
     s.projet.mode === 'vrac',
   );
@@ -458,16 +501,28 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
   // Instantané des groupes montrés, figé tant qu'on reste sur cette section et ce filtre : une décision
   // ne fait rien disparaître (D71). Les groupes déjà relus à l'arrivée sont repliés.
   const montres = useMemo(
-    () => new Set(elements.filter((e) => e.section === section?.cle && (filtre === 'tous' || (filtre === 'a_relire') === e.relire)).map((e) => e.g.cle)),
+    () => new Set(elements.filter((e) => e.section === section?.cle && (filtre === 'tous' || partout(e.g) || (filtre === 'a_relire') === e.relire)).map((e) => e.g.cle)),
     [section?.cle, filtre, signature],
   );
-  const relusAuDepart = useMemo(() => new Set(elements.filter((e) => e.section === section?.cle && !e.relire).map((e) => e.g.cle)), [section?.cle, signature]);
+  const relusAuDepart = useMemo(() => new Set(elements.filter((e) => e.section === section?.cle && !e.relire && !partout(e.g)).map((e) => e.g.cle)), [section?.cle, signature]);
   const parDate = (a: (typeof elements)[number], b: (typeof elements)[number]) => (a.date ?? '').localeCompare(b.date ?? '') || a.g.cle.localeCompare(b.g.cle);
-  const visibles = elements.filter((e) => e.section === section?.cle && montres.has(e.g.cle)).sort((a, b) => (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b)));
+  const visibles = elements
+    .filter((e) => e.section === section?.cle && montres.has(e.g.cle))
+    .sort((a, b) => Number(partout(a.g)) - Number(partout(b.g)) || (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b)));
+  const iPartout = visibles.findIndex((e) => partout(e.g));
   const enAttente = visibles.filter((e) => aRelire(e.g, fichier)).map((e) => e.g);
   // Copies : quand toute la journée est tout l'onglet, le bouton de l'encart (« Accepter les N propositions ») suffit.
   const commeLOnglet = onglet === 'copies' && enAttente.length === groupes.filter((g) => aRelire(g, fichier)).length;
-  const { relus, total } = avancementGroupes(groupes, fichier);
+  const { relus, total } = avancementGroupes(
+    groupes.filter((g) => !partout(g)),
+    fichier,
+  );
+  // Groupés par dossier : écarter ou remettre d'un coup les exemplaires de ce dossier gardés aussi ailleurs (D86).
+  const dossierChoisi = groupement === 'dossier' && copies && section?.cle.startsWith('source:') ? section.cle.slice(7) : null;
+  const dansDossier = (f: FichierPlan) => dossierSource(f) === dossierChoisi;
+  const groupesSection = elements.filter((e) => e.section === section?.cle).map((e) => e.g);
+  const aEcarterDossier = dossierChoisi === null ? [] : exemplairesAEcarterDans(groupesSection, dansDossier, fichier);
+  const ecartesDossier = dossierChoisi === null ? [] : exemplairesEcartesDans(groupesSection, dansDossier, fichier);
   const ouverte = (cle: string) => rouvertes.has(cle) || !(fermees.has(cle) || relusAuDepart.has(cle));
 
   /** Après une action sur tout un groupe : la carte se replie à sa place, le clavier passe à la suivante. */
@@ -481,9 +536,15 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
     const i = cartes.findIndex((c) => c.dataset.cle === cles.at(-1));
     setTimeout(() => cartes[i + 1]?.querySelector<HTMLElement>('.tuile-doublon, button')?.focus(), 0);
   };
+  /** Écarter ou remettre les exemplaires du dossier affiché : les cartes restent ouvertes, à leur place. */
+  const agirDossier = (m: Modification | null, message: string) => {
+    if (!m) return;
+    appliquer(m);
+    notifier('ok', message, { libelle: t`Annuler`, faire: annuler });
+  };
   const accepterSection = () => {
     const n = enAttente.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
-    const raison = onglet === 'copies' || onglet === 'dossiers' ? 'doublons_exacts' : 'doublons';
+    const raison = onglet === 'copies' ? 'doublons_exacts' : 'doublons';
     agirGroupe(
       enAttente.map((g) => g.cle),
       accepter(plan, enAttente),
@@ -564,14 +625,12 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
             <option value="taille">{t`les plus grands groupes d’abord`}</option>
           </select>
         </label>
-        {onglet !== 'dossiers' && (
-          <span class="avance-doublons">
-            {t`Relus : ${nombre(relus)} sur ${nombre(total)}`}
-            <span class="jauge-doublons" aria-hidden="true">
-              <span style={{ width: `${pct}%` }} />
-            </span>
+        <span class="avance-doublons">
+          {t`Relus : ${nombre(relus)} sur ${nombre(total)}`}
+          <span class="jauge-doublons" aria-hidden="true">
+            <span style={{ width: `${pct}%` }} />
           </span>
-        )}
+        </span>
         <span class="espace" />
         {enAttente.length > 0 && section && !commeLOnglet && (
           <button type="button" class="principal" onClick={accepterSection}>
@@ -585,12 +644,33 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
         <ListeSections liste={liste} choisie={section?.cle} choisir={choisir} />
         <section class="contenu-doublons" ref={zone}>
           {section && (
-            <TeteSection
-              liste={liste}
-              section={section}
-              choisir={choisir}
-              detail={onglet === 'dossiers' ? pluriel(section.total, 'groupe') : `${pluriel(section.total, 'groupe')} · ${pluriel(section.total - section.aRelire, 'relu', 'relus')}`}
-            />
+            <TeteSection liste={liste} section={section} choisir={choisir} detail={`${pluriel(section.total, 'groupe')} · ${pluriel(section.total - section.aRelire, 'relu', 'relus')}`} />
+          )}
+          {(aEcarterDossier.length > 0 || ecartesDossier.length > 0) && (
+            <p class="actions actions-dossier-copies">
+              {aEcarterDossier.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    agirDossier(
+                      ecarterDoublons(
+                        plan,
+                        aEcarterDossier.map((id) => ({ id, raison: 'doublons_exacts' })),
+                      ),
+                      texteEcartees(aEcarterDossier.length, 'doublons_exacts'),
+                    )
+                  }
+                >
+                  {t`Écarter ${pluriel(aEcarterDossier.length, 'exemplaire')} de ce dossier`}
+                </button>
+              )}
+              {ecartesDossier.length > 0 && (
+                <button type="button" onClick={() => agirDossier(garderAussi(plan, ecartesDossier), t`${pluriel(ecartesDossier.length, 'exemplaire remis', 'exemplaires remis')} dans ce dossier.`)}>
+                  {t`Remettre ${pluriel(ecartesDossier.length, 'exemplaire')} de ce dossier`}
+                </button>
+              )}
+              {aEcarterDossier.length > 0 && <span class="discret">{t`Seulement les photos gardées aussi dans un autre dossier : aucune ne disparaît.`}</span>}
+            </p>
           )}
           {visibles.length === 0 && (
             <div class="encart">
@@ -602,7 +682,12 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
               )}
             </div>
           )}
-          {visibles.map(({ g }) => (
+          {visibles.map(({ g }, i) => [
+            i === iPartout && (
+              <h3 key="partout" class="titre-partout">
+                {t`Aussi dans d’autres dossiers gardés : tout est gardé`}
+              </h3>
+            ),
             <CarteGroupe
               key={g.cle}
               g={g}
@@ -612,8 +697,8 @@ function ListeGroupes({ onglet, groupes }: { onglet: Sorte; groupes: GroupeDoubl
               agirGroupe={(m, message) => agirGroupe([g.cle], m, message)}
               rouvrir={() => setRouvertes(new Set([...rouvertes, g.cle]))}
               comparer={() => setComparee(g.cle)}
-            />
-          ))}
+            />,
+          ])}
           {visibles.length > 0 && enAttente.length === 0 && suite && (
             <p class="suite-doublons">
               <button type="button" class="principal" onClick={() => choisir(suite.cle)}>
@@ -685,7 +770,7 @@ function MisDeCote() {
     return f ? [{ ...x, f, section: sectionSelon(groupement, f) }] : [];
   });
   const liste = sections(
-    elements.map((e) => ({ section: e.section, date: e.f.date, aRelire: false })),
+    elements.map((e) => ({ section: e.section, aRelire: false })),
     plan,
     s.projet.mode === 'vrac',
   );
@@ -780,8 +865,9 @@ export function PageDoublons() {
   const avancement = (sorte: Sorte) => avancementGroupes(groupes[sorte], fichier);
   const iaLancee = !!s.doublons && Object.values(s.doublons.dossiers).some((d) => d.modele || d.propositions.some((p) => p.source === 'ia'));
   const nbEcartees = [...plan.fichiers.values()].filter((f) => f.statut === 'mis_de_cote' && (f.raison === 'doublons' || f.raison === 'doublons_exacts')).length;
+  const intouches = s.projet.mode === 'vrac' ? [...plan.dossiers.values()].filter((d) => d.traitement === 'garder' || d.traitement === 'ignorer').length : 0;
 
-  const premier: Onglet = (['copies', 'rafales', 'ia'] as const).find((o) => groupes[o].some((g) => aRelire(g, fichier))) ?? (groupes.copies.length ? 'copies' : 'rafales');
+  const premier: Onglet = (['copies', 'rafales', 'ia'] as const).find((o) => groupes[o].some((g) => aRelire(g, fichier))) ?? (groupes.copies.length || groupes.dossiers.length ? 'copies' : 'rafales');
   const onglet = ongletsChoisis.value[s.projet.nom] ?? premier;
   // L'onglet d'arrivée est retenu dès que tout est cherché : il ne change plus de lui-même.
   useEffect(() => {
@@ -907,15 +993,15 @@ export function PageDoublons() {
   /** Compteur d'un onglet : ce qui reste à relire, ✓ quand tout l'est. */
   const compte = (o: Onglet): ComponentChildren => {
     if (o === 'mis_de_cote') return <span class="compte gris">{nombre(nbEcartees)}</span>;
-    if ((o === 'copies' || o === 'dossiers') && copies === null) return <span class="compte gris">…</span>;
+    if (o === 'copies' && copies === null) return <span class="compte gris">…</span>;
     if (o === 'ia' && !iaLancee) return <span class="compte gris">{t`pas lancée`}</span>;
     const { relus, total } = avancement(o);
-    if (o === 'dossiers' || !total) return <span class="compte gris">{nombre(total)}</span>;
+    // Copies : celles dans plusieurs dossiers gardés n'ont rien à relire ; elles comptent quand il ne reste qu'elles.
+    if (!total) return <span class="compte gris">{nombre(o === 'copies' ? groupes.dossiers.length : 0)}</span>;
     return relus === total ? <span class="compte fini">✓ {nombre(total)}</span> : <span class="compte">{t`${nombre(total - relus)} à relire`}</span>;
   };
   const ONGLETS: [Onglet, string][] = [
     ['copies', t`Copies exactes`],
-    ['dossiers', t`Dans plusieurs dossiers`],
     ['rafales', t`Rafales`],
     ['ia', t`Même scène (IA)`],
     ['mis_de_cote', t`Mis de côté`],
@@ -964,13 +1050,14 @@ export function PageDoublons() {
       {onglet === 'copies' &&
         (copies === null ? (
           <p class="encart">{t`Recherche des copies en cours, pendant l’analyse des photos…`}</p>
-        ) : !groupes.copies.length ? (
+        ) : !groupes.copies.length && !groupes.dossiers.length ? (
           <p class="encart">{t`Aucune copie exacte : chaque photo n’existe qu’en un exemplaire.`}</p>
         ) : (
           <>
             <div class="encart encart-onglet">
               <p>
-                {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : garder un exemplaire, celui qui est déjà rangé dans un dossier, sinon le plus grand ; les autres iront dans « ${dossierMisDeCote('doublons_exacts')} ».`}
+                {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « ${dossierMisDeCote('doublons_exacts')} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo ou, en groupant par dossier, tout un dossier d’un coup.`}
+                {intouches > 0 && t` Les dossiers « Ne pas toucher » ne sont pas examinés : leurs copies sont voulues.`}
               </p>
               {pending.length > 0 && (
                 <div class="actions">
@@ -1000,21 +1087,7 @@ export function PageDoublons() {
                 </div>
               )}
             </div>
-            <ListeGroupes key="copies" onglet="copies" groupes={groupes.copies} />
-          </>
-        ))}
-
-      {onglet === 'dossiers' &&
-        (copies === null ? (
-          <p class="encart">{t`Recherche des copies en cours, pendant l’analyse des photos…`}</p>
-        ) : !groupes.dossiers.length ? (
-          <p class="encart">{t`Aucune photo n’est dans plusieurs dossiers.`}</p>
-        ) : (
-          <>
-            <p class="encart encart-onglet">
-              {t`Ces photos sont dans plusieurs dossiers que vous gardez (un « Best of » fait de copies, par exemple) : toutes restent, chacune dans son dossier. Cliquez sur un exemplaire pour l’écarter s’il est de trop.`}
-            </p>
-            <ListeGroupes key="dossiers" onglet="dossiers" groupes={groupes.dossiers} />
+            <ListeGroupes key="copies" onglet="copies" groupes={[...groupes.copies, ...groupes.dossiers]} />
           </>
         ))}
 

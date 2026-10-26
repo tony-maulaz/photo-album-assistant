@@ -142,7 +142,7 @@ try {
       await page.locator('.tri-auto').last().screenshot({ path: join(CAPTURES, 'echelle_tri_reglages.png') });
     }
     debut = performance.now();
-    await page.getByRole('button', { name: 'Calculer l’arborescence' }).click();
+    await page.getByRole('button', { name: /^Ranger les photos dans ces/ }).click();
     await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 1_800_000 });
     noter(`tri par lieux en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
     if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_tri.png') });

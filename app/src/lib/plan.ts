@@ -38,7 +38,7 @@ export interface DossierPlan {
  * Que faire d'un sous-dossier de la source (étape « Dossiers », D61) :
  * - `trier` : ses photos rejoignent le tri par lieux et sorties ;
  * - `nettoyer` : le dossier garde sa place, mais ses floues et ses doublons sont proposés ;
- * - `garder` : « Ne pas toucher », recopié tel quel (seules les copies exactes en sont retirées) ;
+ * - `garder` : « Ne pas toucher », recopié tel quel : ni floues, ni doublons, ni copies proposés (D85) ;
  * - `ignorer` : ancienne valeur (« hors de l'album »), traitée comme `garder`.
  */
 export type TraitementDossier = 'trier' | 'nettoyer' | 'garder' | 'ignorer';
@@ -162,7 +162,14 @@ export function cheminDossier(plan: Plan, id: string): string {
   return noms.join('/');
 }
 
-const comparerNoms = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare;
+/** Dossier de la source où est le fichier (« » pour la racine), quel que soit celui où le plan le range. */
+export function dossierSource(f: FichierPlan): string {
+  const i = f.id.lastIndexOf('/');
+  return i < 0 ? '' : f.id.slice(0, i);
+}
+
+/** Ordre des noms de dossiers, comme l'explorateur : sans accents ni majuscules, « 2 » avant « 10 ». */
+export const comparerNoms = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare;
 
 export function enfants(plan: Plan, id: string): DossierPlan[] {
   return [...plan.dossiers.values()].filter((d) => d.parent === id).sort((a, b) => comparerNoms(a.nom, b.nom));
@@ -587,7 +594,7 @@ export function gardeSaPlace(plan: Plan, dossier: string): boolean {
   return tr === 'nettoyer' || tr === 'garder';
 }
 
-/** Dossier « Ne pas toucher » : ni floues, ni doublons (seules les copies exactes peuvent en être retirées). */
+/** Dossier « Ne pas toucher » : ni floues, ni doublons, ni copies exactes proposés (D85). */
 export function nePasToucher(plan: Plan, dossier: string): boolean {
   return traitementDe(plan, dossier) === 'garder';
 }

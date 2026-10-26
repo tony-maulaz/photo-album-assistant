@@ -56,4 +56,10 @@ describe('dossiers d’un même événement du calendrier (D83)', () => {
     expect(cheminDossier(p, 'loc')).toBe('Locarno_06.07.25');
     expect(p.dossiers.has('ves')).toBe(true);
   });
+
+  it('ni période de plus de 21 jours, ni événement récurrent (D88)', () => {
+    const ete = ev('Vacances d’ete', '2025-06-30', '2025-08-19');
+    const cours = { ...ev('Cours de piano', '2026-01-26', '2026-01-26'), recurrent: true };
+    expect(regroupementsProposes(plan(), [ete, cours])).toEqual([]);
+  });
 });

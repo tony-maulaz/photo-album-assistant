@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LieuConnu } from '../src/lib/config';
+import type { EvenementCalendrier } from '../src/lib/ics';
 import { Historique, planVide, RACINE, versJson, type FichierPlan, type Plan } from '../src/lib/plan';
 import {
   appliquerTri,
@@ -13,7 +14,6 @@ import {
   nomDossierLibre,
   nomDominant,
   OPTIONS_TRI_DEFAUT,
-  optionsDepuisPrereglage,
   sansDate,
   type OptionsTri,
   type PhotoTri,
@@ -57,7 +57,7 @@ describe('briques du script 01', () => {
   });
 
   it('retire une date en fin de description', () => {
-    expect(sansDate('Cigognes_Avenches_09.06.25')).toBe('Cigognes_Avenches');
+    expect(sansDate('Fete_Village_A_09.06.25')).toBe('Fete_Village_A');
     expect(sansDate('Q_permisL_05.2025')).toBe('Q_permisL');
     expect(sansDate('Jardin_11.07.25')).toBe('Jardin');
     expect(sansDate('Annecy_27-29.06.25')).toBe('Annecy');
@@ -83,10 +83,8 @@ describe('briques du script 01', () => {
     expect(estDossierMois('Vacances', ['vacances'])).toBe(true);
   });
 
-  it('options d’un préréglage', () => {
-    expect(optionsDepuisPrereglage({ rayon_km: 2, par_jour: true, voyages: false, lieux_connus: false, inconnu: 3 })).toEqual({ rayonKm: 2, parJour: true, voyages: false, lieuxConnus: false });
-    expect(optionsDepuisPrereglage({ rayon_km: -1, par_jour: 'oui' })).toEqual({});
-    expect(optionsDepuisPrereglage(null)).toEqual({});
+  it('images tirées d’une vidéo par le téléphone : nom d’appareil, pas un nom parlant (D87)', () => {
+    expect(nomDescriptif('VideoCapture_20250712-181512.jpg')).toBeNull();
   });
 });
 
@@ -135,10 +133,12 @@ describe('regroupement', () => {
 });
 
 describe('arborescence', () => {
-  it('découpe par écart (30 j) et par durée maximale (21 j)', () => {
-    const ps = ['2026-01-01', '2026-01-10', '2026-03-01', '2026-05-01', '2026-05-11', '2026-05-21', '2026-05-31'].map((d) => photo(`${d}T10:00:00`, 46.5, 6.6));
+  it('découpe par écart (7 j) et par durée maximale (21 j)', () => {
+    const ps = ['2026-01-01', '2026-01-06', '2026-01-20', '2026-05-01', '2026-05-06', '2026-05-11', '2026-05-16', '2026-05-21', '2026-05-26'].map((d) => photo(`${d}T10:00:00`, 46.5, 6.6));
     const d = arborescence(grouper(ps, [], O()), new Map([[0, 'Lausanne']]), O());
-    expect(chemins(d)).toEqual({ 'Lausanne_01-10.01.26': 2, 'Lausanne_01.03.26': 1, 'Lausanne_01-21.05.26': 3, 'Lausanne_31.05.26': 1 });
+    expect(chemins(d)).toEqual({ 'Lausanne_01-06.01.26': 2, 'Lausanne_20.01.26': 1, 'Lausanne_01-21.05.26': 5, 'Lausanne_26.05.26': 1 });
+    // Avec l'écart du script (30 jours), deux visites à deux semaines d'écart ne faisaient qu'une sortie.
+    expect(Object.keys(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Lausanne']]), O({ gapJours: 30 }))))).toContain('Lausanne_01-20.01.26');
   });
 
   it('un dossier par jour, nom géocodé manquant, Sans_lieu', () => {
@@ -156,11 +156,20 @@ describe('arborescence', () => {
     expect(chemins(d)).toEqual({ 'Lausanne_01.01.26': 1, 'Lausanne_01.01.26_b': 1 });
   });
 
+  it('par mois ou par lieu : deux lieux du même nom, ou un lieu du nom d’un lieu connu, ne fusionnent pas (I4, D87)', () => {
+    const connu = lieu('Lausanne', 46.9, 6.6, 200);
+    const ps = [photo('2026-01-01T10:00:00', 46.5, 6.6), photo('2026-01-02T10:00:00', 46.6, 6.6), photo('2026-01-03T10:00:00', 46.9, 6.6)];
+    const g = grouper(ps, [connu], O());
+    const noms = new Map([[0, 'Lausanne'], [1, 'Lausanne']]);
+    expect(chemins(arborescence(g, noms, O({ parMois: true })))).toEqual({ 'Lausanne/01.26': 1, 'Lausanne_01.26': 1, 'Lausanne_01.26_b': 1 });
+    expect(chemins(arborescence(g, noms, O({ sansEvenement: true })))).toEqual({ Lausanne: 1, Lausanne_b: 1, Lausanne_c: 1 });
+  });
+
   it('nom descriptif des fichiers, sans répéter le lieu ni la date', () => {
-    const ps = [photo('2026-06-09T10:00:00', 46.5, 6.6, 'Cigognes Avenches 09.06.25.jpg'), photo('2026-06-09T11:00:00', 46.5, 6.6, 'Cigognes Avenches 09.06.25 (1).jpg'), photo('2026-06-09T12:00:00', 46.5, 6.6)];
-    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Avenches']]), O()))).toEqual({ 'Cigognes_Avenches_09.06.26': 3 });
-    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Payerne']]), O()))).toEqual({ 'Cigognes_Avenches_Payerne_09.06.26': 3 });
-    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Payerne']]), O({ nomsFichiers: false })))).toEqual({ 'Payerne_09.06.26': 3 });
+    const ps = [photo('2026-06-09T10:00:00', 46.5, 6.6, 'Fete Village_A 09.06.25.jpg'), photo('2026-06-09T11:00:00', 46.5, 6.6, 'Fete Village_A 09.06.25 (1).jpg'), photo('2026-06-09T12:00:00', 46.5, 6.6)];
+    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Village_A']]), O()))).toEqual({ 'Fete_Village_A_09.06.26': 3 });
+    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Village_B']]), O()))).toEqual({ 'Fete_Village_A_Village_B_09.06.26': 3 });
+    expect(chemins(arborescence(grouper(ps, [], O()), new Map([[0, 'Village_B']]), O({ nomsFichiers: false })))).toEqual({ 'Village_B_09.06.26': 3 });
   });
 
   it('lieux connus : un dossier parent, un sous-dossier par événement, ou à plat', () => {
@@ -171,6 +180,16 @@ describe('arborescence', () => {
     expect(d.find((x) => x.chemin.length === 2)!.info).toEqual({ origine: 'lieu_connu', lieu: 'Maison', lat: 46.5, lon: 6.6 });
     const plat = arborescence(grouper(ps, [{ ...maison, un_seul_dossier: true }], O()), new Map(), O());
     expect(chemins(plat)).toEqual({ Maison: 4 });
+    // Par mois : un sous-dossier par mois, comme les autres lieux (le domicile n'est plus d'un seul tenant, D87).
+    expect(chemins(arborescence(grouper(ps, [maison], O()), new Map(), O({ parMois: true })))).toEqual({ 'Maison/01.26': 2, 'Maison/03.26': 1, Maison: 1 });
+  });
+
+  it('une photo sans GPS d’une journée passée à la maison y est rangée, pas dans Sans_lieu (D87)', () => {
+    const maison = lieu('Maison', 46.5, 6.6, 200, { domicile: true });
+    const ps = [photo('2026-02-01T10:00:00', 46.5, 6.6), photo('2026-02-01T11:00:00', 46.5, 6.6), photo('2026-02-01T12:00:00', 47, 7), photo('2026-02-01T15:00:00')];
+    const g = grouper(ps, [maison], O());
+    expect(g.lieuDe.get(ps[3].id)?.id).toBe('Maison');
+    expect(chemins(arborescence(g, new Map([[0, 'Berne']]), O()))).toEqual({ 'Maison/01.02.26': 3, 'Berne_01.02.26': 1 });
   });
 
   // Domicile en Suisse ; Bangkok et Kanchanaburi en Thaïlande.
@@ -195,6 +214,23 @@ describe('arborescence', () => {
     // Sans domicile, ou passe désactivée : pas de voyage.
     expect(Object.keys(chemins(arborescence(grouper(ps, [], O()), noms, O())))).toEqual(['Bangkok_11-12.07.26', 'Kanchanaburi_13-14.07.26']);
     expect(Object.keys(chemins(arborescence(grouper(ps, [maison], O()), noms, O({ voyages: false }))))).toEqual(['Bangkok_11-12.07.26', 'Kanchanaburi_13-14.07.26']);
+  });
+
+  it('passe voyages : deux excursions lointaines deux jours de suite, rentré le soir entre les deux, ne font pas un voyage (D87)', () => {
+    const loin = [photo('2026-07-11T10:00:00', 46.0, 7.75), photo('2026-07-12T10:00:00', 46.95, 7.45)];
+    const nomsEx = new Map([[0, 'Zermatt'], [1, 'Berne']]);
+    // Sans photo à la maison entre les deux : un voyage.
+    expect(Object.keys(chemins(arborescence(grouper(loin, [maison], O()), nomsEx, O())))).toEqual(['Voyage_Zermatt_11-12.07.26/Zermatt_11.07.26', 'Voyage_Zermatt_11-12.07.26/Berne_12.07.26']);
+    const ps = [loin[0], photo('2026-07-11T20:00:00', 46.5, 6.6), loin[1]];
+    const d = arborescence(grouper(ps, [maison], O()), nomsEx, O());
+    expect(Object.keys(chemins(d))).toEqual(['Zermatt_11.07.26', 'Maison/11.07.26', 'Berne_12.07.26']);
+  });
+
+  it('passe voyages : un lieu connu au loin (chez des proches) ne coupe pas le voyage (D87)', () => {
+    const famille = lieu('Famille', 13.9, 100.0, 300);
+    const ps = [photo('2026-07-11T10:00:00', 13.75, 100.5), photo('2026-07-12T10:00:00', 13.9, 100.0), photo('2026-07-13T10:00:00', 14.02, 99.53)];
+    const d = arborescence(grouper(ps, [maison, famille], O()), noms, O());
+    expect(Object.keys(chemins(d))).toEqual(['Voyage_Bangkok_11-13.07.26/Bangkok_11.07.26', 'Famille/12.07.26', 'Voyage_Bangkok_11-13.07.26/Kanchanaburi_13.07.26']);
   });
 
   it('passe voyages : un retour au domicile entre deux étapes les sépare', () => {
@@ -366,3 +402,52 @@ describe('photos sans date (date du fichier seulement)', () => {
     expect(avecSansDate([], [])).toEqual([]);
   });
 });
+
+describe('le calendrier sépare les événements dans un lieu connu (D88)', () => {
+  const maison = lieu('Maison', 46.5, 6.6, 200, { domicile: true });
+  const evt = (titre: string, debut: string, fin: string, extra: Partial<EvenementCalendrier> = {}): EvenementCalendrier => ({ titre, debut, fin, journee: true, recurrent: false, ...extra });
+  // Une photo chaque jour du 9 au 26 décembre, trois les 24, 25 et 26.
+  const decembre = () => {
+    const ps: PhotoTri[] = [];
+    for (let j = 9; j <= 26; j++) for (let k = 0; k < (j >= 24 ? 3 : 1); k++) ps.push(photo(`2025-12-${String(j).padStart(2, '0')}T1${k}:00:00`, 46.5, 6.6));
+    return ps;
+  };
+  const noel = evt('Noel', '2025-12-24', '2025-12-26');
+
+  it('un sous-dossier de plus de 3 jours : l’événement forme son propre sous-dossier, nommé par ses dates', () => {
+    const ps = decembre();
+    const d = arborescence(grouper(ps, [maison], O()), new Map(), O(), [noel]);
+    expect(chemins(d)).toEqual({ 'Maison/09-23.12.25': 15, 'Maison/24-26.12.25': 9 });
+    expect(d.find((x) => x.chemin[1] === '24-26.12.25')?.evenement).toBe('Noel');
+    // Sans calendrier, l'option décochée, par jour ou par mois : rien ne change.
+    const sans = chemins(arborescence(grouper(ps, [maison], O()), new Map(), O()));
+    expect(sans).toEqual({ 'Maison/09-26.12.25': 24 });
+    expect(chemins(arborescence(grouper(ps, [maison], O()), new Map(), O({ calendrierLieuxConnus: false }), [noel]))).toEqual(sans);
+    expect(Object.keys(chemins(arborescence(grouper(ps, [maison], O()), new Map(), O({ parMois: true }), [noel])))).toEqual(['Maison/12.25']);
+  });
+
+  it('ni sous-dossier de 3 jours ou moins, ni événement récurrent, de plus de 21 jours ou de moins de 5 photos', () => {
+    const ps = decembre();
+    const g = grouper(ps, [maison], O());
+    const intact = { 'Maison/09-26.12.25': 24 };
+    expect(chemins(arborescence(g, new Map(), O(), [{ ...noel, recurrent: true }]))).toEqual(intact);
+    expect(chemins(arborescence(g, new Map(), O(), [evt('Vacances', '2025-12-01', '2026-01-04')]))).toEqual(intact);
+    expect(chemins(arborescence(g, new Map(), O(), [evt('Rendez-vous', '2025-12-12', '2025-12-13')]))).toEqual(intact);
+    const court = ps.filter((p) => p.date!.startsWith('2025-12-2'));
+    expect(chemins(arborescence(grouper(court, [maison], O()), new Map(), O(), [noel]))).toEqual({ 'Maison/20-26.12.25': 13 });
+    const troisJours = ps.filter((p) => p.date! >= '2025-12-24');
+    expect(chemins(arborescence(grouper(troisJours, [maison], O()), new Map(), O(), [evt('Fete', '2025-12-25', '2025-12-25')]))).toEqual({ 'Maison/24-26.12.25': 9 });
+  });
+
+  it('quelques photos isolées entre deux événements rejoignent le morceau le plus proche', () => {
+    // Trois photos les 20 et 21 (le sapin), une les 22 et 23, trois du 24 au 26 (Noël).
+    const ps: PhotoTri[] = [];
+    for (const [j, n] of [[20, 3], [21, 3], [22, 1], [23, 1], [24, 3], [25, 3], [26, 3]]) for (let k = 0; k < n; k++) ps.push(photo(`2025-12-${j}T1${k}:00:00`, 46.5, 6.6));
+    const d = arborescence(grouper(ps, [maison], O()), new Map(), O(), [noel, evt('Sapin', '2025-12-20', '2025-12-21')]);
+    // Les 22 et 23 (deux photos) rejoignent le sapin, plus proche que Noël ; aucune photo ne se perd.
+    expect(chemins(d)).toEqual({ 'Maison/20-23.12.25': 8, 'Maison/24-26.12.25': 9 });
+    // Moins de 5 photos pendant le sapin : il ne forme rien, ces photos rejoignent Noël.
+    expect(chemins(arborescence(grouper(ps.slice(4), [maison], O()), new Map(), O(), [noel, evt('Sapin', '2025-12-20', '2025-12-21')]))).toEqual({ 'Maison/21-26.12.25': 13 });
+  });
+});
+

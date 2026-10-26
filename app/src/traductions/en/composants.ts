@@ -3,10 +3,6 @@
 
 export const TEXTES: Record<string, string> = {
   // TriAuto.tsx
-  'Recalculer l’arborescence ?': 'Recalculate the folder tree?',
-  'Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier calcul seront remplacés (Ctrl+Z annule).':
-    'The photos to sort will be arranged again: moves made by hand since the last calculation will be replaced (Ctrl+Z undoes).',
-  Recalculer: 'Recalculate',
   'Tri par lieux : {0} pour {1}':
     'Sort by place: {0} for {1}',
   'dossier proposé': 'folder proposed',
@@ -16,45 +12,11 @@ export const TEXTES: Record<string, string> = {
   'Réglages du tri': 'Sorting settings',
   'fichier à trier': 'file to sort',
   'fichiers à trier': 'files to sort',
-  ' (déjà calculé : vous pouvez recalculer avec d’autres réglages)': ' (already calculated: you can recalculate with other settings)',
-  'Précision des lieux : {0} km': 'Place precision: {0} km',
-  'Deux photos prises à moins de {0} km l’une de l’autre vont dans le même lieu. Plus petit : un dossier par quartier ; plus grand : un dossier par ville ou par région.':
-    'Two photos taken less than {0} km apart go to the same place. Smaller: one folder per neighbourhood; larger: one folder per town or region.',
-  'Un dossier par jour': 'One folder per day',
-  'Décoché (conseillé, même pour des vacances) : les jours passés au même endroit forment une seule sortie, et chaque nouvel endroit a la sienne ; une semaine au même hôtel donne un dossier. Coché : un dossier pour chaque jour, même sans changer d’endroit.':
-    'Unticked (recommended, even for a holiday): the days spent in the same place form a single outing, and each new place gets its own; a week at the same hotel gives one folder. Ticked: one folder for each day, even without changing place.',
-  'Regrouper les voyages': 'Group trips',
-  'Les sorties loin de chez vous qui s’enchaînent sans retour à la maison sont réunies dans un dossier « {0}_… », avec une sortie par étape.':
-    'Outings far from home that follow one another without going back home are gathered in a “{0}_…” folder, with one outing per stage.',
   'Sans effet pour l’instant : cochez « C’est notre domicile » sur un lieu ci-dessus, ou indiquez-le dans la Configuration.':
     'No effect for now: tick “This is our home” on a place above, or set it in the Configuration.',
-  'Utiliser les lieux connus ({0})': 'Use known places ({0})',
-  'Les photos prises dans un lieu enregistré (maison, grands-parents, école, club…) vont dans le dossier de ce lieu, rangées par sortie. Les lieux se définissent dans la Configuration, ou ci-dessus parmi les lieux fréquents.':
-    'Photos taken at a saved place (home, grandparents, school, club…) go to that place’s folder, arranged by outing. Places are defined in the Configuration, or above among the frequent places.',
   'Réglages avancés': 'Advanced settings',
-  'Nouvelle sortie après (jours sans photo)': 'New outing after (days without photos)',
-  'Au même lieu, si plus de jours passent sans photo, une nouvelle sortie commence.': 'At the same place, if more days than this pass without photos, a new outing starts.',
-  'Durée maximale d’une sortie (jours)': 'Maximum length of an outing (days)',
-  'Coupe en plusieurs sorties un lieu photographié très souvent, comme la maison.': 'Splits a very often photographed place, such as home, into several outings.',
-  'Un dossier par mois': 'One folder per month',
-  'Un dossier par lieu et par mois ({0}_MM.AA), sans chercher les sorties.':
-    'One folder per place and per month ({0}_MM.YY), without looking for outings.',
-  'Un seul dossier par lieu': 'A single folder per place',
-  'Toutes les photos d’un lieu ensemble, sans découpage en sorties ni date.': 'All the photos of a place together, not split into outings and without a date.',
-  'Voyage au-delà de (km du domicile)': 'Trip beyond (km from home)',
-  'Une sortie plus loin que cette distance de la maison compte comme un voyage.': 'An outing further than this distance from home counts as a trip.',
-  'Étapes d’un voyage : écart maximal (jours)': 'Stages of a trip: maximum gap (days)',
-  'Deux sorties lointaines séparées de plus de jours que cela forment deux voyages.': 'Two distant outings separated by more days than this form two trips.',
-  'Écart toléré sans retour au domicile (jours)': 'Gap allowed without going back home (days)',
-  'Jours sans photo acceptés au milieu d’un voyage, tant qu’aucune photo n’est prise à la maison.': 'Days without photos accepted in the middle of a trip, as long as no photo is taken at home.',
-  'Utiliser les noms de fichiers parlants': 'Use meaningful file names',
-  '« Anniversaire Lea.jpg » donne son nom à la sortie.': '“Lea birthday.jpg” gives its name to the outing.',
   'Noms des lieux (OpenStreetMap) : {0} / {1} — encore {2}': 'Place names (OpenStreetMap): {0} / {1} — {2} left',
   'Arrêter (les noms déjà reçus sont gardés)': 'Stop (names already received are kept)',
-  'Recalculer l’arborescence': 'Recalculate the folder tree',
-  'Calculer l’arborescence': 'Calculate the folder tree',
-  'Les coordonnées moyennes de chaque lieu sont envoyées à OpenStreetMap (Nominatim) pour le nommer, une par seconde ; rien d’autre.':
-    'The average coordinates of each place are sent to OpenStreetMap (Nominatim) to name it, one per second; nothing else.',
 
   // ChoixLangue.tsx
   'Langue du navigateur': 'Browser language',
@@ -224,7 +186,6 @@ export const TEXTES: Record<string, string> = {
   'Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).': 'First give the place a name (e.g. Grandparents).',
   'Domicile « {0} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.':
     'Home “{0}” saved: trips will be detected the next time the folder tree is calculated.',
-  'Lieu « {0} » enregistré : recalculez l’arborescence pour en tenir compte.': 'Place “{0}” saved: recalculate the folder tree to take it into account.',
   'lieu qui revient souvent': 'place that comes up often',
   'lieux qui reviennent souvent': 'places that come up often',
   '— à enregistrer comme lieu connu (maison, grands-parents, école…)': '— to save as a known place (home, grandparents, school…)',
@@ -285,7 +246,6 @@ export const TEXTES: Record<string, string> = {
   'Chercher…': 'Search…',
   'Chercher un dossier': 'Search for a folder',
   'Présentation des dossiers': 'Folder display',
-  'Par dossier': 'By folder',
   'Par période': 'By period',
   'Seulement les dossiers avec une alerte (petit, sans date, nom en double…)': 'Only folders with a warning (small, no date, duplicate name…)',
   'Seulement les alertes': 'Only warnings',
@@ -389,5 +349,72 @@ export const TEXTES: Record<string, string> = {
   'Ranger les {0}': 'Arrange the {0}',
   'nouvelle photo': 'new photo',
   'nouvelles photos': 'new photos',
-  'Tout recalculer': 'Recalculate everything',
+  // Copies exactes en attente avant le tri (D85).
+  'Copies exactes pas encore écartées : {0}.': 'Exact copies not yet set aside: {0}.',
+  'Ces photos existent déjà ailleurs dans votre dossier (proposition de l’étape « {0} », pas encore acceptée). Écartez-les d’abord : sinon, le tri les rangera une seconde fois.':
+    'These photos already exist elsewhere in your folder (suggestion of the “{0}” step, not yet accepted). Set them aside first: otherwise, the sorting will file them a second time.',
+  'Les voir d’abord': 'See them first',
+  // Tri automatique en trois questions, avec l'aperçu (D87).
+  'Lieu « {0} » enregistré : rangez à nouveau pour en tenir compte.': 'Place “{0}” saved: arrange again to take it into account.',
+  'Par sortie (conseillé)': 'By outing (recommended)',
+  'Les jours passés au même endroit forment une sortie ; chaque nouvel endroit a la sienne. Une semaine au même hôtel donne un dossier. Pour couper un séjour en journées, « Scinder par jour » à l’étape suivante.':
+    'Days spent at the same place form one outing; each new place has its own. A week at the same hotel gives one folder. To cut a stay into days, use “Split by day” at the next step.',
+  'Par jour': 'By day',
+  'Un dossier par endroit et par journée : des dossiers courts, utile pour un projet d’un seul voyage.': 'One folder per place and per day: short folders, useful for a project of a single trip.',
+  'Par mois': 'By month',
+  'Un dossier par endroit et par mois, sans chercher les sorties : le plus rapide à parcourir.': 'One folder per place and per month, without looking for outings: the quickest to browse.',
+  'une rue': 'a street',
+  'un quartier': 'a neighbourhood',
+  'un village': 'a village',
+  'une ville': 'a town',
+  'une région': 'a region',
+  '{0} → « {1} ». Rangez à nouveau : des dossiers ont pu se vider.': '{0} → “{1}”. Arrange again: some folders may now be empty.',
+  'Ces photos existent déjà ailleurs dans votre dossier (proposition de l’étape « {0} », pas encore acceptée) : le tri les a rangées une seconde fois. Écartez-les, puis rangez à nouveau.':
+    'These photos already exist elsewhere in your folder (suggestion of the “{0}” step, not yet accepted): the sorting filed them a second time. Set them aside, then arrange again.',
+  'Ranger à nouveau ?': 'Arrange again?',
+  'Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier rangement seront remplacés (Ctrl+Z annule).':
+    'The photos to sort will be arranged again: moves made by hand since the last arrangement will be replaced (Ctrl+Z undoes).',
+  'Ranger à nouveau': 'Arrange again',
+  'Noms des lieux indisponibles (OpenStreetMap injoignable) : les dossiers ont des noms provisoires (« {0}_01 »…). Renommez-les plus tard, ou rangez à nouveau une fois connecté.':
+    'Place names unavailable (OpenStreetMap cannot be reached): the folders have temporary names (“{0}_01”…). Rename them later, or arrange again once connected.',
+  'Une sortie dure au plus (jours)': 'An outing lasts at most (days)',
+  'Au même endroit, une nouvelle sortie commence au-delà de cette durée, ou après une semaine sans photo. Coupe en plusieurs sorties un lieu photographié très souvent, comme la maison.':
+    'At the same place, a new outing starts beyond this length, or after a week without photos. Splits a very often photographed place, such as home, into several outings.',
+  'Un voyage commence à (km de la maison)': 'A trip starts at (km from home)',
+  'Une sortie plus loin que cette distance de la maison peut faire partie d’un voyage.': 'An outing further than this distance from home can be part of a trip.',
+  ' (déjà rangés : vous pouvez ranger à nouveau avec d’autres réglages)': ' (already arranged: you can arrange again with other settings)',
+  'Comment ranger ?': 'How to arrange?',
+  'Deux photos sont au même endroit si elles sont dans…': 'Two photos are at the same place if they are in…',
+  'Taille d’un même endroit': 'Size of a same place',
+  'À moins de {0} km l’une de l’autre': 'Less than {0} km apart',
+  'Avec vos photos : {0}, hors des lieux connus. Deux photos à moins de {1} km l’une de l’autre vont au même endroit, de proche en proche.':
+    'With your photos: {0}, outside the known places. Two photos less than {1} km apart go to the same place, step by step.',
+  endroit: 'place',
+  endroits: 'places',
+  'Réunir les étapes d’un voyage': 'Gather the stages of a trip',
+  'Les sorties à plus de {0} km de la maison qui s’enchaînent, sans retour entre-temps, vont dans un dossier « {1}_… », avec une étape par lieu.':
+    'Outings more than {0} km from home that follow one another, without going back home in between, go to a “{1}_…” folder, with one stage per place.',
+  'Tout ranger à nouveau': 'Arrange everything again',
+  'Ranger à nouveau dans ces {0}': 'Arrange again into these {0}',
+  'Ranger les photos dans ces {0}': 'Arrange the photos into these {0}',
+  'Ensuite, les noms des endroits sont demandés à OpenStreetMap (Nominatim) : seules les coordonnées moyennes de chaque endroit sont envoyées, une par seconde.':
+    'The place names are then asked from OpenStreetMap (Nominatim): only the average coordinates of each place are sent, one per second.',
+  ' : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; l’IA peut situer les photos sans GPS.':
+    ': put screenshots aside, save the places that come up often, choose how to arrange (the result shows at once), then “Arrange the photos”; the AI can locate photos without GPS.',
+  'L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Écartez d’abord les copies s’il en reste, rangez à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…). Choisissez ensuite comment ranger : le résultat se voit tout de suite avec vos photos. Vous le vérifierez et le corrigerez à l’étape suivante.':
+    'The application arranges the photos by place (GPS position) and by outing (the days spent at the same place). First set aside any remaining copies, put screenshots aside and save the places that come up often (home, grandparents…). Then choose how to arrange: the result shows at once with your photos. You will check and correct it at the next step.',
+  'Photos pas encore rangées': 'Photos not arranged yet',
+  'Rangez les photos pour continuer': 'Arrange the photos to continue',
+  // Étape 7 : dossiers nouveaux, ordre par taille (D89) ; le calendrier dans les lieux connus (D88).
+  'Dossier créé par le tri automatique : il n’existe pas dans votre dossier d’origine': 'Folder created by the automatic sorting: it does not exist in your original folder',
+  'Dossier créé à la main : il n’existe pas dans votre dossier d’origine': 'Folder created by hand: it does not exist in your original folder',
+  'Par taille (les plus petits d’abord)': 'By size (smallest first)',
+  'À la maison et dans vos lieux connus, séparer les événements du calendrier (Noël, anniversaires…)': 'At home and in your known places, separate the events of the calendar (Christmas, birthdays…)',
+  'Plus de 3 jours au même endroit sont coupés autour des événements de votre calendrier pendant lesquels au moins 5 photos ont été prises. Les dossiers gardent un nom fait de dates : vous choisirez leur nom au Nommage.':
+    'More than 3 days at the same place are cut around the events of your calendar during which at least 5 photos were taken. The folders keep a name made of dates: you will choose their name at the Naming step.',
+  'Avec vos photos : {0}.': 'With your photos: {0}.',
+  'sous-dossier séparé': 'separated subfolder',
+  'sous-dossiers séparés': 'separated subfolders',
+  'Aucun calendrier pour l’instant.': 'No calendar yet.',
+  'Ajouter un calendrier dans la Configuration': 'Add a calendar in the Configuration',
 };

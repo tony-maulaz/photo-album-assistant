@@ -4,8 +4,11 @@ import {
   aRelire,
   avancementGroupes,
   basculer,
+  copiesEnAttente,
   ecarterTout,
   etatPhoto,
+  exemplairesAEcarterDans,
+  exemplairesEcartesDans,
   garderTout,
   groupesCopies,
   groupesScenes,
@@ -13,7 +16,7 @@ import {
   photosDuGroupe,
   type GroupeDoublons,
 } from '../src/lib/groupesDoublons';
-import { Historique, mettreDeCote, planVide, RACINE, type FichierPlan, type Plan } from '../src/lib/plan';
+import { dossierSource, ecarterDoublons, garderAussi, Historique, mettreDeCote, planVide, RACINE, type FichierPlan, type Plan } from '../src/lib/plan';
 
 function plan(): Plan {
   const p = planVide();
@@ -167,5 +170,41 @@ describe('construction des groupes', () => {
     expect(groupes[1].membres.find((m) => m.id === 'c.jpg')).toMatchObject({ garder: true, refus: true });
     expect(groupes.map((g) => g.section)).toEqual(['jour:2025-12-13', 'jour:2025-12-13', 'sans', 'dossier:best']);
     expect(groupesScenes(lots, fichiers(p)).map((g) => g.cle)).toEqual(groupes.map((g) => g.cle));
+  });
+});
+
+describe('avant le tri (D85)', () => {
+  it('signale les copies encore « à écarter » parmi les photos que le tri range, et seulement celles-là', () => {
+    const p = plan();
+    const groupes = groupesCopies(
+      [
+        { garde: 'Best of/IMG-WA1.jpg', copies: [{ id: 'IMG_1.jpg', type: 'identique' }], aGarder: ['Best of/IMG-WA1.jpg'] },
+        { garde: 'a.jpg', copies: [{ id: 'b.jpg', type: 'identique' }], aGarder: ['a.jpg', 'b.jpg'] },
+      ],
+      fichiers(p),
+    );
+    const aTrier = new Set(['IMG_1.jpg', 'a.jpg', 'b.jpg', 'c.jpg']);
+    expect(copiesEnAttente(groupes, aTrier, fichiers(p)).map((g) => g.cle)).toEqual(['copie:Best of/IMG-WA1.jpg']);
+    // Une fois acceptée, la copie n'attend plus.
+    new Historique().enregistrer(accepter(p, groupes));
+    expect(copiesEnAttente(groupes, aTrier, fichiers(p))).toEqual([]);
+    expect(p.fichiers.get('IMG_1.jpg')?.statut).toBe('mis_de_cote');
+  });
+});
+
+describe('copies dans plusieurs dossiers gardés : tout un dossier d’un coup (D86)', () => {
+  it('écarte les exemplaires du dossier gardés aussi ailleurs, jamais le dernier ; puis les remet', () => {
+    const p = plan();
+    const groupes = groupesCopies([{ garde: 'IMG_1.jpg', copies: [{ id: 'Best of/IMG-WA1.jpg', type: 'identique' }], aGarder: ['IMG_1.jpg', 'Best of/IMG-WA1.jpg'] }], fichiers(p));
+    const dansBest = (f: FichierPlan) => dossierSource(f) === 'Best of';
+    const aLaRacine = (f: FichierPlan) => dossierSource(f) === '';
+    expect(exemplairesAEcarterDans(groupes, dansBest, fichiers(p))).toEqual(['Best of/IMG-WA1.jpg']);
+    new Historique().enregistrer(ecarterDoublons(p, [{ id: 'Best of/IMG-WA1.jpg', raison: 'doublons_exacts' }]));
+    // Le seul exemplaire encore gardé, à la racine, n'est jamais proposé.
+    expect(exemplairesAEcarterDans(groupes, aLaRacine, fichiers(p))).toEqual([]);
+    expect(exemplairesEcartesDans(groupes, dansBest, fichiers(p))).toEqual(['Best of/IMG-WA1.jpg']);
+    new Historique().enregistrer(garderAussi(p, ['Best of/IMG-WA1.jpg']));
+    expect(exemplairesEcartesDans(groupes, dansBest, fichiers(p))).toEqual([]);
+    expect(p.fichiers.get('Best of/IMG-WA1.jpg')?.statut).toBe('archive');
   });
 });

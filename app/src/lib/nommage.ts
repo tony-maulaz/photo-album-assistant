@@ -9,8 +9,9 @@ import consigneContexte from '../ia/consignes/nommage_contexte.txt?raw';
 import consigneNommage from '../ia/consignes/nommage_consigne.txt?raw';
 import consigneSousDossier from '../ia/consignes/nommage_sous_dossier.txt?raw';
 import consigneSysteme from '../ia/consignes/nommage_systeme.txt?raw';
+import { dureeEvenement, evenementsAutour, evenementsUtiles, partPendant, type EvenementCalendrier } from './ics';
 import { verifierNomDossier } from './noms';
-import { RACINE, type FichierPlan, type Plan } from './plan';
+import { dateSure, RACINE, type FichierPlan, type Plan } from './plan';
 import { coutUSD, jetonsImage, modele as infoModele, PRIX_RECHERCHE_WEB } from './tarifs';
 import { dateDeNom } from './tri';
 
@@ -425,6 +426,189 @@ export function nomDepuisEvenement(titre: string, du: string, au: string): strin
 /** Le nom suit-il la convention (Theme_Lieu_JJ.MM.AA ou Theme_Lieu_JJ-JJ.MM.AA) ? */
 export function respecteConvention(nom: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9-]*(_[A-Za-z0-9-]+)*_\d{2}(-\d{2})?\.\d{2}\.\d{2}$/.test(nom);
+}
+
+// ---------------------------------------------------------------------------
+// Noms possibles d'un dossier : calendrier, lieu, IA
+// ---------------------------------------------------------------------------
+
+/** Part des photos datées d'un dossier qu'un événement doit couvrir pour pouvoir le nommer. */
+export const PART_MIN_EVENEMENT = 0.8;
+/** Un titre plus long reste proposé, mais n'est jamais pris d'office : il ferait un nom de dossier trop long. */
+export const TITRE_MAX_PRIS_D_OFFICE = 40;
+
+export interface EvenementCandidat {
+  evenement: EvenementCalendrier;
+  /** Part des photos datées prises pendant l'événement (0,8 à 1). */
+  part: number;
+}
+
+/** Mots d'un texte, sans accents ni majuscules : « Fête à Lieu-A » → « fete a lieu a ». */
+function mots(texte: string): string {
+  return texte
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+/** `texte` contient-il `partie`, mot pour mot ? « Course des quais Lieu A » contient « Lieu_A » ; « Lieu_AB » ne le contient pas. */
+function contientMots(texte: string, partie: string): boolean {
+  const p = mots(partie);
+  return !!p && ` ${mots(texte)} `.includes(` ${p} `);
+}
+
+/**
+ * Événements qui peuvent nommer des photos : utiles (ni récurrents ni de plus
+ * de 21 jours, `evenementsUtiles`) et pendant lesquels 80 % au moins des
+ * photos datées ont été prises. La plus grande part d'abord, puis le plus
+ * court, plus précis ; un même titre (deux calendriers) ne compte qu'une fois.
+ */
+export function evenementsCandidats(evts: EvenementCalendrier[], dates: string[]): EvenementCandidat[] {
+  if (!dates.length) return [];
+  const triees = [...dates].sort();
+  // Une journée de marge : un événement à l'heure, la veille au soir, peut couvrir les photos d'après minuit.
+  const autour = evenementsAutour(evenementsUtiles(evts), triees[0].slice(0, 10), triees.at(-1)!.slice(0, 10), 1);
+  const candidats = autour
+    .map((evenement) => ({ evenement, part: partPendant(evenement, dates) }))
+    .filter((c) => c.part >= PART_MIN_EVENEMENT - 1e-9)
+    .sort(
+      (a, b) =>
+        b.part - a.part ||
+        dureeEvenement(a.evenement) - dureeEvenement(b.evenement) ||
+        a.evenement.debut.localeCompare(b.evenement.debut) ||
+        a.evenement.titre.localeCompare(b.evenement.titre),
+    );
+  const vus = new Set<string>();
+  return candidats.filter((c) => {
+    const cle = mots(c.evenement.titre);
+    if (!cle || vus.has(cle)) return false;
+    vus.add(cle);
+    return true;
+  });
+}
+
+/**
+ * Lieu d'un dossier pour son nom : celui du tri (lieu connu, géocodage), sinon
+ * celui d'un nom automatique (« Lieu_A_2025-07-04 » → « Lieu A »). `null` s'il
+ * est inconnu : dossier nommé à la main, ou lieu sans nom du tri (« Lieu_03 »).
+ */
+export function lieuPourNom(plan: Plan, c: CibleNommage): string | null {
+  const d = plan.dossiers.get(c.dossier);
+  const brut = d?.tri?.lieu ?? (estNomAutomatique(c.nom, d?.tri?.nom) ? lieuDuDossier(c.nom, c.parent) : '');
+  const lieu = brut.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+  return lieu && !/^(?:Lieu|Place) \d+$/.test(lieu) ? lieu : null;
+}
+
+/**
+ * Le dossier parent dit-il déjà le lieu ? Étape d'un voyage, sous-dossier
+ * d'un lieu connu (« Domicile/24-26.12.25 »), ou parent dont le nom ou le
+ * lieu est celui-là.
+ */
+function parentDitLeLieu(plan: Plan, id: string, lieu: string): boolean {
+  const d = plan.dossiers.get(id);
+  const p = d?.parent && d.parent !== RACINE ? plan.dossiers.get(d.parent) : undefined;
+  if (!p) return false;
+  if (p.tri?.origine === 'voyage' || p.tri?.origine === 'lieu_connu') return true;
+  return contientMots(p.nom, lieu) || (!!p.tri?.lieu && mots(p.tri.lieu) === mots(lieu));
+}
+
+/** Nom tiré du calendrier pour un dossier. */
+export interface NomCalendrier {
+  /** Texte du champ : titre, lieu, dates (« Course des quais Lieu A 04.07.25 ») ; le nom du dossier en est tiré par `normaliserNom`. */
+  nom: string;
+  titre: string;
+  /** Part des photos datées prises pendant l'événement. */
+  part: number;
+  /** Titre de plus de 40 caractères : proposé, jamais pris d'office. */
+  long: boolean;
+}
+
+/** Ce qui peut nommer un dossier ; l'utilisateur choisit, ou écrit le sien. */
+export interface NomsPossibles {
+  /** Un nom par événement candidat, dans l'ordre de `evenementsCandidats`. */
+  calendrier: NomCalendrier[];
+  /** Lieu et dates (« Lieu A 04.07.25 »), ou `null` si le lieu est inconnu. */
+  lieu: string | null;
+  /** Nom proposé par l'IA, s'il existe. */
+  ia: string | null;
+  /**
+   * Nom pris d'office pour le champ : le meilleur événement candidat (titre de
+   * 40 caractères au plus, sans égalité avec le suivant), sinon la proposition
+   * de l'IA, sinon rien. `seul` : c'est le seul candidat (« Prendre le nom du
+   * calendrier » ne renomme que ceux-là ; avec plusieurs, l'utilisateur vérifie).
+   */
+  propose: { nom: string; source: 'calendrier' | 'ia'; seul?: boolean } | null;
+}
+
+/**
+ * Noms possibles de chaque dossier à nommer (D83). Un événement du calendrier
+ * candidat donne son titre suivi du lieu et des dates du dossier, selon la
+ * convention Theme_Lieu_JJ.MM.AA (« Course des quais Lieu A 04.07.25 ») ; le
+ * lieu n'est pas ajouté s'il figure déjà dans le titre, ni pour un
+ * sous-dossier dont le parent le dit déjà (« Domicile/24-26.12.25 » → « Noel
+ * 24-26.12.25 »). Un sous-dossier ne reçoit pas un événement que son parent
+ * porte déjà dans son nom, ni un événement qui nomme aussi son parent, à
+ * nommer ici (le titre d'un voyage ne se répète pas dans chaque étape). Deux
+ * dossiers voisins qui recevraient le même nom sont numérotés (« … Lieu A 2
+ * 04.07.25 »). `ia` : propositions de l'IA par dossier (lues d'un fichier :
+ * vérifiées ici).
+ */
+export function nomsPossibles(plan: Plan, cibles: CibleNommage[], evts: EvenementCalendrier[], ia: Record<string, unknown> = {}): Map<string, NomsPossibles> {
+  const datesDe = (photos: FichierPlan[]) =>
+    photos
+      .map((f) => dateSure(f))
+      .filter((d): d is string => !!d)
+      .sort();
+  const aNommer = new Set(cibles.map((c) => c.dossier));
+  // Candidats des parents à nommer ici, calculés une fois par parent.
+  const candidatsParent = new Map<string, Set<string>>();
+  const titresDuParent = (id: string): Set<string> => {
+    let s = candidatsParent.get(id);
+    if (!s) {
+      s = new Set(evenementsCandidats(evts, datesDe(photosDuDossier(plan, id))).map((c) => mots(c.evenement.titre)));
+      candidatsParent.set(id, s);
+    }
+    return s;
+  };
+
+  const pris = new Map<string, number>();
+  const resultat = new Map<string, NomsPossibles>();
+  for (const c of cibles) {
+    const d = plan.dossiers.get(c.dossier);
+    const parent = d?.parent && d.parent !== RACINE ? plan.dossiers.get(d.parent) : undefined;
+    const dates = datesDe(c.photos);
+    const lieu = lieuPourNom(plan, c);
+    const avecDates = (texte: string) => (dates.length ? nomDepuisEvenement(texte, dates[0], dates.at(-1)!) : texte.trim());
+    const ajouterLieu = !!lieu && !parentDitLeLieu(plan, c.dossier, lieu);
+
+    const calendrier: NomCalendrier[] = [];
+    const durees: number[] = [];
+    for (const { evenement, part } of evenementsCandidats(evts, dates)) {
+      const titre = evenement.titre.trim();
+      if (parent && (contientMots(parent.nom, titre) || (aNommer.has(parent.id) && titresDuParent(parent.id).has(mots(titre))))) continue;
+      const base = ajouterLieu && !contientMots(titre, lieu!) ? `${titre} ${lieu}` : titre;
+      const cle = `${d?.parent ?? ''}|${mots(avecDates(base))}`;
+      const n = (pris.get(cle) ?? 0) + 1;
+      pris.set(cle, n);
+      calendrier.push({ nom: avecDates(n > 1 ? `${base} ${n}` : base), titre, part, long: [...titre].length > TITRE_MAX_PRIS_D_OFFICE });
+      durees.push(dureeEvenement(evenement));
+    }
+
+    const brutIA = estObjet(ia[c.dossier]) ? (ia[c.dossier] as Record<string, unknown>).nom : undefined;
+    const nomIA = typeof brutIA === 'string' && brutIA.trim() ? brutIA.trim() : null;
+    // Le plus précis des candidats (« 18 ans de Lea » plutôt que le voyage qui l'entoure), sauf égalité parfaite.
+    const exAequo = calendrier.length > 1 && Math.abs(calendrier[0].part - calendrier[1].part) < 1e-9 && durees[0] === durees[1];
+    const meilleur = calendrier[0] && !calendrier[0].long && !exAequo ? calendrier[0] : null;
+    resultat.set(c.dossier, {
+      calendrier,
+      lieu: lieu ? avecDates(lieu) : null,
+      ia: nomIA,
+      propose: meilleur ? { nom: meilleur.nom, source: 'calendrier', seul: calendrier.length === 1 } : nomIA ? { nom: nomIA, source: 'ia' } : null,
+    });
+  }
+  return resultat;
 }
 
 // ---------------------------------------------------------------------------

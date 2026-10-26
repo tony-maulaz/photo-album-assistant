@@ -87,10 +87,6 @@ export const TEXTES: Record<string, string> = {
   ' (de mois, de plus d’un mois, gardés tels quels ou exclus à la main)': ' (month folders, longer than a month, kept as is or excluded by hand)',
   'inclure à nouveau': 'include again',
   'Proposer un rattachement avec l’IA': 'Suggest attachments with the AI',
-  'Pour chaque petit dossier, l’IA compare ses photos à celles des sorties voisines dans le temps et propose de le rattacher ou de le garder à part.':
-    'For each small folder, the AI compares its photos with those of the outings close in time and suggests attaching it or keeping it separate.',
-  'planches de miniatures du petit dossier et de ses 3 voisins les plus semblables':
-    'thumbnail contact sheets of the small folder and of its 3 most similar neighbours',
   'petit dossier': 'small folder',
   'petits dossiers': 'small folders',
   '{0} pour {1}.{2}': '{0} for {1}.{2}',
@@ -105,24 +101,8 @@ export const TEXTES: Record<string, string> = {
   'répertoires': 'parent folders',
   '{0} dans {1}.{2}': '{0} in {1}.{2}',
   'date inconnue': 'unknown date',
-  'Le tri par lieux isole parfois quelques photos dans un petit dossier (un arrêt en route, une photo sans GPS). Chacun est montré à côté des sorties voisines dans le temps, les plus ressemblantes d’abord : rattachez-le, ou gardez-le à part.':
-    'Sorting by place sometimes isolates a few photos in a small folder (a stop on the way, a photo without GPS). Each one is shown next to the outings close in time, the most similar first: attach it, or keep it separate.',
-  'petit dossier rattaché': 'small folder attached',
-  'petits dossiers rattachés': 'small folders attached',
-  'Tout accepter : rattacher les {0} propositions sûres (confiance 8 ou plus)': 'Accept all: attach the {0} safe suggestions (confidence 8 or more)',
-  'Aucun petit dossier (moins de {0} photos) à rattacher.': 'No small folders (fewer than {0} photos) to attach.',
-  'IA :': 'AI:',
-  'rattacher à « {0} »': 'attach to “{0}”',
-  'garder à part, sous le nom « {0} »': 'keep separate, under the name “{0}”',
-  'garder à part': 'keep separate',
   ' (confiance {0}/10)': ' (confidence {0}/10)',
-  'à {0} h': '{0} h away',
-  '« {0} » rattaché à « {1} ».': '“{0}” attached to “{1}”.',
-  'Rattacher ici': 'Attach here',
-  'Aucune sortie voisine à moins de 12 h.': 'No neighbouring outing within 12 h.',
   'Renommé « {0} ».': 'Renamed “{0}”.',
-  'Renommer « {0} »': 'Rename “{0}”',
-  'Garder à part': 'Keep separate',
   '{0} à examiner': '{0} to look at',
   'Fusionner dans « {0} »': 'Merge into “{0}”',
   'Plusieurs dossiers couvrent parfois la même activité (une journée à la plage coupée en deux par le tri). Les propositions sont montrées côte à côte ; vous pouvez aussi fusionner à la main en glissant un dossier sur un autre à l’étape {0}.':
@@ -267,8 +247,6 @@ export const TEXTES: Record<string, string> = {
     ': set the tolerance; S saves a photo, X sets aside a failed photo. Nothing is set aside before “Confirm”.',
   ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic sur une photo la garde ou l’écarte, « Accepter » applique la proposition.':
     ' : one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: one click on a photo keeps it or sets it aside, “Accept” applies the suggestion.',
-  ' : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.':
-    ': put screenshots aside, save the places that come up often, then “Calculate the folder tree”; the AI can locate the photos without GPS.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
   ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',
   ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':
@@ -473,18 +451,23 @@ export const TEXTES: Record<string, string> = {
 
   // Dossiers.tsx (étape « Dossiers », D61)
   Trier: 'Sort',
-  'Ses photos rejoignent le tri par lieux et sorties, comme celles de la racine. Pour un dossier fourre-tout : « Divers », « Téléphone ».':
-    'Its photos join the sorting by places and outings, like those at the top level. For a catch-all folder: “Misc”, “Phone”.',
+  'Le dossier disparaît : ses photos sont réparties, avec celles en vrac, dans des dossiers par lieu et par sortie. Pour un dossier fourre-tout : « Divers », « Téléphone ».':
+    'The folder disappears: its photos are spread, with the loose ones, into folders by place and by outing. For a catch-all folder: “Misc”, “Phone”.',
   'Garder, nettoyer': 'Keep, clean',
-  'Le dossier garde son nom et sa place ; ses photos floues et ses doublons vous seront proposés. Pour un dossier déjà rangé (« Anniversaire Lea ») ou un mois de petites sorties.':
-    'The folder keeps its name and its place; its blurry photos and duplicates will be proposed to you. For a folder already arranged (“Lea birthday”) or a month of small outings.',
+  'Le dossier garde son nom et ses photos ; on vous proposera seulement d’en écarter les photos floues et les doublons. Pour un dossier déjà rangé (« Anniversaire Lea ») ou un mois de petites sorties.':
+    'The folder keeps its name and its photos; you will only be offered to set aside its blurry photos and duplicates. For a folder already sorted (“Lea birthday”) or a month of short outings.',
   'Ne pas toucher': 'Leave as is',
-  'Recopié tel quel : on n’y cherche ni photos floues ni rafales. Pour une sélection faite avec soin (« Best of »), des scans ou des documents.':
-    'Copied as is: no search for blurry photos or bursts. For a carefully made selection (“Best of”), scans or documents.',
+  'Recopié tel quel : on n’y cherche ni photos floues, ni rafales, ni copies. Pour une sélection faite avec soin (« Best of »), des scans ou des documents.':
+    'Copied as is: no search for blurry photos, bursts or copies. For a carefully made selection (“Best of”), scans or documents.',
   'Votre dossier contient déjà des sous-dossiers. Les {0} en vrac à la racine seront triés par lieux et sorties ; pour chaque sous-dossier, choisissez ce qu’il devient. Rien n’est modifié dans le dossier d’origine.':
     'Your folder already contains subfolders. The {0} loose at the top level will be sorted by places and outings; for each subfolder, choose what becomes of it. Nothing is changed in the original folder.',
   'Aucun sous-dossier : rien à décider ici.': 'No subfolders: nothing to decide here.',
   'Pour tous :': 'For all:',
+  'Pour {0} :': 'For {0}:',
+  'dossier trouvé': 'folder found',
+  'dossiers trouvés': 'folders found',
+  'Ordre des dossiers': 'Folder order',
+  'Par nom': 'By name',
   '{0} à trier · {1} · {2} à ne pas toucher': '{0} to sort · {1} · {2} left as is',
   'Aucun sous-dossier': 'No subfolders',
 
@@ -506,8 +489,6 @@ export const TEXTES: Record<string, string> = {
   'dossier gardé': 'kept folder',
 
   // Tri.tsx
-  'L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Rangez d’abord à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…), ajustez les réglages si besoin, puis calculez : vous vérifierez et corrigerez le résultat à l’étape suivante.':
-    'The application arranges the photos by place (GPS position) and by outing (the days spent at the same place). First put screenshots aside and save the places that come up often (home, grandparents…), adjust the settings if needed, then calculate: you will check and correct the result in the next step.',
 
   // Sortie.tsx : recadrage (D62)
   '{0} photos recadrées ont été copiées entières (format que le navigateur ne sait pas lire) : recadrez-les dans ifolor.':

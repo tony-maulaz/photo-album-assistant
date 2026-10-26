@@ -3,12 +3,13 @@
 // soit le dossier. La proposition garde le meilleur de chaque emplacement (un
 // dossier qui garde sa place, ou les photos à trier, sauf si la photo est déjà
 // dans un dossier « Garder, nettoyer ») et met de côté les autres ; la page
-// « Doublons » les présente comme les autres groupes (D71).
+// « Doublons » les présente comme les autres groupes (D71). Un dossier « Ne pas
+// toucher » n'est pas examiné : ses copies sont voulues (un « Best of », D85).
 
 import { useMemo } from 'preact/hooks';
 import { groupesDoublonsExacts, type GenreEmplacement, type GroupeExact } from '../lib/doublonsExacts';
 import { aEcarter, groupesCopies } from '../lib/groupesDoublons';
-import { traitementDe, type FichierPlan, type Plan } from '../lib/plan';
+import { nePasToucher, traitementDe, type FichierPlan, type Plan } from '../lib/plan';
 import { analyseAFaire, analyseEnCours } from './analyseDossier';
 import { session, versionIA, versionPlan } from './etat';
 
@@ -18,13 +19,11 @@ const A_TRIER = '§a_trier';
 /**
  * Où est une photo, pour la proposition. Dossier déjà trié : chaque dossier est
  * un emplacement, laissé tel quel. En vrac : les dossiers « Garder, nettoyer »
- * et « Ne pas toucher » gardent leur place ; toutes les autres photos sont à trier.
+ * gardent leur place ; toutes les autres photos sont à trier.
  */
 function lieu(plan: Plan, dejaTrie: boolean, f: FichierPlan): { emplacement: string; genre: GenreEmplacement } {
   if (dejaTrie) return { emplacement: f.dossier, genre: 'tel_quel' };
-  const tr = traitementDe(plan, f.dossier);
-  if (tr === 'nettoyer') return { emplacement: f.dossier, genre: 'nettoyer' };
-  if (tr === 'garder') return { emplacement: f.dossier, genre: 'tel_quel' };
+  if (traitementDe(plan, f.dossier) === 'nettoyer') return { emplacement: f.dossier, genre: 'nettoyer' };
   return { emplacement: A_TRIER, genre: 'a_trier' };
 }
 
@@ -40,7 +39,9 @@ export function useCopiesExactes(): GroupeExact[] | null {
   const pret = !analyseEnCours.value && !analyseAFaire(s);
   return useMemo<GroupeExact[] | null>(() => {
     if (!pret) return null;
-    const photos = [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && (f.statut === 'archive' || f.raison === 'doublons_exacts'));
+    const photos = [...s.plan.fichiers.values()].filter(
+      (f) => f.categorie === 'photo' && (f.statut === 'archive' || f.raison === 'doublons_exacts') && !nePasToucher(s.plan, f.dossier),
+    );
     return groupesDoublonsExacts(
       photos.map((f) => ({
         id: f.id,

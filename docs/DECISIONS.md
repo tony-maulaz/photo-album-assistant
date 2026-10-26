@@ -751,6 +751,157 @@ et les dossiers techniques ne sont jamais proposés. Les anniversaires répété
 chaque année ne comptent que si « inclure les récurrents » est coché pour le
 calendrier.
 
+**D84 — Doublons : les copies sous leurs dossiers de la source.** Sur 2025,
+le tri a été lancé avant d'accepter les copies exactes : 255 photos à trier,
+déjà rangées dans un dossier « Garder, nettoyer », ont été rangées une
+seconde fois, et la page Doublons, groupée par dossier, montrait leurs copies
+sous des dossiers créés par le tri (« Village_02-05.07.25 ») qui n'existent
+pas dans la source : on croyait que le tri avait fabriqué des copies. Une
+copie est un fichier de la source : groupées par dossier, les copies se
+rangent désormais sous les dossiers de la source (la racine reste « Photos à
+trier »), avant comme après le tri, et la légende dit où le plan range la
+photo quand c'est ailleurs (« rangée dans « … » »). Les rafales et le « Mis de
+côté » gardent les dossiers du plan. Les dossiers de la liste de gauche sont
+par ordre alphabétique, comme dans l'explorateur (sans accents ni
+majuscules, « 2 » avant « 10 »), la racine en tête, et une recherche les
+filtre (Entrée ouvre le premier trouvé) ; les journées et les mois restent
+dans l'ordre du temps.
+
+**D85 — Copies voulues, copies oubliées, sous-dossiers par nom.** Trois
+suites de D84, choisies par l'utilisateur. (1) Avant le tri : quand des
+copies exactes parmi les photos à trier ne sont pas encore écartées, le Tri
+automatique le dit au-dessus du calcul, avec « Écarter N copies » (la
+proposition de l'étape Doublons, acceptée d'un clic, annulable) et « Les voir
+d'abord » ; une fois le tri fait, l'encart demande de recalculer, des
+dossiers ayant pu se vider. Le tri ne saute pas tout seul ces copies :
+l'utilisateur décide (règle d'or 3). (2) Un dossier « Ne pas toucher » sort
+aussi des copies exactes : sur 2025, le `BESTOF` y voyait encore 6 photos
+proposées à l'écart (4 images WhatsApp, rangées là exprès, dont l'original
+était ailleurs, et 2 photos présentes deux fois dans un même sous-dossier).
+Ses copies sont voulues ; il n'encombre plus non plus « Dans plusieurs
+dossiers » (64 groupes sur 2025). Un vrai doublon dans un tel dossier n'est
+plus signalé : c'est le sens de « Ne pas toucher ». (3) L'étape Dossiers
+range les sous-dossiers par nom, avec une recherche, et un menu « Par nom /
+Par période » pour des dossiers de mois, que l'ordre des noms mélange
+(« août, avril, février… ») ; « Pour tous » s'applique aux dossiers trouvés.
+
+**D86 — Un seul onglet pour les copies ; rien n'est décidé entre deux
+dossiers gardés.** « Copies exactes » et « Dans plusieurs dossiers »
+montraient la même chose (le même fichier en plusieurs exemplaires) ; seule
+changeait la proposition, et l'utilisateur ne voyait pas pourquoi deux
+onglets. Ils n'en font plus qu'un. La proposition n'écarte que ce qui ferait
+double emploi au même endroit : une photo à trier déjà rangée dans un dossier
+gardé (255 sur 2025), deux exemplaires dans un même dossier (9). Une photo
+présente dans plusieurs dossiers gardés (23 sur 2025, dont un dossier recopié
+dans un voyage) y reste partout : l'application ne choisit pas le dossier à
+vider. Ses groupes, sans rien à relire, se montrent sous ceux à relire de la
+section, quel que soit le filtre. Groupé par dossier, un bouton écarte d'un
+coup les exemplaires du dossier qui restent gardés ailleurs ; il ne touche
+jamais une photo qui n'est que là ni le dernier exemplaire d'une photo
+(« écarter tout le dossier » aurait retiré les 4 photos propres au dossier
+recopié), et « Remettre » les rend. Une copie réduite (WhatsApp) seule dans un
+dossier gardé suit la même règle et y reste ; à trier, elle reste proposée à
+l'écart. Un résumé par paire de dossiers a été écarté : trop compliqué.
+
+**D87 — Tri automatique : trois questions et le résultat sous les yeux.**
+L'utilisateur trouvait les réglages compliqués : douze options, trois cases
+pour des façons de ranger qui s'excluent, des effets invisibles avant le
+calcul, et un essai qui coûtait les noms OpenStreetMap. Une analyse (le code,
+des mesures sur 2025, l'interface) a montré que la moitié des options
+n'avaient pas d'effet ou faisaient double emploi. L'écran pose désormais
+trois questions : **comment ranger** (par sortie, conseillé ; par jour ; par
+mois), **la taille d'un même endroit** en cinq crans nommés (une rue… une
+région) au lieu de kilomètres, **réunir les voyages** ; en avancé, la durée
+d'une sortie et la distance d'un voyage. Les lieux connus et les noms de
+fichiers servent toujours ; « un seul dossier par lieu » est retiré (un lieu
+connu « un seul dossier » le remplace). Le résultat est recalculé à chaque
+réglage (grouper et arborescence : 35 à 70 ms pour une année), avec les noms
+déjà connus, et montré en chiffres, en répartition des tailles et sur une
+frise d'exemples tirés des photos ; le bouton dit « Ranger les photos dans ces
+N dossiers ». Les vacances restent « par sortie » par défaut (une semaine au
+même hôtel = un dossier) ; « Scinder par jour » coupe un séjour à l'étape
+suivante. Valeurs changées, mesurées sur 2025 : **écart d'une sortie 7 jours**
+au lieu de 30 (à 30, la durée maximale coupait toujours avant ; 15 dossiers
+étalés sur plusieurs semaines au lieu de 19, pour 6 dossiers de plus) ;
+**distance d'un voyage 50 km** au lieu de 30 (un faux voyage de deux excursions
+disparaît, aucun vrai voyage perdu ; à confirmer sur une autre année). Écarts
+au script corrigés : les images `VideoCapture_…` ne donnent plus de nom ;
+« par mois » découpe aussi les lieux connus (le domicile faisait un seul
+dossier de 267 photos) ; par mois ou par lieu, deux lieux homonymes, ou un
+lieu du nom d'un lieu connu, ne fusionnent plus (I4) ; une photo sans GPS
+d'une journée passée à la maison y est rangée et non dans `Sans_lieu` ; un
+retour près de la maison coupe toujours un voyage, même le lendemain (deux
+excursions lointaines deux jours de suite faisaient un voyage), et un lieu
+connu au loin (chez des proches) ne compte plus comme un retour. Un ancien
+projet garde sa façon de ranger, sa taille de lieu et ses voyages ; les
+autres options reprennent leur valeur, et la distance de 30 km enregistrée
+par défaut devient 50.
+
+**D88 — Le calendrier sépare dans les lieux connus et propose des noms ; le
+GPS découpe.** L'utilisateur voulait que le calendrier serve au tri. Quatre
+analyses sur 2025 (moteur, noms, interface, avocat du diable) ont montré que
+le calendrier familial est saturé : un événement presque chaque jour (348 jours
+sur 365), 82 % à l'heure, la moitié tirés de l'agenda d'une seule personne
+(rappels, rendez-vous, travail), et des périodes comme « Vacances d'été »
+(51 jours). Le laisser former ou réunir des dossiers demandait une liste
+d'événements à relire, jugée trop lourde. Retenu : le tri forme les dossiers
+par GPS et dates, comme avant ; le calendrier n'y agit que **dans les lieux
+connus**, là où le GPS ne peut rien séparer, et seulement pour un
+sous-dossier qui couvre **plus de 3 jours** (une journée à la maison avec un
+rendez-vous n'est jamais coupée) : chaque événement utile (pas récurrent,
+21 jours au plus) pendant lequel au moins 5 photos qui se suivent ont été
+prises forme son sous-dossier, ceux qui réunissent le plus de photos d'abord
+(prendre d'abord les plus courts coupait Noël en quatre, un rappel du 24
+compris). Sur 2025 : 8 sous-dossiers séparés, 93 → 100 dossiers ; décembre au
+domicile (122 photos) devient 09-19.12 et les vacances de Noël 20-26.12 ; 35 ms
+de calcul. Ces dossiers gardent un nom fait de dates ; **le nom se choisit au
+Nommage**, entre l'événement (titre suivi du lieu, convention
+Theme_Lieu_JJ.MM.AA : le lieu, toujours juste, trahit un titre faux), le lieu,
+l'IA ou un nom tapé, avec « Prendre le nom du calendrier » pour les dossiers
+qui n'ont qu'un événement candidat (au moins 80 % des photos ; sur les 64
+dossiers nommés à la main par la famille, le titre seul était juste dans
+environ 36 cas, trop vague dans 15, faux dans 13). Les regroupements de
+l'étape 7 restent des propositions, mais ignorent désormais les événements
+récurrents ou de plus de 21 jours (« Vacances d'été » y réunissait onze
+dossiers). Sans calendrier, tout fonctionne comme avant ; la case est grisée
+avec un lien vers la Configuration.
+
+**D89 — Étape 7 : dossiers nouveaux, ordre par période en arbre, par taille.**
+Dans le panneau des dossiers, un dossier créé par le tri ou à la main porte
+l'étiquette « nouveau » (ses sous-dossiers ne la répètent pas) ; l'ancienne
+étiquette des photos arrivées après une mise à jour de l'inventaire (D63)
+devient « +N ». « Par période » garde l'arborescence, chaque niveau dans
+l'ordre du temps : à plat, on ne voyait plus comment les dossiers étaient
+rangés. Un troisième ordre, « Par taille », liste à plat les dossiers des plus
+petits aux plus grands. Les petits dossiers restent traités à l'étape 8,
+gardée séparée (sa vue d'ensemble et « Rattacher les N sûrs » sont plus
+efficaces qu'un traitement un par un à l'étape 7).
+
+**D90 — Étape 8 : un petit dossier à la fois, entre ses voisins dans le
+temps.** L'utilisateur ne voyait pas les photos à déplacer (56 px) et ne
+savait pas à quoi correspondaient les boutons, collés à droite et sans
+cible nommée. L'analyse des 29 petits dossiers de 2025 (34 avec D87) a
+montré pire : 28 sur 29 n'avaient aucun voisin à moins de 12 h (règle D10),
+« Rattacher à… » proposait d'abord `_videos_non_classees`, `BESTOF` ou
+`Domicile` (28 sur 29), « pendant cette sortie » était faux une fois sur deux
+(écart mesuré entre périodes), la ressemblance par hachage ne distinguait rien
+(36 voisins sur 38 « peu semblables », même la même sortie), et les dossiers
+gardés n'étaient jamais proposés. Dans tous les cas vérifiés à l'œil, le bon
+dossier était le plus proche dans le temps, photo à photo. La page montre
+désormais un petit dossier à la fois, ses photos en grand, entre le dossier
+juste avant et juste après lui (photo à photo, quel que soit l'écart, dossiers
+gardés compris, « Ne pas toucher » et dossiers techniques exclus), chacun avec
+l'écart, la distance et ses photos du même moment, et un bouton dessous ; une
+liste à gauche comme aux Doublons, le passage au suivant après un choix,
+« Garder seul », « Autre dossier… » trié par écart réel. Les cas évidents (à
+moins d'1 h et de 10 km, ni lieu connu ni dossier de mois) se rangent d'un
+coup après vérification. L'aide IA (IA3) regarde les deux voisins, même au
+loin (D10 élargie ; environ 0,30 USD pour une année avec Sonnet). La
+ressemblance ne trie plus rien et passe dans la bulle. Un dossier qui a des
+sous-dossiers n'est plus compté comme petit (un voyage de deux photos
+apparaissait trois fois) ; le regroupement « même jour », qui réunissait des
+lieux à 29 km, est retiré : un voisin lui-même petit porte « petit aussi ».
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
@@ -763,6 +914,9 @@ calendrier.
 | Netteté relative | 15 % les moins nets d'un dossier net = photos nettes | Seuil `[flou?]` relatif **et** absolu (I8) |
 | Netteté à 800 px comparée à 1024 px (300 photos, phase 0) | +36 % en médiane, de +8 à +111 % | Pas de conversion simple : mesurer à 1024 px comme le script 01 (D29) |
 | Phash sur l'image à l'endroit plutôt que couchée (8568 paires < 10 min, phase 0) | Même orientation : verdict changé pour 0,2 % (seuil 12) et 1,7 % (seuil 20) des paires | Seuils 12 et 20 conservés (D29) |
+| Tri 2025, taille d'un lieu (1 441 fichiers triés, 6 lieux connus) | 0,5 / 1 / 2 / 5 / 10 km → 130 / 104 / 87 / 68 / 56 dossiers | Cinq crans, 2 km par défaut (D87) |
+| Tri 2025, écart d'une sortie (durée maximale 21 j) | 1 / 3 / 7 / 14 / 30 j → 140 / 111 / 93 / 87 / 87 dossiers ; au-delà de 21 j, aucun effet | 7 jours (D87) |
+| Tri 2025, distance d'un voyage | 10 / 20 / 30 / 50 / 100 / 200 km → 8 / 7 / 6 / 5 / 5 / 3 voyages ; à 30, un faux voyage de deux excursions ; à 100, des étapes perdues | 50 km (D87) |
 
 ## 3. Incidents et corrections (tests de non-régression)
 

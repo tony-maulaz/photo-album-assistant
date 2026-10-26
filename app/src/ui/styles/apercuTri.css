@@ -1,0 +1,340 @@
+/* Aperçu du tri automatique (étape « Tri automatique ») : chiffres, répartition des tailles, frise d'exemple. */
+
+/*
+ * Couleurs des dossiers de la frise : huit teintes dans un ordre fixe, vérifiées
+ * pour les daltonismes (rouge-vert) sur les fonds clair et sombre de
+ * l'application ; la lettre de chaque pastille double la couleur. La maison
+ * reste neutre, pour que les sorties ressortent.
+ */
+.apercu-tri {
+  --apt-c0: #2a78d6;
+  --apt-c1: #eb6834;
+  --apt-c2: #1baf7a;
+  --apt-c3: #eda100;
+  --apt-c4: #e87ba4;
+  --apt-c5: #008300;
+  --apt-c6: #6250d6;
+  --apt-c7: #e34948;
+  --apt-encre: #ffffff;
+  --apt-encre-jaune: #1b1c1f;
+  --apt-maison: var(--discret);
+}
+
+:root[data-theme='dark'] .apercu-tri {
+  --apt-c0: #3987e5;
+  --apt-c1: #d95926;
+  --apt-c2: #199e70;
+  --apt-c3: #c98500;
+  --apt-c4: #d55181;
+  --apt-c5: #008300;
+  --apt-c6: #9085e9;
+  --apt-c7: #e66767;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .apercu-tri {
+    --apt-c0: #3987e5;
+    --apt-c1: #d95926;
+    --apt-c2: #199e70;
+    --apt-c3: #c98500;
+    --apt-c4: #d55181;
+    --apt-c5: #008300;
+    --apt-c6: #9085e9;
+    --apt-c7: #e66767;
+  }
+}
+
+.apercu-tri h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.apt-chiffres {
+  margin: 0 0 12px;
+}
+
+/* --- Répartition des dossiers par taille : une fine barre en cinq parts, et sa légende --- */
+
+.apt-barre-tailles {
+  display: flex;
+  gap: 2px;
+  max-width: 720px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.apt-part {
+  flex: 1 1 0;
+  min-width: 4px;
+  transition: flex-grow 0.3s ease;
+}
+
+button.apt-part {
+  min-width: 10px;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* La part « 1-2 » mène à l'exemple des très petits dossiers. */
+button.apt-part:hover:not(:disabled) {
+  filter: brightness(0.85);
+}
+
+.apt-t0 {
+  background: color-mix(in oklab, var(--accent) 50%, var(--surface));
+}
+
+.apt-t1 {
+  background: color-mix(in oklab, var(--accent) 62%, var(--surface));
+}
+
+.apt-t2 {
+  background: color-mix(in oklab, var(--accent) 75%, var(--surface));
+}
+
+.apt-t3 {
+  background: color-mix(in oklab, var(--accent) 88%, var(--surface));
+}
+
+.apt-t4 {
+  background: var(--accent);
+}
+
+.apt-legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 16px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--texte-2);
+}
+
+.apt-legende button.lien {
+  padding: 0 2px;
+  font-size: 13px;
+}
+
+.apt-carre {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+/* --- Exemple : ◀ ▶ et sa raison --- */
+
+.apt-exemple {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 18px 0 8px;
+}
+
+.apt-exemple button {
+  min-height: 30px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+.apt-exemple span {
+  margin-left: 4px;
+}
+
+/* --- Frise --- */
+
+.apt-frise {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  background: var(--surface);
+}
+
+.apt-frise text {
+  font-size: 12px;
+  fill: var(--texte);
+}
+
+.apt-frise text.apt-jour {
+  font-size: 11px;
+  fill: var(--discret);
+}
+
+.apt-frise text.apt-mois {
+  font-weight: 700;
+  fill: var(--texte-2);
+}
+
+.apt-frise text.apt-voyage {
+  font-size: 11.5px;
+  font-weight: 700;
+  fill: var(--texte-2);
+}
+
+.apt-frise text.apt-plus {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--discret);
+}
+
+.apt-frise text.apt-lettre {
+  font-weight: 800;
+  fill: var(--l);
+}
+
+.apt-weekend {
+  fill: var(--surface-2);
+}
+
+.apt-colonne {
+  fill: transparent;
+}
+
+.apt-grille {
+  stroke: var(--bord);
+  stroke-width: 1;
+}
+
+.apt-base {
+  stroke: var(--bord-fort);
+  stroke-width: 1;
+}
+
+.apt-accolade {
+  fill: none;
+  stroke: var(--texte-2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.apt-pastille {
+  fill: var(--c);
+}
+
+.apt-toit {
+  fill: none;
+  stroke: var(--l);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.apt-barre {
+  fill: color-mix(in srgb, var(--c) 16%, var(--surface));
+  stroke: var(--c);
+  stroke-width: 1.5;
+  transition:
+    x 0.25s ease,
+    width 0.25s ease;
+}
+
+.apt-chevron {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.apt-c0 {
+  --c: var(--apt-c0);
+  --l: var(--apt-encre);
+}
+
+.apt-c1 {
+  --c: var(--apt-c1);
+  --l: var(--apt-encre);
+}
+
+.apt-c2 {
+  --c: var(--apt-c2);
+  --l: var(--apt-encre);
+}
+
+.apt-c3 {
+  --c: var(--apt-c3);
+  --l: var(--apt-encre-jaune);
+}
+
+.apt-c4 {
+  --c: var(--apt-c4);
+  --l: var(--apt-encre);
+}
+
+.apt-c5 {
+  --c: var(--apt-c5);
+  --l: var(--apt-encre);
+}
+
+.apt-c6 {
+  --c: var(--apt-c6);
+  --l: var(--apt-encre);
+}
+
+.apt-c7 {
+  --c: var(--apt-c7);
+  --l: var(--apt-encre);
+}
+
+.apt-maison {
+  --c: var(--apt-maison);
+  --l: var(--surface);
+}
+
+.apt-aide {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+}
+
+/* --- Liste des dossiers prévus, et note --- */
+
+.apt-liste {
+  margin-top: 14px;
+}
+
+.apt-liste summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.apt-defile {
+  max-height: 360px;
+  margin-top: 8px;
+  overflow: auto;
+}
+
+.apt-liste table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.apt-liste td {
+  padding: 3px 8px 3px 0;
+  border-bottom: 1px solid var(--bord);
+  vertical-align: top;
+}
+
+.apt-liste td.apt-nombre {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.apt-note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+}

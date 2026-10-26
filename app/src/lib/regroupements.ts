@@ -4,7 +4,7 @@
 // propose de les réunir sous son titre, souvent parlant (« 18 ans de Lea »).
 // L'utilisateur décide ; Ctrl+Z annule.
 
-import { dureeEvenement, joursEvenement, partPendant, type EvenementCalendrier } from './ics';
+import { dureeEvenement, evenementsUtiles, joursEvenement, partPendant, type EvenementCalendrier } from './ics';
 import { t } from './langue';
 import { IGNORES_NOMMAGE, nomDepuisEvenement, normaliserNom, photosDuDossier } from './nommage';
 import { cleNom } from './noms';
@@ -35,8 +35,10 @@ export interface RegroupementPropose {
  * Événements pendant lesquels au moins deux dossiers du premier niveau ont
  * été photographiés (80 % de leurs photos au moins). Les dossiers techniques
  * (captures, sans lieu, sans date) et ceux qui gardent leur place (étape
- * « Dossiers ») ne sont jamais proposés. Deux événements qui réuniraient les
- * mêmes dossiers : seul le plus court est proposé, son titre est plus parlant.
+ * « Dossiers ») ne sont jamais proposés, ni les événements récurrents ou de
+ * plus de 21 jours (« Vacances d'été » réunissait onze dossiers, D88). Deux
+ * événements qui réuniraient les mêmes dossiers : seul le plus court est
+ * proposé, son titre est plus parlant.
  */
 export function regroupementsProposes(plan: Plan, evts: EvenementCalendrier[], ignores: ReadonlySet<string> = new Set()): RegroupementPropose[] {
   const techniques = new Set([...IGNORES_NOMMAGE, nomsSortie().captures, nomsSortie().sansDate].map(cleNom));
@@ -52,7 +54,7 @@ export function regroupementsProposes(plan: Plan, evts: EvenementCalendrier[], i
     .filter((x) => x.dates.length);
   const resultat: RegroupementPropose[] = [];
   const vus = new Set<string>();
-  for (const e of [...evts].sort((a, b) => dureeEvenement(a) - dureeEvenement(b))) {
+  for (const e of evenementsUtiles(evts).sort((a, b) => dureeEvenement(a) - dureeEvenement(b))) {
     const cle = `${e.titre}|${e.debut}|${e.fin}`;
     if (ignores.has(cle)) continue;
     const [d1, d2] = joursEvenement(e);

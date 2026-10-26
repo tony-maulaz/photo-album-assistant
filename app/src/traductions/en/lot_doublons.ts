@@ -26,8 +26,18 @@ export const TEXTES: Record<string, string> = {
   '{0} · la plus nette': '{0} · the sharpest',
   'Gardée par le garde-fou : l’IA la décrit autrement.': 'Kept by the safeguard: the AI describes it differently.',
   'dossier gardé, nettoyé': 'folder kept, cleaned',
-  'dossier à ne pas toucher': 'folder left as is',
   'placée dans « {0} », à la place de la copie réduite': 'placed in “{0}”, instead of the smaller copy',
+  'rangée dans « {0} »': 'filed in “{0}”',
+  ' Les dossiers « Ne pas toucher » ne sont pas examinés : leurs copies sont voulues.': ' “Leave as is” folders are not examined: their copies are intended.',
+  // Copies dans plusieurs dossiers gardés, dans l'onglet des copies (D86).
+  'Gardée dans chaque dossier': 'Kept in each folder',
+  'Aussi dans d’autres dossiers gardés : tout est gardé': 'Also in other kept folders: everything is kept',
+  'Écarter {0} de ce dossier': 'Set aside {0} from this folder',
+  'Remettre {0} de ce dossier': 'Put back {0} in this folder',
+  '{0} dans ce dossier.': '{0} in this folder.',
+  'exemplaire remis': 'copy put back',
+  'exemplaires remis': 'copies put back',
+  'Seulement les photos gardées aussi dans un autre dossier : aucune ne disparaît.': 'Only photos also kept in another folder: none disappears.',
   'ira dans « {0} », à la place de la copie réduite': 'will go to “{0}”, instead of the smaller copy',
   Gardée: 'Kept',
   Écartée: 'Set aside',
@@ -78,7 +88,6 @@ export const TEXTES: Record<string, string> = {
   '{0} : voyez les onglets « Rafales » et « Même scène (IA) ».': '{0}: see the “Bursts” and “Same scene (AI)” tabs.',
   'pas lancée': 'not run',
   '{0} à relire': '{0} to review',
-  'Dans plusieurs dossiers': 'In several folders',
   Rafales: 'Bursts',
   'Même scène (IA)': 'Same scene (AI)',
   'Les photos en double sont rangées par sorte, dans les onglets ci-dessous. Dans chaque groupe, un clic sur une photo la garde ou l’écarte ; « Accepter » applique la proposition. Les photos écartées vont dans « {0} » : rien n’est supprimé, et Ctrl+Z annule.':
@@ -89,14 +98,11 @@ export const TEXTES: Record<string, string> = {
   'Recherche des rafales': 'Looking for bursts',
   'Recherche des copies en cours, pendant l’analyse des photos…': 'Looking for copies, while the photos are analysed…',
   'Aucune copie exacte : chaque photo n’existe qu’en un exemplaire.': 'No exact copy: each photo exists only once.',
-  'La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : garder un exemplaire, celui qui est déjà rangé dans un dossier, sinon le plus grand ; les autres iront dans « {0} ».':
-    'The same photo several times: the same file copied, or a smaller copy sent by WhatsApp. Suggestion: keep one copy, the one already in a folder, otherwise the largest; the others will go to “{0}”.',
+  'La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « {0} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo ou, en groupant par dossier, tout un dossier d’un coup.':
+    'The same photo several times: the same file copied, or a smaller copy sent by WhatsApp. Suggestion: set aside a copy that would be redundant in the same place (twice in a folder, or a photo to sort already filed in a folder); it will go to “{0}”. A photo found in several folders you keep stays in all of them: you decide, photo by photo or, grouping by folder, a whole folder at once.',
   'Accepter la proposition': 'Accept the suggestion',
   'Accepter les {0} propositions': 'Accept the {0} suggestions',
   'Tous les exemplaires sont gardés.': 'All the copies are kept.',
-  'Aucune photo n’est dans plusieurs dossiers.': 'No photo is in several folders.',
-  'Ces photos sont dans plusieurs dossiers que vous gardez (un « Best of » fait de copies, par exemple) : toutes restent, chacune dans son dossier. Cliquez sur un exemplaire pour l’écarter s’il est de trop.':
-    'These photos are in several folders you keep (a “Best of” made of copies, for example): all of them stay, each in its folder. Click a copy to set it aside if it is one too many.',
   'Recherche des rafales dès que l’analyse des photos est finie…': 'Bursts are looked for as soon as the photo analysis is finished…',
   'Aucune rafale : pas de photos quasi identiques prises à quelques secondes d’intervalle.': 'No burst: no nearly identical photos taken a few seconds apart.',
   'Photos quasi identiques prises à quelques secondes d’intervalle, repérées sur l’ordinateur (gratuit). Proposition : garder la plus nette ★ de chaque rafale.':
@@ -132,10 +138,6 @@ export const TEXTES: Record<string, string> = {
 
   // Nommage.tsx : noms tirés du calendrier (D83)
   'D’après le calendrier': 'From the calendar',
-  'Calendrier : « {0} », pendant toutes les photos': 'Calendar: “{0}”, during all the photos',
-  'Calendrier : « {0} », pendant une partie des photos': 'Calendar: “{0}”, during some of the photos',
-  'Proposition de l’IA :': 'AI suggestion:',
-  'D’après le calendrier (« {0} ») :': 'From the calendar (“{0}”):',
 
   // Organiser.tsx, lib/regroupements.ts : dossiers d'un même événement du calendrier (D83)
   'Réunir {0} dans « {1} »': 'Gather {0} into “{1}”',

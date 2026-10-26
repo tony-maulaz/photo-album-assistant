@@ -106,7 +106,7 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
         'ok',
         commeDomicile
           ? t`Domicile « ${nom} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.`
-          : t`Lieu « ${nom} » enregistré : recalculez l’arborescence pour en tenir compte.`,
+          : t`Lieu « ${nom} » enregistré : rangez à nouveau pour en tenir compte.`,
       );
     } catch (err) {
       notifier('erreur', texteErreur(err));

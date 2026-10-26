@@ -423,7 +423,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
-          {t` : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, puis « Calculer l’arborescence » ; l’IA peut situer les photos sans GPS.`}
+          {t` : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; l’IA peut situer les photos sans GPS.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.lieux)}</strong>

@@ -2988,6 +2988,12 @@ button.bouton-ia:disabled {
   min-width: 260px;
 }
 
+/* Étape « Dossiers » : recherche et ordre à gauche, « Pour tous » à droite. */
+.outils-sous-dossiers input[type='search'] {
+  width: 240px;
+  max-width: 100%;
+}
+
 .fonctions-ia td {
   vertical-align: top;
 }
@@ -3024,6 +3030,18 @@ button.bouton-ia:disabled {
   font-size: 13px;
   line-height: 1.5;
   color: var(--discret);
+}
+
+/* Tri automatique (D87) : les choix en boutons, sous leur question. */
+.choix-tri {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 6px;
+}
+
+.choix-tri button {
+  flex: 1 1 auto;
 }
 
 .tri-auto > summary {

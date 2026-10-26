@@ -142,6 +142,24 @@
   background: var(--surface);
 }
 
+/* Recherche d'un dossier : reste en haut de la liste qui défile. */
+.sections-doublons .recherche-sections {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  width: 100%;
+  height: 36px;
+  margin-bottom: 4px;
+  border-color: transparent;
+  background: var(--surface-2);
+  box-shadow: 0 -10px 0 var(--surface);
+}
+
+.sections-doublons > p {
+  margin: 6px 8px;
+  font-size: 13px;
+}
+
 .sections-doublons h2 {
   margin: 6px 8px 6px;
   color: var(--discret);
@@ -449,4 +467,16 @@
 
 .suite-doublons {
   margin: 8px 0 0;
+}
+
+/* Copies dans plusieurs dossiers gardés : sous les groupes à relire de la section (D86). */
+.titre-partout {
+  margin: 10px 0 0;
+  color: var(--discret);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.actions-dossier-copies {
+  margin: 0;
 }

@@ -1,6 +1,6 @@
-// Groupes de l'étape « Doublons » (D71) : copies exactes, photos présentes
-// dans plusieurs dossiers, rafales et scènes vérifiées par l'IA, présentés de
-// la même façon. Chaque photo d'un groupe porte une proposition (la garder ou
+// Groupes de l'étape « Doublons » (D71) : copies exactes (dont les photos
+// présentes dans plusieurs dossiers gardés, toutes gardées, D86), rafales et
+// scènes vérifiées par l'IA, présentés de la même façon. Chaque photo d'un groupe porte une proposition (la garder ou
 // l'écarter) ; son état se lit dans le plan : écartée par cette étape,
 // gardée, ou « à écarter » tant que la proposition n'est pas acceptée. Un clic
 // inverse ce que l'on voit, « Accepter » applique les propositions qui
@@ -13,7 +13,10 @@ import { t } from './langue';
 import { combiner, dateSure, deplacerFichiers, ecarterDoublons, garderAussi, type FichierPlan, type InfoDoublon, type Modification, type Plan } from './plan';
 import { pluriel } from '../ui/format';
 
-/** Onglets de l'étape : une sorte de doublons chacun. */
+/**
+ * Sorte de doublons : un onglet chacune, sauf `dossiers` (une photo dans
+ * plusieurs dossiers gardés, toute gardée), montrée avec les copies (D86).
+ */
 export type Sorte = 'copies' | 'dossiers' | 'rafales' | 'ia';
 export type EtatPhoto = 'gardee' | 'ecartee' | 'a_ecarter';
 
@@ -89,6 +92,36 @@ export function aEcarter(g: GroupeDoublons, fichier: Fichiers): string[] {
   return photosDuGroupe(g, fichier)
     .filter((x) => x.etat === 'a_ecarter')
     .map((x) => x.m.id);
+}
+
+/**
+ * Groupes dont une photo encore « à écarter » est parmi `ids` (les photos que le
+ * tri range) : sans les écarter d'abord, le tri rangerait une seconde fois une
+ * photo déjà gardée ailleurs (D85).
+ */
+export function copiesEnAttente(groupes: GroupeDoublons[], ids: ReadonlySet<string>, fichier: Fichiers): GroupeDoublons[] {
+  return groupes.filter((g) => aEcarter(g, fichier).some((id) => ids.has(id)));
+}
+
+/**
+ * « Écarter les exemplaires de ce dossier » (D86) : ceux qui sont gardés dans
+ * le dossier (`dans`) alors que leur photo reste gardée dans un autre ; jamais
+ * le dernier exemplaire d'une photo, ni une photo qui n'est que là.
+ */
+export function exemplairesAEcarterDans(groupes: GroupeDoublons[], dans: (f: FichierPlan) => boolean, fichier: Fichiers): string[] {
+  return groupes.flatMap((g) => {
+    const gardees = photosDuGroupe(g, fichier).filter((x) => x.etat === 'gardee');
+    return gardees.some((x) => !dans(x.f)) ? gardees.filter((x) => dans(x.f)).map((x) => x.m.id) : [];
+  });
+}
+
+/** « Remettre les exemplaires de ce dossier » : ceux du dossier que cette étape a écartés. */
+export function exemplairesEcartesDans(groupes: GroupeDoublons[], dans: (f: FichierPlan) => boolean, fichier: Fichiers): string[] {
+  return groupes.flatMap((g) =>
+    photosDuGroupe(g, fichier)
+      .filter((x) => x.etat === 'ecartee' && dans(x.f))
+      .map((x) => x.m.id),
+  );
 }
 
 /** À relire : une proposition d'écarter attend encore. */

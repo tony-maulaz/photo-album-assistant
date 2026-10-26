@@ -1,0 +1,264 @@
+/* Étape « Petits dossiers » (D90) : la liste à gauche, un petit dossier à la fois entre ses deux voisins dans le temps. */
+
+.bandeau-petits {
+  margin: 12px 0 0;
+}
+
+.corps-petits {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.liste-petits {
+  position: sticky;
+  top: 72px;
+  flex: 0 0 240px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--bord);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.liste-petits h2 {
+  margin: 6px 8px;
+  color: var(--discret);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ligne-liste-petit {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--texte);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.ligne-liste-petit:hover {
+  background: var(--fond);
+}
+
+.ligne-liste-petit.choisie {
+  background: var(--accent-doux);
+  font-weight: 700;
+}
+
+.ligne-liste-petit.fait {
+  color: var(--discret);
+}
+
+.ligne-liste-petit .etat-petit {
+  flex: 0 0 auto;
+  color: var(--discret);
+}
+
+.ligne-liste-petit.fait .etat-petit {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.nom-liste-petit {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.contenu-petits {
+  flex: 1;
+  min-width: 0;
+}
+
+.tete-petit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.tete-petit h2 {
+  margin: 0;
+}
+
+.decide-petit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border-color: var(--ok);
+}
+
+.decide-petit p {
+  margin: 0;
+}
+
+/* Les trois colonnes : juste avant, le petit dossier, juste après. */
+.trio-petit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 14px;
+  align-items: stretch;
+}
+
+.cote-petit,
+.centre-petit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--bord);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.cote-petit.propose {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-doux);
+}
+
+.cote-petit.vide {
+  justify-content: center;
+  border-style: dashed;
+}
+
+.cote-petit h3,
+.centre-petit h3 {
+  margin: 0;
+  color: var(--discret);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ecart-petit {
+  margin: 0;
+  font-weight: 700;
+}
+
+.nom-voisin {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.nom-voisin .badge {
+  margin-left: 6px;
+}
+
+.bande-voisin,
+.photos-petit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photos-petit {
+  justify-content: center;
+}
+
+.bande-voisin figure,
+.photos-petit figure {
+  margin: 0;
+  text-align: center;
+}
+
+.bande-voisin figcaption,
+.photos-petit figcaption {
+  color: var(--discret);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.photo-petit {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.cote-petit > button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.apres-choix {
+  margin: 0;
+  font-size: 13px;
+}
+
+.choix-centre {
+  justify-content: center;
+  margin: 4px 0 0;
+}
+
+.aide-petits {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+/* Cas évidents, d'un coup : une ligne par petit dossier, « Retirer » au bout. */
+.dialogue.evidents {
+  max-width: 760px;
+}
+
+.liste-evidents {
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 0;
+  list-style: none;
+}
+
+.liste-evidents li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bord);
+}
+
+.liste-evidents li.retire {
+  opacity: 0.45;
+}
+
+.bande-evident {
+  display: flex;
+  gap: 4px;
+}
+
+.texte-evident {
+  flex: 1;
+  min-width: 0;
+}
+
+/* « Autre dossier… » : une vignette devant chaque dossier. */
+.choix-dossiers.avec-photo li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.choix-dossiers .sans-photo {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--fond);
+}
+
+@media (max-width: 1100px) {
+  .trio-petit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

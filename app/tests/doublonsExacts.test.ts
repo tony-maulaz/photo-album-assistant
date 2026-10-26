@@ -173,6 +173,18 @@ describe('doublons exacts (D31)', () => {
     expect(intact[0].remplacement).toBeUndefined();
   });
 
+  it('copie réduite seule dans un autre dossier gardé : gardée, comme tout exemplaire rangé ailleurs (D86)', () => {
+    const reduite = { empreinte: 'w', exif: false, taille: 100, dims: { l: 1600, h: 1200 } };
+    const g = groupesDoublonsExacts([
+      photo('Sortie/a.jpg', { empreinte: 'o', emplacement: 'Sortie', genre: 'nettoyer' }),
+      photo('juin/IMG-WA1.jpg', { ...reduite, emplacement: 'juin', genre: 'nettoyer' }),
+      photo('juin/IMG-WA1 (1).jpg', { ...reduite, emplacement: 'juin', genre: 'nettoyer' }),
+    ]);
+    expect(g[0].aGarder).toEqual(['Sortie/a.jpg', 'juin/IMG-WA1.jpg']);
+    // Une copie réduite à trier reste proposée à l'écart.
+    expect(groupesDoublonsExacts([photo('Sortie/a.jpg', { empreinte: 'o', emplacement: 'Sortie', genre: 'nettoyer' }), photo('IMG-WA1.jpg', reduite)])[0].aGarder).toEqual(['Sortie/a.jpg']);
+  });
+
   it('copies identiques d’une version réduite : rattachées au même original', () => {
     const g = groupesDoublonsExacts([
       photo('Vrac/IMG_5.jpg', { empreinte: 'o' }),

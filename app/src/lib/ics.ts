@@ -398,17 +398,36 @@ export function dureeEvenement(e: EvenementCalendrier): number {
 }
 
 /**
- * Part des photos prises pendant l'événement : `dates` sont leurs dates
- * (« AAAA-MM-JJTHH:MM:SS » ou « AAAA-MM-JJ ») ; une heure de marge autour d'un
- * événement à l'heure (on photographie un peu avant et après).
+ * Photo prise pendant l'événement : `date` est « AAAA-MM-JJTHH:MM:SS » ou
+ * « AAAA-MM-JJ » ; une heure de marge autour d'un événement à l'heure (on
+ * photographie un peu avant et après).
  */
+export function prisePendant(e: EvenementCalendrier, date: string): boolean {
+  const [d1, d2] = jours(e);
+  if (e.journee || date.length <= 10) return date.slice(0, 10) >= d1 && date.slice(0, 10) <= d2;
+  const s = secondes(date);
+  return s >= secondes(e.debut) - 3600 && s <= secondes(e.fin) + 3600;
+}
+
+/** Part des photos prises pendant l'événement (`dates` : voir `prisePendant`). */
 export function partPendant(e: EvenementCalendrier, dates: string[]): number {
   if (!dates.length) return 0;
-  const [d1, d2] = jours(e);
-  const debut = secondes(e.debut) - 3600;
-  const fin = secondes(e.fin) + 3600;
-  const pendant = (d: string) => (e.journee || d.length <= 10 ? d.slice(0, 10) >= d1 && d.slice(0, 10) <= d2 : secondes(d) >= debut && secondes(d) <= fin);
-  return dates.filter(pendant).length / dates.length;
+  return dates.filter((d) => prisePendant(e, d)).length / dates.length;
+}
+
+/**
+ * Au-delà de 21 jours, un événement est une période (vacances scolaires,
+ * « Vacances d'été » sur 51 jours), pas une sortie : il ne découpe, ne réunit
+ * ni ne nomme aucun dossier (D88).
+ */
+export const JOURS_MAX_EVENEMENT_UTILE = 21;
+
+/**
+ * Événements qui peuvent décrire une sortie (D88) : pas récurrents (cours,
+ * répétitions, rendez-vous de chaque semaine, anniversaires), 21 jours au plus.
+ */
+export function evenementsUtiles(evts: EvenementCalendrier[]): EvenementCalendrier[] {
+  return evts.filter((e) => !e.recurrent && dureeEvenement(e) <= JOURS_MAX_EVENEMENT_UTILE * 86_400);
 }
 
 /**

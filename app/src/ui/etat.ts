@@ -139,7 +139,8 @@ let prochainMessage = 1;
 /** Affiche un message passager ; renvoie son identifiant (pour le retirer plus tôt). */
 export function notifier(type: Message['type'], texte: string, action?: Message['action']): number {
   const id = prochainMessage++;
-  messages.value = [...messages.value.slice(-2), { id, type, texte, action }];
+  // Le même message deux fois de suite (ranger, puis ranger à nouveau) ne s'empile pas : le nouveau remplace l'ancien.
+  messages.value = [...messages.value.filter((m) => m.texte !== texte).slice(-2), { id, type, texte, action }];
   setTimeout(() => retirerMessage(id), type === 'erreur' ? 9000 : 5000);
   return id;
 }

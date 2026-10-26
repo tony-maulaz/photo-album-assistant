@@ -12,7 +12,7 @@ import { Captures } from '../composants/Captures';
 import { CurseurTaille } from '../composants/GrillePhotos';
 import { LieuxFrequents } from '../composants/LieuxFrequents';
 import { SEUIL_PETIT } from '../composants/PanneauDossiers';
-import { dossiersProposes, fichiersARanger, TriAuto } from '../composants/TriAuto';
+import { CopiesAvantTri, dossiersProposes, fichiersARanger, TriAuto } from '../composants/TriAuto';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { pluriel } from '../format';
 
@@ -42,8 +42,9 @@ export function PageTri() {
   return (
     <div class="page etroite avec-barre">
       <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique par lieux et sorties`} outils={<CurseurTaille />}>
-        {t`L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Rangez d’abord à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…), ajustez les réglages si besoin, puis calculez : vous vérifierez et corrigerez le résultat à l’étape suivante.`}
+        {t`L’application range les photos par lieu (position GPS) et par sortie (les jours passés au même endroit). Écartez d’abord les copies s’il en reste, rangez à part les captures d’écran et enregistrez les lieux qui reviennent souvent (maison, grands-parents…). Choisissez ensuite comment ranger : le résultat se voit tout de suite avec vos photos. Vous le vérifierez et le corrigerez à l’étape suivante.`}
       </TeteEtape>
+      <CopiesAvantTri />
       <Captures />
       <LieuxFrequents ouvert={!calcule} />
       <TriAuto />
@@ -55,8 +56,8 @@ export function PageTri() {
       )}
       {calcule && <SansGps />}
       <BarreValidation
-        resume={calcule ? `${pluriel(proposes.length, 'dossier proposé', 'dossiers proposés')} · ${pluriel(photos, 'photo')}` : t`Arborescence pas encore calculée`}
-        alertes={!calcule ? [t`Calculez l’arborescence pour continuer`] : nonRangees ? [pluriel(nonRangees, 'nouvelle photo pas encore rangée', 'nouvelles photos pas encore rangées')] : []}
+        resume={calcule ? `${pluriel(proposes.length, 'dossier proposé', 'dossiers proposés')} · ${pluriel(photos, 'photo')}` : t`Photos pas encore rangées`}
+        alertes={!calcule ? [t`Rangez les photos pour continuer`] : nonRangees ? [pluriel(nonRangees, 'nouvelle photo pas encore rangée', 'nouvelles photos pas encore rangées')] : []}
         revenir={() => revenirDe('tri')}
         valider={() => validerEtape('tri')}
         validerActif={calcule}

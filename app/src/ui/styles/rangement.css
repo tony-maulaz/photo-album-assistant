@@ -167,3 +167,9 @@
 .regroupements-calendrier .espace {
   flex: 1;
 }
+
+/* Dossier créé par le tri ou à la main, absent du dossier d'origine (D89). */
+.badge.cree {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+}

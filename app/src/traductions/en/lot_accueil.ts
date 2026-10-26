@@ -41,8 +41,6 @@ export const TEXTES: Record<string, string> = {
   // TriAuto.tsx
   'Noms des lieux indisponibles (OpenStreetMap) : {0}': 'Place names unavailable (OpenStreetMap): {0}',
   '{0} dans {1} : vérifiez-les à l’étape suivante, « Lieux et sorties ».': '{0} in {1}: check them in the next step, “Places and outings”.',
-  'Noms des lieux indisponibles (OpenStreetMap injoignable) : les dossiers ont des noms provisoires (« {0}_01 »…). Renommez-les plus tard, ou recalculez une fois connecté.':
-    'Place names unavailable (OpenStreetMap cannot be reached): the folders have temporary names (“{0}_01”…). Rename them later, or recalculate once online.',
   'Sans effet pour l’instant : aucun domicile n’est enregistré.': 'No effect for now: no home is saved.',
   'Indiquer le domicile dans la Configuration': 'Set the home in the Configuration',
 

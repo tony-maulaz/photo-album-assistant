@@ -5,12 +5,18 @@
 // ici déjà trouvés, ce qui rend tout testable sans réseau.
 
 import type { LieuConnu } from './config';
+import { dureeEvenement, evenementsUtiles, joursEvenement, prisePendant, type EvenementCalendrier } from './ics';
 import { t } from './langue';
 import { cleNom, nomAscii } from './noms';
 import { combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type InfoTri, type Modification, type Plan } from './plan';
 import { nomsSortie } from './sortie';
 
-/** Options du script 01 (SPEC § 10). */
+/**
+ * Options du script 01 (SPEC § 10). L'écran n'en montre que quelques-unes
+ * (D87) : la façon de ranger (sortie, jour ou mois), la taille d'un lieu, les
+ * voyages, et en réglages avancés la durée d'une sortie et la distance d'un
+ * voyage ; les autres gardent leur valeur par défaut.
+ */
 export interface OptionsTri {
   /** Rayon de regroupement géographique (`--rayon-km`). */
   rayonKm: number;
@@ -20,65 +26,86 @@ export interface OptionsTri {
   parMois: boolean;
   /** Un seul dossier par lieu, sans date (`--sans-evenement`). */
   sansEvenement: boolean;
-  /** Écart au-delà duquel une photo ouvre un nouvel événement (`--gap-jours`). */
+  /**
+   * Écart au-delà duquel une photo ouvre un nouvel événement (`--gap-jours`).
+   * 7 jours (30 dans le script) : à 30, la durée maximale coupait toujours
+   * avant, et deux visites au même endroit à deux semaines d'écart formaient
+   * une seule sortie (mesuré sur 2025, D87).
+   */
   gapJours: number;
   /** Durée maximale d'un événement (`--duree-max-jours`). */
   dureeMaxJours: number;
   /** Regroupe les étapes lointaines qui s'enchaînent en voyages (`--sans-voyages` inverse). */
   voyages: boolean;
-  /** Distance au domicile au-delà de laquelle un événement est « lointain » (`--distance-voyage`). */
+  /**
+   * Distance au domicile au-delà de laquelle un événement est « lointain »
+   * (`--distance-voyage`) : 50 km (30 dans le script, qui faisait un voyage de
+   * deux excursions d'un jour, D87).
+   */
   distanceVoyageKm: number;
-  /** Écart maximal entre deux étapes d'un voyage (`--gap-voyage`). */
-  gapVoyage: number;
-  /** Écart toléré si aucune photo n'a été prise près du domicile entre-temps (`--gap-voyage-max`). */
+  /**
+   * Écart toléré entre deux étapes d'un voyage, si l'on n'est pas rentré entre-temps
+   * (`--gap-voyage-max`). Un retour près du domicile coupe toujours le voyage (D87).
+   */
   gapVoyageMax: number;
   /** Nomme les dossiers d'après les fichiers nommés à la main (`--sans-noms-fichiers` inverse). */
   nomsFichiers: boolean;
   /** Utilise les lieux connus de la configuration (`--lieux-connus aucun` inverse). */
   lieuxConnus: boolean;
+  /**
+   * Dans un lieu connu (le domicile…), sépare les événements du calendrier
+   * (Noël, un anniversaire) d'un sous-dossier qui couvre plus de 3 jours : le
+   * GPS ne peut rien y séparer (D88). Sans calendrier, sans effet.
+   */
+  calendrierLieuxConnus: boolean;
 }
+
+/** Façon de ranger montrée à l'écran (D87) : par sortie (conseillé), par jour, ou par mois. */
+export type ModeTri = 'sortie' | 'jour' | 'mois';
+
+export const modeTri = (o: Pick<OptionsTri, 'parJour' | 'parMois'>): ModeTri => (o.parMois ? 'mois' : o.parJour ? 'jour' : 'sortie');
+
+/** Options d'une façon de ranger (« un seul dossier par lieu » n'est plus proposé, D87). */
+export const optionsDuMode = (m: ModeTri): Pick<OptionsTri, 'parJour' | 'parMois' | 'sansEvenement'> => ({ parJour: m === 'jour', parMois: m === 'mois', sansEvenement: false });
 
 export const OPTIONS_TRI_DEFAUT: OptionsTri = {
   rayonKm: 2,
   parJour: false,
   parMois: false,
   sansEvenement: false,
-  gapJours: 30,
+  gapJours: 7,
   dureeMaxJours: 21,
   voyages: true,
-  distanceVoyageKm: 30,
-  gapVoyage: 1,
+  distanceVoyageKm: 50,
   gapVoyageMax: 7,
   nomsFichiers: true,
   lieuxConnus: true,
+  calendrierLieuxConnus: true,
 };
 
-const estObjet = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+/** 30 km : l'ancienne distance par défaut d'un voyage, enregistrée dans les projets sans avoir été choisie. */
+const ANCIENNE_DISTANCE_VOYAGE = 30;
 
-/** Options d'un préréglage de `config.json` (champs inconnus ou invalides ignorés). */
-export function optionsDepuisPrereglage(p: unknown): Partial<OptionsTri> {
-  if (!estObjet(p)) return {};
-  const o: Partial<OptionsTri> = {};
-  const nombre = (cle: string, champ: keyof OptionsTri, min: number) => {
-    const v = p[cle];
-    if (typeof v === 'number' && Number.isFinite(v) && v >= min) (o as Record<string, unknown>)[champ] = v;
+/**
+ * Réglages enregistrés d'un projet, ramenés à ceux de l'écran (D87) : la façon
+ * de ranger, la taille d'un lieu, les voyages, la durée d'une sortie et la
+ * distance d'un voyage. Les autres reprennent leur valeur par défaut, lieux
+ * connus et noms de fichiers compris (l'ancien préréglage « Voyage » les
+ * coupait) ; l'ancienne distance par défaut laisse place à la nouvelle.
+ */
+export function optionsDuProjet(enregistrees: unknown): OptionsTri {
+  const x = (typeof enregistrees === 'object' && enregistrees !== null ? enregistrees : {}) as Partial<Record<keyof OptionsTri, unknown>>;
+  const nombre = (v: unknown, defaut: number) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : defaut);
+  const d = OPTIONS_TRI_DEFAUT;
+  return {
+    ...d,
+    ...optionsDuMode(x.parMois === true ? 'mois' : x.parJour === true ? 'jour' : 'sortie'),
+    rayonKm: nombre(x.rayonKm, d.rayonKm),
+    voyages: typeof x.voyages === 'boolean' ? x.voyages : d.voyages,
+    dureeMaxJours: nombre(x.dureeMaxJours, d.dureeMaxJours),
+    calendrierLieuxConnus: typeof x.calendrierLieuxConnus === 'boolean' ? x.calendrierLieuxConnus : d.calendrierLieuxConnus,
+    distanceVoyageKm: x.distanceVoyageKm === ANCIENNE_DISTANCE_VOYAGE ? d.distanceVoyageKm : nombre(x.distanceVoyageKm, d.distanceVoyageKm),
   };
-  const booleen = (cle: string, champ: keyof OptionsTri) => {
-    if (typeof p[cle] === 'boolean') (o as Record<string, unknown>)[champ] = p[cle];
-  };
-  nombre('rayon_km', 'rayonKm', 0.01);
-  booleen('par_jour', 'parJour');
-  booleen('par_mois', 'parMois');
-  booleen('sans_evenement', 'sansEvenement');
-  nombre('gap_jours', 'gapJours', 0);
-  nombre('duree_max_jours', 'dureeMaxJours', 0);
-  booleen('voyages', 'voyages');
-  nombre('distance_voyage', 'distanceVoyageKm', 0);
-  nombre('gap_voyage', 'gapVoyage', 0);
-  nombre('gap_voyage_max', 'gapVoyageMax', 0);
-  booleen('noms_fichiers', 'nomsFichiers');
-  booleen('lieux_connus', 'lieuxConnus');
-  return o;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,6 +148,7 @@ const GENERIQUES = [
   /^(signal|telegram|messenger|snapchat|facebook|instagram)/,
   /^(copie|copy|edited|modifi)/,
   /^(vlc|snapshot)/,
+  /^videocapture/,
   /^untitled/,
   /^recadr/,
   /^scan\d*$/,
@@ -221,7 +249,7 @@ export interface GroupeGps {
 export interface Groupes {
   /** Toutes les photos, dans l'ordre reçu. */
   photos: PhotoTri[];
-  /** Photo dans le rayon d'un lieu connu → ce lieu. */
+  /** Photo dans le rayon d'un lieu connu → ce lieu (ou sans GPS, prise un jour passé surtout là). */
   lieuDe: Map<string, LieuConnu>;
   /** Photo → groupe GPS (avec GPS, ou rattachée au groupe du même jour). */
   groupeDe: Map<string, number>;
@@ -287,8 +315,9 @@ function instant(date?: string): number | null {
 /**
  * Regroupement du script 01 : chaque photo avec GPS dans le rayon du lieu
  * connu le plus proche lui est rattachée ; les autres forment des groupes
- * (DBSCAN haversine) ; une photo sans GPS rejoint le groupe le plus fréquent
- * de sa journée.
+ * (DBSCAN haversine) ; une photo sans GPS rejoint le lieu le plus fréquent
+ * de sa journée, lieu connu compris (D87 : une journée à la maison n'envoie
+ * plus ses photos sans GPS dans `Sans_lieu`).
  */
 export function grouper(photos: PhotoTri[], lieux: LieuConnu[], o: Pick<OptionsTri, 'rayonKm' | 'lieuxConnus'> = OPTIONS_TRI_DEFAUT): Groupes {
   const actifs = o.lieuxConnus ? lieux : [];
@@ -327,22 +356,25 @@ export function grouper(photos: PhotoTri[], lieux: LieuConnu[], o: Pick<OptionsT
   });
   const groupes = sommes.map((s, index) => ({ index, lat: s.lat / s.n, lon: s.lon / s.n, n: s.n }));
 
-  // Photos sans GPS : le groupe le plus fréquent de la journée (le premier vu à égalité).
-  const parJour = new Map<string, Map<number, number>>();
-  for (const p of avecGps) {
+  // Photos sans GPS : le lieu le plus fréquent de la journée, groupe GPS ou lieu connu (le premier vu à égalité).
+  const parJour = new Map<string, Map<number | LieuConnu, number>>();
+  for (const p of photos) {
+    const ou = lieuDe.get(p.id) ?? groupeDe.get(p.id);
     const j = jourDe(p.date);
-    if (!j) continue;
-    const c = parJour.get(j) ?? new Map<number, number>();
-    c.set(groupeDe.get(p.id)!, (c.get(groupeDe.get(p.id)!) ?? 0) + 1);
+    if (ou === undefined || !j) continue;
+    const c = parJour.get(j) ?? new Map<number | LieuConnu, number>();
+    c.set(ou, (c.get(ou) ?? 0) + 1);
     parJour.set(j, c);
   }
   for (const p of photos) {
     if (p.gps) continue;
     const c = parJour.get(jourDe(p.date) ?? '');
     if (!c) continue;
-    let meilleur: [number, number] | null = null;
-    for (const [g, n] of c) if (!meilleur || n > meilleur[1]) meilleur = [g, n];
-    groupeDe.set(p.id, meilleur![0]);
+    let meilleur: [number | LieuConnu, number] | null = null;
+    for (const [ou, n] of c) if (!meilleur || n > meilleur[1]) meilleur = [ou, n];
+    const ou = meilleur![0];
+    if (typeof ou === 'number') groupeDe.set(p.id, ou);
+    else lieuDe.set(p.id, ou);
   }
 
   return { photos, lieuDe, groupeDe, groupes, domicile: actifs.find((l) => l.domicile) ?? null };
@@ -362,10 +394,76 @@ export interface DossierPropose {
   /** Premier et dernier jour (AAAA-MM-JJ). */
   du?: string;
   au?: string;
+  /** Sous-dossier d'un lieu connu séparé par un événement du calendrier (D88) : son titre. */
+  evenement?: string;
 }
 
 const deux = (n: number) => String(n).padStart(2, '0');
 const JOUR_MS = 86_400_000;
+
+/** Un sous-dossier d'un lieu connu qui couvre plus de 3 jours réunit sans doute plusieurs moments (D88). */
+export const JOURS_MAX_SANS_CALENDRIER = 3;
+/** Photos prises sur place pendant un événement pour qu'il forme son propre sous-dossier (D88). */
+export const PHOTOS_MIN_EVENEMENT = 5;
+
+/**
+ * Découpage d'un sous-dossier d'un lieu connu par le calendrier (D88). Au-delà
+ * de 3 jours, chaque événement utile (pas récurrent, 21 jours au plus) pendant
+ * lequel au moins 5 de ses photos, qui se suivent, ont été prises forme un
+ * morceau, ceux qui en réunissent le plus d'abord ; les autres photos forment
+ * les morceaux d'avant, d'entre et d'après. Un morceau de moins de 5 photos
+ * rejoint son voisin le plus proche dans le temps. `ev` est trié par date.
+ */
+export function decouperParCalendrier(ev: PhotoTri[], evts: EvenementCalendrier[]): { photos: PhotoTri[]; evenement?: string }[] {
+  const d1 = jourDe(ev[0].date)!;
+  const d2 = jourDe(ev.at(-1)!.date)!;
+  if ((instant(d2)! - instant(d1)!) / JOUR_MS + 1 <= JOURS_MAX_SANS_CALENDRIER) return [{ photos: ev }];
+  // Les événements qui réunissent le plus de photos d'abord (à égalité, le plus court) : Noël plutôt qu'un
+  // rappel du même jour ; un morceau trop fin ne sert à rien (mesuré sur 2025, D88).
+  const candidats = evts
+    .filter((e) => {
+      const [a, b] = joursEvenement(e);
+      return a <= d2 && b >= d1;
+    })
+    .map((e) => ({ e, n: ev.filter((p) => prisePendant(e, p.date!)).length }))
+    .sort((a, b) => b.n - a.n || dureeEvenement(a.e) - dureeEvenement(b.e));
+  const pris = new Set<string>();
+  const groupes: { photos: PhotoTri[]; evenement?: string }[] = [];
+  for (const { e } of candidats) {
+    const pendant = ev.filter((p) => !pris.has(p.id) && prisePendant(e, p.date!));
+    if (pendant.length < PHOTOS_MIN_EVENEMENT) continue;
+    // Des photos qui se suivent : un événement ne fait pas un dossier troué par un autre.
+    const t1 = instant(pendant[0].date)!;
+    const t2 = instant(pendant.at(-1)!.date)!;
+    if (ev.some((p) => pris.has(p.id) && instant(p.date)! > t1 && instant(p.date)! < t2)) continue;
+    groupes.push({ photos: pendant, evenement: e.titre });
+    for (const p of pendant) pris.add(p.id);
+  }
+  if (!groupes.length) return [{ photos: ev }];
+  // Les autres photos : un morceau avant le premier événement, un entre deux, un après le dernier.
+  const debuts = groupes.map((x) => instant(x.photos[0].date)!).sort((a, b) => a - b);
+  const reste = new Map<number, PhotoTri[]>();
+  for (const p of ev) {
+    if (pris.has(p.id)) continue;
+    const i = debuts.filter((d) => d <= instant(p.date)!).length;
+    reste.set(i, [...(reste.get(i) ?? []), p]);
+  }
+  const morceaux: { photos: PhotoTri[]; evenement?: string }[] = [...groupes, ...[...reste.values()].map((photos) => ({ photos }))].sort((a, b) => instant(a.photos[0].date)! - instant(b.photos[0].date)!);
+  // Quelques photos isolées entre deux événements ne font pas un dossier : elles rejoignent le morceau le plus proche.
+  for (let i = 0; i < morceaux.length && morceaux.length > 1; ) {
+    const m = morceaux[i];
+    if (m.evenement || m.photos.length >= PHOTOS_MIN_EVENEMENT) {
+      i++;
+      continue;
+    }
+    const ecart = (x?: { photos: PhotoTri[] }) =>
+      !x ? Infinity : Math.min(Math.abs(instant(x.photos.at(-1)!.date)! - instant(m.photos[0].date)!), Math.abs(instant(x.photos[0].date)! - instant(m.photos.at(-1)!.date)!));
+    const cible = ecart(morceaux[i - 1]) <= ecart(morceaux[i + 1]) ? morceaux[i - 1] : morceaux[i + 1];
+    cible.photos = [...cible.photos, ...m.photos].sort((a, b) => instant(a.date)! - instant(b.date)!);
+    morceaux.splice(i, 1);
+  }
+  return morceaux;
+}
 
 /** Découpage en événements d'une liste triée par date (écart glissant, durée maximale, journée). */
 function evenements(datees: PhotoTri[], o: OptionsTri): PhotoTri[][] {
@@ -445,16 +543,18 @@ function triParDate(liste: PhotoTri[]): { datees: PhotoTri[]; sansDate: PhotoTri
  * `Voyage_<Lieu>_<date>/` quand des étapes lointaines s'enchaînent, et
  * `Sans_lieu/` pour le reste. `noms` : nom géocodé de chaque groupe (ou `null`).
  */
-export function arborescence(g: Groupes, noms: Map<number, string | null | undefined>, o: OptionsTri = OPTIONS_TRI_DEFAUT): DossierPropose[] {
+export function arborescence(g: Groupes, noms: Map<number, string | null | undefined>, o: OptionsTri = OPTIONS_TRI_DEFAUT, evts: EvenementCalendrier[] = []): DossierPropose[] {
   const parEvenement = !(o.sansEvenement || o.parMois);
-  const destination = new Map<string, { chemin: string[]; info: InfoTri; infoParent?: InfoTri }>();
+  // Calendrier : seulement par sortie, dans les lieux connus (D88).
+  const utiles = o.calendrierLieuxConnus && parEvenement && !o.parJour ? evenementsUtiles(evts) : [];
+  const destination = new Map<string, { chemin: string[]; info: InfoTri; infoParent?: InfoTri; evenement?: string }>();
   const nomGroupe = (index: number) => {
     const n = noms.get(index);
     return n ? sanitize(n) : `${nomsSortie().lieu}_${deux(index)}`;
   };
   const infoGroupe = (index: number, origine: InfoTri['origine'] = 'gps'): InfoTri => ({ origine, lieu: nomGroupe(index), lat: g.groupes[index].lat, lon: g.groupes[index].lon });
 
-  // Lieux connus : un dossier parent par lieu, un sous-dossier par événement.
+  // Lieux connus : un dossier parent par lieu, un sous-dossier par événement (ou par mois).
   const parLieu = new Map<LieuConnu, PhotoTri[]>();
   for (const p of g.photos) {
     const l = g.lieuDe.get(p.id);
@@ -463,14 +563,23 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
   for (const [lieu, membres] of parLieu) {
     const nomLieu = sanitize(lieu.nom);
     const info: InfoTri = { origine: 'lieu_connu', lieu: lieu.nom, lat: lieu.lat, lon: lieu.lon };
-    if (lieu.un_seul_dossier || !parEvenement) {
+    if (lieu.un_seul_dossier || o.sansEvenement) {
       for (const p of membres) destination.set(p.id, { chemin: [nomLieu], info });
+      continue;
+    }
+    if (o.parMois) {
+      // Un sous-dossier par mois, comme les autres lieux (D87) : le domicile n'est plus d'un seul tenant.
+      for (const p of membres) {
+        const mois = jourDe(p.date)?.slice(0, 7);
+        destination.set(p.id, mois ? { chemin: [nomLieu, moisDeNom(mois)], info, infoParent: info } : { chemin: [nomLieu], info });
+      }
       continue;
     }
     const { datees, sansDate: nonDatees } = triParDate(membres);
     for (const p of nonDatees) destination.set(p.id, { chemin: [nomLieu], info });
     const utilises = new Set<string>();
-    for (const ev of evenements(datees, o)) {
+    const morceaux = evenements(datees, o).flatMap((ev) => (utiles.length ? decouperParCalendrier(ev, utiles) : [{ photos: ev }]));
+    for (const { photos: ev, evenement } of morceaux) {
       const suffixe = suffixeDate(ev);
       const brut = o.nomsFichiers ? nomDominant(ev.map((p) => p.nom)) : null;
       const desc = brut ? sansDate(brut) : null;
@@ -478,8 +587,9 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
       if (desc && !desc.toLowerCase().includes(nomLieu.toLowerCase())) base = `${desc}_${suffixe}`;
       else if (desc) base = `${sanitize(desc)}_${suffixe}`;
       else base = suffixe;
+      // Le nom reste fait de dates : celui de l'événement se choisit au Nommage (D88).
       const nom = nomUnique(base, utilises);
-      for (const p of ev) destination.set(p.id, { chemin: [nomLieu, nom], info, infoParent: info });
+      for (const p of ev) destination.set(p.id, { chemin: [nomLieu, nom], info, infoParent: info, ...(evenement ? { evenement } : {}) });
     }
   }
 
@@ -498,13 +608,21 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
     distKm: number;
   }
   const tous: Evenement[] = [];
-  const utilises = new Set<string>(); // global : deux groupes homonymes ne fusionnent pas
+  // Global : deux groupes homonymes ne fusionnent pas, ni un groupe avec un lieu connu du même nom (incident I4).
+  const utilises = new Set<string>([...parLieu.keys()].map((l) => sanitize(l.nom)));
+  /** Dossier sans événement d'un groupe (un par mois, un pour tout le lieu, ou ses photos sans date) : nom unique. */
+  const dossiersGroupe = new Map<string, string>();
+  const dossierGroupe = (index: number, base: string) => {
+    const cle = `${index}|${base}`;
+    if (!dossiersGroupe.has(cle)) dossiersGroupe.set(cle, nomUnique(base, utilises));
+    return dossiersGroupe.get(cle)!;
+  };
   for (const [index, membres] of parGroupe) {
     const lieuNom = nomGroupe(index);
     if (!parEvenement) {
       for (const p of membres) {
         const mois = jourDe(p.date)?.slice(0, 7);
-        destination.set(p.id, { chemin: [o.parMois && mois ? `${lieuNom}_${moisDeNom(mois)}` : lieuNom], info: infoGroupe(index) });
+        destination.set(p.id, { chemin: [dossierGroupe(index, o.parMois && mois ? `${lieuNom}_${moisDeNom(mois)}` : lieuNom)], info: infoGroupe(index) });
       }
       continue;
     }
@@ -527,15 +645,18 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
       tous.push({ photos: ev, index, nom, t1: instant(ev[0].date)!, t2: instant(ev.at(-1)!.date)!, distKm });
     }
     // Sans date : dossier du lieu, sans suffixe.
-    for (const p of nonDatees) destination.set(p.id, { chemin: [lieuNom], info: infoGroupe(index) });
+    for (const p of nonDatees) destination.set(p.id, { chemin: [dossierGroupe(index, lieuNom)], info: infoGroupe(index) });
   }
 
   // Passe voyages : des événements lointains qui s'enchaînent forment un voyage.
   if (parEvenement && o.voyages && g.domicile && tous.length) {
     const chrono = [...tous].sort((a, b) => a.t1 - b.t1);
-    // Présence près du domicile : photos des lieux connus et événements proches.
+    // Présence près du domicile : photos des lieux connus proches (pas ceux d'un voyage, des grands-parents
+    // au loin par exemple, D87) et événements proches.
+    const domicile = g.domicile;
+    const pres = (l: LieuConnu) => distanceM(l.lat, l.lon, domicile.lat, domicile.lon) / 1000 <= o.distanceVoyageKm;
     const proches = [
-      ...g.photos.filter((p) => g.lieuDe.has(p.id)).map((p) => instant(p.date)).filter((t): t is number => t !== null),
+      ...g.photos.filter((p) => { const l = g.lieuDe.get(p.id); return l && pres(l); }).map((p) => instant(p.date)).filter((t): t is number => t !== null),
       ...chrono.filter((e) => e.distKm <= o.distanceVoyageKm).flatMap((e) => [e.t1, e.t2]),
     ];
     const rentresEntre = (t1: number, t2: number) => proches.some((d) => t1 < d && d < t2);
@@ -545,7 +666,8 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
       const prec = courant.at(-1)!;
       const ecart = ev.t1 - prec.t2;
       const loin = ev.distKm > o.distanceVoyageKm && prec.distKm > o.distanceVoyageKm;
-      const pont = ecart <= o.gapVoyage * JOUR_MS || (ecart <= o.gapVoyageMax * JOUR_MS && !rentresEntre(prec.t2, ev.t1));
+      // Rentré entre-temps : deux sorties, même le lendemain (le script les réunissait à moins d'un jour, D87).
+      const pont = ecart <= o.gapVoyageMax * JOUR_MS && !rentresEntre(prec.t2, ev.t1);
       if (loin && pont) courant.push(ev);
       else {
         voyages.push(courant);
@@ -579,7 +701,7 @@ export function arborescence(g: Groupes, noms: Map<number, string | null | undef
   for (const p of g.photos) {
     const d = destination.get(p.id) ?? { chemin: [nomsSortie().sansLieu], info: { origine: 'sans_lieu' as const } };
     const cle = d.chemin.join('/');
-    const x = dossiers.get(cle) ?? { chemin: d.chemin, photos: [], info: d.info, ...(d.infoParent ? { infoParent: d.infoParent } : {}) };
+    const x = dossiers.get(cle) ?? { chemin: d.chemin, photos: [], info: d.info, ...(d.infoParent ? { infoParent: d.infoParent } : {}), ...(d.evenement ? { evenement: d.evenement } : {}) };
     x.photos.push(p.id);
     const jour = jourDe(p.date);
     if (jour) {
@@ -705,6 +827,31 @@ export function rangerVideos(dossiers: DossierPropose[], datesPhotos: Map<string
  * de fichier : la date du fichier est souvent celle d'une copie, et les
  * ranger d'après elle crée de fausses sorties. Elles vont dans `_sans_date`.
  */
+/** Ce que le tri range, prêt pour `grouper` : photos datées (dans l'ordre des chemins), vidéos datées, éléments sans vraie date. */
+export interface ElementsATrier {
+  photos: PhotoTri[];
+  videos: { id: string; date?: string }[];
+  sansDate: string[];
+}
+
+export function elementsATrier(fichiers: { id: string; categorie: string; date?: string; origineDate?: string; gps?: { lat: number; lon: number } }[]): ElementsATrier {
+  // Sans vraie date, une photo ne peut pas être rangée dans une sortie : elle va dans « _sans_date ».
+  const { datees, sansDate } = separerSansDate(fichiers);
+  const photos: PhotoTri[] = datees.filter((f) => f.categorie === 'photo').map((f) => ({ id: f.id, nom: f.id.split('/').pop()!, date: f.date, gps: f.gps }));
+  photos.sort((a, b) => a.id.localeCompare(b.id));
+  return { photos, videos: datees.filter((f) => f.categorie === 'video').map((f) => ({ id: f.id, date: f.date })), sansDate: sansDate.map((f) => f.id) };
+}
+
+/**
+ * Arborescence de tout ce que le tri range : celle des photos, les vidéos avec
+ * les photos du même moment, les éléments sans date à part. L'aperçu de
+ * l'écran et le rangement font le même calcul ; seuls les noms diffèrent.
+ */
+export function arborescenceComplete(e: ElementsATrier, g: Groupes, noms: Map<number, string | null | undefined>, o: OptionsTri, evts: EvenementCalendrier[] = []): DossierPropose[] {
+  const dates = new Map(e.photos.map((p) => [p.id, p.date]));
+  return avecSansDate(rangerVideos(arborescence(g, noms, o, evts), dates, e.videos), e.sansDate);
+}
+
 export function separerSansDate<T extends { id: string; origineDate?: string }>(fichiers: T[]): { datees: T[]; sansDate: T[] } {
   const sansDate = fichiers.filter((f) => f.origineDate === 'fichier');
   return { datees: fichiers.filter((f) => f.origineDate !== 'fichier'), sansDate };

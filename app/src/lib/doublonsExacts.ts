@@ -1,13 +1,13 @@
 // Doublons exacts de photos (SPEC § 6.2, D31, D61) : même contenu (empreinte
 // SHA-256), ou même photo en version réduite (WhatsApp : sans EXIF, plus
 // petite, très semblable). L'utilisateur choisit les exemplaires à garder ;
-// la proposition garde le meilleur exemplaire de chaque emplacement (un
-// dossier qui garde sa place, ou les photos à trier) : une sélection « Best
-// of » faite de copies reste entière. Une photo à trier qui a déjà sa place
-// dans un dossier « Garder, nettoyer » n'est pas triée une seconde fois ; si
-// ce dossier n'en a qu'une version réduite, l'original y prend sa place (D71).
-// Les copies d'un même emplacement et les versions réduites sont proposées
-// pour `_mis_de_cote/doublons_exacts/`.
+// la proposition n'écarte que ce qui ferait double emploi au même endroit :
+// elle garde le meilleur exemplaire de chaque emplacement (un dossier qui
+// garde sa place, ou les photos à trier), version réduite comprise quand elle
+// y est seule (D86). Une photo à trier qui a déjà sa place dans un dossier
+// « Garder, nettoyer » n'est pas triée une seconde fois ; si ce dossier n'en
+// a qu'une version réduite, l'original y prend sa place (D71). Les autres
+// exemplaires sont proposés pour `_mis_de_cote/doublons_exacts/`.
 
 export interface PhotoExacte {
   id: string;
@@ -28,7 +28,7 @@ export interface PhotoExacte {
   /**
    * Genre de l'emplacement : `a_trier` (racine, dossiers « Trier » : le tri les
    * répartira), `nettoyer` (dossier « Garder, nettoyer » : la photo y a déjà sa
-   * place), `tel_quel` (« Ne pas toucher », ou dossier d'une archive déjà triée).
+   * place), `tel_quel` (dossier d'une archive déjà triée).
    */
   genre: GenreEmplacement;
 }
@@ -41,8 +41,9 @@ export interface GroupeExact {
   copies: { id: string; type: 'identique' | 'reduite' }[];
   /**
    * Proposition : les exemplaires à garder, le meilleur de chaque emplacement
-   * (jamais une version réduite) ; aucun exemplaire à trier quand la photo est
-   * déjà dans un dossier « Garder, nettoyer ».
+   * (une version réduite seulement dans un dossier gardé où elle est seule) ;
+   * aucun exemplaire à trier quand la photo est déjà dans un dossier « Garder,
+   * nettoyer ».
    */
   aGarder: string[];
   /**
@@ -92,7 +93,7 @@ const GENERIQUES = [
   /^whatsapp/,
   /^(signal|telegram|messenger|snapchat|facebook|instagram|fb_img)/,
   /^(copie|copy|edited|modifi)/,
-  /^(vlc|snapshot|untitled|resized|recadr)/,
+  /^(vlc|snapshot|videocapture|untitled|resized|recadr)/,
 ];
 
 /** Le nom a-t-il été donné à la main (« Anniversaire Lea.jpg ») plutôt que par l'appareil ? */
@@ -201,6 +202,13 @@ export function groupesDoublonsExacts(photos: PhotoExacte[]): GroupeExact[] {
     const emplacements = new Set<string>();
     for (const p of ordre) {
       if (emplacements.has(p.emplacement) || (dejaRangee && p.genre === 'a_trier')) continue;
+      emplacements.add(p.emplacement);
+      aGarder.push(p.id);
+    }
+    // Une version réduite seule dans un dossier gardé y reste, comme tout exemplaire rangé dans un autre
+    // dossier (D86) ; sauf celle que l'original à trier vient remplacer.
+    for (const p of [...reduites].sort(meilleure)) {
+      if (p.genre === 'a_trier' || p === reduiteRangee || emplacements.has(p.emplacement)) continue;
       emplacements.add(p.emplacement);
       aGarder.push(p.id);
     }

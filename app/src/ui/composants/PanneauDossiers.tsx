@@ -23,6 +23,7 @@ import {
   mettreSelectionDeCote,
   nouveauDossierAvec,
   ordrePanneau,
+  type OrdrePanneau,
   parentPourNouveau,
   renommage,
   simplifier,
@@ -185,8 +186,12 @@ function useCible(accepter: () => boolean, deposer: () => void) {
 function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profondeur: number; arbre: Arbre; plat?: boolean }) {
   const s = session.value!;
   const r = arbre.resumes.get(d.id)!;
-  // À plat (tri par période) : pas de sous-dossiers ; le dossier parent est rappelé sous le nom.
+  // À plat (ordre par taille) : pas de sous-dossiers ; le dossier parent est rappelé sous le nom.
   const enfants = plat ? [] : (arbre.enfants.get(d.id) ?? []);
+  // Créé par le tri ou à la main, et pas dans un dossier lui-même nouveau : les sous-dossiers d'un voyage n'en répètent pas l'étiquette (D89).
+  const cree = (x?: DossierPlan) => !!x && (x.origine === 'tri' || x.origine === 'cree');
+  const parent = d.parent === null ? undefined : s.plan.dossiers.get(d.parent);
+  const nouveau = cree(d) && (plat || !cree(parent));
   const deplie = deplies.value.has(d.id) || arbre.visibles !== null;
   const actif = vue.value === d.id;
   const enRenommage = renommage.value === d.id;
@@ -275,9 +280,14 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
               </span>
             )}
             {total === 0 && d.parent !== null && <span class="badge vide">{t`vide`}</span>}
+            {nouveau && (
+              <span class="badge cree" title={d.origine === 'tri' ? t`Dossier créé par le tri automatique : il n’existe pas dans votre dossier d’origine` : t`Dossier créé à la main : il n’existe pas dans votre dossier d’origine`}>
+                {t`nouveau`}
+              </span>
+            )}
             {(arbre.nouveaux.get(d.id) ?? 0) > 0 && (
               <span class="badge nouveau" title={t`${pluriel(arbre.nouveaux.get(d.id)!, 'photo ou vidéo arrivée', 'photos ou vidéos arrivées')} avec la mise à jour de l’inventaire, pas encore dans la sortie`}>
-                {t`nouveau`}
+                +{nombre(arbre.nouveaux.get(d.id)!)}
               </span>
             )}
             {(arbre.alertes.get(d.id) ?? []).map(([texte, aide]) => (
@@ -336,7 +346,10 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       if (d.parent === null) continue;
       enfants.set(d.parent, [...(enfants.get(d.parent) ?? []), d]);
     }
-    for (const l of enfants.values()) l.sort((a, b) => comparer(a.nom, b.nom));
+    const r = resumes(s.plan);
+    // Par période : la même arborescence, chaque niveau dans l'ordre du temps (D89).
+    const debut = (d: DossierPlan) => r.get(d.id)?.duTotal ?? '9999';
+    for (const l of enfants.values()) l.sort((a, b) => (ordrePanneau.value === 'periode' && debut(a).localeCompare(debut(b))) || comparer(a.nom, b.nom));
     let visibles: Set<string> | null = null;
     const q = simplifier(filtre.trim());
     if (q) {
@@ -350,7 +363,6 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
         }
       }
     }
-    const r = resumes(s.plan);
     const alertes = alertesDossiers(s.plan, r);
     if (seulementAlertes) {
       const avec = new Set([RACINE]);
@@ -371,7 +383,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       visibles = visibles ? new Set([...visibles].filter((id) => avec.has(id))) : avec;
     }
     return { enfants, resumes: r, visibles, alertes, nouveaux };
-  }, [version, filtre, seulementAlertes, seulementNouveaux]);
+  }, [version, filtre, seulementAlertes, seulementNouveaux, ordrePanneau.value]);
 
   const nbMisDeCote = elementsVue(s.plan, VUE_MIS_DE_COTE).length;
   const nbAutres = elementsVue(s.plan, VUE_AUTRES).length;
@@ -429,9 +441,10 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       <div class="recherche-dossiers">
         <input type="search" placeholder={t`Chercher…`} aria-label={t`Chercher un dossier`} value={filtre} onInput={(e) => setFiltre(e.currentTarget.value)} />
         <div class="options-panneau">
-          <select value={ordrePanneau.value} onChange={(e) => (ordrePanneau.value = e.currentTarget.value as 'arbre' | 'periode')} aria-label={t`Présentation des dossiers`}>
-            <option value="arbre">{t`Par dossier`}</option>
+          <select value={ordrePanneau.value} onChange={(e) => (ordrePanneau.value = e.currentTarget.value as OrdrePanneau)} aria-label={t`Présentation des dossiers`}>
+            <option value="arbre">{t`Par nom`}</option>
             <option value="periode">{t`Par période`}</option>
+            <option value="taille">{t`Par taille (les plus petits d’abord)`}</option>
           </select>
           <button
             type="button"
@@ -463,14 +476,18 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
           </label>
         )}
       </div>
-      {ordrePanneau.value === 'periode' ? (
+      {ordrePanneau.value === 'taille' ? (
         <ul class="arbre plat">
           {[...s.plan.dossiers.values()]
             .filter((d) => {
               const x = arbre.resumes.get(d.id)!;
-              return (d.parent === null || x.photos + x.videos > 0) && (!arbre.visibles || arbre.visibles.has(d.id));
+              return d.parent !== null && x.photos + x.videos > 0 && (!arbre.visibles || arbre.visibles.has(d.id));
             })
-            .sort((a, b) => (a.parent === null ? -1 : b.parent === null ? 1 : (arbre.resumes.get(a.id)!.du ?? '9').localeCompare(arbre.resumes.get(b.id)!.du ?? '9') || a.nom.localeCompare(b.nom)))
+            .sort((a, b) => {
+              const x = arbre.resumes.get(a.id)!;
+              const y = arbre.resumes.get(b.id)!;
+              return x.photos + x.videos - (y.photos + y.videos) || (x.du ?? '9').localeCompare(y.du ?? '9') || a.nom.localeCompare(b.nom);
+            })
             .map((d) => (
               <Ligne key={d.id} d={d} profondeur={0} arbre={arbre} plat />
             ))}

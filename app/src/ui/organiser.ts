@@ -40,8 +40,12 @@ export function recentsValides(): string[] {
 export const deplacerOuvert = signal(false);
 export const visionneuse = signal<number | null>(null);
 export const deplies = signal<ReadonlySet<string>>(new Set([RACINE]));
-/** Présentation du panneau des dossiers : arborescence, ou liste à plat par période. */
-export const ordrePanneau = signal<'arbre' | 'periode'>('arbre');
+/**
+ * Ordre du panneau des dossiers : l'arborescence par nom, l'arborescence dans
+ * l'ordre du temps, ou tous les dossiers à plat, les plus petits d'abord (D89).
+ */
+export type OrdrePanneau = 'arbre' | 'periode' | 'taille';
+export const ordrePanneau = signal<OrdrePanneau>('arbre');
 /** Dossier en cours de renommage dans le panneau (double-clic ou F2). */
 export const renommage = signal<string | null>(null);
 

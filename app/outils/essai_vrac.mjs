@@ -134,6 +134,10 @@ try {
     await ecrire('copie de 0140.jpg', f0140);
     await ecrire('BESTOF/0141_best.jpg', f0141);
     await ecrire('janvier/0141_janvier.jpg', f0141);
+    // Une photo seulement dans deux dossiers gardés (D86) : gardée dans les deux, à écarter d'un dossier si l'on veut.
+    const fete = new Blob([await f0140.arrayBuffer(), new Uint8Array([9])]);
+    await ecrire('janvier/fete.jpg', fete);
+    await ecrire('janvier/fete/fete.jpg', fete);
     // Capture d'écran (reconnue à son nom) : une petite image PNG.
     const canevas = new OffscreenCanvas(108, 234);
     canevas.getContext('2d').fillRect(0, 0, 10, 10);
@@ -201,7 +205,11 @@ try {
   // Étape 3 : que faire des sous-dossiers (D61).
   await page.getByRole('heading', { name: /Dossiers/ }).waitFor();
   const lignes = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
-  verifier(lignes.length === 2 && lignes.some((l) => l.includes('BESTOF')) && lignes.some((l) => l.includes('janvier')), 'étape « Dossiers » : BESTOF et janvier listés');
+  verifier(lignes.length === 2 && lignes[0].includes('BESTOF') && lignes[1].includes('janvier'), 'étape « Dossiers » : BESTOF et janvier listés, par nom');
+  await page.locator('.outils-sous-dossiers input[type=search]').fill('janv');
+  const trouvees = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
+  verifier(trouvees.length === 1 && trouvees[0].includes('janvier') && (await page.locator('.outils-sous-dossiers').innerText()).includes('Pour 1 dossier trouvé'), 'étape « Dossiers » : la recherche filtre les sous-dossiers');
+  await page.locator('.outils-sous-dossiers input[type=search]').fill('');
   const actifs = await page.locator('.sous-dossiers [role=radio][aria-checked=true]').allInnerTexts();
   verifier(actifs.length === 2 && actifs.every((x) => x === 'Garder, nettoyer'), `« Garder, nettoyer » par défaut, en boutons (${actifs.join(', ')})`);
   const bestof = page.locator('.sous-dossiers tbody tr', { hasText: 'BESTOF' });
@@ -230,10 +238,12 @@ try {
   verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à relire'), 'onglets : on arrive sur « Copies exactes », 2 groupes à relire');
   const copie0140 = page.locator('.tuile-doublon[aria-label^="copie de 0140.jpg"]');
   verifier((await copie0140.getAttribute('class')).includes('a_ecarter'), 'copies exactes : la copie du vrac est proposée à l’écart (« à écarter »)');
-  const carte0141 = page.locator('.carte-doublons', { hasText: 'BESTOF' });
+  const carte0141 = page.locator('.carte-doublons', { hasText: '0141' });
   verifier(
-    (await carte0141.locator('.tuile-doublon.gardee').count()) === 2 && (await carte0141.locator('.tuile-doublon.a_ecarter').count()) === 1,
-    'copie déjà rangée dans janvier (« Garder, nettoyer ») : l’exemplaire à trier est proposé à l’écart, celui de BESTOF (« Ne pas toucher ») gardé',
+    (await carte0141.locator('.tuile-doublon.gardee').count()) === 1 &&
+      (await carte0141.locator('.tuile-doublon.a_ecarter').count()) === 1 &&
+      (await page.locator('.carte-doublons', { hasText: 'BESTOF' }).count()) === 0,
+    'copie déjà rangée dans janvier (« Garder, nettoyer ») : l’exemplaire à trier est proposé à l’écart ; BESTOF (« Ne pas toucher ») n’est pas examiné',
   );
   await capturer(page, 'v2b_copies');
   // Un clic garde la copie proposée à l'écart ; Ctrl+Z annule (la page ne perd rien).
@@ -252,12 +262,44 @@ try {
   await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
   await page.locator('.tuile-doublon.ecartee').first().waitFor();
   verifier((await page.locator('.tuile-doublon.ecartee').count()) === 2, 'onglet « Mis de côté » : les 2 copies écartées, prêtes à être remises');
-  // Grouper par dossier : une copie se range sous chacun des dossiers où elle a un exemplaire.
+  // Grouper par dossier : une copie se range sous chacun des dossiers de la source où elle a un exemplaire.
   await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
   await page.getByRole('radio', { name: 'Tous' }).click();
   await page.locator('.outils-doublons select').first().selectOption('dossier');
   const sectionsDossiers = (await page.locator('.section-doublons').allInnerTexts()).map((x) => x.split('\n')[0]);
-  verifier(['Photos à trier', 'BESTOF', 'janvier'].every((n) => sectionsDossiers.includes(n)), `copies groupées par dossier : ${sectionsDossiers.join(', ')}`);
+  verifier(sectionsDossiers.length === 3 && ['Photos à trier', 'janvier', 'janvier/fete'].every((n) => sectionsDossiers.includes(n)), `copies groupées par dossier : ${sectionsDossiers.join(', ')}`);
+  const parNom = sectionsDossiers.slice(1).toSorted(new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare);
+  verifier(sectionsDossiers[0] === 'Photos à trier' && parNom.every((n, i) => n === sectionsDossiers[i + 1]), 'dossiers des copies par ordre alphabétique, les photos à trier en tête');
+  await page.locator('.recherche-sections').fill('fet');
+  const trouves = (await page.locator('.section-doublons').allInnerTexts()).map((x) => x.split('\n')[0]);
+  verifier(trouves.length === 1 && trouves[0] === 'janvier/fete', `recherche d’un dossier : ${trouves.join(', ')}`);
+  // Photo dans deux dossiers gardés : sous les groupes à relire, toute gardée ; tout le dossier s'écarte d'un clic.
+  await page.locator('.section-doublons', { hasText: 'janvier/fete' }).click();
+  verifier(
+    (await page.locator('.titre-partout').innerText()).includes('tout est gardé') && (await page.locator('.carte-doublons .tuile-doublon.gardee').count()) === 2,
+    'photo dans deux dossiers gardés : « Aussi dans d’autres dossiers gardés », les deux exemplaires gardés',
+  );
+  await page.locator('.actions-dossier-copies').getByRole('button', { name: 'Écarter 1 exemplaire de ce dossier' }).click();
+  await page.locator('.actions-dossier-copies').getByRole('button', { name: 'Remettre 1 exemplaire de ce dossier' }).waitFor();
+  verifier((await page.locator('.carte-doublons .tuile-doublon.ecartee').count()) === 1, 'tout le dossier d’un clic : son exemplaire écarté, l’autre reste gardé dans janvier');
+  await page.keyboard.press('Control+z');
+  await page.locator('.actions-dossier-copies').getByRole('button', { name: 'Écarter 1 exemplaire de ce dossier' }).waitFor();
+  await capturer(page, 'v2b_copies_recherche');
+  await page.locator('.recherche-sections').fill('best');
+  verifier((await page.locator('.section-doublons').count()) === 0 && (await page.locator('.sections-doublons').innerText()).includes('Aucun dossier ne correspond.'), 'recherche sans résultat : « Aucun dossier ne correspond »');
+  await page.locator('.recherche-sections').fill('');
+  // Tout un dossier d'un coup (D86) : les exemplaires écartés des photos à trier se remettent, puis s'écartent de nouveau.
+  await page.locator('.section-doublons', { hasText: 'Photos à trier' }).click();
+  const actionsDossier = page.locator('.actions-dossier-copies');
+  await actionsDossier.getByRole('button', { name: 'Remettre 2 exemplaires de ce dossier' }).click();
+  await actionsDossier.getByRole('button', { name: 'Écarter 1 exemplaire de ce dossier' }).waitFor();
+  verifier(true, 'dossier entier : « Remettre 2 exemplaires », puis seul celui gardé aussi dans janvier peut s’écarter (jamais le dernier)');
+  await page.keyboard.press('Control+z');
+  await actionsDossier.getByRole('button', { name: 'Remettre 2 exemplaires de ce dossier' }).waitFor();
+  // Copies remises « à écarter » (Ctrl+Z) : le tri automatique proposera de les écarter d'abord (D85).
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('Control+z');
+  await page.locator('.onglet-doublons.actif', { hasText: '2 à relire' }).waitFor();
   // Les rafales sont cherchées avec l'analyse (D81) : elles sont déjà là.
   await page.locator('.onglet-doublons', { hasText: 'Rafales' }).click();
   await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 60_000 });
@@ -270,7 +312,25 @@ try {
   await page.getByRole('button', { name: /Ranger 1 capture dans/ }).click();
   await page.getByText('1 capture rangée').waitFor();
   verifier(true, `capture d’écran rangée dans ${N.captures}, depuis le tri automatique`);
-  await page.getByRole('button', { name: 'Calculer l’arborescence' }).click();
+  const avertissement = page.locator('.copies-avant-tri');
+  verifier((await avertissement.innerText()).includes('Copies exactes pas encore écartées : 2'), 'avant le tri : les 2 copies pas encore écartées sont signalées');
+  await avertissement.getByRole('button', { name: 'Écarter 2 copies' }).click();
+  await avertissement.waitFor({ state: 'detached' });
+  verifier(true, 'un clic écarte les copies avant le tri');
+  // Trois questions, et le résultat calculé avec les photos avant de ranger (D87).
+  const bouton = page.getByRole('button', { name: /^Ranger les photos dans ces \d+ dossiers?$/ });
+  const prevus = Number((await bouton.innerText()).match(/\d+/)[0]);
+  verifier((await page.locator('.apercu-tri .apt-chiffres').innerText()).includes(`${prevus} dossiers`) && (await page.locator('.apercu-tri svg.apt-frise').count()) === 1, `aperçu avant de ranger : ${prevus} dossiers, une frise d’exemple`);
+  await page.locator('.apercu-tri .apt-liste > summary').click();
+  await page.getByRole('radio', { name: 'Par mois' }).click();
+  // Les dossiers prévus portent le mois (« Lieu_03.25 ») au lieu de la journée, avant tout rangement.
+  await page.waitForFunction(() => [...document.querySelectorAll('.apercu-tri .apt-liste tr td:first-child')].every((td) => /_\d{2}\.\d{2}$/.test(td.textContent.trim())));
+  verifier(true, 'aperçu : « Par mois » change les dossiers prévus, avant de ranger');
+  await page.getByRole('radio', { name: 'Par sortie (conseillé)' }).click();
+  await page.getByRole('button', { name: `Ranger les photos dans ces ${prevus} dossiers` }).waitFor();
+  await capturer(page, 'v3a_reglages_tri');
+  if (CAPTURES) await page.locator('.apercu-tri').screenshot({ path: join(CAPTURES, 'v3b_apercu_tri.png') });
+  await bouton.click();
   await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 60_000 });
   const resume = await page.locator('.resume-tri').innerText();
   verifier(/dossiers? proposés?/.test(resume), `résumé du tri : ${resume.split('.')[0]}`);
@@ -278,8 +338,8 @@ try {
   await capturer(page, 'v3_tri');
   const avant = requetesNominatim.length;
   await page.locator('.tri-auto > summary').first().click();
-  await page.getByRole('button', { name: 'Recalculer l’arborescence' }).click();
-  await page.getByRole('button', { name: 'Recalculer', exact: true }).click();
+  await page.getByRole('button', { name: /^Ranger à nouveau dans ces/ }).click();
+  await page.getByRole('button', { name: 'Ranger à nouveau', exact: true }).click();
   await page.waitForTimeout(500);
   verifier(requetesNominatim.length === avant, 'recalculer ne redemande pas les noms (cache)');
   verifier((await page.locator('.resume-tri').innerText()) === resume, 'recalculer avec les mêmes réglages donne la même arborescence');
@@ -298,6 +358,9 @@ try {
   await capturer(page, 'v3a_lieux');
   verifier(noms.some((n) => n.startsWith('Ko_Samui')) && noms.some((n) => n.startsWith('Annecy')), `dossiers nommés d’après les lieux : ${noms.filter((n) => !['Photos (racine)', 'Mis de côté', 'Autres fichiers'].includes(n)).join(', ')}`);
   verifier(noms.includes('BESTOF') && noms.includes('janvier') && noms.includes(N.captures), 'dossiers gardés tels quels et captures conservés');
+  // Les dossiers créés par le tri portent « nouveau » ; ceux de la source, non (D89).
+  const ligneDe = (nom) => page.locator('.ligne-dossier', { has: page.locator('.nom-dossier', { hasText: new RegExp(`^${nom}`) }) }).first();
+  verifier((await ligneDe('Ko_Samui').locator('.badge.cree').count()) === 1 && (await ligneDe('BESTOF').locator('.badge.cree').count()) === 0, 'étape 7 : « nouveau » sur les dossiers du tri, pas sur ceux de la source');
   verifier((await page.locator('.tete-organiser').count()) === 1, 'première visite : l’explication de l’étape est ouverte');
   await page.locator('.replier-entete').click();
   verifier((await page.locator('.tete-organiser').count()) === 0 && (await page.locator('.tete-vue').getByRole('button', { name: /^Aide/ }).count()) === 1, 'repliée, l’explication laisse un bouton « Aide » au bout de la ligne du titre');
@@ -322,6 +385,27 @@ try {
   await page.getByRole('heading', { name: /Petits dossiers/ }).waitFor();
   verifier(true, 'après les lieux et sorties, on passe aux petits dossiers (étape 8)');
   await capturer(page, 'v4_petits_dossiers');
+  // Un petit dossier à la fois, entre le dossier juste avant et juste après (D90).
+  const nomCourant = () => page.locator('.tete-petit h2').innerText();
+  const premierPetit = await nomCourant();
+  verifier(
+    (await page.locator('.liste-petits .ligne-liste-petit').count()) >= 2 && (await page.locator('.trio-petit .cote-petit:not(.vide)').count()) >= 1 && (await page.locator('.centre-petit .photo-petit').count()) >= 1,
+    `petits dossiers : la liste à gauche, « ${premierPetit} » entre ses voisins, ses photos en grand`,
+  );
+  await page.locator('.cote-petit:not(.vide) button', { hasText: 'Mettre avec ce dossier' }).first().click();
+  await page.getByText(/^Rangé avec « /).first().waitFor();
+  await page.waitForFunction((avant) => document.querySelector('.tete-petit h2')?.textContent !== avant, premierPetit);
+  verifier((await page.locator('.ligne-liste-petit.fait', { hasText: premierPetit }).count()) === 1, `« Mettre avec ce dossier » : rangé, coché dans la liste, et l’écran passe au suivant (${await nomCourant()})`);
+  await page.keyboard.press('Control+z');
+  await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
+  verifier(true, 'Ctrl+Z : le petit dossier revient, à décider');
+  await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
+  await page.keyboard.press('g');
+  await page.getByText('Gardé seul.').first().waitFor();
+  await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
+  await page.getByRole('button', { name: 'Annuler ce choix' }).click();
+  await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
+  verifier(true, 'touche G : gardé seul ; « Annuler ce choix » le remet à décider');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.getByRole('heading', { name: /Nommage/ }).waitFor();
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
@@ -331,17 +415,25 @@ try {
   await page.getByText(/noms? proposés?/).first().waitFor({ timeout: 60_000 });
   verifier(appelsIA.nommage > 0, `nommage IA4 : ${appelsIA.nommage} dossier(s)`);
   await capturer(page, 'v5_nommage');
-  // Le titre d'un événement du calendrier est proposé comme nom (D83), l'IA reste à un clic.
+  // Le titre d'un événement du calendrier, suivi du lieu, est proposé comme nom (D83, D88) ; le lieu et l'IA restent à un clic.
   const champs = await page.locator('input.nom-propose').evaluateAll((l) => l.map((x) => x.value));
   verifier(
-    champs.includes('18 ans de Lea 18.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 15.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 2 15.07.26') && champs.includes('Voyage Thaïlande Mu Ko Ang Thong 21.07.26'),
-    `noms tirés du calendrier (titre seul, ou titre et lieu pendant un voyage) : ${champs.filter((v) => /Lea|Voyage/.test(v)).join(', ')}`,
+    champs.includes('18 ans de Lea Ko Samui 18.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 15.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 2 15.07.26') && champs.includes('Voyage Thaïlande Mu Ko Ang Thong 21.07.26'),
+    `noms tirés du calendrier (titre puis lieu) : ${champs.filter((v) => /Lea|Voyage/.test(v)).join(', ')}`,
   );
   verifier(appelsIA.monumentsDemandes === appelsIA.nommage && (await page.locator('.monuments').first().innerText()).includes('Plage de Chaweng'), 'monuments demandés dans le même appel que le nom et affichés');
   verifier((await page.getByRole('button', { name: /Reconnaître lieux et monuments/ }).count()) === 0, 'un seul bouton d’IA au nommage');
-  await page.getByRole('button', { name: /Accepter les \d+ noms de confiance 8 ou plus/ }).click();
+  await capturer(page, 'v5b_nommage_puces');
+  verifier((await page.locator('.noms-possibles .nom-possible').count()) > 0, 'nommage : les noms possibles en un clic sous chaque champ');
+  // Un seul événement candidat : renommé d'un coup ; Ko Samui (deux événements) attend le choix de l'utilisateur.
+  await page.getByRole('button', { name: /^Prendre le nom du calendrier pour les \d+ dossiers/ }).click();
   await page.getByText(/dossiers? renommés?/).first().waitFor();
-  verifier(true, 'noms de confiance 8 ou plus acceptés en un clic');
+  verifier(true, 'noms du calendrier pris en un clic, seulement là où un seul événement convient');
+  const accepter = page.getByRole('button', { name: /Accepter les? (\d+ noms|nom) de confiance 8 ou plus/ });
+  if (await accepter.count()) {
+    await accepter.click();
+    verifier(true, 'noms de l’IA de confiance 8 ou plus acceptés en un clic');
+  }
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
   await page.getByRole('heading', { name: /Consolidation/ }).waitFor();
   await page.getByRole('button', { name: /Proposer des fusions avec l’IA/ }).click();

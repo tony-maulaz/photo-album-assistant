@@ -192,8 +192,6 @@ export const TEXTES: Record<string, string> = {
   'dossiers renommés': 'folders renamed',
   '{0} ; {1} nom(s) déjà pris : {2}.': '{0}; {1} name(s) already taken: {2}.',
   Nommage: 'Naming',
-  'Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Un événement du calendrier pendant lequel les photos ont été prises donne son titre (« 18 ans de Lea »). L’IA peut aussi proposer des noms en regardant quelques photos, le lieu, le calendrier et le contexte du projet ; vous gardez le dernier mot.':
-    'Give each folder a meaningful name, following the pattern “Theme_Place_DD.MM.YY” (Birthday_Lea_26.01.25). A calendar event during which the photos were taken gives its title (“18 ans de Lea”). The AI can also suggest names by looking at a few photos, the place, the calendar and the project context; you have the final say.',
   'Tous les dossiers (pas seulement les noms automatiques comme « Ko_Samui_18.07.26 »)': 'All folders (not only automatic names such as “Ko_Samui_18.07.26”)',
   'Événements locaux, lieux touristiques, résultats de course… (environ 0,09 CHF de plus par dossier)':
     'Local events, tourist sights, race results… (about 0.09 CHF more per folder)',
@@ -284,8 +282,6 @@ export const TEXTES: Record<string, string> = {
   ' pour {0}{1}. Vérifiez-les et corrigez-les à l’étape suivante, en glissant les photos d’un dossier à l’autre.':
     ' for {0}{1}. Check and correct them in the next step, by dragging photos from one folder to another.',
   ' · {0} (moins de {1} photos), à rattacher plus loin': ' · {0} (fewer than {1} photos), to be attached later on',
-  'Arborescence pas encore calculée': 'Folder tree not calculated yet',
-  'Calculez l’arborescence pour continuer': 'Calculate the folder tree to continue',
 
   // App.tsx
   'Création de la sortie': 'Creating the output',

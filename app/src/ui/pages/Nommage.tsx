@@ -1,14 +1,16 @@
 // Étape « Nommage » (SPEC § 6.6, IA4, script 04) : un tableau des dossiers,
 // le nom proposé modifiable, la confiance et la justification ; l'IA combine
 // photos, GPS, calendrier, contexte et recherche web, et repère les monuments
-// dans le même appel (D51). Sans IA, le titre de l'événement du calendrier
-// pendant lequel les photos ont été prises est proposé (D83).
+// dans le même appel (D51). Sous chaque nom, les noms possibles en un clic :
+// les événements du calendrier pendant lesquels les photos ont été prises, le
+// lieu du tri et la proposition de l'IA (D83) ; l'utilisateur peut aussi
+// écrire le sien.
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { blocCalendrier, evenementDesPhotos, evenementsAutour } from '../../lib/ics';
+import { blocCalendrier, evenementsAutour } from '../../lib/ics';
 import { aTraduire, t, tc } from '../../lib/langue';
-import { dossiersANommer, estimationNommage, lieuDuDossier, lireNommage, nomDepuisEvenement, normaliserNom, requeteNommage, respecteConvention, type CibleNommage, type NomPropose } from '../../lib/nommage';
-import { combiner, dateSure, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
+import { dossiersANommer, estimationNommage, lireNommage, nomsPossibles, normaliserNom, requeteNommage, respecteConvention, type CibleNommage, type NomPropose, type NomsPossibles } from '../../lib/nommage';
+import { combiner, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { enParallele } from '../../navigateur/workers';
@@ -28,58 +30,27 @@ interface PropositionNom extends NomPropose {
   cle: string;
 }
 
-/** Nom tiré du calendrier (D83) : `complet` quand toutes les photos datées ont été prises pendant l'événement. */
-interface NomCalendrier {
-  nom: string;
-  titre: string;
-  complet: boolean;
-}
-
-/** Proposition retenue pour le champ : le calendrier s'il couvre tout le dossier, sinon l'IA, sinon le calendrier. */
+/**
+ * Nom pris d'office pour le champ (`nomsPossibles`) : le meilleur événement
+ * du calendrier (sauf égalité), sinon la proposition de l'IA, avec sa
+ * confiance ; le calendrier n'en a pas.
+ */
 interface Proposition {
   nom: string;
   confiance?: number;
   source: 'calendrier' | 'ia';
+  /** Le seul événement du calendrier qui convient : « Prendre le nom du calendrier » le prend. */
+  seul?: boolean;
 }
 
-/**
- * Noms tirés du calendrier pour chaque dossier (D83). Un événement qui ne
- * couvre qu'un dossier donne son titre seul (« 18 ans de Lea 26.01.26 ») ;
- * partagé par plusieurs dossiers (un voyage), il est suivi du lieu, selon la
- * convention Theme_Lieu_JJ.MM.AA, pour que les noms ne se répètent pas. Un
- * sous-dossier dont le parent porte déjà le titre ne le répète pas.
- */
-function nomsCalendrier(plan: Plan, cibles: CibleNommage[]): Map<string, NomCalendrier | null> {
-  const trouves = cibles.map((c) => {
-    const dates = c.photos.map((f) => dateSure(f)).filter((d): d is string => !!d).sort();
-    const r = dates.length ? evenementDesPhotos(evenementsAutour(evenements.value, dates[0].slice(0, 10), dates.at(-1)!.slice(0, 10), 0), dates) : null;
-    return { c, dates, r: r && c.parent && normaliserNom(c.parent).startsWith(normaliserNom(r.evenement.titre)) ? null : r };
-  });
-  const parEvenement = new Map<string, number>();
-  for (const { r } of trouves) if (r) parEvenement.set(`${r.evenement.titre}|${r.evenement.debut}`, (parEvenement.get(`${r.evenement.titre}|${r.evenement.debut}`) ?? 0) + 1);
-  // Deux dossiers du même lieu le même jour : « … Kanchanaburi 2 15.07.26 » plutôt qu'un nom refusé comme déjà pris.
-  const pris = new Map<string, number>();
-  return new Map(
-    trouves.map(({ c, dates, r }) => {
-      if (!r) return [c.dossier, null];
-      const partage = (parEvenement.get(`${r.evenement.titre}|${r.evenement.debut}`) ?? 0) > 1;
-      const lieu = partage ? (plan.dossiers.get(c.dossier)?.tri?.lieu ?? lieuDuDossier(c.nom, c.parent)).replace(/_/g, ' ') : '';
-      const base = [r.evenement.titre, lieu].filter(Boolean).join(' ');
-      const cle = normaliserNom(nomDepuisEvenement(base, dates[0], dates.at(-1)!)).toLowerCase();
-      const n = (pris.get(cle) ?? 0) + 1;
-      pris.set(cle, n);
-      return [c.dossier, { nom: nomDepuisEvenement(n > 1 ? `${base} ${n}` : base, dates[0], dates.at(-1)!), titre: r.evenement.titre, complet: r.part === 1 }];
-    }),
-  );
+function propositionDe(n: NomsPossibles | undefined, p: PropositionNom | undefined): Proposition | null {
+  const choisi = n?.propose;
+  if (!choisi) return null;
+  return choisi.source === 'ia' ? { ...choisi, confiance: typeof p?.confiance === 'number' ? p.confiance : undefined } : choisi;
 }
 
-function propositionDe(p: PropositionNom | undefined, k: NomCalendrier | null): Proposition | null {
-  // Un titre de calendrier est souvent le nom le plus parlant (« 18 ans de Lea ») : il passe devant l'IA s'il couvre tout le dossier.
-  if (k?.complet) return { nom: k.nom, confiance: 9, source: 'calendrier' };
-  if (p) return { nom: p.nom, confiance: p.confiance ?? undefined, source: 'ia' };
-  if (k) return { nom: k.nom, confiance: 7, source: 'calendrier' };
-  return null;
-}
+/** Pourcentage arrondi d'une part (0,8 → 80). */
+const pourcent = (part: number) => Math.round(part * 100);
 
 function gpsMoyen(photos: FichierPlan[]): { lat: number; lon: number } | undefined {
   const g = photos.filter((f) => f.gps);
@@ -161,6 +132,45 @@ function renommerTous(plan: Plan, noms: [string, string, string?][]): { m: Modif
 }
 
 /**
+ * Les noms possibles d'un dossier, en puces sous le champ : un par événement
+ * du calendrier, le lieu, la proposition de l'IA. Un clic remplit le champ,
+ * qui reste modifiable ; la puce du nom qu'il contient est marquée. Deux
+ * puces qui donneraient le même dossier n'en font qu'une.
+ */
+function NomsAuChoix({ n, p, propre, saisir }: { n?: NomsPossibles; p?: PropositionNom; propre: string; saisir: (v: string) => void }) {
+  const puces: { nom: string; icone: string; titre: string }[] = [];
+  for (const k of n?.calendrier ?? []) {
+    const titre = t`Calendrier : « ${k.titre} », pendant ${pourcent(k.part)} % des photos`;
+    puces.push({ nom: k.nom, icone: '📅', titre: k.long ? `${titre} ${t`(titre long : jamais pris d’office)`}` : titre });
+  }
+  if (n?.lieu) puces.push({ nom: n.lieu, icone: '📍', titre: t`Lieu des photos` });
+  if (n?.ia) {
+    const confiance = typeof p?.confiance === 'number' ? p.confiance : null;
+    puces.push({ nom: n.ia, icone: '✨', titre: confiance === null ? t`Proposition de l’IA` : t`Proposition de l’IA, confiance ${confiance} sur 10` });
+  }
+  const vus = new Set<string>();
+  const uniques = puces.filter((x) => {
+    const cle = normaliserNom(x.nom).toLowerCase();
+    if (!cle || vus.has(cle)) return false;
+    vus.add(cle);
+    return true;
+  });
+  if (!uniques.length) return null;
+  return (
+    <div class="noms-possibles" role="group" aria-label={t`Noms possibles`}>
+      {uniques.map((x) => (
+        <button key={x.nom} type="button" class="nom-possible" aria-pressed={normaliserNom(x.nom) === propre} title={x.titre} onClick={() => saisir(x.nom)}>
+          <span class="icone-nom" aria-hidden="true">
+            {x.icone}
+          </span>
+          <span class="texte-nom">{x.nom}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Une ligne du tableau. `ancien` : le dossier vient d'être renommé ici (son
  * nom d'avant) ; la ligne reste affichée, cochée, avec son nouveau nom.
  * Entrée dans le champ applique le nom, comme le bouton « Renommer ».
@@ -168,7 +178,7 @@ function renommerTous(plan: Plan, noms: [string, string, string?][]): { m: Modif
 function Ligne({
   c,
   p,
-  k,
+  n,
   choisie,
   saisi,
   saisir,
@@ -177,7 +187,7 @@ function Ligne({
 }: {
   c: CibleNommage;
   p?: PropositionNom;
-  k: NomCalendrier | null;
+  n?: NomsPossibles;
   choisie: Proposition | null;
   saisi: string;
   saisir: (v: string) => void;
@@ -188,8 +198,9 @@ function Ligne({
   const evts = dates.length ? evenementsAutour(evenements.value, dates[0].slice(0, 10), dates.at(-1)!.slice(0, 10)) : [];
   const propre = normaliserNom(saisi);
   const renomme = ancien !== undefined && ancien !== c.nom;
+  const k = n?.calendrier ?? [];
   return (
-    <tr class={renomme ? 'renomme' : choisie && (choisie.confiance ?? 0) < 6 ? 'a-verifier' : ''}>
+    <tr class={renomme ? 'renomme' : choisie?.source === 'ia' && (choisie.confiance ?? 0) < 6 ? 'a-verifier' : ''}>
       <td class="miniatures-nommage">
         {c.photos.slice(0, 1).concat(c.photos.length > 2 ? [c.photos[Math.floor(c.photos.length / 2)]] : [], c.photos.length > 1 ? [c.photos.at(-1)!] : []).map((f) => (
           <Miniature key={f.id} f={f} taille={64} />
@@ -227,40 +238,22 @@ function Ligne({
         />
         {saisi && propre && propre !== saisi && <div class="discret">{t`deviendra « ${propre} »`}</div>}
         {propre && !respecteConvention(propre) && <div class="attention">{t`Convention : Theme_Lieu_JJ.MM.AA`}</div>}
+        <NomsAuChoix n={n} p={p} propre={propre} saisir={saisir} />
       </td>
       <td class="n" title={choisie?.source === 'calendrier' ? t`D’après le calendrier` : t`Confiance de l’IA, de 1 à 10`}>
-        {choisie?.confiance ?? ''}
+        {choisie?.source === 'calendrier' ? <span aria-hidden="true">📅</span> : (choisie?.confiance ?? '')}
       </td>
       <td class="justification">
-        {choisie?.source === 'calendrier' ? (
+        {p?.activite && <strong>{p.activite}. </strong>}
+        {p?.justification}
+        {k.length === 1 && (
           <div class="evenements">
-            {k?.complet ? t`Calendrier : « ${k.titre} », pendant toutes les photos` : t`Calendrier : « ${k?.titre ?? ''} », pendant une partie des photos`}
+            {k[0].long ? t`Calendrier : « ${k[0].titre} » ; titre long, à raccourcir si besoin` : t`Calendrier : « ${k[0].titre} », pendant ${pourcent(k[0].part)} % des photos`}
           </div>
-        ) : (
-          <>
-            {p?.activite && <strong>{p.activite}. </strong>}
-            {p?.justification}
-          </>
         )}
+        {k.length > 1 && <div class="evenements">{t`Plusieurs événements du calendrier conviennent : cliquez sur le bon nom.`}</div>}
         {p && p.monuments.length > 0 && <div class="monuments">{t`Reconnu : ${p.monuments.join(', ')}`}</div>}
-        {/* L'autre proposition, à prendre d'un clic. */}
-        {choisie?.source === 'calendrier' && p && normaliserNom(p.nom) !== normaliserNom(saisi) && (
-          <div class="autre-nom">
-            {t`Proposition de l’IA :`}{' '}
-            <button type="button" class="lien" onClick={() => saisir(p.nom)}>
-              {p.nom}
-            </button>
-          </div>
-        )}
-        {choisie?.source !== 'calendrier' && k && normaliserNom(k.nom) !== normaliserNom(saisi) && (
-          <div class="autre-nom">
-            {t`D’après le calendrier (« ${k.titre} ») :`}{' '}
-            <button type="button" class="lien" onClick={() => saisir(k.nom)}>
-              {k.nom}
-            </button>
-          </div>
-        )}
-        {!k && evts.length > 0 && <div class="evenements">{t`Calendrier : ${evts.slice(0, 3).map((e) => e.titre).join(' · ')}`}</div>}
+        {!k.length && evts.length > 0 && <div class="evenements">{t`Calendrier : ${evts.slice(0, 3).map((e) => e.titre).join(' · ')}`}</div>}
       </td>
       <td>
         <button type="button" disabled={!propre || propre === c.nom} onClick={renommer}>
@@ -331,21 +324,34 @@ export function PageNommage() {
     const faits = new Set(Object.keys(renommes).filter((id) => !presents.has(id)));
     return faits.size ? [...base, ...dossiersANommer(s.plan, true).filter((c) => faits.has(c.dossier))] : base;
   }, [versionPlan.value, tous, renommes]);
-  const propositions = s.aides.get<Record<string, PropositionNom>>('IA4') ?? {};
-  const calendrier = useMemo(() => nomsCalendrier(s.plan, cibles), [cibles, evenements.value]);
-  const proposition = (c: CibleNommage) => propositionDe(propositions[c.dossier], calendrier.get(c.dossier) ?? null);
+  // Même objet tant que l'IA n'a rien ajouté : les noms possibles ne sont recalculés qu'au besoin.
+  const lues = s.aides.get<Record<string, PropositionNom>>('IA4');
+  const propositions = lues ?? {};
+  const possibles = useMemo(() => nomsPossibles(s.plan, cibles, evenements.value, propositions), [cibles, evenements.value, lues]);
+  const proposition = (c: CibleNommage) => propositionDe(possibles.get(c.dossier), propositions[c.dossier]);
   const renomme = (c: CibleNommage) => renommes[c.dossier] !== undefined && renommes[c.dossier] !== c.nom;
-  // Le champ : ce qui est tapé, sinon le nom donné ici, sinon la proposition (calendrier ou IA).
+  // Le champ : ce qui est tapé ou choisi, sinon le nom donné ici, sinon le nom pris d'office (calendrier ou IA).
   const saisi = (c: CibleNommage) => saisies[c.dossier] ?? (renomme(c) ? c.nom : (proposition(c)?.nom ?? ''));
   const nouveauNom = (c: CibleNommage) => {
     const n = normaliserNom(saisi(c));
     return n && n !== c.nom ? n : '';
   };
-  const triees = [...cibles].sort((a, b) => (proposition(a)?.confiance ?? 11) - (proposition(b)?.confiance ?? 11) || a.nom.localeCompare(b.nom));
-  const surs = cibles.filter((c) => (proposition(c)?.confiance ?? 0) >= 8 && nouveauNom(c));
-  // Tous les noms à appliquer : ceux de l'IA (même de confiance basse) et ceux tapés.
+  // Les moins sûrs d'abord ; le calendrier, écrit par la famille, compte comme une confiance de 9.
+  const rang = (c: CibleNommage) => {
+    const pr = proposition(c);
+    return pr?.source === 'calendrier' ? 9 : (pr?.confiance ?? 11);
+  };
+  const triees = [...cibles].sort((a, b) => rang(a) - rang(b) || a.nom.localeCompare(b.nom));
+  const surs = cibles.filter((c) => proposition(c)?.source === 'ia' && (proposition(c)?.confiance ?? 0) >= 8 && nouveauNom(c));
+  // Le seul événement du calendrier qui convient, s'il est encore dans le champ (ni tapé ni choisi autrement).
+  const duCalendrier = cibles.filter((c) => {
+    const pr = proposition(c);
+    const tape = saisies[c.dossier];
+    return pr?.source === 'calendrier' && pr.seul && (tape === undefined || normaliserNom(tape) === normaliserNom(pr.nom)) && nouveauNom(c);
+  });
+  // Tous les noms à appliquer : ceux du calendrier, de l'IA (même de confiance basse) et ceux tapés.
   const tousNoms = cibles.filter((c) => nouveauNom(c));
-  const peuSurs = tousNoms.filter((c) => saisies[c.dossier] === undefined && (proposition(c)?.confiance ?? 0) < 8);
+  const peuSurs = tousNoms.filter((c) => saisies[c.dossier] === undefined && proposition(c)?.source !== 'calendrier' && (proposition(c)?.confiance ?? 0) < 8);
   // Noms tapés à la main et pas encore appliqués : on ne les perd pas en quittant l'étape.
   const enAttente = cibles.filter((c) => saisies[c.dossier] !== undefined && nouveauNom(c));
 
@@ -357,7 +363,7 @@ export function PageNommage() {
     const faits = noms.filter(([, nom]) => !r.refus.includes(nom));
     const ids = new Set(faits.map(([id]) => id));
     setRenommes({ ...renommes, ...Object.fromEntries(liste.filter((c) => ids.has(c.dossier)).map((c) => [c.dossier, renomme(c) ? renommes[c.dossier] : c.nom])) });
-    // Le nom appliqué n'est plus « en attente » ; après Ctrl+Z, le champ retrouve la proposition de l'IA.
+    // Le nom appliqué n'est plus « en attente » ; après Ctrl+Z, le champ retrouve le nom pris d'office.
     setSaisies(Object.fromEntries(Object.entries(saisies).filter(([id]) => !ids.has(id))));
     if (liste.length === 1) {
       if (r.refus.length) notifier('erreur', t`« ${noms[0][1]} » existe déjà à cet endroit.`);
@@ -388,7 +394,7 @@ export function PageNommage() {
   return (
     <div class="page large avec-barre page-nommage">
       <TeteEtape numero={ETAPE.nommage} titre={t`Nommage`} cle="nommage">
-        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Un événement du calendrier pendant lequel les photos ont été prises donne son titre (« 18 ans de Lea »). L’IA peut aussi proposer des noms en regardant quelques photos, le lieu, le calendrier et le contexte du projet ; vous gardez le dernier mot.`}
+        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Sous chaque nom, un clic choisit : 📅 un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »), 📍 le lieu, ou ✨ la proposition de l’IA, qui regarde quelques photos, le lieu, le calendrier et le contexte du projet. Vous pouvez aussi écrire le vôtre : vous gardez le dernier mot.`}
       </TeteEtape>
       <div class="reglages-etape ligne">
         <label class="case">
@@ -400,11 +406,23 @@ export function PageNommage() {
         </label>
       </div>
       <AideIA fonction="IA4" />
-      {(surs.length > 0 || peuSurs.length > 0) && (
+      {(surs.length > 0 || peuSurs.length > 0 || duCalendrier.length > 0) && (
         <p class="actions-nommage">
           {surs.length > 0 && (
             <button type="button" class="principal" onClick={() => renommer(surs)}>
               {surs.length > 1 ? t`Accepter les ${nombre(surs.length)} noms de confiance 8 ou plus` : t`Accepter le nom de confiance 8 ou plus`}
+            </button>
+          )}
+          {duCalendrier.length > 0 && (
+            <button
+              type="button"
+              class={surs.length ? '' : 'principal'}
+              onClick={() => renommer(duCalendrier)}
+              title={t`Seulement là où un seul événement du calendrier convient ; quand plusieurs conviennent, choisissez sous le nom. Ctrl+Z annule.`}
+            >
+              {duCalendrier.length > 1
+                ? t`Prendre le nom du calendrier pour les ${nombre(duCalendrier.length)} dossiers qui en ont un`
+                : t`Prendre le nom du calendrier pour le dossier qui en a un`}
             </button>
           )}
           {peuSurs.length > 0 && (
@@ -436,7 +454,7 @@ export function PageNommage() {
                 key={c.dossier}
                 c={c}
                 p={propositions[c.dossier]}
-                k={calendrier.get(c.dossier) ?? null}
+                n={possibles.get(c.dossier)}
                 choisie={proposition(c)}
                 saisi={saisi(c)}
                 saisir={(v) => setSaisies({ ...saisies, [c.dossier]: v })}
