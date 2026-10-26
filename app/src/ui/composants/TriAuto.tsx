@@ -10,7 +10,7 @@ import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { acceptablesSansVider, accepter, aEcarter, copiesEnAttente, groupesCopies } from '../../lib/groupesDoublons';
 import { gardeSaPlace, RACINE, resumes, traitementDe, type DossierPlan, type FichierPlan, type Plan } from '../../lib/plan';
-import { appliquerTri, arborescenceComplete, elementsATrier, grouper, modeTri, optionsDuMode, optionsDuProjet, type ModeTri, type OptionsTri } from '../../lib/tri';
+import { appliquerTri, arborescenceComplete, elementsATrier, grouper, modeTri, optionsDuMode, optionsDuProjet, separerSansDate, type ModeTri, type OptionsTri } from '../../lib/tri';
 import { useCopiesExactes } from '../copiesExactes';
 import { allerEtape, annuler, appliquer, changerEtape, configuration, evenements, journal, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionPlan, versionProjet } from '../etat';
 import { aTraduire, t } from '../../lib/langue';
@@ -150,7 +150,8 @@ export function TriAuto() {
     [groupes, o, evts],
   );
   const separes = apercu.filter((d) => d.evenement).length;
-  const dates = useMemo(() => new Map(aTrier.map((f) => [f.id, f.date])), [versionPlan.value]);
+  // Les photos sans vraie date (`_sans_date`) n'ont pas de place sur la frise.
+  const dates = useMemo(() => new Map(separerSansDate(aTrier).datees.map((f) => [f.id, f.date])), [versionPlan.value]);
 
   /** `nouvelles` : seulement les photos pas encore rangées, sans toucher aux dossiers déjà faits. */
   const calculer = async (nouvelles = false) => {

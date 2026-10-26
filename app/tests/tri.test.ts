@@ -54,6 +54,12 @@ describe('briques du script 01', () => {
     expect(nomDominant(['Anniversaire Lea.jpg', 'Anniversaire Lea (1).jpg', 'IMG_2043.jpg', 'Gateau.jpg'])).toBe('Anniversaire_Lea');
     expect(nomDominant(['Plage.jpg', 'Plage de Nice.jpg'])).toBe('Plage_de_Nice');
     expect(nomDominant(['IMG_1.jpg'])).toBeNull();
+    // La date d'un fichier déjà nommé ne compte pas : deux jours au même lieu
+    // font un seul nom, qui l'emporte sur un nom isolé plus long.
+    expect(nomDominant(['Ville_A_27.07.25.jpg', 'Ville_A_02.08.25.jpg', 'Arrivee_Ville_A.jpg'])).toBe('Ville_A');
+    // La date se retire avant les points : plus de « Ville_B_25 ».
+    expect(nomDescriptif('Ville_B_25-26.07.25_3.jpg')).toBe('Ville_B');
+    expect(nomDescriptif('Jardin_11.07.25.jpg')).toBe('Jardin');
   });
 
   it('retire une date en fin de description', () => {

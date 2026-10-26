@@ -164,8 +164,9 @@ function radical(nomFichier: string): string {
 }
 
 /**
- * Nom exploitable si le fichier a été nommé à la main, sinon `null`.
- * « Anniversaire Lea.jpg » → « Anniversaire_Lea » ; « IMG_2043.jpg » → `null`.
+ * Nom exploitable si le fichier a été nommé à la main, sinon `null`, sans sa
+ * date : « Anniversaire Lea.jpg » → « Anniversaire_Lea » ;
+ * « Plage_27-29.06.25_3.jpg » → « Plage » ; « IMG_2043.jpg » → `null`.
  */
 export function nomDescriptif(nomFichier: string): string | null {
   let base = radical(nomFichier).trim();
@@ -177,7 +178,10 @@ export function nomDescriptif(nomFichier: string): string | null {
   // Trop peu de lettres pour décrire quoi que ce soit, ou nom à rallonge.
   if ((base.match(/\p{L}/gu) ?? []).length < 4) return null;
   if (base.length > 60) return null;
-  return sanitize(base);
+  // La date se retire avant `sanitize`, qui en ôte les points : sinon
+  // « Ville_25-26.07.25 » donnait « Ville_25 », et les fichiers d'un même
+  // lieu pris des jours différents comptaient chacun pour un nom.
+  return sanitize(sansDate(base));
 }
 
 const MOTIFS_DATE = [
