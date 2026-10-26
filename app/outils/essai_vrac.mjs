@@ -302,8 +302,8 @@ try {
   await page.locator('.rangee-onglet').getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
   await page.locator('.onglet-doublons.actif', { hasText: '✓ 2' }).waitFor();
   verifier(
-    (await page.locator('.carte-doublons').count()) === cartes && (await page.locator('.carte-doublons.repliee').count()) === 2,
-    'copies exactes écartées : les groupes restent à leur place, repliés comme après « Accepter » d’un groupe',
+    (await page.locator('.carte-doublons').count()) === cartes - 2,
+    'copies exactes écartées : avec « À relire », les groupes acceptés s’en vont (D100)',
   );
   await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
   await page.locator('.tuile-doublon.ecartee').first().waitFor();
@@ -327,33 +327,61 @@ try {
   await page.locator('.recherche-sections').fill('fet');
   const trouves = await cheminsSections();
   verifier(trouves.length === 1 && trouves[0] === 'janvier/fete', `recherche d’un dossier : ${trouves.join(', ')}`);
-  // Photo dans deux dossiers gardés : sous les groupes à relire, toute gardée ; tout le dossier s'écarte d'un clic.
+  // Photo dans deux dossiers gardés : sous les groupes à relire, toute gardée ; celle du dossier choisi à gauche (D100).
   await fete.click();
+  const premiersChemins = () => page.locator('.carte-doublons:not(.repliee) .photo-doublon:first-child .chemin-doublon').evaluateAll((l) => l.map((x) => x.textContent));
   verifier(
     (await page.locator('.titre-partout').innerText()).includes('tout est gardé') && (await page.locator('.carte-doublons .tuile-doublon.gardee').count()) === 2,
     'photo dans deux dossiers gardés : « Aussi dans d’autres dossiers gardés », les deux exemplaires gardés',
   );
-  await page.locator('.actions-dossier-copies').getByRole('button', { name: 'Écarter 1 exemplaire de ce dossier' }).click();
-  await page.locator('.actions-dossier-copies').getByRole('button', { name: 'Remettre 1 exemplaire de ce dossier' }).waitFor();
-  verifier((await page.locator('.carte-doublons .tuile-doublon.ecartee').count()) === 1, 'tout le dossier d’un clic : son exemplaire écarté, l’autre reste gardé dans janvier');
-  await page.keyboard.press('Control+z');
-  await page.locator('.actions-dossier-copies').getByRole('button', { name: 'Écarter 1 exemplaire de ce dossier' }).waitFor();
+  verifier((await premiersChemins()).every((c) => c === 'janvier/fete'), `groupé par dossier : la photo du dossier choisi à gauche (${(await premiersChemins()).join(', ')})`);
+  verifier((await page.locator('.tete-section-doublons button').count()) === 0, 'en-tête de section sans boutons vers les sections voisines (N et P au clavier)');
   await capturer(page, 'v2b_copies_recherche');
   await page.locator('.recherche-sections').fill('best');
   verifier((await page.locator('.section-doublons').count()) === 0 && (await page.locator('.sections-doublons').innerText()).includes('Aucun dossier ne correspond.'), 'recherche sans résultat : « Aucun dossier ne correspond »');
   await page.locator('.recherche-sections').fill('');
-  // Tout un dossier d'un coup (D86) : les exemplaires écartés des photos à trier se remettent, puis s'écartent de nouveau.
+  // Les photos à trier : leurs copies écartées sont relues (repliées) ; « Revoir » rouvre une carte, « Replier » la referme.
   await page.locator('.section-doublons', { hasText: 'Photos à trier' }).click();
-  const actionsDossier = page.locator('.actions-dossier-copies');
-  await actionsDossier.getByRole('button', { name: 'Remettre 2 exemplaires de ce dossier' }).click();
-  await actionsDossier.getByRole('button', { name: 'Écarter 1 exemplaire de ce dossier' }).waitFor();
-  verifier(true, 'dossier entier : « Remettre 2 exemplaires », puis seul celui gardé aussi dans janvier peut s’écarter (jamais le dernier)');
-  await page.keyboard.press('Control+z');
-  await actionsDossier.getByRole('button', { name: 'Remettre 2 exemplaires de ce dossier' }).waitFor();
+  verifier((await premiersChemins()).every((c) => c === 'Photos à trier'), 'photos à trier : dans chaque groupe, leur exemplaire à gauche');
+  const repliees = await page.locator('.carte-doublons.repliee').count();
+  await page.locator('.carte-doublons.repliee').first().getByRole('button', { name: 'Revoir' }).click();
+  await page.locator('.carte-doublons:not(.repliee)').getByRole('button', { name: 'Replier' }).first().click();
+  verifier(repliees > 0 && (await page.locator('.carte-doublons.repliee').count()) === repliees, '« Revoir » rouvre une carte relue, « Replier » la referme');
   // Copies remises « à écarter » (Ctrl+Z) : le tri automatique proposera de les écarter d'abord (D85).
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
   await page.locator('.onglet-doublons.actif', { hasText: '2 à relire' }).waitFor();
+  // Comparer en grand : le dossier de chaque photo, 1, 2… gardent ou écartent, ← → d'un groupe à l'autre (D100).
+  await page.getByRole('radio', { name: 'À relire' }).click();
+  await page.locator('.carte-doublons').first().getByRole('button', { name: 'Comparer en grand' }).click();
+  const comparateur = page.locator('.comparateur');
+  await comparateur.locator('.numero-volet').first().waitFor();
+  verifier(
+    (await comparateur.locator('.numero-volet').count()) >= 2 && (await comparateur.locator('.chemin-doublon').first().innerText()).length > 0,
+    'comparer en grand : un numéro et le dossier sur chaque photo',
+  );
+  // La touche du numéro garde la photo proposée à l'écart ; Ctrl+Z annule.
+  const n = 1 + (await comparateur.locator('.volet .etat-photo').evaluateAll((l) => l.findIndex((x) => x.classList.contains('a_ecarter'))));
+  await page.keyboard.press(String(n));
+  await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.gardee').waitFor();
+  verifier(n > 0, `comparer en grand : la touche ${n} garde la photo ${n}`);
+  const texteGroupe = await comparateur.locator('.navigation-groupes .discret').innerText();
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction((avant) => document.querySelector('.comparateur .navigation-groupes .discret')?.textContent !== avant, texteGroupe);
+  verifier(true, `comparer en grand : → passe au groupe suivant (${texteGroupe})`);
+  await page.keyboard.press('Escape');
+  await comparateur.waitFor({ state: 'detached' });
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('Control+z');
+  await page.locator('.onglet-doublons.actif', { hasText: '2 à relire' }).waitFor();
+  // « À relire » : un groupe accepté s'en va ; « Annuler » le fait revenir.
+  const aRelire = await page.locator('.carte-doublons').count();
+  await page.locator('.carte-doublons').first().getByRole('button', { name: 'Accepter', exact: true }).click();
+  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons').length === n - 1, aRelire);
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons').length === n, aRelire);
+  verifier(true, '« À relire » : un groupe accepté s’en va, Ctrl+Z le fait revenir');
   // Les rafales sont cherchées avec l'analyse (D81) : elles sont déjà là.
   await page.locator('.onglet-doublons', { hasText: 'Rafales' }).click();
   await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 60_000 });

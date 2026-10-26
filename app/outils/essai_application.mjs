@@ -367,7 +367,7 @@ try {
   await carte.locator('[data-action="accepter"]').click();
   await page.waitForTimeout(300);
   verifier((await page.locator('.barre-validation .resume').innerText()).includes('1 photo écartée'), 'un doublon écarté après relecture');
-  verifier((await page.locator('.carte-doublons').count()) === groupes, 'le groupe accepté reste à sa place, replié');
+  verifier((await page.locator('.carte-doublons').count()) === groupes - 1, 'avec « À relire », le groupe accepté s’en va (D100)');
 
   // Étape 9 : sélection au clavier, tri rapide, rotation.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();

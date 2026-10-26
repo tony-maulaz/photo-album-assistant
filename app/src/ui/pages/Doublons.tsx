@@ -17,8 +17,6 @@ import {
   avancementGroupes,
   basculer,
   ecarterTout,
-  exemplairesAEcarterDans,
-  exemplairesEcartesDans,
   garderTout,
   groupesCopies,
   groupesScenes,
@@ -297,29 +295,16 @@ function porteeSection(x: Section): string {
 
 /**
  * En tête de la section : sa portée, son titre, ses actions (juste au-dessus des groupes qu'elles
- * touchent, D98), et les sections voisines.
+ * touchent, D98). Au-dessus de la colonne des groupes, pour que la liste de gauche et la première carte
+ * commencent à la même hauteur ; pas de boutons vers les sections voisines (N et P au clavier) (D100).
  */
-function TeteSection({ liste, section, choisir, detail, actions }: { liste: Section[]; section: Section; choisir: (cle: string) => void; detail: string; actions?: ComponentChildren }) {
-  const i = liste.indexOf(section);
-  const avant = liste[i - 1];
-  const apres = liste[i + 1];
+function TeteSection({ section, detail, actions }: { section: Section; detail: string; actions?: ComponentChildren }) {
   return (
-    <div class="tete-section-doublons">
+    <div class="tete-section-doublons" style={styleLargeurPanneau()}>
       {actions && <span class="etiquette-portee section">{porteeSection(section)}</span>}
       <h2>{section.titre}</h2>
       <span class="discret">{detail}</span>
       {actions}
-      <span class="espace" />
-      {avant && (
-        <button type="button" onClick={() => choisir(avant.cle)} title={t`Touche P`}>
-          ‹ {avant.nom}
-        </button>
-      )}
-      {apres && (
-        <button type="button" onClick={() => choisir(apres.cle)} title={t`Touche N`}>
-          {apres.nom} ›
-        </button>
-      )}
     </div>
   );
 }
@@ -489,10 +474,15 @@ function CarteGroupe({
   agir,
   agirGroupe,
   rouvrir,
+  replier,
   comparer,
+  ordonner = (p) => p,
 }: {
   g: GroupeDoublons;
   ouverte: boolean;
+  /** Ordre des photos : groupé par dossier, celle du dossier choisi d'abord. */
+  ordonner?: (photos: PhotoDuGroupe[]) => PhotoDuGroupe[];
+  replier: () => void;
   /** La section est un mois : la journée est dite devant l'heure. */
   avecJour: boolean;
   agir: (m: Modification | null) => void;
@@ -503,7 +493,7 @@ function CarteGroupe({
   const s = session.value!;
   const plan = s.plan;
   const fichier = (id: string) => plan.fichiers.get(id);
-  const photos = photosDuGroupe(g, fichier);
+  const photos = ordonner(photosDuGroupe(g, fichier));
   const etoile = fichier(g.etoile);
   const enAttente = photos.filter((x) => x.etat === 'a_ecarter').length;
   const gardees = photos.filter((x) => x.etat === 'gardee').length;
@@ -568,6 +558,11 @@ function CarteGroupe({
         <button type="button" data-action="comparer" onClick={comparer} title={t`Touche C`}>
           {t`Comparer en grand`}
         </button>
+        {!enAttente && (
+          <button type="button" class="lien" onClick={replier}>
+            {t`Replier`}
+          </button>
+        )}
       </footer>
     </article>
   );
@@ -613,8 +608,9 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   );
   const [section, choisir] = useSection(onglet, liste);
   const signature = groupes.map((g) => g.cle).join('|');
-  // Instantané des groupes montrés, figé tant qu'on reste sur cette section et ce filtre : une décision
-  // ne fait rien disparaître (D71). Les groupes déjà relus à l'arrivée sont repliés.
+  // Instantané des groupes montrés, figé tant qu'on reste sur cette section et ce filtre : un clic sur une photo
+  // ne fait rien disparaître (D71). Les groupes déjà relus à l'arrivée sont repliés ; « À relire » : un groupe
+  // validé (Accepter, Tout garder, Tout écarter, Replier) s'en va, « Annuler » le fait revenir (D100).
   const montres = useMemo(
     () => new Set(elements.filter((e) => e.section === section?.cle && (filtre === 'tous' || partout(e.g) || (filtre === 'a_relire') === e.relire)).map((e) => e.g.cle)),
     [section?.cle, filtre, signature],
@@ -622,27 +618,25 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   const relusAuDepart = useMemo(() => new Set(elements.filter((e) => e.section === section?.cle && !e.relire && !partout(e.g)).map((e) => e.g.cle)), [section?.cle, signature]);
   const parDate = (a: (typeof elements)[number], b: (typeof elements)[number]) => (a.date ?? '').localeCompare(b.date ?? '') || a.g.cle.localeCompare(b.g.cle);
   const visibles = elements
-    .filter((e) => e.section === section?.cle && montres.has(e.g.cle))
+    .filter((e) => e.section === section?.cle && montres.has(e.g.cle) && !(filtre === 'a_relire' && fermees.has(e.g.cle) && !aRelire(e.g, fichier)))
     .sort((a, b) => Number(partout(a.g)) - Number(partout(b.g)) || (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b)));
   const iPartout = visibles.findIndex((e) => partout(e.g));
   const enAttente = visibles.filter((e) => aRelire(e.g, fichier)).map((e) => e.g);
   // Copies : tout l'onglet a ses boutons (rangée de l'onglet) ; à relire dans l'onglet entier, hors photos dans plusieurs dossiers.
   const enAttenteOnglet = copies ? groupes.filter((g) => !partout(g) && aRelire(g, fichier)) : [];
   // Bouton de la section : pas pour un seul groupe (son « Accepter » suffit), ni quand la section est tout l'onglet
-  // des copies, ni groupé par dossier (une copie peut y avoir son autre exemplaire ailleurs : seulement les actions
-  // du dossier, D86) (D98).
-  const boutonSection = enAttente.length >= 2 && !(copies && enAttente.length === enAttenteOnglet.length) && !(copies && groupement === 'dossier');
+  // des copies (D98) ; groupé par dossier aussi : on parcourt le dossier, puis on le valide d'un coup (D100).
+  const boutonSection = enAttente.length >= 2 && !(copies && enAttente.length === enAttenteOnglet.length);
   const { relus, total } = avancementGroupes(
     groupes.filter((g) => !partout(g)),
     fichier,
   );
-  // Groupés par dossier : écarter ou remettre d'un coup les exemplaires de ce dossier gardés aussi ailleurs (D86).
-  const dossierChoisi = groupement === 'dossier' && copies && section?.cle.startsWith('source:') ? section.cle.slice(7) : null;
-  const dansDossier = (f: FichierPlan) => dossierSource(f) === dossierChoisi;
-  const groupesSection = elements.filter((e) => e.section === section?.cle).map((e) => e.g);
-  const aEcarterDossier = dossierChoisi === null ? [] : exemplairesAEcarterDans(groupesSection, dansDossier, fichier);
-  const ecartesDossier = dossierChoisi === null ? [] : exemplairesEcartesDans(groupesSection, dansDossier, fichier);
-  const ouverte = (cle: string) => rouvertes.has(cle) || !(fermees.has(cle) || relusAuDepart.has(cle));
+  // Groupé par dossier : dans chaque groupe, la photo de ce dossier d'abord, à gauche (D100).
+  const cleDossier = section && estDossier(section) ? section.cle : null;
+  const duDossier = (f: FichierPlan) => cleDossier !== null && (cleDossier.startsWith('source:') ? dossierSource(f) === cleDossier.slice(7) : f.dossier === cleDossier.slice(8));
+  const ordonner = (photos: PhotoDuGroupe[]) => (cleDossier === null ? photos : [...photos].sort((a, b) => Number(duDossier(b.f)) - Number(duDossier(a.f))));
+  // Un groupe redevenu à relire (« Annuler ») se rouvre.
+  const ouverte = (g: GroupeDoublons) => rouvertes.has(g.cle) || aRelire(g, fichier) || !(fermees.has(g.cle) || relusAuDepart.has(g.cle));
   // En-tête de section, compté comme la jauge : les photos dans plusieurs dossiers gardés à part (rien à relire).
   const dansSection = elements.filter((e) => e.section === section?.cle);
   const nPartout = dansSection.filter((e) => partout(e.g)).length;
@@ -663,11 +657,10 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
     const i = cartes.findIndex((c) => c.dataset.cle === cles.at(-1));
     setTimeout(() => cartes[i + 1]?.querySelector<HTMLElement>('.tuile-doublon, button')?.focus(), 0);
   };
-  /** Écarter ou remettre les exemplaires du dossier affiché : les cartes restent ouvertes, à leur place. */
-  const agirDossier = (m: Modification | null, message: string) => {
-    if (!m) return;
-    appliquer(m);
-    notifier('ok', message, { libelle: t`Annuler`, faire: annuler });
+  /** « Replier » une carte rouverte ou déjà relue. */
+  const replier = (cle: string) => {
+    setFermees(new Set([...fermees, cle]));
+    setRouvertes(new Set([...rouvertes].filter((c) => c !== cle)));
   };
   const accepterSection = () => {
     const acceptes = acceptablesSansVider(enAttente, fichier);
@@ -724,7 +717,8 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   // Prochaine section qui reste à relire, après celle-ci (sinon la première).
   const iSection = section ? liste.indexOf(section) : -1;
   const suite = [...liste.slice(iSection + 1), ...liste.slice(0, Math.max(0, iSection))].find((x) => x.aRelire > 0);
-  const gComparee = visibles[iComparee]?.g;
+  // Le groupe comparé reste ouvert même s'il quitte la liste (relu par une touche, avec « À relire ») (D100).
+  const gComparee = visibles[iComparee]?.g ?? groupes.find((g) => g.cle === comparee);
   const pct = total ? Math.round((relus / total) * 100) : 100;
 
   const photosOnglet = enAttenteOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
@@ -803,50 +797,24 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
       </div>
       <p class="discret aide-doublons">{t`Un clic sur une photo la garde ou l’écarte, la photo ★ comprise. Clavier : J et K d’un groupe à l’autre, Espace pour garder ou écarter, A pour accepter, N et P pour avancer dans la liste de gauche.`}</p>
 
+      {section && (
+        <TeteSection
+          section={section}
+          detail={detail}
+          actions={
+            boutonSection && (
+              <span class="actions">
+                <button type="button" class="contour" onClick={accepterSection}>
+                  {t`Accepter les ${nombre(enAttente.length)} propositions ${ceci}`}
+                </button>
+              </span>
+            )
+          }
+        />
+      )}
       <div class="corps-doublons">
         <ListeSections liste={liste} choisie={section?.cle} choisir={choisir} />
         <section class="contenu-doublons" ref={zone}>
-          {section && (
-            <TeteSection
-              liste={liste}
-              section={section}
-              choisir={choisir}
-              detail={detail}
-              actions={
-                (boutonSection || aEcarterDossier.length > 0 || ecartesDossier.length > 0) && (
-                  <span class="actions actions-dossier-copies">
-                    {boutonSection && (
-                      <button type="button" class="contour" onClick={accepterSection}>
-                        {t`Accepter les ${nombre(enAttente.length)} propositions ${ceci}`}
-                      </button>
-                    )}
-                    {aEcarterDossier.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          agirDossier(
-                            ecarterDoublons(
-                              plan,
-                              aEcarterDossier.map((id) => ({ id, raison: 'doublons_exacts' })),
-                            ),
-                            texteEcartees(aEcarterDossier.length, 'doublons_exacts'),
-                          )
-                        }
-                      >
-                        {t`Écarter ${pluriel(aEcarterDossier.length, 'exemplaire')} de ce dossier`}
-                      </button>
-                    )}
-                    {ecartesDossier.length > 0 && (
-                      <button type="button" onClick={() => agirDossier(garderAussi(plan, ecartesDossier), t`${pluriel(ecartesDossier.length, 'exemplaire remis', 'exemplaires remis')} dans ce dossier.`)}>
-                        {t`Remettre ${pluriel(ecartesDossier.length, 'exemplaire')} de ce dossier`}
-                      </button>
-                    )}
-                    {aEcarterDossier.length > 0 && <span class="discret">{t`Seulement les photos gardées aussi dans un autre dossier : aucune ne disparaît.`}</span>}
-                  </span>
-                )
-              }
-            />
-          )}
           {visibles.length === 0 && (
             <div class="encart">
               <p>{filtre === 'a_relire' ? t`Tout est relu ici.` : t`Aucun groupe à montrer ici.`}</p>
@@ -866,7 +834,9 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
             <CarteGroupe
               key={g.cle}
               g={g}
-              ouverte={ouverte(g.cle)}
+              ouverte={ouverte(g)}
+              ordonner={ordonner}
+              replier={() => replier(g.cle)}
               avecJour={!!section && !section.cle.startsWith('jour:')}
               agir={appliquer}
               agirGroupe={(m, message) => agirGroupe([g.cle], m, message)}
@@ -888,12 +858,22 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
         <Comparateur
           key={gComparee.cle}
           titre={titreGroupe(gComparee, photosDuGroupe(gComparee, fichier), fichier(gComparee.etoile))}
-          photos={photosDuGroupe(gComparee, fichier).map((x) => x.f)}
+          photos={ordonner(photosDuGroupe(gComparee, fichier)).map((x) => x.f)}
           fermer={() => setComparee(null)}
           entete={(f) => {
             const x = photosDuGroupe(gComparee, fichier).find((p) => p.f.id === f.id);
-            return x && <span class={`etat-photo ${x.etat}`}>{x.etat === 'gardee' ? t`Gardée` : x.etat === 'ecartee' ? t`Écartée` : t`à écarter`}</span>;
+            return (
+              x && (
+                <>
+                  <span class={`etat-photo ${x.etat}`}>{x.etat === 'gardee' ? t`Gardée` : x.etat === 'ecartee' ? t`Écartée` : t`à écarter`}</span>
+                  <span class="legende-doublon">
+                    <Emplacement f={f} />
+                  </span>
+                </>
+              )
+            );
           }}
+          basculer={(f) => appliquer(basculer(plan, gComparee, f.id))}
           actions={(f) => {
             const x = photosDuGroupe(gComparee, fichier).find((p) => p.f.id === f.id);
             return (
@@ -965,10 +945,10 @@ function MisDeCote() {
         <CurseurTaille />
       </div>
       <p class="discret aide-doublons">{t`Les photos écartées à cette étape. Un clic remet une photo à sa place, un second l’écarte de nouveau.`}</p>
+      {section && <TeteSection section={section} detail={pluriel(section.total, 'photo')} />}
       <div class="corps-doublons">
         <ListeSections liste={liste} choisie={section?.cle} choisir={choisir} avancement={false} />
         <section class="contenu-doublons">
-          {section && <TeteSection liste={liste} section={section} choisir={choisir} detail={pluriel(section.total, 'photo')} />}
           {aRemettre.length > 0 && (
             <p>
               <button type="button" onClick={() => appliquer(garderAussi(plan, aRemettre))}>
@@ -1229,7 +1209,7 @@ export function PageDoublons() {
           <>
             <div class="encart encart-onglet">
               <p>
-                {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « ${dossierMisDeCote('doublons_exacts')} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo ou, en groupant par dossier, tout un dossier d’un coup.`}
+                {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « ${dossierMisDeCote('doublons_exacts')} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo.`}
                 {intouches > 0 && t` Les dossiers « Ne pas toucher » ne sont pas examinés : leurs copies sont voulues.`}
               </p>
             </div>

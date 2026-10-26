@@ -1092,6 +1092,28 @@ en 12 s ») ; « à quelques secondes » était faux (fenêtre de 10 min).
 Bogue corrigé : un « Accepter » groupé (section, onglet) écartait tout un
 groupe dont la ★ avait été écartée ; il le laisse à relire, avec son alerte.
 
+**D100 — Doublons : valider un dossier d'un coup, « À relire » se vide.**
+Retours de Tony après avoir relu 250 copies des photos à trier : (1) une
+carte acceptée restait affichée, repliée, avec « À relire » : elle s'en va
+maintenant, mais seulement après Accepter, Tout garder, Tout écarter ou
+Replier — un clic sur une photo ne fait rien disparaître, pour pouvoir
+changer d'avis (D71) ; « Annuler » la fait revenir ; avec « Relus » ou
+« Tous », elle se replie comme avant ; (2) « Revoir » rouvrait une carte sans
+moyen de la refermer : bouton « Replier » ; (3) « Écarter / Remettre N
+exemplaires de ce dossier » (D86) : incompris, sans effet visible (cartes
+repliées), retirés ; l'onglet « Mis de côté » remet une photo ; (4) groupé
+par dossier, le bouton de la section revient (« Accepter les N propositions
+de ce dossier ») : on parcourt le dossier en gardant ou écartant d'un clic,
+puis on le valide ; la photo du dossier choisi est à gauche dans chaque
+groupe, le chemin sous chaque photo dit où sont les autres ; (5) « Comparer
+en grand » : le dossier sous chaque photo, ← → d'un groupe à l'autre (choix
+de Tony), 1, 2, 3… gardent ou écartent la photo de ce numéro (Espace et les
+flèches servaient déjà ailleurs) ; le groupe comparé reste ouvert s'il est
+relu par une touche ; (6) plus de boutons vers les sections voisines dans
+l'en-tête (encombrants ; N et P au clavier), placé au-dessus de la colonne
+des groupes pour que la liste de gauche et la première carte commencent à
+la même hauteur.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

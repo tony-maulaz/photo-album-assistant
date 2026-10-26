@@ -257,7 +257,9 @@
   min-width: 0;
 }
 
+/* En-tête de la section au-dessus de la colonne des groupes : la liste de gauche et la 1re carte commencent à la même hauteur (D100). */
 .tete-section-doublons {
+  margin: 16px 0 0 calc(var(--largeur-panneau, 240px) + 24px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -560,4 +562,14 @@
   font-size: 13px;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+/* Comparer en grand : numéro de la touche qui garde ou écarte la photo (D100). */
+.numero-volet {
+  padding: 1px 8px;
+  border: 1px solid var(--bord-fort);
+  border-radius: 6px;
+  background: var(--surface);
+  font: inherit;
+  font-weight: 800;
 }

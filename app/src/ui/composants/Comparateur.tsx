@@ -2,7 +2,9 @@
 // déplacement (glisser) synchronisés pour vérifier visages et netteté. Mode
 // « une à une » (double-clic ou Entrée) : une photo en plein écran, ← → pour
 // passer à la suivante en gardant le même zoom et le même cadrage, ce qui fait
-// sauter aux yeux la plus nette ou les yeux fermés.
+// sauter aux yeux la plus nette ou les yeux fermés. Avec des groupes (Doublons,
+// D100) : ← → passent d'un groupe à l'autre, 1, 2, 3… gardent ou écartent la
+// photo de ce numéro.
 
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -49,6 +51,7 @@ function Volet({
   actions,
   entete,
   agrandir,
+  numero,
 }: {
   f: FichierPlan;
   vue: Vue;
@@ -56,11 +59,18 @@ function Volet({
   actions?: ComponentChildren;
   entete?: ComponentChildren;
   agrandir?: () => void;
+  /** Touche qui garde ou écarte cette photo. */
+  numero?: number;
 }) {
   const url = useOriginal(f);
   return (
     <div class="volet" onDblClick={agrandir} title={agrandir ? t`Double-clic : cette photo seule, en grand` : undefined}>
       <div class="volet-entete">
+        {numero !== undefined && (
+          <kbd class="numero-volet" title={t`Touche ${numero} : garder ou écarter cette photo`}>
+            {numero}
+          </kbd>
+        )}
         <strong>{f.date ? dateHeure(f.date) : f.nom}</strong>
         <span class="discret">{f.nom}</span>
         {entete}
@@ -98,6 +108,7 @@ export function Comparateur({
   entete,
   titre = t`Comparer`,
   navigation,
+  basculer,
 }: {
   photos: FichierPlan[];
   fermer: () => void;
@@ -105,6 +116,8 @@ export function Comparateur({
   entete?: (f: FichierPlan) => ComponentChildren;
   titre?: string;
   navigation?: NavigationGroupes;
+  /** Garder ou écarter une photo : touches 1 à 9, selon son numéro. */
+  basculer?: (f: FichierPlan) => void;
 }) {
   const [vue, setVue] = useState<Vue>({ zoom: 1, x: 0, y: 0 });
   // Mode « une à une » : l'indice de la photo affichée seule, ou `null` pour le côte à côte.
@@ -121,8 +134,9 @@ export function Comparateur({
       else if (e.key === 'Enter' && seule === null) setSeule(0);
       else if (e.key === 'ArrowRight' && seule !== null) setSeule((seule + 1) % n);
       else if (e.key === 'ArrowLeft' && seule !== null) setSeule((seule - 1 + n) % n);
-      else if (e.key === 'PageDown' && navigation?.suivant) navigation.suivant();
-      else if (e.key === 'PageUp' && navigation?.precedent) navigation.precedent();
+      else if ((e.key === 'PageDown' || e.key === 'ArrowRight') && navigation?.suivant) navigation.suivant();
+      else if ((e.key === 'PageUp' || e.key === 'ArrowLeft') && navigation?.precedent) navigation.precedent();
+      else if (basculer && /^[1-9]$/.test(e.key) && Number(e.key) <= n && !e.ctrlKey && !e.metaKey) basculer(photos[Number(e.key) - 1]);
       else if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey && navigation?.accepter) navigation.accepter();
       else return;
       e.preventDefault();
@@ -130,7 +144,7 @@ export function Comparateur({
     };
     window.addEventListener('keydown', touche, true);
     return () => window.removeEventListener('keydown', touche, true);
-  }, [fermer, seule, n, navigation]);
+  }, [fermer, seule, n, navigation, basculer, photos]);
 
   // Zoom vers le pointeur : le point visé reste sous la souris, dans chaque volet.
   const molette = (e: WheelEvent) => {
@@ -171,17 +185,19 @@ export function Comparateur({
       <div class="comparateur-tete">
         <h2>{seule === null ? titre : t`Photo ${seule + 1} sur ${n}`}</h2>
         <span class="discret">
-          {seule === null
-            ? t`Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer`
-            : t`← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte`}
+          {seule !== null
+            ? t`← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte`
+            : basculer
+              ? t`← → : groupe précédent ou suivant · 1, 2, 3… : garder ou écarter la photo de ce numéro · Entrée : une à une · molette : zoom · Échap : fermer`
+              : t`Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer`}
         </span>
         {navigation && (
           <span class="navigation-groupes">
-            <button type="button" disabled={!navigation.precedent} onClick={navigation.precedent} title={t`Page préc.`}>
+            <button type="button" disabled={!navigation.precedent} onClick={navigation.precedent} title={t`Flèche gauche`}>
               {t`‹ Groupe précédent`}
             </button>
             <span class="discret">{navigation.texte}</span>
-            <button type="button" disabled={!navigation.suivant} onClick={navigation.suivant} title={t`Page suiv.`}>
+            <button type="button" disabled={!navigation.suivant} onClick={navigation.suivant} title={t`Flèche droite`}>
               {t`Groupe suivant ›`}
             </button>
             {navigation.accepter && (
@@ -216,9 +232,19 @@ export function Comparateur({
         {seule === null ? (
           photos
             .slice(0, 4)
-            .map((f, i) => <Volet key={f.id} f={f} vue={vue} rotation={f.rotation ?? 0} actions={actions?.(f)} entete={entete?.(f)} agrandir={() => setSeule(i)} />)
+            .map((f, i) => (
+              <Volet key={f.id} f={f} vue={vue} rotation={f.rotation ?? 0} actions={actions?.(f)} entete={entete?.(f)} agrandir={() => setSeule(i)} numero={basculer ? i + 1 : undefined} />
+            ))
         ) : (
-          <Volet key={photos[seule].id} f={photos[seule]} vue={vue} rotation={photos[seule].rotation ?? 0} actions={actions?.(photos[seule])} entete={entete?.(photos[seule])} />
+          <Volet
+            key={photos[seule].id}
+            f={photos[seule]}
+            vue={vue}
+            rotation={photos[seule].rotation ?? 0}
+            actions={actions?.(photos[seule])}
+            entete={entete?.(photos[seule])}
+            numero={basculer ? seule + 1 : undefined}
+          />
         )}
       </div>
       {seule === null && n > 4 && <p class="discret plus-de-photos">{t`${pluriel(n - 4, 'autre photo', 'autres photos')} : double-clic ou Entrée pour les voir une à une.`}</p>}

@@ -427,9 +427,12 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   exemplaires ») ; puis la barre des filtres, toujours visible en haut :
   Afficher (À relire, Relus, Tous), Grouper, taille, Classer ; puis la page.
   En tête de la section affichée : son titre, ce qui reste à relire et
-  « Accepter les N propositions de cette journée / de ce mois » (s'il reste
-  au moins deux groupes ; pas pour les copies groupées par dossier, qui ont
-  « Écarter N exemplaires de ce dossier »). À gauche, la liste des journées
+  « Accepter les N propositions de cette journée / de ce mois / de ce
+  dossier » (s'il reste au moins deux groupes) : on parcourt la section en
+  gardant ou écartant d'un clic, puis on la valide d'un coup (D100) ; pas de
+  boutons vers les sections voisines (N et P au clavier). La liste de gauche
+  et la première carte commencent à la même hauteur. Groupé par dossier, la
+  photo du dossier choisi est à gauche dans chaque groupe. À gauche, la liste des journées
   (puis des dossiers gardés, puis des photos sans date) ; on relit une
   journée à la fois, et toute la liste de ses groupes s'affiche.
   « Grouper » : par journée, par mois ou par dossier (par défaut par
@@ -443,8 +446,12 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   gardée, écartée, ou « à écarter » tant que la proposition n'est pas
   acceptée. Un clic sur n'importe quelle photo, la ★ comprise, inverse ce
   qu'on voit ; **Accepter**, **Tout garder**, **Tout écarter**, **Comparer
-  en grand** (zoom synchronisé, groupe suivant, « Accepter et groupe
-  suivant »). Rien ne disparaît : un groupe accepté se replie à sa place.
+  en grand** (zoom synchronisé, dossier de chaque photo, ← → d'un groupe à
+  l'autre, 1, 2, 3… gardent ou écartent la photo de ce numéro, « Accepter et
+  groupe suivant »). Un clic sur une photo ne fait rien disparaître ; avec
+  « À relire », un groupe validé (Accepter, Tout garder, Tout écarter) s'en
+  va, « Annuler » le fait revenir ; avec « Relus » ou « Tous », il se replie
+  à sa place (« Revoir » le rouvre, « Replier » le referme) (D100).
   Un groupe non relu garde ses photos dans l'archive. Tout s'annule
   (Ctrl+Z). Clavier : J et K, ← et →, Espace, A, C, N et P.
 - **Copies exactes** sur tout le projet, quels que soient le dossier et la

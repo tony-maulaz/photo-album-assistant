@@ -98,6 +98,9 @@ export const TEXTES: Record<string, string> = {
   'Chargement…': 'Loading…',
   Comparer: 'Compare',
   'Photo {0} sur {1}': 'Photo {0} of {1}',
+  '← → : groupe précédent ou suivant · 1, 2, 3… : garder ou écarter la photo de ce numéro · Entrée : une à une · molette : zoom · Échap : fermer':
+    '← →: previous or next group · 1, 2, 3…: keep or set aside the photo with that number · Enter: one by one · wheel: zoom · Esc: close',
+  'Touche {0} : garder ou écarter cette photo': 'Key {0}: keep or set aside this photo',
   'Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer':
     'Double-click or Enter: one by one, enlarged · wheel: zoom · drag: move · Esc: close',
   '← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte':

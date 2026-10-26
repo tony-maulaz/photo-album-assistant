@@ -13,7 +13,6 @@ export const TEXTES: Record<string, string> = {
   'Journées et dossiers': 'Days and folders',
   'groupes à relire': 'groups to review',
   'tout est relu': 'all reviewed',
-  'Touche P': 'Key P',
   'Touche N': 'Key N',
   'Photos à trier': 'Photos to sort',
   exemplaire: 'copy',
@@ -40,12 +39,6 @@ export const TEXTES: Record<string, string> = {
   // Copies dans plusieurs dossiers gardés, dans l'onglet des copies (D86).
   'Gardée dans chaque dossier': 'Kept in each folder',
   'Aussi dans d’autres dossiers gardés : tout est gardé': 'Also in other kept folders: everything is kept',
-  'Écarter {0} de ce dossier': 'Set aside {0} from this folder',
-  'Remettre {0} de ce dossier': 'Put back {0} in this folder',
-  '{0} dans ce dossier.': '{0} in this folder.',
-  'exemplaire remis': 'copy put back',
-  'exemplaires remis': 'copies put back',
-  'Seulement les photos gardées aussi dans un autre dossier : aucune ne disparaît.': 'Only photos also kept in another folder: none disappears.',
   'ira dans « {0} », à la place de la copie réduite': 'will go to “{0}”, instead of the smaller copy',
   Gardée: 'Kept',
   Écartée: 'Set aside',
@@ -122,8 +115,8 @@ export const TEXTES: Record<string, string> = {
   'Recherche des rafales': 'Looking for bursts',
   'Recherche des copies en cours, pendant l’analyse des photos…': 'Looking for copies, while the photos are analysed…',
   'Aucune copie exacte : chaque photo n’existe qu’en un exemplaire.': 'No exact copy: each photo exists only once.',
-  'La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « {0} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo ou, en groupant par dossier, tout un dossier d’un coup.':
-    'The same photo several times: the same file copied, or a smaller copy sent by WhatsApp. Suggestion: set aside a copy that would be redundant in the same place (twice in a folder, or a photo to sort already filed in a folder); it will go to “{0}”. A photo found in several folders you keep stays in all of them: you decide, photo by photo or, grouping by folder, a whole folder at once.',
+  'La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « {0} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo.':
+    'The same photo several times: the same file copied, or a smaller copy sent by WhatsApp. Suggestion: set aside a copy that would be redundant in the same place (twice in a folder, or a photo to sort already filed in a folder); it will go to “{0}”. A photo found in several folders you keep stays in all of them: you decide, photo by photo.',
   'Accepter la proposition': 'Accept the suggestion',
   'Accepter les {0} propositions': 'Accept the {0} suggestions',
   'Tous les exemplaires sont gardés.': 'All the copies are kept.',
@@ -141,8 +134,6 @@ export const TEXTES: Record<string, string> = {
   'groupes pas encore relus': 'groups not reviewed yet',
 
   // Comparateur.tsx
-  'Page préc.': 'Page Up',
-  'Page suiv.': 'Page Down',
   '‹ Groupe précédent': '‹ Previous group',
   'Groupe suivant ›': 'Next group ›',
   'Accepter et groupe suivant': 'Accept and next group',
