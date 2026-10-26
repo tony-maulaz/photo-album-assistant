@@ -902,6 +902,70 @@ sous-dossiers n'est plus compté comme petit (un voyage de deux photos
 apparaissait trois fois) ; le regroupement « même jour », qui réunissait des
 lieux à 29 km, est retiré : un voisin lui-même petit porte « petit aussi ».
 
+**D91 — Consolidation : des photos qui se suivent, les petits voyages, des
+réglages au résultat visible.** Sur 2025, l'étape proposait 57 paires, dont
+54 par le seul chevauchement des périodes ; d'après le rangement fait à la
+main par la famille, 3 étaient vraies, 4 des étapes d'un voyage court rangé
+d'un tenant, 50 fausses. Un séjour recouvre ses excursions (la base de
+vacances et chaque sortie du jour, à 6-28 km), les arrêts de la route
+recouvrent la destination (plus de 500 km), un dossier près de la maison sur
+deux semaines recouvre tout, la moitié des paires n'avait aucune photo à
+moins de 12 h l'une de l'autre. « Chevauchement ET distance » ne suffisait pas
+(à 4 km : 7 paires, dont 3 fausses). Désormais :
+- **Sortie coupée** : deux dossiers dont deux photos ont été prises à moins de
+  3 h et de 4 km (2 × la taille d'un endroit du tri : deux endroits du tri ont
+  toutes leurs photos à plus de cette taille). Sur 2025 : 4 à 5 propositions,
+  aucune fausse ; les vraies étaient à 2,1-3,4 km et moins de 31 min, les
+  fausses commencent à 4,1 km (marge étroite, une seule année mesurée). En
+  groupes plutôt qu'en paires, les liens les plus serrés d'abord, chaque
+  dossier à moins de 3 × la distance de tous les autres (pas de chaîne de
+  proche en proche). Un dossier sans position : l'écart seul. Les noms
+  proches (D70) ne comptent que pour des noms donnés au Nommage (ceux du tri
+  ne disent que la même commune, 3 fausses sur 3).
+- **Week-ends et petits voyages**, que l'utilisateur veut se voir proposer
+  (le tri ne fait un dossier de voyage qu'au-delà de 50 km) : des dossiers à
+  plus de 10 km de la maison (une ville à 4 km s'accrochait aux week-ends),
+  sur des jours qui se suivent, sans photo prise à la maison entre deux, sur 2
+  à 4 jours. Sur chaque carte, l'utilisateur choisit un seul dossier, ou un
+  dossier « Voyage_… » avec une étape par dossier (« certains week-ends se
+  rangent séparés, d'autres ensemble »). Les étapes d'un voyage du tri de
+  4 jours au plus peuvent aussi être réunies en un seul dossier.
+- **Réglages en tête, résultat en direct** (« Avec ces réglages : 11
+  propositions… ») : écart (1 h, 3 h, 6 h, la journée), distance (1 à 20 km),
+  week-ends oui ou non et leur durée (3 jours à 2 semaines), noms proches en
+  avancé. Les rencontres des dossiers voisins sont calculées une fois par
+  version du plan (20 à 35 ms pour l'année), un réglage ne fait que filtrer.
+- **Une proposition à la fois**, comme les petits dossiers (D90) : la liste
+  dans l'ordre du temps à gauche, les dossiers côte à côte avec leurs photos
+  et leurs heures, une case pour laisser un dossier à part, le nom modifiable
+  (date étendue à toute la période), « Réunir » ou « Pas la même sortie » (N).
+  Rien ne disparaît : réunions et refus restent dans la liste et se défont
+  plus tard (`consolidation_reunions`, `consolidation_refus`), même après
+  d'autres changements. Une fusion de l'IA (IA6) confirme ou complète une
+  proposition au lieu de s'y ajouter en double, et se refuse comme les autres.
+Sur le plan actuel de 2025 : 11 propositions (5 sorties coupées, 6 week-ends
+ou voyages) au lieu de 57 paires.
+
+**D92 — Étape Dossiers : les sous-dossiers se voient.** La colonne « Photos »
+compte aussi les sous-dossiers : « Voyage 180 photos » laissait croire à un
+dossier trop grand, alors qu'il en avait dix, sans aucune photo à lui. Sous le
+nom d'un dossier qui a des sous-dossiers, une ligne dit leur nombre et les
+trois premiers noms (« 10 sous-dossiers : Ville_A…, Ville_B…, Ville_C… (+7) »,
+la liste complète avec le nombre de photos dans la bulle) et, s'il en a, ses
+photos propres. Le choix vaut pour les sous-dossiers : la bulle de « Trier »
+le dit (« Ses 10 sous-dossiers disparaissent aussi »).
+
+**D93 — Étape 7 : « même sortie ? » au lieu de « chevauche ».** Le badge
+signalait deux dossiers voisins dont les photos s'entremêlaient dans le temps :
+une excursion faite pendant un séjour l'était aussi, comme l'ancien
+chevauchement de la Consolidation (D91). Il reprend le critère de la
+Consolidation et ses réglages : deux photos prises à la suite, au même endroit
+(3 h et 4 km par défaut). Les dossiers gardés à leur place ne sont plus
+comparés, sous-dossiers compris (le choix est inscrit sur le parent). Sur
+2025 : 13 dossiers signalés au lieu de 27, tous des moments qui se suivent
+(31 min et 2 km entre deux dossiers d'une même balade, l'aéroport et la vue
+d'avion).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

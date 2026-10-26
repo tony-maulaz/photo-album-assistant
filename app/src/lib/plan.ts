@@ -499,6 +499,19 @@ export function fusionnerDossiers(plan: Plan, source: string, cible: string): Mo
   return tx.terminer(t`Fusionner « ${s.nom} » dans « ${c.nom} »`);
 }
 
+/** Déplace un dossier (avec son contenu) dans `parent` ; refusé si un frère porte déjà son nom. */
+export function deplacerDossier(plan: Plan, id: string, parent: string): Modification | null {
+  const d = dossierExistant(plan, id);
+  const p = dossierExistant(plan, parent);
+  if (d.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être déplacé.`);
+  if (d.parent === parent) return null;
+  if (id === parent || estDescendant(plan, parent, id)) throw new ErreurPlan(t`Impossible de mettre un dossier dans un de ses sous-dossiers.`);
+  verifierFrere(plan, parent, d.nom, id);
+  const tx = new Transaction(plan);
+  tx.dossier({ ...d, parent });
+  return tx.terminer(t`Mettre « ${d.nom} » dans « ${p.nom} »`);
+}
+
 /**
  * Scinde un dossier par jour (§ 6.4) : ses photos et vidéos datées vont dans
  * des dossiers voisins « <nom sans date>_AAAA-MM-JJ », un par journée ; le

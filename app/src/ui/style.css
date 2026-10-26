@@ -2138,26 +2138,6 @@ kbd {
   margin: 8px 0;
 }
 
-/* Étape 8 */
-
-.carte-groupe {
-  border-radius: var(--rayon-carte);
-  background: var(--surface);
-  box-shadow: var(--ombre-douce);
-  padding: 16px 20px;
-}
-
-.carte-groupe header,
-.carte-groupe footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.carte-groupe footer {
-  margin-top: 8px;
-}
-
 .badge.gardee,
 .cadre-miniature .badge.gardee {
   left: 6px;
@@ -2988,6 +2968,13 @@ button.bouton-ia:disabled {
   min-width: 260px;
 }
 
+/* Sous-dossiers d'un dossier de la source, sous son nom (D92). */
+.sous-dossiers-ligne {
+  margin-top: 2px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 /* Étape « Dossiers » : recherche et ordre à gauche, « Pour tous » à droite. */
 .outils-sous-dossiers input[type='search'] {
   width: 240px;
@@ -3095,8 +3082,7 @@ button.bouton-ia:disabled {
   border-left-color: var(--discret);
 }
 
-.voisins,
-.cote-a-cote {
+.voisins {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
@@ -3128,10 +3114,6 @@ button.bouton-ia:disabled {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.groupe-consolidation {
-  margin-bottom: 20px;
 }
 
 .tableau.nommage td {

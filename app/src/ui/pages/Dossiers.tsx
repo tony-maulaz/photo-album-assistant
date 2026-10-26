@@ -6,7 +6,7 @@
 import { signal } from '@preact/signals';
 import { useState } from 'preact/hooks';
 import { aTraduire, t } from '../../lib/langue';
-import { changerTraitement, comparerNoms, estDescendant, RACINE, resumes, traitementDe, type FichierPlan, type Plan, type TraitementDossier } from '../../lib/plan';
+import { changerTraitement, comparerNoms, enfants, estDescendant, RACINE, resumes, traitementDe, type FichierPlan, type Plan, type ResumeDossier, type TraitementDossier } from '../../lib/plan';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { lancerAnalyseDossier } from '../analyseDossier';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
@@ -14,6 +14,25 @@ import { Miniature } from '../composants/GrillePhotos';
 import { appliquer, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { nombre, periode, pluriel } from '../format';
 import { simplifier } from '../organiser';
+
+/**
+ * Sous-dossiers d'un dossier, sous son nom : le nombre de photos les compte
+ * tous, et « 180 photos » faisait croire à un dossier trop grand (D92).
+ * « 10 sous-dossiers : Ville_A, Ville_B, Ville_C… (+7) », et les photos
+ * propres au dossier s'il en a ; la bulle donne la liste complète.
+ */
+function SousDossiers({ plan, id, r }: { plan: Plan; id: string; r: Map<string, ResumeDossier> }) {
+  const liste = enfants(plan, id);
+  if (!liste.length) return null;
+  const direct = r.get(id)?.photos ?? 0;
+  const noms = liste.slice(0, 3).map((d) => d.nom).join(', ') + (liste.length > 3 ? `… (+${liste.length - 3})` : '');
+  return (
+    <div class="discret sous-dossiers-ligne" title={liste.map((d) => `${d.nom} (${pluriel(r.get(d.id)?.photosTotal ?? 0, 'photo')})`).join('\n')}>
+      {t`${pluriel(liste.length, 'sous-dossier')} : ${noms}`}
+      {direct > 0 && t` · ${pluriel(direct, 'photo')} directement dans le dossier`}
+    </div>
+  );
+}
 
 /** Ordre des sous-dossiers, gardé le temps de la session : par nom, ou par période pour des dossiers « janvier, février… ». */
 const ordreDossiers = signal<'nom' | 'periode'>('nom');
@@ -119,7 +138,10 @@ export function PageDossiers() {
                             <Miniature key={f.id} f={f} taille={44} />
                           ))}
                         </span>
-                        {d.nom}
+                        <span>
+                          {d.nom}
+                          <SousDossiers plan={s.plan} id={d.id} r={r} />
+                        </span>
                       </div>
                     </td>
                     <td>{periode(x.duTotal, x.auTotal)}</td>
@@ -129,7 +151,14 @@ export function PageDossiers() {
                       {/* Trois boutons plutôt qu'une liste : tous les choix sont visibles, on change en un clic. */}
                       <div class="choix-segmente" role="radiogroup" aria-label={t`Que faire de ${d.nom}`}>
                         {CHOIX.map(([v, libelle]) => (
-                          <button key={v} type="button" role="radio" aria-checked={actuel === v} onClick={() => actuel !== v && appliquer(changerTraitement(s.plan, [d.id], v))}>
+                          <button
+                            key={v}
+                            type="button"
+                            role="radio"
+                            aria-checked={actuel === v}
+                            title={v === 'trier' && enfants(s.plan, d.id).length ? t`Ses ${pluriel(enfants(s.plan, d.id).length, 'sous-dossier')} disparaissent aussi : leurs photos sont réparties par le tri.` : undefined}
+                            onClick={() => actuel !== v && appliquer(changerTraitement(s.plan, [d.id], v))}
+                          >
                             {t(libelle)}
                           </button>
                         ))}

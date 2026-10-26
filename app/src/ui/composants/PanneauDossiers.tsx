@@ -5,11 +5,14 @@ import { estNomDeSortie, nomsSortie } from '../../lib/sortie';
 import { signal } from '@preact/signals';
 import { Fragment } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
+import { lireReglages, rencontres, rencontreSuffisante, reglagesParDefaut, type DossierInfo, type ReglagesConsolidation } from '../../lib/consolidation';
 import { SEUIL_PETIT_DOSSIER } from '../../lib/fragments';
 import { aTraduire, t } from '../../lib/langue';
 import { cleNom } from '../../lib/noms';
 import { dossiersNouveaux } from '../../lib/rangement';
-import { cheminDossier, estDescendant, fusionnerDossiers, renommerDossier, resumes, RACINE, scinderParJour, supprimerDossierVide, type DossierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
+import { cheminDossier, estDescendant, fusionnerDossiers, gardeSaPlace, renommerDossier, resumes, RACINE, scinderParJour, supprimerDossierVide, type DossierPlan, type FichierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
+import { minutes } from '../../lib/selection';
+import { optionsDuProjet } from '../../lib/tri';
 import { appliquer, changerReglages, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { nombre, periode, pluriel } from '../format';
@@ -109,8 +112,13 @@ interface Arbre {
   nouveaux: Map<string, number>;
 }
 
-/** Badges d'alerte de l'arborescence prévue (§ 6.4) : le libellé court sert aussi de code (« gardé », « hors album »), traduit à l'affichage. */
-export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<string, [string, string][]> {
+/**
+ * Badges d'alerte de l'arborescence prévue (§ 6.4) : le libellé court sert
+ * aussi de code (« gardé », « hors album »), traduit à l'affichage. `suite` :
+ * quand deux photos de deux dossiers voisins font « la même sortie » (les
+ * réglages de la Consolidation, D91).
+ */
+export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>, suite: Pick<ReglagesConsolidation, 'heures' | 'km'> = reglagesParDefaut()): Map<string, [string, string][]> {
   const alertes = new Map<string, [string, string][]>();
   const ajouter = (id: string, a: [string, string]) => alertes.set(id, [...(alertes.get(id) ?? []), a]);
   const sansDate = new Map<string, number>();
@@ -130,31 +138,37 @@ export function alertesDossiers(plan: Plan, r: Map<string, ResumeDossier>): Map<
     if (d.traitement === 'nettoyer') ajouter(d.id, [aTraduire('gardé'), t`Sous-dossier de la source gardé à sa place ; ses floues et ses doublons sont proposés`]);
     if (d.traitement === 'garder' || d.traitement === 'ignorer') ajouter(d.id, [aTraduire('ne pas toucher'), t`Sous-dossier de la source recopié tel quel`]);
   }
-  // Chevauchement : deux dossiers voisins dont les photos s'entremêlent dans le temps (A, puis B, puis
-  // de nouveau A) : sans doute la même sortie coupée en deux. Deux sorties le même jour, l'une après
-  // l'autre, sont normales et ne sont pas signalées.
-  const instants = new Map<string, string[]>();
+  // Même sortie coupée en deux : deux dossiers voisins dont deux photos ont été prises à la suite, au même
+  // endroit (à moins de 3 h et de 4 km par défaut, comme la Consolidation, D91). Des photos simplement
+  // entremêlées dans le temps ne suffisent plus : une excursion faite pendant un séjour était signalée (D93).
+  const photosDe = new Map<string, FichierPlan[]>();
   for (const f of plan.fichiers.values()) {
     if (f.statut !== 'archive' || f.categorie === 'autre' || !f.date || f.date.length < 19) continue;
-    instants.set(f.dossier, [...(instants.get(f.dossier) ?? []), f.date]);
+    photosDe.set(f.dossier, [...(photosDe.get(f.dossier) ?? []), f]);
   }
-  for (const l of instants.values()) l.sort();
-  // Une photo de b prise strictement entre la première et la dernière de a (recherche dichotomique dans b, trié).
-  const entremeles = (a: string[], b: string[]) => {
-    let bas = 0;
-    let haut = b.length;
-    while (bas < haut) {
-      const m = (bas + haut) >> 1;
-      if (b[m] <= a[0]) bas = m + 1;
-      else haut = m;
+  const infos = new Map<string, DossierInfo & { t1: number; t2: number }>();
+  const info = (d: DossierPlan) => {
+    let x = infos.get(d.id);
+    if (!x) {
+      const photos = [...(photosDe.get(d.id) ?? [])].sort((a, b) => a.date!.localeCompare(b.date!));
+      x = { id: d.id, nom: d.nom, photos, du: photos[0].date, au: photos.at(-1)!.date, t1: minutes(photos[0].date)!, t2: minutes(photos.at(-1)!.date)! };
+      infos.set(d.id, x);
     }
-    return bas < b.length && b[bas] < a.at(-1)!;
+    return x;
   };
   for (const liste of freres.values()) {
-    const sorties = liste.filter((d) => d.tri?.origine !== 'lieu_connu' && !d.traitement && !d.nom.startsWith('_') && (instants.get(d.id)?.length ?? 0) > 0);
+    // Les dossiers de la source gardés à leur place, sous-dossiers compris (Voyage/Etape…), sont rangés par la famille.
+    const sorties = liste.filter((d) => d.tri?.origine !== 'lieu_connu' && !gardeSaPlace(plan, d.id) && !d.nom.startsWith('_') && (photosDe.get(d.id)?.length ?? 0) > 0);
     for (const a of sorties) {
-      const autre = sorties.find((b) => b !== a && entremeles(instants.get(a.id)!, instants.get(b.id)!));
-      if (autre) ajouter(a.id, [aTraduire('chevauche'), t`Photos entremêlées avec « ${autre.nom} » : la même sortie ?`]);
+      const ia = info(a);
+      const autre = sorties.find((b) => {
+        if (b === a) return false;
+        const ib = info(b);
+        // Périodes trop éloignées : rien à comparer photo à photo.
+        if (ib.t1 > ia.t2 + suite.heures * 60 || ia.t1 > ib.t2 + suite.heures * 60) return false;
+        return !!rencontreSuffisante(rencontres(ia, ib), suite);
+      });
+      if (autre) ajouter(a.id, [aTraduire('même sortie ?'), t`Photos prises juste avant ou après celles de « ${autre.nom} », au même endroit : la même sortie ?`]);
     }
   }
   return alertes;
@@ -363,7 +377,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
         }
       }
     }
-    const alertes = alertesDossiers(s.plan, r);
+    const alertes = alertesDossiers(s.plan, r, lireReglages(s.aides.get('consolidation_reglages'), optionsDuProjet(s.projet.tri).rayonKm));
     if (seulementAlertes) {
       const avec = new Set([RACINE]);
       for (const d of s.plan.dossiers.values()) {

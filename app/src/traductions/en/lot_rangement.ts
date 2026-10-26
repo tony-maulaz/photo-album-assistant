@@ -50,13 +50,8 @@ export const TEXTES: Record<string, string> = {
   'Les réunir dans « {0} »': 'Group them in “{0}”',
 
   // Organisation.tsx : consolidation
-  '« {0} » et « {1} » ne seront plus proposés ensemble.': '“{0}” and “{1}” will no longer be suggested together.',
   '{0} : elles ne sont plus proposées.': '{0}: they are no longer suggested.',
-  'paire ignorée': 'pair ignored',
-  'paires ignorées': 'pairs ignored',
   'les proposer à nouveau': 'suggest them again',
-  'Ce ne sont pas les mêmes sorties : ne plus proposer ces deux dossiers ensemble': 'These are not the same outings: stop suggesting these two folders together',
-  'Ignorer cette paire': 'Ignore this pair',
   // Étape « Petits dossiers » : un à la fois, entre ses voisins dans le temps (D90).
   'Pour chaque petit dossier, l’IA compare ses photos à celles du dossier juste avant et juste après dans le temps, et propose de le rattacher à l’un d’eux ou de le garder seul.': 'For each small folder, the AI compares its photos with those of the folder just before and just after in time, and suggests putting it with one of them or keeping it alone.',
   'planches de miniatures du petit dossier et de ses deux voisins dans le temps': 'thumbnail sheets of the small folder and of its two neighbours in time',

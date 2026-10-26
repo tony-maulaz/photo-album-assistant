@@ -210,6 +210,9 @@ try {
   const trouvees = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
   verifier(trouvees.length === 1 && trouvees[0].includes('janvier') && (await page.locator('.outils-sous-dossiers').innerText()).includes('Pour 1 dossier trouvé'), 'étape « Dossiers » : la recherche filtre les sous-dossiers');
   await page.locator('.outils-sous-dossiers input[type=search]').fill('');
+  // Un dossier qui a des sous-dossiers le dit sous son nom (D92).
+  const ligneJanvier = await page.locator('.sous-dossiers tbody tr', { hasText: 'janvier' }).locator('.sous-dossiers-ligne').innerText();
+  verifier(ligneJanvier.includes('1 sous-dossier : fete') && ligneJanvier.includes('directement dans le dossier'), `étape « Dossiers » : sous-dossiers montrés sous le nom (${ligneJanvier})`);
   const actifs = await page.locator('.sous-dossiers [role=radio][aria-checked=true]').allInnerTexts();
   verifier(actifs.length === 2 && actifs.every((x) => x === 'Garder, nettoyer'), `« Garder, nettoyer » par défaut, en boutons (${actifs.join(', ')})`);
   const bestof = page.locator('.sous-dossiers tbody tr', { hasText: 'BESTOF' });

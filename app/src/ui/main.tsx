@@ -12,6 +12,7 @@ import './styles/accueil.css';
 import './styles/general.css';
 import './styles/apercuTri.css';
 import './styles/nommage.css';
+import './styles/consolidation.css';
 import { effect } from '@preact/signals';
 import { render } from 'preact';
 import { definirLangue, langueDuNavigateur, t } from '../lib/langue';

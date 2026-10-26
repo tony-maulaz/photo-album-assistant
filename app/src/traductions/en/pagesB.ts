@@ -103,27 +103,11 @@ export const TEXTES: Record<string, string> = {
   'date inconnue': 'unknown date',
   ' (confiance {0}/10)': ' (confidence {0}/10)',
   'Renommé « {0} ».': 'Renamed “{0}”.',
-  '{0} à examiner': '{0} to look at',
-  'Fusionner dans « {0} »': 'Merge into “{0}”',
-  'Plusieurs dossiers couvrent parfois la même activité (une journée à la plage coupée en deux par le tri). Les propositions sont montrées côte à côte ; vous pouvez aussi fusionner à la main en glissant un dossier sur un autre à l’étape {0}.':
-    'Several folders sometimes cover the same activity (a day at the beach cut in two by the sorting). The suggestions are shown side by side; you can also merge by hand by dragging one folder onto another in step {0}.',
-  'Aucun répertoire ne contient plusieurs dossiers à comparer.': 'No parent folder contains several folders to compare.',
-  'Fusionner {0} dans « {1} »': 'Merge {0} into “{1}”',
   '« {0} »': '“{0}”',
-  ' (nouveau dossier)': ' (new folder)',
-  'Ne plus proposer ce dossier à la consolidation': 'Stop suggesting this folder for consolidation',
-  exclure: 'exclude',
-  'Fusionné dans « {0} ».': 'Merged into “{0}”.',
   Fusionner: 'Merge',
   'Renommer « {0} » en « {1} »': 'Rename “{0}” to “{1}”',
   Renommer: 'Rename',
-  'Même activité ?': 'Same activity?',
-  'noms proches et périodes qui se chevauchent': 'similar names and overlapping periods',
-  'noms proches': 'similar names',
-  'périodes qui se chevauchent': 'overlapping periods',
   '« {0} » fusionné dans « {1} ».': '“{0}” merged into “{1}”.',
-  'proposition IA': 'AI suggestion',
-  'propositions IA': 'AI suggestions',
 
   // Pages.tsx
   '{0} — {1} / {2} USD par million de jetons': '{0} — {1} / {2} USD per million tokens',
@@ -270,8 +254,8 @@ export const TEXTES: Record<string, string> = {
     'The “+” button next to the search creates a folder in the folder shown; photos dropped on it (or “New folder” in the selection bar) go into a new folder next to it.',
   'Glissez un dossier sur un autre pour les fusionner ; double-cliquez sur un nom (ou F2) pour le renommer ; « Scinder par jour » coupe un dossier en journées.':
     'Drag a folder onto another to merge them; double-click a name (or F2) to rename it; “Split by day” cuts a folder into days.',
-  'Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, photos entremêlées avec un autre dossier.':
-    'The badges point out what deserves a look: small folder, very large, unknown place, no date, duplicate name, photos mixed up with another folder.',
+  'Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).':
+    'The badges point out what deserves a look: small folder, very large, unknown place, no date, duplicate name, same outing as a neighbouring folder (photos taken one after the other, at the same place).',
   'Suppr met de côté (rien n’est supprimé : les éléments iront dans « {0} ») ; dans « Mis de côté », Suppr les remet.':
     'Delete sets aside (nothing is deleted: the items will go to “{0}”); in “Set aside”, Delete puts them back.',
   'Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.': 'Double-click or Enter: the photo shown large; ← → to go to the next one.',
@@ -463,6 +447,9 @@ export const TEXTES: Record<string, string> = {
     'Your folder already contains subfolders. The {0} loose at the top level will be sorted by places and outings; for each subfolder, choose what becomes of it. Nothing is changed in the original folder.',
   'Aucun sous-dossier : rien à décider ici.': 'No subfolders: nothing to decide here.',
   'Pour tous :': 'For all:',
+  // Sous-dossiers d'un dossier, sous son nom (D92).
+  ' · {0} directement dans le dossier': ' · {0} directly in the folder',
+  'Ses {0} disparaissent aussi : leurs photos sont réparties par le tri.': 'Its {0} disappear too: their photos are spread by the sorting.',
   'Pour {0} :': 'For {0}:',
   'dossier trouvé': 'folder found',
   'dossiers trouvés': 'folders found',

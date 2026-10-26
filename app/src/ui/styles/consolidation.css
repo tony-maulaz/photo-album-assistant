@@ -1,0 +1,161 @@
+/* Étape « Consolidation » (D91) : les réglages et le résultat en tête, puis une proposition à la fois (la liste et sa mise en page viennent de petits.css). */
+
+.reglages-reunion {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--bord);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.reglages-reunion .options-tri {
+  margin: 0;
+}
+
+.ligne-crans {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 6px;
+}
+
+.reglages-reunion .option-tri > .choix-segmente {
+  margin-top: 6px;
+}
+
+.reglages-reunion .avances {
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+
+.reglages-reunion .avances summary {
+  cursor: pointer;
+  color: var(--texte-2);
+}
+
+.reglages-reunion .avances .case {
+  display: block;
+  margin: 8px 0;
+}
+
+.resultat-reglages {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-weight: 700;
+}
+
+.tete-reunion h2 {
+  margin: 4px 0 2px;
+}
+
+.tete-reunion p {
+  margin: 4px 0;
+}
+
+.sorte-reunion {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sorte-reunion.voyage {
+  background: var(--ia-fond);
+  color: var(--ia-texte);
+}
+
+/* Les dossiers côte à côte, chacun avec ses photos réparties sur sa durée. */
+.colonnes-reunion {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.dossier-reunion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--accent-doux);
+}
+
+.dossier-reunion.retire {
+  border-color: var(--bord);
+  border-style: dashed;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.dossier-reunion p {
+  margin: 0;
+}
+
+.nom-reunion {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+
+.photos-reunion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.photos-reunion figure {
+  margin: 0;
+  text-align: center;
+}
+
+.photos-reunion figcaption {
+  color: var(--discret);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plus-photos {
+  color: var(--discret);
+  font-weight: 700;
+}
+
+.pied-reunion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--bord);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.nom-reuni {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.nom-reuni input {
+  max-width: 520px;
+}
+
+.pied-reunion .actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}

@@ -13,12 +13,13 @@ import { TEXTES as lot_accueil } from './lot_accueil';
 import { TEXTES as lot_general } from './lot_general';
 import { TEXTES as lot_tri } from './lot_tri';
 import { TEXTES as lot_noms } from './lot_noms';
+import { TEXTES as lot_consolidation } from './lot_consolidation';
 import { TEXTES as navigateur } from './navigateur';
 import { TEXTES as pagesA } from './pagesA';
 import { TEXTES as pagesB } from './pagesB';
 import { TEXTES as pagesC } from './pagesC';
 
 /** Les tables séparément, pour que le test repère une même phrase traduite de deux façons. */
-export const PARTIES = { commun, composants, logique, navigateur, pagesA, pagesB, pagesC, lot_sortie, lot_album, lot_selection, lot_rangement, lot_doublons, lot_accueil, lot_general, lot_tri, lot_noms };
+export const PARTIES = { commun, composants, logique, navigateur, pagesA, pagesB, pagesC, lot_sortie, lot_album, lot_selection, lot_rangement, lot_doublons, lot_accueil, lot_general, lot_tri, lot_noms, lot_consolidation };
 
 export const EN: Record<string, string> = Object.assign({}, ...Object.values(PARTIES));

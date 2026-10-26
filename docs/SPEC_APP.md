@@ -248,7 +248,10 @@ chaque sous-dossier déjà présent dans la source, trois boutons côte à côte
 - **Ne pas toucher** : recopié tel quel, ni floues, ni rafales, ni copies
   cherchées (une sélection « Best of », des scans).
 Les sous-dossiers sont par nom (ou par période, au choix), avec une
-recherche ; « Pour tous » s'applique aux dossiers trouvés.
+recherche ; « Pour tous » s'applique aux dossiers trouvés. Sous le nom d'un
+dossier qui a lui-même des sous-dossiers : leur nombre et les premiers noms
+(liste complète dans la bulle), et ses photos propres s'il en a (D92) ; la
+bulle de « Trier » rappelle que ses sous-dossiers disparaissent aussi.
 Le vrac de la racine est toujours trié. L'ancien choix « hors de l'album »
 n'existe plus (un projet qui l'avait le lit comme « Ne pas toucher »).
 
@@ -369,9 +372,28 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   proposée.
 
 ### 6.7 Étape 10 — Consolidation
-Groupes proposés à la fusion, côte à côte (nom, dates, nombre de photos,
-miniatures, nom cible modifiable). Fusion manuelle par glisser-déposer. Sans
-IA : noms proches et chevauchements présentés côte à côte.
+- **En tête, ce qu'il faut proposer** (D91), avec le nombre de propositions
+  qui change sous les yeux : une sortie coupée en plusieurs dossiers (des
+  photos prises à moins de 1 h, 3 h, 6 h ou la journée, et de 1 à 20 km ; par
+  défaut 3 h et 2 × la taille d'un endroit du tri), les week-ends et petits
+  voyages (dossiers à plus de 10 km de la maison, jours qui se suivent, sans
+  photo prise à la maison entre-temps, jusqu'à 3 jours, 4 jours, 1 ou 2
+  semaines ; il faut un domicile). En avancé : les noms proches à 2 jours près
+  (noms donnés au Nommage), et proposer à nouveau ce qui a été refusé.
+- **Des groupes, pas des paires**, dans l'ordre du temps : la liste à gauche
+  (comme les petits dossiers), une proposition à la fois à droite. Ses
+  dossiers côte à côte, chacun avec ses photos réparties sur sa durée et
+  leurs heures (un clic ouvre la visionneuse), une case pour en laisser un à
+  part ; la raison en mots (« Des photos prises à 31 min et 2,4 km d'écart »).
+- **Décider** : le nom du dossier réuni est modifiable (le plus grand, dates
+  étendues à toute la période) ; pour un petit voyage, un seul dossier ou un
+  dossier « Voyage_… » avec une étape par dossier ; « Réunir », « Pas la même
+  sortie » (touche N). Les étapes d'un voyage du tri peuvent être réunies en
+  un seul dossier. Rien ne disparaît : une réunion ou un refus reste dans la
+  liste, et se défait plus tard. Ctrl+Z annule aussi.
+- **IA6** : une fusion proposée par l'IA confirme ou complète un groupe (son
+  nom et sa raison s'affichent), ou en ajoute un ; un renommage se propose à
+  part (« Renommer », « Non merci »).
 
 ### 6.8 Étape 5 — Doublons (IA)
 - **Onglets** (D71), un par sorte de doublons, chacun avec ce qui reste à

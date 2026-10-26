@@ -17,16 +17,12 @@ import {
   type PhotoLieu,
 } from '../src/lib/aidesTri';
 import {
-  clePaire,
   consigneConsolidationGroupe,
   dossiersAPlanche,
   estimationConsolidation,
   groupesDeFreres,
   lireConsolidation,
   listeDossiers,
-  nomsProches,
-  racineNom,
-  rapprochementsLocaux,
   requeteConsolidation,
 } from '../src/lib/consolidation';
 import {
@@ -285,38 +281,6 @@ describe('consolidation (étape 7, script 05)', () => {
     expect(c.inconnus).toEqual(['Inconnu_01', 'Fantome']);
     expect(lireConsolidation([{ fusions: null, renommages: 'x' }], racine)).toEqual({ fusions: [], renommages: [], inconnus: [] });
     expect(lireConsolidation(null, racine).fusions).toEqual([]);
-  });
-
-  it('sans IA : noms proches et chevauchements', () => {
-    expect(nomsProches('Vol_KohSamui_18.07.26', 'Vol_Koh_Samui_18.07.26')).toBe(true);
-    expect(nomsProches('Muay_Thai_25.07.26', 'Muay_Thai_25-26.07.26')).toBe(true);
-    expect(nomsProches('Marche_23.07.26', 'Temple_23.07.26')).toBe(false);
-    const v = groupes.find((g) => g.parent !== RACINE)!;
-    expect(rapprochementsLocaux(v)).toEqual([]);
-    const paires = rapprochementsLocaux(racine).map((r) => [p.dossiers.get(r.a)!.nom, p.dossiers.get(r.b)!.nom, r.raisons]);
-    expect(paires).toContainEqual(['Plage_Chaweng_18-20.07.26', 'Vol_Koh_Samui_18.07.26', ['chevauchement']]);
-    expect(paires).toContainEqual(['Vol_Koh_Samui_18.07.26', 'Vol_KohSamui_18.07.26', ['noms_proches']]);
-  });
-
-  it('noms proches : seulement à quelques jours d’écart ; une paire ignorée n’est plus proposée', () => {
-    expect(racineNom('Vallon_22.11.25')).toBe('vallon');
-    expect(racineNom('Ko_Samui_28.06-02.07.26')).toBe('kosamui');
-    expect(racineNom('Vallon_22.11.25_b')).toBe('vallon');
-    expect(racineNom('Lausanne_11.25')).toBe('lausanne');
-    const q = plan({
-      'Vallon_2025-11-22': ['2025-11-22T10:00:00'],
-      'Vallon_2025-12-13': ['2025-12-13T10:00:00'],
-      'Foot_Vallon_12.04.25': ['2025-04-12T10:00:00'],
-      'Riviere_Vallon_23.11.25': ['2025-11-23T10:00:00'],
-      'Lausanne_12.01.25': ['2025-01-12T10:00:00'],
-      'Lausanne_10.07.25': ['2025-07-10T10:00:00'],
-    });
-    const g = groupesDeFreres(q)[0];
-    const nom = (id: string) => q.dossiers.get(id)!.nom;
-    const paires = rapprochementsLocaux(g);
-    // Un nom de village courant ne rapproche plus toutes les sorties de l'année : seulement celles qui se suivent.
-    expect(paires.map((p) => [nom(p.a), nom(p.b)])).toEqual([['Riviere_Vallon_23.11.25', 'Vallon_2025-11-22']]);
-    expect(rapprochementsLocaux(g, new Set([clePaire(paires[0].b, paires[0].a)]))).toEqual([]);
   });
 });
 
