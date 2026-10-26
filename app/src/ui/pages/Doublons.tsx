@@ -44,8 +44,10 @@ import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadr
 import { Comparateur } from '../composants/Comparateur';
 import { confirmer } from '../composants/Dialogues';
 import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
+import { redimensionner, styleLargeurPanneau } from '../composants/PanneauDossiers';
+import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { useCopiesExactes } from '../copiesExactes';
-import { allerEtape, annuler, appliquer, changerEtape, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
+import { allerEtape, annuler, appliquer, changerEtape, changerReglages, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { nombre, nomJour, nomMois, pluriel, taille as texteTaille } from '../format';
 import { simplifier } from '../organiser';
 import { enregistrerAide } from './AidesIA';
@@ -209,8 +211,17 @@ function ListeSections({ liste, choisie, choisir, avancement = true }: { liste: 
     [t`Dossiers`, trouves],
     [t`Sans date`, liste.filter((x) => x.cle === 'sans')],
   ];
+  const dejaVus = new Set<string>();
   return (
-    <nav class="sections-doublons" aria-label={t`Journées et dossiers`}>
+    <nav class="sections-doublons" aria-label={t`Journées et dossiers`} style={styleLargeurPanneau()}>
+      <div
+        class="poignee-panneau"
+        role="separator"
+        aria-orientation="vertical"
+        title={t`Tirer pour élargir le panneau (double-clic : largeur d’origine)`}
+        onPointerDown={redimensionner}
+        onDblClick={() => changerReglages({ ...reglages.value, largeurPanneau: REGLAGES_DEFAUT.largeurPanneau })}
+      />
       {liste.some(estDossier) && (
         <input
           type="search"
@@ -228,22 +239,46 @@ function ListeSections({ liste, choisie, choisir, avancement = true }: { liste: 
         .map(([titre, l]) => (
           <div key={titre}>
             <h2>{titre}</h2>
-            {l.map((x) => (
-              <button key={x.cle} type="button" class={`section-doublons${x.cle === choisie ? ' choisie' : ''}`} aria-current={x.cle === choisie ? 'true' : undefined} onClick={() => choisir(x.cle)}>
-                <span>{x.nom}</span>
-                {!avancement ? (
-                  <span class="compte">{nombre(x.total)}</span>
-                ) : x.aRelire ? (
-                  <span class="reste" title={t`groupes à relire`}>
-                    {nombre(x.aRelire)}
-                  </span>
-                ) : (
-                  <span class="fait" title={t`tout est relu`}>
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+            {l.flatMap((x) => {
+              // Dossiers imbriqués (D97) : chaque dossier parent une fois, ses sous-dossiers en retrait, sous leur seul nom.
+              const parties = estDossier(x) ? x.nom.split('/') : [x.nom];
+              const parents = parties.slice(0, -1).flatMap((nom, i) => {
+                const chemin = parties.slice(0, i + 1).join('/');
+                if (titre !== t`Dossiers` || dejaVus.has(chemin) || liste.some((y) => estDossier(y) && y.nom === chemin)) return [];
+                dejaVus.add(chemin);
+                return [
+                  <div key={`p:${chemin}`} class="parent-section" style={{ paddingLeft: `${10 + i * 14}px` }}>
+                    {nom}
+                  </div>,
+                ];
+              });
+              if (estDossier(x)) dejaVus.add(x.nom);
+              return [
+                ...parents,
+                <button
+                  key={x.cle}
+                  type="button"
+                  class={`section-doublons${x.cle === choisie ? ' choisie' : ''}`}
+                  style={parties.length > 1 ? { paddingLeft: `${10 + (parties.length - 1) * 14}px` } : undefined}
+                  title={x.nom}
+                  aria-current={x.cle === choisie ? 'true' : undefined}
+                  onClick={() => choisir(x.cle)}
+                >
+                  <span>{parties.at(-1)}</span>
+                  {!avancement ? (
+                    <span class="compte">{nombre(x.total)}</span>
+                  ) : x.aRelire ? (
+                    <span class="reste" title={t`groupes à relire`}>
+                      {nombre(x.aRelire)}
+                    </span>
+                  ) : (
+                    <span class="fait" title={t`tout est relu`}>
+                      ✓
+                    </span>
+                  )}
+                </button>,
+              ];
+            })}
           </div>
         ))}
     </nav>
@@ -305,16 +340,42 @@ function texteProposition(g: GroupeDoublons, n: number): string {
 }
 
 /** Ce qu'on sait d'une photo pour choisir : l'heure, l'emplacement d'une copie, la description de l'IA. */
+/**
+ * Où est la photo : son dossier dans la source (chemin), et celui où le plan
+ * la range s'il est autre (après le tri, un déplacement) ; pour choisir quoi
+ * garder, sur tous les onglets (D96).
+ */
+function Emplacement({ f }: { f: FichierPlan }) {
+  const s = session.value!;
+  const source = dossierSource(f);
+  const rangee = cheminDossier(s.plan, f.dossier);
+  return (
+    <>
+      <strong class="chemin-doublon">{source || nomRacine(s.projet.mode === 'vrac')}</strong>
+      {f.statut === 'archive' && rangee !== source && <span class="chemin-doublon">{t`rangée dans « ${rangee || t`Photos (racine)`} »`}</span>}
+    </>
+  );
+}
+
 function Legende({ g, x }: { g: GroupeDoublons; x: PhotoDuGroupe }) {
   const s = session.value!;
   const { m, f } = x;
   const heure = f.date && f.date.length > 10 ? f.date.slice(11, 19) : '';
-  if (g.sorte === 'rafales') return <span class="legende-doublon">{m.id === g.etoile ? t`${heure} · la plus nette` : heure}</span>;
+  if (g.sorte === 'rafales')
+    return (
+      <span class="legende-doublon">
+        <span>{m.id === g.etoile ? t`${heure} · la plus nette` : heure}</span>
+        <Emplacement f={f} />
+      </span>
+    );
   if (g.sorte === 'ia')
     return (
       <span class="legende-doublon">
-        {heure.slice(0, 5)}
-        {m.description && ` · ${m.description}`}
+        <span>
+          {heure.slice(0, 5)}
+          {m.description && ` · ${m.description}`}
+        </span>
+        <Emplacement f={f} />
         {m.refus && <em class="refus">{t`Gardée par le garde-fou : l’IA la décrit autrement.`}</em>}
       </span>
     );
@@ -322,12 +383,9 @@ function Legende({ g, x }: { g: GroupeDoublons; x: PhotoDuGroupe }) {
   const nomDossier = (id: string) => cheminDossier(s.plan, id) || t`Photos (racine)`;
   const tr = traitementDe(s.plan, f.dossier);
   // Une copie se désigne par son dossier dans la source ; le tri (ou un déplacement) a pu la ranger ailleurs.
-  const source = dossierSource(f);
-  const rangee = cheminDossier(s.plan, f.dossier);
   return (
     <span class="legende-doublon">
-      <strong>{source || nomRacine(s.projet.mode === 'vrac')}</strong>
-      {f.statut === 'archive' && rangee !== source && <span>{t`rangée dans « ${nomDossier(f.dossier)} »`}</span>}
+      <Emplacement f={f} />
       {s.projet.mode === 'vrac' && tr === 'nettoyer' && <span>{t`dossier gardé, nettoyé`}</span>}
       <span>
         {f.dims ? `${nombre(f.dims.l)} × ${nombre(f.dims.h)} · ` : ''}

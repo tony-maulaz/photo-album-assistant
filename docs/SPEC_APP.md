@@ -68,7 +68,7 @@ stable (`ETAPE.lieux`), indépendant de son numéro.
 |---|---|---|---|---|
 | 1 | **Projet** | Source, dossier de sortie, préréglage, contexte, configuration, clé, budget | Récapitulatif | — |
 | 2 | **Inventaire** | Date (EXIF, sinon nom de fichier), GPS, appareil ; analyse locale (netteté, ressemblance, empreintes) ; vidéos et autres fichiers | Tableau de bord du contenu, rien à décider (§ 6.2) | — |
-| 3 | **Dossiers** | Pour chaque sous-dossier d'un dossier en vrac : Trier, Garder et nettoyer, ou Ne pas toucher ; sautée sans sous-dossier et pour un dossier déjà trié | Tableau des sous-dossiers, trois boutons par ligne (§ 6.2) | — |
+| 3 | **Dossiers** | Pour chaque sous-dossier d'un dossier en vrac : Trier, Garder et nettoyer, ou Ne pas toucher ; sautée sans sous-dossier et pour un dossier déjà trié | Tableau des sous-dossiers, trois boutons par ligne, photos au clic (§ 6.2) | — |
 | 4 | **Photos floues** | Classement par netteté | Grille des floues, curseur avec mise à jour en direct | Option : vérification IA des cas limites |
 | 5 | **Doublons** | Copies exactes, rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Onglets par sorte, relecture journée par journée, un clic par photo | Oui |
 | 6 | **Tri automatique** | Captures d'écran rangées à part, lieux fréquents à enregistrer, réglages, regroupement GPS, sorties, voyages, noms de lieux ; inutile pour un dossier déjà trié | Résumé du tri (§ 6.4) | Option : lieu des photos sans GPS |
@@ -252,6 +252,15 @@ recherche ; « Pour tous » s'applique aux dossiers trouvés. Sous le nom d'un
 dossier qui a lui-même des sous-dossiers : leur nombre et les premiers noms
 (liste complète dans la bulle), et ses photos propres s'il en a (D92) ; la
 bulle de « Trier » rappelle que ses sous-dossiers disparaissent aussi.
+Pas de miniature dans les lignes : les noms sont alignés, et une colonne
+donne le nombre de sous-dossiers. Un clic sur la ligne la déplie sur une
+bande de photos réparties dans le temps, à la taille du curseur (une seule
+ligne ouverte à la fois), avec des pastilles par sous-dossier ; un clic sur
+une photo l'ouvre en grand (D95). Deux signaux discrets, qui ne choisissent
+rien : « sur N mois » (un dossier qui n'est pas un mois s'étale sur plus d'un
+mois) et « N photos seules » (un dossier gardé de moins de 5 photos ne sera
+proposé ni aux Petits dossiers ni à la Consolidation). Aucun choix n'est
+proposé d'après le nom : « Garder, nettoyer » reste le défaut.
 Le vrac de la racine est toujours trié. L'ancien choix « hors de l'album »
 n'existe plus (un projet qui l'avait le lit comme « Ne pas toucher »).
 

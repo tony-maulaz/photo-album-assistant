@@ -54,8 +54,8 @@ export function styleLargeurPanneau(): Record<string, string> {
   return { '--largeur-panneau': `${largeurEnCours.value ?? reglages.value.largeurPanneau}px` };
 }
 
-/** Tirer le bord droit du panneau l'élargit ; un double-clic revient à la largeur d'origine. */
-function redimensionner(e: PointerEvent) {
+/** Tirer le bord droit du panneau l'élargit ; un double-clic revient à la largeur d'origine (aussi la liste de gauche des Doublons, D97). */
+export function redimensionner(e: PointerEvent) {
   const poignee = e.currentTarget as HTMLElement;
   const depart = e.clientX;
   const largeur = reglages.value.largeurPanneau;

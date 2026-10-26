@@ -1005,6 +1005,42 @@ ouvertes d'office. Changer de page périme les messages de la précédente
 (« vérifiez-les à l'étape suivante » restait affiché à cette étape, deux
 fois) ; restent les erreurs et ceux de l'action qui y mène.
 
+**D95 — Étape Dossiers : noms alignés, photos au clic, deux signaux.** Les
+0 à 3 miniatures de 44 px devant chaque nom ne servaient à rien (une photo en
+portrait y faisait 20 px de large, prise dans l'ordre des fichiers et non du
+temps) et décalaient les noms (six positions de départ sur un essai de 34
+dossiers). Trois variantes maquettées (liste dépliable, liste et aperçu à
+droite, trois colonnes à glisser) ; retenue : la liste dépliable, le moins de
+gestes et le plus petit changement. Les lignes n'ont plus de miniature, une
+colonne « Sous-dossiers » donne leur nombre ; un clic sur la ligne (pas sur
+les boutons du choix) la déplie sur une bande de photos réparties dans le
+temps, à la taille du curseur commun, autant qu'en tient la largeur ; une
+seule ligne ouverte, pour que la page ne s'allonge pas ; des pastilles
+montrent un sous-dossier à la fois ; la visionneuse n'y annonce plus M et
+Suppr, qui n'y font rien. La recherche trouve aussi un dossier par le nom
+d'un de ses sous-dossiers. Le vrai problème était moins les miniatures que
+les exceptions noyées parmi des dizaines de dossiers : deux signaux, sur les
+dossiers à garder seulement, les font ressortir sans rien choisir —
+« sur N mois » (pas un nom de mois, plus de 31 jours, le seuil de la
+Consolidation : un fourre-tout ?) et « N photos seules » (moins de 5 photos :
+gardé, il ne sera proposé ni aux Petits dossiers ni à la Consolidation, et
+restera seul dans la sortie). Pas de choix proposé d'après le nom (« Best
+of », « Divers ») : refusé, « Garder, nettoyer » reste le défaut.
+
+**D96 — Doublons : le dossier sous chaque photo, sur tous les onglets.** Les
+onglets « Rafales » et « Même scène (IA) » ne montraient que l'heure et la
+description : on ne savait pas dans quel dossier était chaque photo, donc ce
+qu'on gardait ou écartait. Comme pour les copies, chaque photo dit son
+dossier dans la source (chemin complet) et, si le plan la range ailleurs,
+« rangée dans « … » ».
+
+**D97 — Doublons : liste de gauche élargissable, dossiers imbriqués.** Comme le
+panneau des dossiers des autres pages (même réglage de largeur), la liste de
+gauche s'élargit en tirant son bord droit (double-clic : largeur d'origine).
+Groupée par dossier, elle montre les dossiers imbriqués : chaque dossier
+parent une fois, ses sous-dossiers en retrait sous leur seul nom (le chemin
+complet dans la bulle), au lieu de chemins entiers difficiles à lire.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

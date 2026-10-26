@@ -133,7 +133,7 @@
 .sections-doublons {
   position: sticky;
   top: 72px;
-  flex: 0 0 240px;
+  flex: 0 0 var(--largeur-panneau, 240px);
   max-height: calc(100vh - 260px);
   overflow-y: auto;
   padding: 10px;
@@ -479,4 +479,23 @@
 
 .actions-dossier-copies {
   margin: 0;
+}
+
+/* Chemin du dossier sous chaque photo, sur tous les onglets (D96) : en entier, coupé où il faut. */
+.legende-doublon .chemin-doublon {
+  overflow-wrap: anywhere;
+}
+
+/* Liste de gauche élargissable (D97) : la poignée reste dans le cadre, qui défile. */
+.sections-doublons .poignee-panneau {
+  right: 0;
+}
+
+/* Dossier parent, quand seuls ses sous-dossiers ont des groupes (D97). */
+.sections-doublons .parent-section {
+  padding: 6px 10px 2px;
+  color: var(--discret);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }

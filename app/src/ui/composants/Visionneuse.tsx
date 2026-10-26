@@ -12,7 +12,8 @@ import { useZoom } from './Zoom';
 
 const ORIGINES: Record<string, string> = { exif: aTraduire('appareil (EXIF)'), nom: aTraduire('nom du fichier'), video: aTraduire('données de la vidéo'), fichier: aTraduire('date du fichier (incertaine)') };
 
-export function Visionneuse({ elements }: { elements: FichierPlan[] }) {
+/** Sans `rangement` (étape Dossiers), l'aide ne promet pas M et Suppr, qui n'y font rien. */
+export function Visionneuse({ elements, rangement = true }: { elements: FichierPlan[]; rangement?: boolean }) {
   const s = session.value!;
   const index = visionneuse.value;
   const [url, setUrl] = useState<string | null>(null);
@@ -95,7 +96,7 @@ export function Visionneuse({ elements }: { elements: FichierPlan[] }) {
         ))}
         <span class="discret">{tailleTexte(f.taille)}</span>
         <span class="discret">{t`source : ${f.id}`}</span>
-        <span class="aide-touches">{t`← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer`}</span>
+        <span class="aide-touches">{rangement ? t`← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer` : t`← → pour naviguer · Échap pour fermer`}</span>
       </div>
       <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} aria-label={t`Fermer`}>
         ×

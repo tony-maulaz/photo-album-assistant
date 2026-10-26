@@ -204,20 +204,54 @@ try {
 
   // Étape 3 : que faire des sous-dossiers (D61).
   await page.getByRole('heading', { name: /Dossiers/ }).waitFor();
-  const lignes = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
+  const LIGNES = '.sous-dossiers tr.ligne-sous-dossier';
+  const lignes = await page.locator(LIGNES).allInnerTexts();
   verifier(lignes.length === 2 && lignes[0].includes('BESTOF') && lignes[1].includes('janvier'), 'étape « Dossiers » : BESTOF et janvier listés, par nom');
+  const gauches = await page.locator(`${LIGNES} .nom-sous-dossier`).evaluateAll((l) => l.map((e) => Math.round(e.getBoundingClientRect().left)));
+  verifier(gauches.length === 2 && gauches[0] === gauches[1] && (await page.locator('.sous-dossiers img').count()) === 0, `noms alignés, aucune miniature avant un clic (D95 : ${gauches.join(', ')})`);
   await page.locator('.outils-sous-dossiers input[type=search]').fill('janv');
-  const trouvees = await page.locator('.sous-dossiers tbody tr').allInnerTexts();
+  const trouvees = await page.locator(LIGNES).allInnerTexts();
   verifier(trouvees.length === 1 && trouvees[0].includes('janvier') && (await page.locator('.outils-sous-dossiers').innerText()).includes('Pour 1 dossier trouvé'), 'étape « Dossiers » : la recherche filtre les sous-dossiers');
+  await page.locator('.outils-sous-dossiers input[type=search]').fill('fete');
+  const parSous = await page.locator(LIGNES).allInnerTexts();
+  verifier(parSous.length === 1 && parSous[0].includes('janvier'), 'la recherche trouve un dossier par le nom de son sous-dossier (« fete » → janvier)');
   await page.locator('.outils-sous-dossiers input[type=search]').fill('');
-  // Un dossier qui a des sous-dossiers le dit sous son nom (D92).
-  const ligneJanvier = await page.locator('.sous-dossiers tbody tr', { hasText: 'janvier' }).locator('.sous-dossiers-ligne').innerText();
+  // Un dossier qui a des sous-dossiers le dit sous son nom (D92) et dans sa colonne (D95).
+  const janvier = page.locator(LIGNES, { hasText: 'janvier' });
+  const ligneJanvier = await janvier.locator('.sous-dossiers-ligne').innerText();
   verifier(ligneJanvier.includes('1 sous-dossier : fete') && ligneJanvier.includes('directement dans le dossier'), `étape « Dossiers » : sous-dossiers montrés sous le nom (${ligneJanvier})`);
+  verifier((await janvier.locator('td.n').nth(2).innerText()).trim() === '1', 'colonne « Sous-dossiers » : 1 pour janvier');
+  // Un dossier gardé de moins de 5 photos ne sera proposé ni aux Petits dossiers ni à la Consolidation : il le dit (D95).
+  verifier((await janvier.locator('.signal-dossier').innerText()).includes('3 photos seules'), 'signal « 3 photos seules » sur janvier');
   const actifs = await page.locator('.sous-dossiers [role=radio][aria-checked=true]').allInnerTexts();
   verifier(actifs.length === 2 && actifs.every((x) => x === 'Garder, nettoyer'), `« Garder, nettoyer » par défaut, en boutons (${actifs.join(', ')})`);
-  const bestof = page.locator('.sous-dossiers tbody tr', { hasText: 'BESTOF' });
+  const bestof = page.locator(LIGNES, { hasText: 'BESTOF' });
   await bestof.getByRole('radio', { name: 'Ne pas toucher' }).click();
   verifier((await bestof.getByRole('radio', { name: 'Ne pas toucher' }).getAttribute('aria-checked')) === 'true', 'un clic suffit pour changer de choix (BESTOF : ne pas toucher)');
+  verifier((await page.locator('.photos-ligne').count()) === 0, 'un clic sur un choix n’ouvre pas les photos');
+  await janvier.getByRole('radio', { name: 'Trier' }).click();
+  verifier((await janvier.locator('.signal-dossier').count()) === 0, 'à trier, le signal disparaît');
+  await janvier.getByRole('radio', { name: 'Garder, nettoyer' }).click();
+  // Les photos au clic sur la ligne, une seule ligne ouverte à la fois (D95).
+  await bestof.locator('.nom-sous-dossier').click();
+  verifier((await page.locator('.photos-ligne .bande-dossier figure').count()) === 1, 'clic sur BESTOF : sa photo s’affiche sous la ligne');
+  await janvier.locator('.nom-sous-dossier').click();
+  verifier((await page.locator('.photos-ligne').count()) === 1 && (await page.locator('.photos-ligne .bande-dossier figure').count()) === 3, 'clic sur janvier : ses 3 photos, BESTOF refermé');
+  const pastilles = await page.locator('.pastilles-dossier button').allInnerTexts();
+  verifier(pastilles.length === 3 && pastilles[0].startsWith('Tout') && pastilles[2].startsWith('fete'), `pastilles des sous-dossiers (${pastilles.join(' / ')})`);
+  await page.waitForFunction(() => document.querySelectorAll('.photos-ligne .bande-dossier img').length === 3);
+  await capturer(page, 'v1c_dossiers_photos');
+  await page.locator('.pastilles-dossier button', { hasText: 'fete' }).click();
+  verifier((await page.locator('.photos-ligne .bande-dossier figure').count()) === 1, 'pastille « fete » : la photo du sous-dossier seulement');
+  await page.locator('.photos-ligne .photo-petit').first().click();
+  // L'image affichée, la visionneuse écoute le clavier.
+  await page.locator('.visionneuse img').waitFor();
+  const aide = await page.locator('.visionneuse .aide-touches').innerText();
+  verifier(!aide.includes('M pour déplacer'), `visionneuse sans « M pour déplacer » à cette étape (${aide})`);
+  await page.keyboard.press('Escape');
+  await page.locator('.visionneuse').waitFor({ state: 'detached', timeout: 5000 });
+  await janvier.locator('.fleche-dossier').click();
+  verifier((await page.locator('.photos-ligne').count()) === 0, 'la flèche referme la ligne');
   await capturer(page, 'v1b_dossiers');
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
 
@@ -269,15 +303,23 @@ try {
   await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
   await page.getByRole('radio', { name: 'Tous' }).click();
   await page.locator('.outils-doublons select').first().selectOption('dossier');
-  const sectionsDossiers = (await page.locator('.section-doublons').allInnerTexts()).map((x) => x.split('\n')[0]);
+  // Le chemin complet est dans l'infobulle ; la liste n'affiche que le dernier nom, en retrait sous son parent (D97).
+  const cheminsSections = () => page.locator('.section-doublons').evaluateAll((l) => l.map((b) => b.getAttribute('title')));
+  const sectionsDossiers = await cheminsSections();
   verifier(sectionsDossiers.length === 3 && ['Photos à trier', 'janvier', 'janvier/fete'].every((n) => sectionsDossiers.includes(n)), `copies groupées par dossier : ${sectionsDossiers.join(', ')}`);
+  const fete = page.locator('.section-doublons[title="janvier/fete"]');
+  verifier(
+    (await fete.innerText()).split('\n')[0] === 'fete' && (await fete.evaluate((b) => parseFloat(getComputedStyle(b).paddingLeft))) > 20,
+    'dossiers imbriqués : « fete » en retrait sous « janvier », sous son seul nom',
+  );
+  verifier((await page.locator('.sections-doublons .poignee-panneau').count()) === 1, 'liste des dossiers élargissable : poignée présente');
   const parNom = sectionsDossiers.slice(1).toSorted(new Intl.Collator('fr', { numeric: true, sensitivity: 'base' }).compare);
   verifier(sectionsDossiers[0] === 'Photos à trier' && parNom.every((n, i) => n === sectionsDossiers[i + 1]), 'dossiers des copies par ordre alphabétique, les photos à trier en tête');
   await page.locator('.recherche-sections').fill('fet');
-  const trouves = (await page.locator('.section-doublons').allInnerTexts()).map((x) => x.split('\n')[0]);
+  const trouves = await cheminsSections();
   verifier(trouves.length === 1 && trouves[0] === 'janvier/fete', `recherche d’un dossier : ${trouves.join(', ')}`);
   // Photo dans deux dossiers gardés : sous les groupes à relire, toute gardée ; tout le dossier s'écarte d'un clic.
-  await page.locator('.section-doublons', { hasText: 'janvier/fete' }).click();
+  await fete.click();
   verifier(
     (await page.locator('.titre-partout').innerText()).includes('tout est gardé') && (await page.locator('.carte-doublons .tuile-doublon.gardee').count()) === 2,
     'photo dans deux dossiers gardés : « Aussi dans d’autres dossiers gardés », les deux exemplaires gardés',

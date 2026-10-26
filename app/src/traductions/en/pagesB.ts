@@ -456,6 +456,23 @@ export const TEXTES: Record<string, string> = {
   'Par nom': 'By name',
   '{0} à trier · {1} · {2} à ne pas toucher': '{0} to sort · {1} · {2} left as is',
   'Aucun sous-dossier': 'No subfolders',
+  // Photos d'un dossier au clic, signaux (D95).
+  'Cliquez sur un dossier pour voir ses photos.': 'Click a folder to see its photos.',
+  'Sous-dossiers': 'Subfolders',
+  'Voir les photos de {0}': 'Show the photos of {0}',
+  'Masquer les photos de {0}': 'Hide the photos of {0}',
+  Tout: 'All',
+  'Directement dans le dossier': 'Directly in the folder',
+  'Aucune photo.': 'No photos.',
+  'Voir la photo en grand': 'View the photo full size',
+  'Voir les {0} photos en grand': 'View the {0} photos full size',
+  'sur {0} mois': 'over {0} months',
+  'Ses photos s’étalent sur plusieurs mois : un dossier fourre-tout ? « Trier » les répartirait par sortie.':
+    'Its photos span several months: a catch-all folder? “Sort” would spread them by outing.',
+  'photo seule': 'photo on its own',
+  'photos seules': 'photos on their own',
+  'Gardé, ce petit dossier restera tel quel : il ne sera proposé ni aux Petits dossiers, ni à la Consolidation. « Trier » range ses photos avec les autres, par sortie.':
+    'If kept, this small folder stays as it is: it will not be offered in Small folders or Consolidation. “Sort” puts its photos with the others, by outing.',
 
   // Inventaire.tsx (informations sur la suite)
   '{0} : vous choisirez à l’étape suivante s’il faut les trier, les garder en les nettoyant ou n’y pas toucher.':
