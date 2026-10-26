@@ -117,8 +117,6 @@ export const TEXTES: Record<string, string> = {
   'Le dossier Photos ne peut pas être fusionné dans un autre.': 'The Photos folder cannot be merged into another one.',
   'Impossible de fusionner un dossier dans un de ses sous-dossiers.': 'A folder cannot be merged into one of its own subfolders.',
   'Fusionner « {0} » dans « {1} »': 'Merge “{0}” into “{1}”',
-  'Le dossier Photos ne peut pas être scindé.': 'The Photos folder cannot be split.',
-  'Scinder « {0} » par jour ({1} jours)': 'Split “{0}” by day ({1} days)',
   'Le dossier Photos ne peut pas être supprimé.': 'The Photos folder cannot be deleted.',
   'Ce dossier contient des sous-dossiers.': 'This folder contains subfolders.',
   'Ce dossier n’est pas vide.': 'This folder is not empty.',

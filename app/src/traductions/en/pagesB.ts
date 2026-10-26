@@ -70,7 +70,6 @@ export const TEXTES: Record<string, string> = {
   'Aucune réponse illisible.': 'No unreadable answers.',
   'Redemander les réponses illisibles': 'Ask again for unreadable answers',
   'Arrêter (les réponses déjà reçues sont gardées)': 'Stop (answers already received are kept)',
-  'Journée': 'Day',
   Dossier: 'Folder',
   'Groupes affichés': 'Groups shown',
   'À relire': 'To review',
@@ -252,8 +251,8 @@ export const TEXTES: Record<string, string> = {
     'Move: drag the selection onto a folder in the panel, or press M (then type part of the name), or keys 1 to 9 (last folders used).',
   'Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.':
     'The “+” button next to the search creates a folder in the folder shown; photos dropped on it (or “New folder” in the selection bar) go into a new folder next to it.',
-  'Glissez un dossier sur un autre pour les fusionner ; double-cliquez sur un nom (ou F2) pour le renommer ; « Scinder par jour » coupe un dossier en journées.':
-    'Drag a folder onto another to merge them; double-click a name (or F2) to rename it; “Split by day” cuts a folder into days.',
+  'Fusionnez deux dossiers avec « Fusionner avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom (ou F2) pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.':
+    'Merge two folders with “Merge with…” next to the title, or by dragging one onto the other; double-click a name (or F2) to rename it. In a folder of several days, each day has its title, with the calendar events; “New folder with this day” takes it out of the folder.',
   'Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).':
     'The badges point out what deserves a look: small folder, very large, unknown place, no date, duplicate name, same outing as a neighbouring folder (photos taken one after the other, at the same place).',
   'Suppr met de côté (rien n’est supprimé : les éléments iront dans « {0} ») ; dans « Mis de côté », Suppr les remet.':

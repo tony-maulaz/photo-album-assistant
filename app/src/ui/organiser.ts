@@ -142,13 +142,13 @@ export function remettreSelection(ids: string[] = [...selection.value]) {
 }
 
 /** Demande un nom, crée le dossier et y range `ids` : un seul Ctrl+Z annule le tout. */
-export async function nouveauDossierAvec(ids: string[], parent = RACINE) {
+export async function nouveauDossierAvec(ids: string[], parent = RACINE, nomPropose = '') {
   const s = session.value;
   if (!s) return;
   const nom = await demander(
     t`Nouveau dossier`,
     ids.length ? t`Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} » et recevra ${texteNombre(ids.length)}.` : t`Le dossier sera créé dans « ${s.plan.dossiers.get(parent)?.nom} ».`,
-    '',
+    nomPropose,
     verifierNomDossier,
     t`Créer`,
   );

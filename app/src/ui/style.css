@@ -1762,6 +1762,18 @@ button.bouton-nouveau.cible {
   color: var(--accent);
 }
 
+.sous-titre-vue {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--discret);
+}
+
+.actions-dossier button {
+  white-space: nowrap;
+}
+
 .tete-vue h2 {
   margin: 0;
   font-size: 24px;
@@ -3197,15 +3209,64 @@ button.bouton-ia:disabled {
   margin: 0 4px 0 0;
 }
 
-.evenements-vue {
-  flex: 0 4 auto;
+/* Calendrier sous le nom d'un dossier (D94) : la même couleur que partout (pas l'orange des alertes). */
+.evenement-dossier {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
-  max-width: 280px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-doux-texte);
+}
+
+.evenement-dossier span {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.evenement-dossier .icone {
+  flex: none;
+}
+
+/* Titres de journée de l'étape « Lieux et sorties » (D94) : leurs boutons se cliquent. */
+.page-organiser .titre-groupe {
+  pointer-events: auto;
+  align-items: center;
+  padding-bottom: 0;
+}
+
+.evenement-jour {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
   font-size: 13px;
-  color: var(--accent);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.evenement-jour:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.evenement-jour .icone,
+.titre-groupe .nouveau-jour {
+  flex: none;
+}
+
+.titre-groupe .nouveau-jour {
+  padding: 4px 12px;
+  font-size: 13px;
 }
 
 .lieux-frequents {
@@ -3375,9 +3436,11 @@ button.bouton-ia:disabled {
   opacity: 0.45;
 }
 
+/* Le calendrier a la même couleur partout (D94) : l'orange reste aux alertes. */
 .ldt-evenement {
-  background: var(--attention-doux);
-  color: var(--attention);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-weight: 600;
 }
 
 .ldt-jour.saut {

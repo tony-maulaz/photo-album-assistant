@@ -512,36 +512,6 @@ export function deplacerDossier(plan: Plan, id: string, parent: string): Modific
   return tx.terminer(t`Mettre « ${d.nom} » dans « ${p.nom} »`);
 }
 
-/**
- * Scinde un dossier par jour (§ 6.4) : ses photos et vidéos datées vont dans
- * des dossiers voisins « <nom sans date>_AAAA-MM-JJ », un par journée ; le
- * dossier d'origine disparaît s'il est vide. Rien à faire sur une seule journée.
- */
-export function scinderParJour(plan: Plan, id: string): Modification | null {
-  const d = dossierExistant(plan, id);
-  if (d.parent === null) throw new ErreurPlan(t`Le dossier Photos ne peut pas être scindé.`);
-  const parJour = new Map<string, string[]>();
-  for (const f of plan.fichiers.values()) {
-    if (f.dossier !== id || f.categorie === 'autre' || !f.date) continue;
-    parJour.set(f.date.slice(0, 10), [...(parJour.get(f.date.slice(0, 10)) ?? []), f.id]);
-  }
-  if (parJour.size < 2) return null;
-  const base = d.nom.replace(/[_ -]+(\d{4}-\d{2}(-\d{2})?|\d{2}([.-]\d{2})?\.\d{2}\.\d{2,4})$/, '') || d.nom;
-  const tx = new Transaction(plan);
-  const pris = new Set([...plan.dossiers.values()].filter((x) => x.parent === d.parent).map((x) => cleNom(x.nom)));
-  for (const [jour, ids] of [...parJour].sort()) {
-    const nom = nomLibre(`${base}_${jour}`, pris);
-    pris.add(cleNom(nom));
-    // Les journées gardent ce qu'était le dossier : origine du tri et traitement (gardé tel quel, hors de l'album).
-    const nouveau: DossierPlan = { id: `c${plan.prochainId++}`, nom, parent: d.parent, origine: 'cree', ...(d.tri ? { tri: d.tri } : {}), ...(d.traitement ? { traitement: d.traitement } : {}) };
-    tx.dossier(nouveau);
-    for (const fid of ids) tx.fichier({ ...plan.fichiers.get(fid)!, dossier: nouveau.id });
-  }
-  const reste = [...plan.fichiers.values()].some((f) => f.dossier === id) || enfants(plan, id).length > 0;
-  if (!reste) tx.supprimerDossier(id);
-  return tx.terminer(t`Scinder « ${d.nom} » par jour (${parJour.size} jours)`);
-}
-
 /** Supprime un dossier vide (sans fichier, même mis de côté, ni sous-dossier). */
 export function supprimerDossierVide(plan: Plan, id: string): Modification | null {
   const d = dossierExistant(plan, id);

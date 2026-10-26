@@ -37,9 +37,9 @@ const CAS: [string, string | null, string?][] = [
   // Sans date exploitable
   ['DSCF6533.JPG', null],
   ['IMG_2043.jpg', null],
-  ['Verdeil_Explorit_24.06 (3).mp4', null], // jour et mois sans année
+  ['Ecole_Expo_24.06 (3).mp4', null], // jour et mois sans année
   ['GTG_Paris_23-26.10 (50).jpg', null],
-  ['14Juillet_BourbonL\'Archambault (10).jpg', null],
+  ['14Juillet_VillageL\'Etang (10).jpg', null],
   ['20251399_123456.jpg', null], // mois 13
   ['20250230.jpg', null], // 30 février
   ['20250704_256199.jpg', '2025-07-04', 'aaaammjj'], // heure invalide : date seule

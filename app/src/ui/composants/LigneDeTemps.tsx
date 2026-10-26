@@ -4,6 +4,7 @@
 // choisi dans le panneau (et ses sous-dossiers) est mis en évidence.
 
 import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { joursEvenement } from '../../lib/ics';
 import { t } from '../../lib/langue';
 import { cheminDossier, estDescendant, RACINE, resumes, type Plan } from '../../lib/plan';
 import { etiquettesJours, lendemain, rangsEvenements } from '../../lib/rangement';
@@ -55,17 +56,22 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
   for (const f of s.plan.fichiers.values()) if (f.statut === 'archive' && f.categorie !== 'autre' && f.date) parJour.set(f.date.slice(0, 10), (parJour.get(f.date.slice(0, 10)) ?? 0) + 1);
   const colonnes = [...parJour.keys()].sort().slice(0, MAX_JOURS);
   if (!colonnes.length) return <p class="vide-grille">{t`Aucun dossier daté.`}</p>;
-  const du = colonnes[0];
-  const au = colonnes.at(-1)!;
   const max = Math.max(1, ...parJour.values());
-  const evts = evenements.value.filter((e) => e.fin.slice(0, 10) >= du && e.debut.slice(0, 10) <= au);
+  // Seulement les événements d'un jour avec photos : celui d'un jour sans photo était dessiné sur la colonne suivante,
+  // parfois des mois plus tard (D94).
+  const evts = evenements.value.filter((e) => {
+    const [d1, d2] = joursEvenement(e);
+    const c = colonnes[colonneDepuis(colonnes, d1)];
+    return c >= d1 && c <= d2;
+  });
   const largeur = colonnes.length * LARGEUR_JOUR;
   const dates = etiquettesJours(colonnes);
   // Chaque événement : sa barre sur ses jours, son nom en entier à la suite (il dépasse la barre),
   // sur une rangée où il ne touche aucun autre nom (« We… », « Ca… » étaient illisibles).
   const places = evts.map((e) => {
-    const a = colonneDepuis(colonnes, e.debut.slice(0, 10));
-    const b = Math.max(a, colonneJusqua(colonnes, e.fin.slice(0, 10)));
+    const [d1, d2] = joursEvenement(e);
+    const a = colonneDepuis(colonnes, d1);
+    const b = Math.max(a, colonneJusqua(colonnes, d2));
     const gauche = a * LARGEUR_JOUR;
     const barre = (b - a + 1) * LARGEUR_JOUR - 2;
     return { gauche, barre, debut: gauche, fin: gauche + Math.max(barre, e.titre.length * LARGEUR_CARACTERE + 12) };

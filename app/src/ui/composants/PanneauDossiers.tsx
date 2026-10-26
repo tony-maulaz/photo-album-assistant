@@ -3,17 +3,18 @@
 
 import { estNomDeSortie, nomsSortie } from '../../lib/sortie';
 import { signal } from '@preact/signals';
-import { Fragment } from 'preact';
-import { useMemo, useState } from 'preact/hooks';
+import { Fragment, type ComponentChildren } from 'preact';
+import { useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { lireReglages, rencontres, rencontreSuffisante, reglagesParDefaut, type DossierInfo, type ReglagesConsolidation } from '../../lib/consolidation';
 import { SEUIL_PETIT_DOSSIER } from '../../lib/fragments';
+import { evenementPrincipal, type EvenementCalendrier } from '../../lib/ics';
 import { aTraduire, t } from '../../lib/langue';
 import { cleNom } from '../../lib/noms';
 import { dossiersNouveaux } from '../../lib/rangement';
-import { cheminDossier, estDescendant, fusionnerDossiers, gardeSaPlace, renommerDossier, resumes, RACINE, scinderParJour, supprimerDossierVide, type DossierPlan, type FichierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
+import { cheminDossier, estDescendant, fusionnerDossiers, gardeSaPlace, nePasToucher, renommerDossier, resumes, RACINE, supprimerDossierVide, type DossierPlan, type FichierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
 import { minutes } from '../../lib/selection';
 import { optionsDuProjet } from '../../lib/tri';
-import { appliquer, changerReglages, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
+import { appliquer, changerReglages, evenements, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { nombre, periode, pluriel } from '../format';
 import {
@@ -73,8 +74,11 @@ function redimensionner(e: PointerEvent) {
   e.preventDefault();
 }
 
-/** Titre de la vue : le nom du dossier en grand, ses dossiers parents au-dessus, en petit et cliquables. */
-export function TitreVue({ titre, id }: { titre: string; id?: string }) {
+/**
+ * Titre de la vue : le nom du dossier en grand, ses dossiers parents au-dessus, en petit et cliquables ;
+ * `sousTitre` (période et nombre de photos) en petit dessous, pour laisser la ligne au nom et aux boutons.
+ */
+export function TitreVue({ titre, id, sousTitre }: { titre: string; id?: string; sousTitre?: ComponentChildren }) {
   const s = session.value!;
   const parents: DossierPlan[] = [];
   for (let d = id ? s.plan.dossiers.get(id) : undefined; d && d.parent !== null; ) {
@@ -98,6 +102,7 @@ export function TitreVue({ titre, id }: { titre: string; id?: string }) {
         </div>
       )}
       <h2 title={id ? cheminDossier(s.plan, id) : titre}>{titre}</h2>
+      {sousTitre && <div class="sous-titre-vue">{sousTitre}</div>}
     </div>
   );
 }
@@ -110,6 +115,38 @@ interface Arbre {
   alertes: Map<string, [string, string][]>;
   /** Photos et vidéos arrivées avec une mise à jour de l'inventaire, pas encore dans la sortie (D63), par dossier. */
   nouveaux: Map<string, number>;
+  /** Événement du calendrier de chaque dossier (D94), s'il n'est pas déjà celui de son parent. */
+  evenements: Map<string, EvenementCalendrier>;
+  /** Badge « petit » : pas pour un dossier en vrac, dont l'étape suivante traite les petits dossiers (D94). */
+  petits: boolean;
+}
+
+/**
+ * L'événement du calendrier de chaque dossier, sous-dossiers compris (D94) :
+ * celui pendant lequel la moitié au moins de ses photos ont été prises. Un
+ * sous-dossier ne répète pas celui de son parent (les étapes d'un voyage).
+ */
+export function evenementsDesDossiers(plan: Plan, evts: EvenementCalendrier[]): Map<string, EvenementCalendrier> {
+  const res = new Map<string, EvenementCalendrier>();
+  if (!evts.length) return res;
+  const dates = new Map<string, string[]>();
+  for (const f of plan.fichiers.values()) {
+    if (f.statut !== 'archive' || f.categorie === 'autre' || !f.date) continue;
+    for (let d = plan.dossiers.get(f.dossier); d && d.parent !== null; d = plan.dossiers.get(d.parent)) {
+      const liste = dates.get(d.id);
+      if (liste) liste.push(f.date);
+      else dates.set(d.id, [f.date]);
+    }
+  }
+  for (const [id, liste] of dates) {
+    const e = evenementPrincipal(evts, liste);
+    if (e) res.set(id, e);
+  }
+  for (const [id, e] of [...res]) {
+    const parent = plan.dossiers.get(id)?.parent;
+    if (parent && res.get(parent)?.titre === e.titre) res.delete(id);
+  }
+  return res;
 }
 
 /**
@@ -211,6 +248,7 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
   const enRenommage = renommage.value === d.id;
   const total = r.photosTotal + r.videosTotal;
   const direct = r.photos + r.videos;
+  const evenement = arbre.evenements.get(d.id);
 
   const cible = useCible(
     () => {
@@ -288,7 +326,7 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
           <span class="infos-dossier">
             {plat && d.parent !== null && d.parent !== RACINE && <span class="chemin-dossier">{cheminDossier(s.plan, d.parent)} ›</span>}
             <span class="dates-dossier">{periode(r.duTotal, r.auTotal)}</span>
-            {direct > 0 && direct < SEUIL_PETIT && (
+            {arbre.petits && direct > 0 && direct < SEUIL_PETIT && (
               <span class="badge petit" title={t`Petit dossier : moins de ${SEUIL_PETIT} photos`}>
                 {t`petit`}
               </span>
@@ -310,6 +348,13 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
               </span>
             ))}
           </span>
+          {/* L'événement du calendrier sur sa propre ligne : en bout de ligne, les badges le coupaient. */}
+          {evenement && (
+            <span class="evenement-dossier" title={t`Calendrier : la moitié au moins des photos ont été prises pendant « ${evenement.titre} »`}>
+              <Icone nom="calendrier" taille={12} />
+              <span>{evenement.titre}</span>
+            </span>
+          )}
         </div>
         <span class="nombre-dossier">{nombre(total)}</span>
       </div>
@@ -365,11 +410,13 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
     const debut = (d: DossierPlan) => r.get(d.id)?.duTotal ?? '9999';
     for (const l of enfants.values()) l.sort((a, b) => (ordrePanneau.value === 'periode' && debut(a).localeCompare(debut(b))) || comparer(a.nom, b.nom));
     let visibles: Set<string> | null = null;
+    const evts = evenementsDesDossiers(s.plan, evenements.value);
     const q = simplifier(filtre.trim());
     if (q) {
       visibles = new Set([RACINE]);
       for (const d of s.plan.dossiers.values()) {
-        if (!simplifier(d.nom).includes(q)) continue;
+        // Le titre de l'événement aussi : « Lea » trouve le dossier de son anniversaire.
+        if (!simplifier(d.nom).includes(q) && !simplifier(evts.get(d.id)?.titre ?? '').includes(q)) continue;
         let x: DossierPlan | undefined = d;
         while (x) {
           visibles.add(x.id);
@@ -377,13 +424,14 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
         }
       }
     }
+    const petits = s.projet.mode !== 'vrac';
     const alertes = alertesDossiers(s.plan, r, lireReglages(s.aides.get('consolidation_reglages'), optionsDuProjet(s.projet.tri).rayonKm));
     if (seulementAlertes) {
       const avec = new Set([RACINE]);
       for (const d of s.plan.dossiers.values()) {
         const a = alertes.get(d.id)?.filter(([code]) => code !== 'gardé' && code !== 'ne pas toucher') ?? [];
         const x = r.get(d.id)!;
-        const petit = d.parent !== null && x.photos + x.videos > 0 && x.photos + x.videos < SEUIL_PETIT;
+        const petit = petits && d.parent !== null && x.photos + x.videos > 0 && x.photos + x.videos < SEUIL_PETIT;
         if (!a.length && !petit) continue;
         for (let y: DossierPlan | undefined = d; y; y = y.parent === null ? undefined : s.plan.dossiers.get(y.parent)) avec.add(y.id);
       }
@@ -396,8 +444,8 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       for (const id of nouveaux.keys()) for (let y = s.plan.dossiers.get(id); y; y = y.parent === null ? undefined : s.plan.dossiers.get(y.parent)) avec.add(y.id);
       visibles = visibles ? new Set([...visibles].filter((id) => avec.has(id))) : avec;
     }
-    return { enfants, resumes: r, visibles, alertes, nouveaux };
-  }, [version, filtre, seulementAlertes, seulementNouveaux, ordrePanneau.value]);
+    return { enfants, resumes: r, visibles, alertes, nouveaux, evenements: evts, petits };
+  }, [version, filtre, seulementAlertes, seulementNouveaux, ordrePanneau.value, evenements.value]);
 
   const nbMisDeCote = elementsVue(s.plan, VUE_MIS_DE_COTE).length;
   const nbAutres = elementsVue(s.plan, VUE_AUTRES).length;
@@ -465,7 +513,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
             class={`bouton-icone${seulementAlertes ? ' actif' : ''}`}
             aria-pressed={seulementAlertes}
             onClick={() => setSeulementAlertes(!seulementAlertes)}
-            title={t`Seulement les dossiers avec une alerte (petit, sans date, nom en double…)`}
+            title={t`Seulement les dossiers avec une alerte (sans date, nom en double, même sortie ?…)`}
             aria-label={t`Seulement les alertes`}
           >
             <Icone nom="alerte" taille={16} />
@@ -517,6 +565,91 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
   );
 }
 
+/** Dossier dont on choisit avec quoi le fusionner (« Fusionner avec… »), ou `null`. */
+const fusionAChoisir = signal<string | null>(null);
+
+/** Écart en jours entre deux périodes (0 si elles se touchent ou se chevauchent). */
+function ecartJours(a: ResumeDossier, b: ResumeDossier): number {
+  if (!a.duTotal || !a.auTotal || !b.duTotal || !b.auTotal) return Infinity;
+  const jour = (d: string) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10))) / 86_400_000;
+  return Math.max(0, jour(b.duTotal) - jour(a.auTotal), jour(a.duTotal) - jour(b.auTotal));
+}
+
+/**
+ * Choix du dossier où fusionner celui affiché (D94) : les plus proches dans le
+ * temps d'abord (la même sortie coupée en deux, le « _b » du même jour), ou une
+ * partie du nom tapée ; les dossiers techniques (captures, sans date, « _… »)
+ * et « Ne pas toucher » en dernier. La fusion demande ensuite confirmation, comme en
+ * glissant un dossier sur un autre.
+ */
+function DialogueFusion({ id }: { id: string }) {
+  const s = session.value!;
+  const [requete, setRequete] = useState('');
+  const [index, setIndex] = useState(0);
+  const champ = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => champ.current?.focus(), []);
+  const r = resumes(s.plan);
+  const source = s.plan.dossiers.get(id)!;
+  const candidats = useMemo(
+    () =>
+      [...s.plan.dossiers.values()]
+        .filter((d) => d.id !== id && !estDescendant(s.plan, d.id, id) && r.get(d.id)!.photosTotal + r.get(d.id)!.videosTotal > 0)
+        .map((d) => ({
+          id: d.id,
+          chemin: d.parent === null ? t`Photos (racine)` : cheminDossier(s.plan, d.id),
+          apart: d.parent === null || d.nom.startsWith('_') || estNomDeSortie('captures', d.nom) || estNomDeSortie('sansDate', d.nom) || nePasToucher(s.plan, d.id) ? 1 : 0,
+          ecart: ecartJours(r.get(id)!, r.get(d.id)!),
+          periode: periode(r.get(d.id)!.duTotal, r.get(d.id)!.auTotal),
+        }))
+        .sort((a, b) => a.apart - b.apart || a.ecart - b.ecart || a.chemin.localeCompare(b.chemin, 'fr', { numeric: true })),
+    [versionPlan.value, id],
+  );
+  const q = simplifier(requete.trim());
+  const options = q ? candidats.filter((c) => simplifier(c.chemin).includes(q)) : candidats;
+  const choix = Math.min(index, options.length - 1);
+  const fermer = () => (fusionAChoisir.value = null);
+  const valider = (o = options[choix]) => {
+    if (!o) return;
+    fermer();
+    void fusionner(id, o.id);
+  };
+  return (
+    <div class="voile" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
+      <div class="dialogue deplacer" role="dialog" aria-label={t`Fusionner avec un autre dossier`}>
+        <h2>{t`Fusionner « ${source.nom} » avec…`}</h2>
+        <p class="discret">{t`Ses photos passent dans le dossier choisi. Les plus proches dans le temps sont en tête.`}</p>
+        <input
+          ref={champ}
+          class="large"
+          placeholder={t`Tapez une partie du nom du dossier`}
+          value={requete}
+          onInput={(e) => {
+            setRequete(e.currentTarget.value);
+            setIndex(0);
+          }}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === 'Escape') fermer();
+            else if (e.key === 'ArrowDown') setIndex(Math.min(options.length - 1, choix + 1));
+            else if (e.key === 'ArrowUp') setIndex(Math.max(0, choix - 1));
+            else if (e.key === 'Enter') valider();
+            else return;
+            e.preventDefault();
+          }}
+        />
+        <ul class="choix-dossiers">
+          {options.slice(0, 200).map((o, i) => (
+            <li key={o.id} class={i === choix ? 'actif' : ''} onMouseEnter={() => setIndex(i)} onClick={() => valider(o)}>
+              {o.chemin} <span class="discret">{o.periode}</span>
+            </li>
+          ))}
+        </ul>
+        <p class="discret">{t`↑ ↓ pour choisir, Entrée pour fusionner, Échap pour fermer.`}</p>
+      </div>
+    </div>
+  );
+}
+
 /** Actions sur le dossier affiché (étape « Lieux et sorties ») : à côté de son titre. */
 export function ActionsDossier() {
   const s = session.value!;
@@ -525,7 +658,6 @@ export function ActionsDossier() {
   if (!d || d.parent === null) return null;
   const r = resumes(s.plan).get(d.id);
   const vide = (r?.photosTotal ?? 0) + (r?.videosTotal ?? 0) === 0;
-  const plusieursJours = !!(r?.du && r.au && r.du.slice(0, 10) !== r.au.slice(0, 10));
   const faire = (m: () => Modification | null) => {
     try {
       appliquer(m());
@@ -539,9 +671,9 @@ export function ActionsDossier() {
       <button type="button" class="bouton-icone" onClick={() => (renommage.value = d.id)} title={t`Renommer (F2 ou double-clic sur le dossier)`} aria-label={t`Renommer`}>
         <Icone nom="crayon" taille={16} />
       </button>
-      {plusieursJours && (
-        <button type="button" class="doux" title={t`Un dossier voisin par journée`} onClick={() => faire(() => scinderParJour(s.plan, d.id))}>
-          {t`Scinder par jour`}
+      {!vide && (
+        <button type="button" class="doux" title={t`Mettre ses photos dans un autre dossier (ou glisser ce dossier sur un autre, à gauche)`} onClick={() => (fusionAChoisir.value = d.id)}>
+          {t`Fusionner avec…`}
         </button>
       )}
       {vide && (
@@ -549,6 +681,7 @@ export function ActionsDossier() {
           {t`Supprimer (vide)`}
         </button>
       )}
+      {fusionAChoisir.value === d.id && <DialogueFusion id={d.id} />}
     </span>
   );
 }

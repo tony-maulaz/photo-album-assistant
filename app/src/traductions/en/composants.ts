@@ -247,16 +247,21 @@ export const TEXTES: Record<string, string> = {
   'Chercher un dossier': 'Search for a folder',
   'Présentation des dossiers': 'Folder display',
   'Par période': 'By period',
-  'Seulement les dossiers avec une alerte (petit, sans date, nom en double…)': 'Only folders with a warning (small, no date, duplicate name…)',
+  'Seulement les dossiers avec une alerte (sans date, nom en double, même sortie ?…)': 'Only folders with a warning (no date, duplicate name, same outing?…)',
   'Seulement les alertes': 'Only warnings',
   'Nouveau dossier, dans le dossier affiché (des photos déposées ici partent dans un dossier voisin)':
     'New folder, inside the folder shown (photos dropped here go to a neighbouring folder)',
   'Nouveau dossier': 'New folder',
   'Renommer (F2 ou double-clic sur le dossier)': 'Rename (F2 or double-click on the folder)',
   Renommer: 'Rename',
-  'Un dossier voisin par journée': 'One neighbouring folder per day',
-  'Scinder par jour': 'Split by day',
   'Supprimer (vide)': 'Delete (empty)',
+  // Fusionner avec… et calendrier sous le nom d'un dossier (D94).
+  'Fusionner avec…': 'Merge with…',
+  'Mettre ses photos dans un autre dossier (ou glisser ce dossier sur un autre, à gauche)': 'Put its photos into another folder (or drag this folder onto another, on the left)',
+  'Fusionner avec un autre dossier': 'Merge with another folder',
+  'Fusionner « {0} » avec…': 'Merge “{0}” with…',
+  'Ses photos passent dans le dossier choisi. Les plus proches dans le temps sont en tête.': 'Its photos go into the chosen folder. The closest in time come first.',
+  '↑ ↓ pour choisir, Entrée pour fusionner, Échap pour fermer.': '↑ ↓ to choose, Enter to merge, Esc to close.',
 
   // TriRapide.tsx
   'Pas dans l’album': 'Not in the album',
@@ -357,8 +362,8 @@ export const TEXTES: Record<string, string> = {
   // Tri automatique en trois questions, avec l'aperçu (D87).
   'Lieu « {0} » enregistré : rangez à nouveau pour en tenir compte.': 'Place “{0}” saved: arrange again to take it into account.',
   'Par sortie (conseillé)': 'By outing (recommended)',
-  'Les jours passés au même endroit forment une sortie ; chaque nouvel endroit a la sienne. Une semaine au même hôtel donne un dossier. Pour couper un séjour en journées, « Scinder par jour » à l’étape suivante.':
-    'Days spent at the same place form one outing; each new place has its own. A week at the same hotel gives one folder. To cut a stay into days, use “Split by day” at the next step.',
+  'Les jours passés au même endroit forment une sortie ; chaque nouvel endroit a la sienne. Une semaine au même hôtel donne un dossier. Pour en sortir une journée : « Nouveau dossier avec cette journée », à l’étape suivante.':
+    'Days spent at the same place form one outing; each new place has its own. A week at the same hotel gives one folder. To take one day out of it: “New folder with this day”, at the next step.',
   'Par jour': 'By day',
   'Un dossier par endroit et par journée : des dossiers courts, utile pour un projet d’un seul voyage.': 'One folder per place and per day: short folders, useful for a project of a single trip.',
   'Par mois': 'By month',

@@ -5,7 +5,7 @@
 import type { ChangementsSource } from '../lib/source';
 import { t, type Langue } from '../lib/langue';
 import { lirePageVue, textePageVue } from '../lib/navigation';
-import { signal } from '@preact/signals';
+import { effect, signal } from '@preact/signals';
 import type { ConfigAlbum } from '../lib/album';
 import type { EvenementCalendrier } from '../lib/ics';
 import { evenementsCalendriers } from '../navigateur/calendriers';
@@ -136,14 +136,27 @@ export interface Message {
 export const messages = signal<Message[]>([]);
 let prochainMessage = 1;
 
+/** Messages de l'action en cours (jusqu'à la fin de la tâche) : ils suivent sur la page où elle mène. */
+const messagesDeLAction = new Set<number>();
+
 /** Affiche un message passager ; renvoie son identifiant (pour le retirer plus tôt). */
 export function notifier(type: Message['type'], texte: string, action?: Message['action']): number {
   const id = prochainMessage++;
   // Le même message deux fois de suite (ranger, puis ranger à nouveau) ne s'empile pas : le nouveau remplace l'ancien.
   messages.value = [...messages.value.filter((m) => m.texte !== texte).slice(-2), { id, type, texte, action }];
+  messagesDeLAction.add(id);
+  queueMicrotask(() => messagesDeLAction.delete(id));
   setTimeout(() => retirerMessage(id), type === 'erreur' ? 9000 : 5000);
   return id;
 }
+
+// Changer de page périme les messages de la précédente (« vérifiez-les à l'étape suivante » restait affiché à
+// cette étape, D94) ; restent les erreurs et ceux de l'action qui y mène (« 12 photos écartées », puis l'étape suivante).
+effect(() => {
+  page.value;
+  const restants = messages.peek().filter((m) => m.type === 'erreur' || messagesDeLAction.has(m.id));
+  if (restants.length !== messages.peek().length) messages.value = restants;
+});
 
 /** Retire un message devenu faux (« Saisissez d'abord votre clé API » une fois la clé saisie). */
 export function retirerMessage(id: number) {

@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { EvenementCalendrier } from '../src/lib/ics';
-import { dossiersANommer, evenementsCandidats, lieuPourNom, nomsPossibles, normaliserNom, TITRE_MAX_PRIS_D_OFFICE } from '../src/lib/nommage';
+import { dossiersANommer, evenementsCandidats, lieuPourNom, nomPourJournee, nomsPossibles, normaliserNom, TITRE_MAX_PRIS_D_OFFICE } from '../src/lib/nommage';
 import { planVide, RACINE, type FichierPlan, type InfoTri, type Plan } from '../src/lib/plan';
 
 /** Petit plan de test : dossiers (chemin → dates des photos), avec l'information du tri de certains. */
@@ -203,5 +203,20 @@ describe('noms possibles', () => {
       expect(n.ia).toBeNull();
       expect(n.propose).toBeNull();
     }
+  });
+});
+
+describe('nom d’une journée sortie d’un dossier (D94)', () => {
+  const noel: EvenementCalendrier = { titre: 'Noël chez Mamie', debut: '2025-12-24', fin: '2025-12-24', journee: true, recurrent: false };
+  const dates = ['2025-12-24T18:00:00', '2025-12-24T20:30:00'];
+
+  it('le titre de l’événement qui couvre les photos, avec le jour', () => {
+    expect(nomPourJournee('Domicile', null, '2025-12-24', dates, [noel])).toBe('Noel_chez_Mamie_24.12.25');
+  });
+
+  it('sinon le lieu du dossier, ou celui du parent pour un dossier daté', () => {
+    expect(nomPourJournee('Lieu_A_13-29.08.25', null, '2025-08-15', ['2025-08-15T10:00:00'], [noel])).toBe('Lieu_A_15.08.25');
+    expect(nomPourJournee('Lieu_A_15.08.25_b', null, '2025-08-15', ['2025-08-15T10:00:00'], [])).toBe('Lieu_A_15.08.25');
+    expect(nomPourJournee('09-26.12.25', 'Domicile', '2025-12-13', ['2025-12-13T10:00:00'], [])).toBe('Domicile_13.12.25');
   });
 });

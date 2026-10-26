@@ -4,10 +4,11 @@
 
 import { nomsSortie } from '../../lib/sortie';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { cheminDossier, contenu, resumes, RACINE } from '../../lib/plan';
+import { cheminDossier, contenu, resumes, RACINE, type DossierPlan, type FichierPlan } from '../../lib/plan';
 import { premierDossierAvecPhotos } from '../../lib/rangement';
 import { regrouperDossiers, regroupementsProposes, type RegroupementPropose } from '../../lib/regroupements';
-import { normaliserNom } from '../../lib/nommage';
+import { nomPourJournee, normaliserNom } from '../../lib/nommage';
+import { groupesParJour } from '../../lib/selection';
 import { BarreValidation } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
 import { Icone } from '../composants/Icones';
@@ -16,11 +17,11 @@ import { ActionsDossier, PanneauDossiers, SEUIL_PETIT, styleLargeurPanneau, Titr
 import { nombreSansGps } from '../composants/AidesTri';
 import { LigneDeTemps } from '../composants/LigneDeTemps';
 import { DialogueDeplacer, Visionneuse } from '../composants/Visionneuse';
-import { evenementsAutour } from '../../lib/ics';
+import { evenementsDesPhotos, prisePendant, type EvenementCalendrier } from '../../lib/ics';
 import { t } from '../../lib/langue';
 import { allerEtape, annuler, appliquer, changerReglages, evenements, notifier, reglages, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
-import { nombre, periode, pluriel } from '../format';
+import { jourCourt, nombre, nomJour, periode, pluriel } from '../format';
 import {
   ancre,
   choisirVue,
@@ -67,7 +68,7 @@ function RegroupementsCalendrier() {
   };
   const ignorer = (r: RegroupementPropose) => void s.aides.set('regroupements_ignores', [...ignores, r.cle]).then(() => versionIA.value++);
   return (
-    <details class="regroupements-calendrier">
+    <details class="regroupements-calendrier" open>
       <summary>{t`Calendrier : ${pluriel(propositions.length, 'regroupement proposé', 'regroupements proposés')}`}</summary>
       <ul>
         {propositions.map((r) => (
@@ -94,6 +95,69 @@ function RegroupementsCalendrier() {
         ))}
       </ul>
     </details>
+  );
+}
+
+/** Un événement et ses heures, pour une infobulle : « Souper chez Mamie, 22.03.25 19:00 – 22:00 ». */
+function quand(e: EvenementCalendrier): string {
+  const fin = e.fin.slice(0, 10) > e.debut.slice(0, 10) ? ` – ${jourCourt(e.fin)}` : '';
+  const heures = e.journee ? '' : ` ${e.debut.slice(11, 16)} – ${e.fin.slice(11, 16)}`;
+  return `${e.titre}${e.lieu ? ` (${e.lieu})` : ''}, ${jourCourt(e.debut)}${fin}${heures}`;
+}
+
+/**
+ * Titre d'une journée dans la grille (D94) : la date, le nombre de photos et
+ * les événements du calendrier pendant lesquels elles ont été prises (un clic
+ * sélectionne ces photos). Dans un dossier de plusieurs jours, « Nouveau
+ * dossier avec cette journée » la sort, avec un nom proposé (titre de
+ * l'événement, sinon lieu et date) : remplace « Scinder par jour ».
+ */
+function TitreJournee({ photos, jour, dossier }: { photos: FichierPlan[]; jour: string; dossier?: DossierPlan }) {
+  const s = session.value!;
+  const dates = photos.flatMap((f) => (f.date ? [f.date] : []));
+  const evts = evenementsDesPhotos(evenements.value, dates);
+  const autres = evts.slice(2);
+  const sortir = () => {
+    const parent = dossier!.parent === null ? null : s.plan.dossiers.get(dossier!.parent);
+    const nom = nomPourJournee(dossier!.nom, parent && parent.parent !== null ? parent.nom : null, jour, dates, evenements.value);
+    void nouveauDossierAvec(
+      photos.map((f) => f.id),
+      parentPourNouveau(),
+      nom,
+    );
+  };
+  return (
+    <>
+      <strong>{jour ? nomJour(jour, true) : t`Sans date`}</strong>
+      <span class="discret">{pluriel(photos.length, 'photo')}</span>
+      {evts.slice(0, 2).map(({ evenement, n }) => (
+        <button
+          key={evenement.titre}
+          type="button"
+          class="evenement-jour"
+          title={t`${quand(evenement)} : ${pluriel(n, 'photo prise', 'photos prises')} pendant. Cliquer pour les sélectionner.`}
+          onClick={() => {
+            const ids = photos.filter((f) => f.date && prisePendant(evenement, f.date)).map((f) => f.id);
+            selection.value = new Set(ids);
+            ancre.value = ids[0] ?? null;
+          }}
+        >
+          <Icone nom="calendrier" taille={14} />
+          {evenement.titre}
+        </button>
+      ))}
+      {autres.length > 0 && (
+        <span class="discret" title={autres.map((x) => quand(x.evenement)).join('\n')}>
+          +{autres.length}
+        </span>
+      )}
+      <span class="espace" />
+      {dossier && jour && (
+        <button type="button" class="doux nouveau-jour" onClick={sortir} title={t`Ces ${pluriel(photos.length, 'photo')} dans un nouveau dossier, à côté de « ${dossier.nom} »`}>
+          {t`Nouveau dossier avec cette journée`}
+        </button>
+      )}
+    </>
   );
 }
 
@@ -157,6 +221,15 @@ export function PageOrganiser() {
   const dossier = plan.dossiers.get(v);
   const resumeVue = dossier ? r.get(dossier.id)! : undefined;
   const titreVue = enMisDeCote ? t`Mis de côté` : enAutres ? t`Autres fichiers` : dossier?.parent === null ? t`Photos (racine)` : (dossier?.nom ?? '');
+  // Une journée par titre dans la grille (D94), avec les événements du calendrier ; une seule journée sans
+  // événement n'en a pas besoin. Dans un dossier de plusieurs jours, chaque journée peut en sortir.
+  const jours = enMisDeCote || enAutres ? [] : groupesParJour(elements);
+  const avecTitres = jours.length > 1 || (jours.length === 1 && evenementsDesPhotos(evenements.value, elements.flatMap((f) => (f.date ? [f.date] : []))).length > 0);
+  const sortirJours = !sousDossiers && dossier?.parent != null && jours.filter((g) => g.jour).length > 1 ? dossier : undefined;
+  const groupes = avecTitres
+    ? jours.map((g) => ({ debut: g.debut, titre: <TitreJournee photos={elements.slice(g.debut, g.debut + g.n)} jour={g.jour} dossier={sortirJours} /> }))
+    : undefined;
+
   // L'en-tête se replie une fois l'arborescence en place : la place va au panneau et aux photos.
   const arborescencePrete = s.projet.mode !== 'vrac' || [...plan.dossiers.values()].some((d) => d.origine === 'tri');
   const sansGps = nombreSansGps(s);
@@ -170,7 +243,8 @@ export function PageOrganiser() {
   const racine = r.get(RACINE)!;
   const misDeCote = elementsVue(plan, VUE_MIS_DE_COTE).length;
   const alertes = [
-    ...(petits.length ? [t`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (moins de ${SEUIL_PETIT} photos)`] : []),
+    // En vrac, l'étape suivante traite les petits dossiers : rien à signaler ici (D94).
+    ...(petits.length && s.projet.mode !== 'vrac' ? [t`${pluriel(petits.length, 'petit dossier', 'petits dossiers')} (moins de ${SEUIL_PETIT} photos)`] : []),
     ...(vides.length ? [t`${pluriel(vides.length, 'dossier vide', 'dossiers vides')} (ne sera pas créé)`] : []),
     ...(sansGps && s.projet.mode === 'vrac' ? [t`${pluriel(sansGps, 'photo sans GPS', 'photos sans GPS')} (l’IA peut les situer : étape ${ETAPE.tri})`] : []),
   ];
@@ -184,7 +258,8 @@ export function PageOrganiser() {
         ouverte={!arborescencePrete}
         explication={
           <>
-            {t`Voici l’arborescence prévue : réorganisez-la en sélectionnant des photos et en les glissant sur un dossier du panneau (ou touche M, ou 1 à 9 pour les derniers dossiers utilisés). Rien n’est copié avant l’étape ${ETAPE.sortie}, et Ctrl+Z annule.`}
+            {t`Voici les dossiers prévus. Corrigez ce qui est mal rangé : cliquez sur des photos, puis glissez-les sur le bon dossier à gauche (ou « Déplacer… »). Rien n’est copié avant l’étape ${ETAPE.sortie}, et « Annuler » défait la dernière action.`}
+            {s.projet.mode === 'vrac' && <> {t`Les petits dossiers, les noms et les regroupements viennent aux étapes suivantes : inutile de tout régler ici.`}</>}
           </>
         }
       >
@@ -208,28 +283,25 @@ export function PageOrganiser() {
               {t`Ligne de temps`}
             </button>
           </div>
-          <TitreVue titre={titreVue} id={dossier && dossier.parent !== null ? dossier.id : undefined} />
+          <TitreVue
+            titre={titreVue}
+            id={dossier && dossier.parent !== null ? dossier.id : undefined}
+            sousTitre={
+              resumeVue &&
+              (sousDossiers ? (
+                <>
+                  {periode(resumeVue.duTotal, resumeVue.auTotal)} · {pluriel(resumeVue.photosTotal, 'photo')}
+                  {resumeVue.videosTotal ? ` · ${pluriel(resumeVue.videosTotal, 'vidéo')}` : ''} {t`dans ses sous-dossiers`}
+                </>
+              ) : (
+                <>
+                  {periode(resumeVue.du, resumeVue.au)} · {pluriel(resumeVue.photos, 'photo')}
+                  {resumeVue.videos ? ` · ${pluriel(resumeVue.videos, 'vidéo')}` : ''}
+                </>
+              ))
+            }
+          />
           {!enMisDeCote && !enAutres && <ActionsDossier />}
-          {resumeVue && !sousDossiers && (
-            <span class="discret resume-vue">
-              {periode(resumeVue.du, resumeVue.au)} · {pluriel(resumeVue.photos, 'photo')}
-              {resumeVue.videos ? ` · ${pluriel(resumeVue.videos, 'vidéo')}` : ''}
-            </span>
-          )}
-          {resumeVue && sousDossiers && (
-            <span class="discret resume-vue">
-              {periode(resumeVue.duTotal, resumeVue.auTotal)} · {pluriel(resumeVue.photosTotal, 'photo')}
-              {resumeVue.videosTotal ? ` · ${pluriel(resumeVue.videosTotal, 'vidéo')}` : ''} {t`dans ses sous-dossiers`}
-            </span>
-          )}
-          {dossier && dossier.parent !== null && resumeVue?.du && resumeVue.au && (
-            <span class="evenements-vue" title={t`Événements du calendrier familial à ces dates (± 1 jour)`}>
-              {evenementsAutour(evenements.value, resumeVue.du.slice(0, 10), resumeVue.au.slice(0, 10))
-                .slice(0, 3)
-                .map((e) => `📅 ${e.titre}`)
-                .join(' · ')}
-            </span>
-          )}
           <span class="espace" />
           <div class="barre-outils">
             <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
@@ -274,10 +346,10 @@ export function PageOrganiser() {
               </button>
             )}
             <button type="button" disabled={!ancre.value} onClick={() => memePeriode(10)} title={t`Sélectionner toute la journée de la dernière photo cliquée`}>
-              {t`Journée`}
+              {t`Toute la journée`}
             </button>
             <button type="button" disabled={!ancre.value} onClick={() => memePeriode(13)} title={t`Sélectionner toute l’heure de la dernière photo cliquée`}>
-              {t`Heure`}
+              {t`Toute l’heure`}
             </button>
             {recentsValides()
               .slice(0, 2)
@@ -312,11 +384,12 @@ export function PageOrganiser() {
               options={{
                 // Le chemin depuis le dossier affiché : « 05.01.25 », « Voyage/Plage ».
                 legende: (f) => cheminDossier(plan, f.dossier).slice(debutChemin),
+                groupes,
               }}
             />
           </>
         ) : (
-          <GrillePhotos elements={elements} />
+          <GrillePhotos elements={elements} options={{ groupes }} />
         )}
       </section>
       <BarreValidation

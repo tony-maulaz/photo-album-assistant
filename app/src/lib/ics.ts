@@ -447,6 +447,43 @@ export function evenementDesPhotos(evts: EvenementCalendrier[], dates: string[])
   return meilleur;
 }
 
+/** Un événement montré avec des photos (D94) et le nombre de celles prises pendant. */
+export interface EvenementDesPhotos {
+  evenement: EvenementCalendrier;
+  n: number;
+}
+
+/**
+ * Événements à montrer avec des photos (D94) : ceux pendant lesquels au moins
+ * une a été prise (`prisePendant` : le jour même, une heure de marge pour un
+ * événement à l'heure ; jamais la veille ni le lendemain), le plus de photos
+ * d'abord, puis le plus court. Les périodes de plus de 21 jours (« Vacances
+ * d'été ») seraient partout : elles ne sont pas montrées. Un même titre (deux
+ * calendriers) ne compte qu'une fois.
+ */
+export function evenementsDesPhotos(evts: EvenementCalendrier[], dates: string[]): EvenementDesPhotos[] {
+  if (!dates.length) return [];
+  const triees = [...dates].sort();
+  const vus = new Set<string>();
+  return evts
+    .filter((e) => dureeEvenement(e) <= JOURS_MAX_EVENEMENT_UTILE * 86_400 && chevauche(e, triees[0], triees.at(-1)))
+    .map((evenement) => ({ evenement, n: dates.filter((d) => prisePendant(evenement, d)).length }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n || dureeEvenement(a.evenement) - dureeEvenement(b.evenement) || a.evenement.debut.localeCompare(b.evenement.debut))
+    .filter((x) => {
+      const cle = x.evenement.titre.trim().toLowerCase();
+      if (vus.has(cle)) return false;
+      vus.add(cle);
+      return true;
+    });
+}
+
+/** L'événement d'un dossier (D94) : le premier de `evenementsDesPhotos`, s'il couvre au moins la moitié des photos. */
+export function evenementPrincipal(evts: EvenementCalendrier[], dates: string[]): EvenementCalendrier | null {
+  const premier = evenementsDesPhotos(evts, dates)[0];
+  return premier && premier.n * 2 >= dates.length ? premier.evenement : null;
+}
+
 /** Événements chevauchant [du − marge, au + marge] (`evenements_autour` des scripts 03 et 04). */
 export function evenementsAutour(evts: EvenementCalendrier[], du: string, au: string, margeJours = 1): EvenementCalendrier[] {
   const a = texteJour(jourDepuis(du) - margeJours);

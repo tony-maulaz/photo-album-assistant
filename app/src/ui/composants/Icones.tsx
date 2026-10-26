@@ -67,6 +67,12 @@ const TRACES = {
       <path d="M20 9H10a6 6 0 0 0 0 12h3" />
     </>
   ),
+  calendrier: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="3" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
   loupe: (
     <>
       <circle cx="11" cy="11" r="7" />

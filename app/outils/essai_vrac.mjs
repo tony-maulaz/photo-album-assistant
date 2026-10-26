@@ -378,10 +378,33 @@ try {
   await page.getByRole('button', { name: 'Photos', exact: true }).click();
   // Les dossiers pris pendant le voyage du calendrier : proposés à réunir sous son titre (D83).
   const regroupement = page.locator('.regroupements-calendrier');
-  await regroupement.locator('summary').click();
   const texteRegroupement = (await regroupement.innerText()).replace(/\s+/g, ' ');
   await capturer(page, 'v3c_calendrier');
+  verifier(await regroupement.evaluate((d) => d.open), 'regroupements du calendrier ouverts d’office (D94)');
   verifier(texteRegroupement.includes('« Voyage Thaïlande »') && /Les ranger dans « Voyage_Thailande_/.test(texteRegroupement), `calendrier : ${texteRegroupement.slice(0, 160)}`);
+  // Le calendrier avec les photos (D94) : sous le nom du dossier et sur sa journée ; un clic sur l'événement de la
+  // journée sélectionne les photos prises pendant.
+  await ligneDe('Ko_Samui').click();
+  const titreJour = (await page.locator('.titre-groupe').first().innerText()).replace(/\s+/g, ' ');
+  await capturer(page, 'v3d_journee');
+  verifier(
+    (await ligneDe('Ko_Samui').locator('.evenement-dossier').innerText()).includes('18 ans de Lea') &&
+      titreJour.includes('18 ans de Lea') &&
+      titreJour.includes('Voyage Thaïlande'),
+    `calendrier sous le nom du dossier et sur la journée : ${titreJour}`,
+  );
+  await page.locator('.titre-groupe .evenement-jour').first().click();
+  verifier((await page.locator('.tuile.choisie').count()) === (await page.locator('.tuile').count()), 'un clic sur l’événement sélectionne ses photos');
+  verifier((await page.getByRole('button', { name: 'Scinder par jour' }).count()) === 0, '« Scinder par jour » n’existe plus (D94)');
+  // Fusionner avec… : les dossiers les plus proches dans le temps d'abord, les dossiers techniques en dernier.
+  await page.getByRole('button', { name: 'Fusionner avec…' }).click();
+  const choixFusion = await page.locator('.choix-dossiers li').allInnerTexts();
+  await capturer(page, 'v3e_fusionner');
+  await page.keyboard.press('Escape');
+  verifier(
+    choixFusion.length > 3 && /^Mu_Ko_Ang_Thong|^Kanchanaburi/.test(choixFusion[0]) && !choixFusion.slice(0, 3).some((c) => c.startsWith(N.captures)) && (await page.locator('.dialogue.deplacer').count()) === 0,
+    `fusionner avec… : ${choixFusion.slice(0, 3).join(' | ')}`,
+  );
 
   // Étapes 8 à 10 (IA simulée).
   await page.getByRole('button', { name: 'Valider et continuer' }).click();

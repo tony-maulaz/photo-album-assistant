@@ -468,7 +468,7 @@ export function PageAide() {
         <li>
           {t`Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.`}
         </li>
-        <li>{t`Glissez un dossier sur un autre pour les fusionner ; double-cliquez sur un nom (ou F2) pour le renommer ; « Scinder par jour » coupe un dossier en journées.`}</li>
+        <li>{t`Fusionnez deux dossiers avec « Fusionner avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom (ou F2) pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.`}</li>
         <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).`}</li>
         <li>{t`Suppr met de côté (rien n’est supprimé : les éléments iront dans « ${nomsSortie().misDeCote} ») ; dans « Mis de côté », Suppr les remet.`}</li>
         <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>

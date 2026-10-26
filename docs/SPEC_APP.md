@@ -309,18 +309,29 @@ sans calendrier (lien vers la Configuration) ; l'aperçu montre l'effet.
 **Aperçu : l'arborescence prévue.** Pour chaque dossier qui sera créé :
 - nom prévu, **dates (du–au)**, **nombre de photos**, lieu, origine (lieu
   connu, GPS, voyage, sans GPS, sous-dossier gardé), 4 à 6 miniatures ;
-- **badges d'alerte** : **petit dossier** (moins de 3 photos, réglable), lieu
-  inconnu, photos sans date, nom en double, très grand dossier (plus de 200),
-  chevauchement dans le temps ;
-- **événements du calendrier** correspondant aux dates.
+- **badges d'alerte** : **petit dossier** (moins de 3 photos, réglable ;
+  seulement pour un dossier déjà trié : en vrac, l'étape 8 s'en charge, D94),
+  lieu inconnu, photos sans date, nom en double, très grand dossier (plus de
+  200), même sortie qu'un dossier voisin ;
+- **événement du calendrier** du dossier, sous son nom : celui pendant lequel
+  la moitié au moins de ses photos ont été prises (D94).
+
+**Journées** (D94) : dans la grille, chaque journée a son titre (date, nombre
+de photos, événements du calendrier pendant lesquels ses photos ont été
+prises, le jour même et à l'heure près ; un clic sélectionne ces photos). Dans
+un dossier de plusieurs jours, « Nouveau dossier avec cette journée » la sort
+dans un dossier voisin, nommé d'après l'événement ou le lieu et le jour.
 
 **Vues** : arborescence, ligne de temps, filtre « seulement les alertes ».
 **Calendrier** (D83) : quand plusieurs dossiers ont été photographiés pendant
 un même événement (80 % de leurs photos au moins), l'application propose de
 les réunir sous son titre : en sous-dossiers pour un événement de plusieurs
-jours, fusionnés pour un seul jour ; ou d'ignorer la proposition.
-**Corrections** : panneau des dossiers et déplacement (§ 5.3), fusionner,
-scinder par jour, renommer, mettre dans `_autres/`, annuler.
+jours, fusionnés pour un seul jour ; ou d'ignorer la proposition. La liste est
+ouverte d'office.
+**Corrections** : panneau des dossiers et déplacement (§ 5.3), fusionner
+(« Fusionner avec… », les dossiers les plus proches dans le temps en tête, ou
+en glissant un dossier sur un autre), sortir une journée, renommer, mettre
+dans `_autres/`, annuler.
 **Suggestion de lieux connus** : un groupe GPS qui revient sur de nombreux
 jours (maison, grands-parents, école, club) est proposé à l'enregistrement
 avant le calcul, sur la page du tri automatique.
@@ -831,7 +842,7 @@ attente sur les erreurs 429/529.
 - `.ics` ;
 - `config.json` (lecture, validation, migration) ;
 - réparation JSON (I12), garde-fou des descriptions (I7) ;
-- opérations sur le plan (déplacer, fusionner, scinder, annuler) ;
+- opérations sur le plan (déplacer, fusionner, créer un dossier, annuler) ;
 - redondance, ordre jour / segments (I2) ;
 - synchronisation de la sortie (idempotente) et bilan.
 

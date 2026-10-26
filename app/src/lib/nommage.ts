@@ -490,6 +490,18 @@ export function evenementsCandidats(evts: EvenementCalendrier[], dates: string[]
 }
 
 /**
+ * Nom proposé pour une journée sortie d'un dossier (« Nouveau dossier avec
+ * cette journée », D94) : le titre de l'événement du calendrier qui couvre ses
+ * photos (`evenementsCandidats`), sinon le lieu du dossier (celui du parent pour
+ * un dossier daté : Domicile/01-21.07.25 → « Domicile ») et le jour.
+ */
+export function nomPourJournee(nom: string, parent: string | null, jour: string, dates: string[], evts: EvenementCalendrier[]): string {
+  const candidat = evenementsCandidats(evts, dates)[0];
+  if (candidat) return normaliserNom(nomDepuisEvenement(candidat.evenement.titre, jour, jour));
+  return normaliserNom(`${lieuDuDossier(nom, parent)} ${dateDeNom(jour)}`);
+}
+
+/**
  * Lieu d'un dossier pour son nom : celui du tri (lieu connu, géocodage), sinon
  * celui d'un nom automatique (« Lieu_A_2025-07-04 » → « Lieu A »). `null` s'il
  * est inconnu : dossier nommé à la main, ou lieu sans nom du tri (« Lieu_03 »).

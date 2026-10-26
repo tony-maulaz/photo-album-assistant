@@ -256,7 +256,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   // Sélection par rectangle, en partant d'un espace vide de la grille.
   const commencerRectangle = (e: MouseEvent) => {
     const el = conteneur.current;
-    if (!el || e.button !== 0 || (e.target as HTMLElement).closest('.tuile')) return;
+    if (!el || e.button !== 0 || (e.target as HTMLElement).closest('.tuile, button')) return;
     e.preventDefault();
     const boite = el.getBoundingClientRect();
     const point = (ev: MouseEvent) => ({ x: ev.clientX - boite.left, y: ev.clientY - boite.top + el.scrollTop });

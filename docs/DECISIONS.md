@@ -966,6 +966,45 @@ comparés, sous-dossiers compris (le choix est inscrit sur le parent). Sur
 (31 min et 2 km entre deux dossiers d'une même balade, l'aéroport et la vue
 d'avion).
 
+**D94 — Étape 7 : le calendrier sur les journées, « Scinder par jour »
+remplacé.** Quatre analyses de la page (usage, débutant, esthétique,
+calendrier) ont relevé que le calendrier se voyait mal : trois titres coupés
+à côté du nom du dossier, pris à ± 1 jour (le souper du 22 s'affichait sur le
+dossier du 21), rien dans le panneau ni sur les photos ; dans la ligne de
+temps, un événement d'un jour sans photo était dessiné sur la journée avec
+photos suivante, parfois des mois plus tard. Le calendrier se montre
+désormais là où sont les photos : chaque journée de la grille a son titre
+(date, nombre de photos, événements pendant lesquels elles ont été prises,
+le jour même et à l'heure près, jamais la veille ni le lendemain ; les
+périodes de plus de 21 jours, partout, ne sont pas montrées ; un clic
+sélectionne les photos de l'événement) ; un dossier montre sous son nom
+l'événement de la moitié au moins de ses photos (un sous-dossier ne répète
+pas celui de son parent) et la recherche le trouve par ce titre ; le titre
+de la vue ne le répète pas, et garde la ligne au nom et aux boutons (période
+et nombre de photos passent dessous). Une seule couleur (vert accent) pour
+le calendrier, l'orange restant aux alertes. Pas de pastille par photo : 300
+photos de vacances porteraient 300 fois la même. « Scinder par jour » est
+retiré : sur 2025, le tri laisse 31 dossiers de plusieurs jours sur 84 (et 44
+sur 80 dossiers de la source), mais couper Domicile/09-26.12.25 en quinze
+dossiers d'un jour n'est jamais voulu (l'étape 8 devait les réunir) ; le
+besoin réel est de sortir une ou deux journées (Noël, la journée au lac
+pendant un séjour). Chaque titre de journée d'un dossier de plusieurs jours
+a donc « Nouveau dossier avec cette journée », nommé d'après l'événement
+(`evenementsCandidats`) ou le lieu et le jour au format de la famille (les
+noms de « Scinder par jour » étaient en AAAA-MM-JJ et coupaient mal
+`Bangkok_28.06-02.07.25` en `Bangkok_28.06`). « Fusionner avec… », à côté du
+titre, ne demandait plus de glisser un dossier dans un panneau qu'on fait
+défiler : les dossiers les plus proches dans le temps d'abord, les dossiers
+techniques et « Ne pas toucher » en dernier ; la confirmation de la fusion
+reste. Moins de bruit : en vrac, plus de badge « petit » ni d'alerte de
+validation (le badge était sur 28 dossiers sur 29 et l'étape 8 les traite) ;
+l'explication dit le premier geste (cliquer, glisser) et que petits
+dossiers, noms et regroupements viennent ensuite ; « Toute la journée » et
+« Toute l'heure » comme dans l'aide ; les propositions du calendrier
+ouvertes d'office. Changer de page périme les messages de la précédente
+(« vérifiez-les à l'étape suivante » restait affiché à cette étape, deux
+fois) ; restent les erreurs et ceux de l'action qui y mène.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

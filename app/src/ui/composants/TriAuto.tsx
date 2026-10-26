@@ -26,7 +26,7 @@ const MODES: [ModeTri, string, string][] = [
   [
     'sortie',
     aTraduire('Par sortie (conseillé)'),
-    aTraduire('Les jours passés au même endroit forment une sortie ; chaque nouvel endroit a la sienne. Une semaine au même hôtel donne un dossier. Pour couper un séjour en journées, « Scinder par jour » à l’étape suivante.'),
+    aTraduire('Les jours passés au même endroit forment une sortie ; chaque nouvel endroit a la sienne. Une semaine au même hôtel donne un dossier. Pour en sortir une journée : « Nouveau dossier avec cette journée », à l’étape suivante.'),
   ],
   ['jour', aTraduire('Par jour'), aTraduire('Un dossier par endroit et par journée : des dossiers courts, utile pour un projet d’un seul voyage.')],
   ['mois', aTraduire('Par mois'), aTraduire('Un dossier par endroit et par mois, sans chercher les sorties : le plus rapide à parcourir.')],

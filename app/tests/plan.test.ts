@@ -265,25 +265,6 @@ describe('modifications combinées', () => {
   });
 });
 
-describe('scinder un dossier par jour (§ 6.4)', () => {
-  it('un dossier voisin par journée, le dossier vidé disparaît, annulable', async () => {
-    const { scinderParJour, planVide, Historique } = await import('../src/lib/plan');
-    const p = planVide();
-    p.dossiers.set('d', { id: 'd', nom: 'Bangkok_2026-07', parent: 'racine', origine: 'tri' });
-    const f = (id: string, date: string) => ({ id, nom: id, taille: 1, modifie: 0, categorie: 'photo' as const, date, origineDate: 'exif' as const, dossier: 'd', statut: 'archive' as const });
-    for (const x of [f('a', '2026-07-11T10:00:00'), f('b', '2026-07-11T18:00:00'), f('c', '2026-07-12T09:00:00')]) p.fichiers.set(x.id, x);
-    const h = new Historique();
-    h.enregistrer(scinderParJour(p, 'd'));
-    const noms = [...p.dossiers.values()].filter((x) => x.parent === 'racine').map((x) => x.nom).sort();
-    expect(noms).toEqual(['Bangkok_2026-07-11', 'Bangkok_2026-07-12']);
-    expect(p.dossiers.has('d')).toBe(false);
-    expect(p.dossiers.get(p.fichiers.get('a')!.dossier)!.nom).toBe('Bangkok_2026-07-11');
-    h.annuler(p);
-    expect(p.dossiers.has('d')).toBe(true);
-    expect(p.fichiers.get('c')!.dossier).toBe('d');
-  });
-});
-
 describe('enchaîner des opérations', () => {
   it('une erreur au milieu défait les opérations déjà faites', async () => {
     const { enchainer, planVide, renommerDossier, creerDossier } = await import('../src/lib/plan');

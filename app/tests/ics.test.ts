@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blocCalendrier, evenementDesPhotos, evenementsAutour, lireIcs, partPendant, resumeCalendrier, type EvenementCalendrier } from '../src/lib/ics';
+import { blocCalendrier, evenementDesPhotos, evenementPrincipal, evenementsAutour, evenementsDesPhotos, lireIcs, partPendant, resumeCalendrier, type EvenementCalendrier } from '../src/lib/ics';
 import { nomDepuisEvenement, normaliserNom } from '../src/lib/nommage';
 
 /** Calendrier de test (aucune donnée personnelle), avec fins de ligne CRLF comme les exports. */
@@ -189,5 +189,35 @@ describe('noms tirés du calendrier (D83)', () => {
     const r = evenementDesPhotos([vacances, anniversaire], ['2026-01-25T10:00:00', '2026-01-26T10:00:00', '2026-01-28T10:00:00']);
     expect(r?.evenement.titre).toBe('Vacances d’hiver');
     expect(normaliserNom(nomDepuisEvenement(r!.evenement.titre, '2026-01-25', '2026-01-28'))).toBe('Vacances_d_hiver_25-28.01.26');
+  });
+});
+
+describe('événements montrés avec les photos (D94)', () => {
+  const ev = (titre: string, debut: string, fin: string, journee = true): EvenementCalendrier => ({ titre, debut, fin, journee, recurrent: false });
+  const souper = ev('Souper chez Mamie', '2025-03-22T19:00:00', '2025-03-22T22:00:00', false);
+  const noel = ev('Noël', '2025-12-24', '2025-12-26');
+  const ete = ev('Vacances d’été', '2025-07-01', '2025-08-20');
+  const dentiste = ev('Dentiste', '2025-12-24T09:00:00', '2025-12-24T09:30:00', false);
+
+  it('jamais la veille ni le lendemain : seulement les photos prises pendant', () => {
+    expect(evenementsDesPhotos([souper], ['2025-03-21T15:38:00'])).toEqual([]);
+    expect(evenementsDesPhotos([souper], ['2025-03-22T10:00:00'])).toEqual([]);
+    expect(evenementsDesPhotos([souper], ['2025-03-22T18:10:00', '2025-03-22T22:45:00'])).toEqual([{ evenement: souper, n: 2 }]);
+  });
+
+  it('le plus de photos d’abord ; les longues périodes et les titres en double sont laissés', () => {
+    const dates = ['2025-12-24T09:10:00', '2025-12-24T18:00:00', '2025-12-25T11:00:00'];
+    const r = evenementsDesPhotos([ete, dentiste, noel, { ...noel, debut: '2025-12-25', fin: '2025-12-25' }], dates);
+    expect(r.map((x) => [x.evenement.titre, x.n])).toEqual([
+      ['Noël', 3],
+      ['Dentiste', 1],
+    ]);
+    expect(evenementsDesPhotos([ete], ['2025-07-14T12:00:00'])).toEqual([]);
+  });
+
+  it('l’événement d’un dossier couvre au moins la moitié de ses photos', () => {
+    expect(evenementPrincipal([dentiste, noel], ['2025-12-24T09:10:00', '2025-12-25T10:00:00'])?.titre).toBe('Noël');
+    expect(evenementPrincipal([dentiste], ['2025-12-24T09:10:00', '2025-12-24T18:00:00', '2025-12-24T19:00:00'])).toBeNull();
+    expect(evenementPrincipal([noel], [])).toBeNull();
   });
 });
