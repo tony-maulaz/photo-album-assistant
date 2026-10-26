@@ -71,7 +71,7 @@ describe('briques du script 01', () => {
     expect(sansDate('Fete_Village_A_09.06.25')).toBe('Fete_Village_A');
     expect(sansDate('Q_permisL_05.2025')).toBe('Q_permisL');
     expect(sansDate('Jardin_11.07.25')).toBe('Jardin');
-    expect(sansDate('Annecy_27-29.06.25')).toBe('Annecy');
+    expect(sansDate('Venise_27-29.06.25')).toBe('Venise');
     expect(sansDate('Sortie_2025-06-09')).toBe('Sortie');
   });
 
@@ -129,23 +129,23 @@ describe('regroupement GPS (lieux fréquents)', () => {
   });
 });
 
-// Géographie inventée : la maison, un parc à 10 km au nord, un lac à 20 km au sud, une route à 30 km ; au loin, Paris, Reims, Lille, Annecy.
+// Géographie inventée : la maison, un parc à 10 km au nord, un lac à 20 km au sud, une route à 30 km ; au loin, Rome, Orvieto, Florence, Venise.
 const MAISON = lieu('Maison', 45, 5, 300, { domicile: true });
 const PARC = { lat: 45 + km(10), lon: 5 };
 const LAC = { lat: 45 - km(20), lon: 5 };
 const ROUTE = { lat: 45 + km(30), lon: 5 };
-const PARIS = { lat: 48.8584, lon: 2.2945 };
-const REIMS = { lat: 49.25, lon: 4.03 };
-const LILLE = { lat: 50.63, lon: 3.06 };
-const ANNECY = { lat: 45.9, lon: 6.13 };
+const ROME = { lat: 41.9028, lon: 12.4964 };
+const ORVIETO = { lat: 42.718, lon: 12.1107 };
+const FLORENCE = { lat: 43.7696, lon: 11.2558 };
+const VENISE = { lat: 45.4408, lon: 12.3155 };
 const VILLES: [string, { lat: number; lon: number }][] = [
   ['Parc', PARC],
   ['Lac', LAC],
   ['Route', ROUTE],
-  ['Paris', PARIS],
-  ['Reims', REIMS],
-  ['Lille', LILLE],
-  ['Annecy', ANNECY],
+  ['Rome', ROME],
+  ['Orvieto', ORVIETO],
+  ['Florence', FLORENCE],
+  ['Venise', VENISE],
 ];
 /** Géocodage simulé : la ville à moins de 15 km. */
 const nomDe = (lat: number, lon: number) => VILLES.find(([, v]) => distanceM(lat, lon, v.lat, v.lon) < 15_000)?.[0] ?? null;
@@ -168,12 +168,12 @@ describe('découpage chronologique (D103)', () => {
   it('voyage : loin de la maison sur deux jours sans y revenir ; les photos sur la route en font partie', () => {
     const ps = [
       chez('2026-03-14T08:00:00'),
-      a('2026-03-14T14:00:00', PARIS),
-      a('2026-03-14T15:00:00', PARIS),
-      a('2026-03-14T16:00:00', PARIS),
+      a('2026-03-14T14:00:00', ROME),
+      a('2026-03-14T15:00:00', ROME),
+      a('2026-03-14T16:00:00', ROME),
       a('2026-03-14T20:00:00', ROUTE),
-      a('2026-03-15T10:00:00', PARIS),
-      a('2026-03-15T11:00:00', PARIS),
+      a('2026-03-15T10:00:00', ROME),
+      a('2026-03-15T11:00:00', ROME),
       chez('2026-03-16T09:00:00'),
     ];
     const d = decouper(ps, [MAISON]);
@@ -184,34 +184,34 @@ describe('découpage chronologique (D103)', () => {
   });
 
   it('pas de voyage avec une photo à la maison entre deux journées au loin, ni sur une seule journée', () => {
-    const rentre = [a('2026-03-14T14:00:00', PARIS), chez('2026-03-14T23:00:00'), a('2026-03-15T10:00:00', PARIS)];
+    const rentre = [a('2026-03-14T14:00:00', ROME), chez('2026-03-14T23:00:00'), a('2026-03-15T10:00:00', ROME)];
     expect(sortes(rentre)).toEqual(['sortie:1', 'maison:1', 'sortie:1']);
-    const journee = [a('2026-03-14T10:00:00', PARIS), a('2026-03-14T18:00:00', PARIS)];
+    const journee = [a('2026-03-14T10:00:00', ROME), a('2026-03-14T18:00:00', ROME)];
     expect(sortes(journee)).toEqual(['sortie:2']);
   });
 
   it('étapes par lieu : un petit arrêt rejoint l’étape la plus proche dans le temps', () => {
     const ps = [
-      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, PARIS)),
-      a('2026-03-15T09:00:00', REIMS),
-      ...[14, 15, 16].map((h) => a(`2026-03-15T${h}:00:00`, LILLE)),
+      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, ROME)),
+      a('2026-03-15T09:00:00', ORVIETO),
+      ...[14, 15, 16].map((h) => a(`2026-03-15T${h}:00:00`, FLORENCE)),
     ];
     const [voyage] = decouper(ps, [MAISON]).morceaux;
     expect(voyage.sorte).toBe('voyage');
     expect(voyage.etapes!.map((e) => e.photos.length)).toEqual([3, 4]);
     // Nommé d'après sa plus grande étape ; un sous-dossier par étape.
-    expect(chemins(arbre(ps))).toEqual({ 'Voyage_Lille_14-15.03.26/Paris_14.03.26': 3, 'Voyage_Lille_14-15.03.26/Lille_15.03.26': 4 });
+    expect(chemins(arbre(ps))).toEqual({ 'Voyage_Florence_14-15.03.26/Rome_14.03.26': 3, 'Voyage_Florence_14-15.03.26/Florence_15.03.26': 4 });
     const etape = arbre(ps)[0];
-    expect(etape).toMatchObject({ sorte: 'voyage', info: { origine: 'etape', lieu: 'Paris' }, infoParent: { origine: 'voyage', lieu: 'Lille' } });
+    expect(etape).toMatchObject({ sorte: 'voyage', info: { origine: 'etape', lieu: 'Rome' }, infoParent: { origine: 'voyage', lieu: 'Florence' } });
     // Sans étapes : tout dans un seul dossier.
     const seul = arbre(ps, [MAISON], O({ etapes: false }));
-    expect(chemins(seul)).toEqual({ 'Voyage_Lille_14-15.03.26': 7 });
-    expect(seul[0].info).toEqual({ origine: 'voyage', lieu: 'Lille' });
+    expect(chemins(seul)).toEqual({ 'Voyage_Florence_14-15.03.26': 7 });
+    expect(seul[0].info).toEqual({ origine: 'voyage', lieu: 'Florence' });
   });
 
   it('une seule étape : pas de sous-dossier', () => {
-    const ps = [a('2026-03-14T14:00:00', PARIS), a('2026-03-15T10:00:00', PARIS)];
-    expect(chemins(arbre(ps))).toEqual({ 'Voyage_Paris_14-15.03.26': 2 });
+    const ps = [a('2026-03-14T14:00:00', ROME), a('2026-03-15T10:00:00', ROME)];
+    expect(chemins(arbre(ps))).toEqual({ 'Voyage_Rome_14-15.03.26': 2 });
   });
 
   it('le même endroit le lendemain, sans retour à la maison, reste la même sortie', () => {
@@ -250,14 +250,14 @@ describe('découpage chronologique (D103)', () => {
   it('distance de la maison et nom provisoire, pour l’écran (D104)', () => {
     const ps = [
       a('2026-03-10T10:00:00', PARC),
-      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, PARIS)),
-      ...[14, 15, 16, 17].map((h) => a(`2026-03-15T${h}:00:00`, LILLE)),
+      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, ROME)),
+      ...[14, 15, 16, 17].map((h) => a(`2026-03-15T${h}:00:00`, FLORENCE)),
     ];
     const kmDe = (l: { lat: number; lon: number }) => Math.round(distanceM(l.lat, l.lon, MAISON.lat, MAISON.lon) / 1000);
-    const [parc, paris, lille] = arbre(ps);
-    expect([parc.km, paris.km, lille.km]).toEqual([kmDe(PARC), kmDe(PARIS), kmDe(LILLE)]);
+    const [parc, rome, florence] = arbre(ps);
+    expect([parc.km, rome.km, florence.km]).toEqual([kmDe(PARC), kmDe(ROME), kmDe(FLORENCE)]);
     // Un voyage d'un seul dossier : la distance de sa plus lointaine étape.
-    expect(arbre(ps, [MAISON], O({ etapes: false }))[1].km).toBe(Math.max(kmDe(PARIS), kmDe(LILLE)));
+    expect(arbre(ps, [MAISON], O({ etapes: false }))[1].km).toBe(Math.max(kmDe(ROME), kmDe(FLORENCE)));
     expect(arbre(ps).some((x) => x.nomProvisoire)).toBe(false);
     // Hors ligne : « Lieu_01 »… est signalé provisoire.
     const sans = arborescence(decouper(ps, [MAISON]), () => null);
@@ -273,7 +273,7 @@ describe('découpage chronologique (D103)', () => {
   });
 
   it('sans domicile : ni maison ni voyage, tout en sorties', () => {
-    const ps = [chez('2026-03-14T10:00:00'), a('2026-03-15T14:00:00', PARIS), a('2026-03-16T10:00:00', PARIS)];
+    const ps = [chez('2026-03-14T10:00:00'), a('2026-03-15T14:00:00', ROME), a('2026-03-16T10:00:00', ROME)];
     expect(sortes(ps, [])).toEqual(['sortie:1', 'sortie:2']);
     expect(sortes(ps, [MAISON], O({ lieuxConnus: false }))).toEqual(['sortie:1', 'sortie:2']);
   });
@@ -316,13 +316,13 @@ describe('découpage chronologique (D103)', () => {
     const ps = [
       a('2026-03-10T10:00:00', PARC),
       a('2026-03-10T11:00:00', PARC),
-      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, PARIS)),
-      ...[14, 15, 16, 17].map((h) => a(`2026-03-15T${h}:00:00`, LILLE)),
+      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, ROME)),
+      ...[14, 15, 16, 17].map((h) => a(`2026-03-15T${h}:00:00`, FLORENCE)),
     ];
     const d = decouper(ps, [MAISON]);
     const noms = (o: OptionsTri) => pointsANommer(d, o).map((p) => nomDe(p.lat, p.lon));
-    expect(noms(O())).toEqual(['Parc', 'Paris', 'Lille']);
-    expect(noms(O({ etapes: false }))).toEqual(['Parc', 'Lille']);
+    expect(noms(O())).toEqual(['Parc', 'Rome', 'Florence']);
+    expect(noms(O({ etapes: false }))).toEqual(['Parc', 'Florence']);
   });
 
   it('une année de photos découpée et nommée en moins d’une demi-seconde', () => {
@@ -331,7 +331,7 @@ describe('découpage chronologique (D103)', () => {
     const ps: PhotoTri[] = [];
     for (let j = 0; j < 365; j++) {
       const jour = new Date(Date.UTC(2025, 0, 1) + j * 86_400_000).toISOString().slice(0, 10);
-      const ou = hasard() < 0.7 ? MAISON : hasard() < 0.5 ? PARC : PARIS;
+      const ou = hasard() < 0.7 ? MAISON : hasard() < 0.5 ? PARC : ROME;
       for (let k = 0; k < 10; k++) ps.push(a(`${jour}T${String(8 + k).padStart(2, '0')}:00:00`, { lat: ou.lat + hasard() * 0.001, lon: ou.lon }));
     }
     const debut = performance.now();
@@ -432,14 +432,14 @@ describe('application au plan', () => {
   it('voyage avec ses étapes : un dossier parent et un sous-dossier par étape', () => {
     const plan = planVrac();
     const etapes = [
-      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, PARIS)),
-      ...[14, 15, 16].map((h) => a(`2026-03-15T${h}:00:00`, LILLE)),
+      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, ROME)),
+      ...[14, 15, 16].map((h) => a(`2026-03-15T${h}:00:00`, FLORENCE)),
     ];
     for (const p of etapes) plan.fichiers.set(p.id, { id: p.id, nom: p.nom, taille: 1, modifie: 0, categorie: 'photo', date: p.date, origineDate: 'exif', dossier: RACINE, statut: 'archive' });
     appliquerTri(plan, arbre(etapes), new Set(etapes.map((p) => p.id)));
-    const parent = [...plan.dossiers.values()].find((d) => d.nom === 'Voyage_Paris_14-15.03.26')!;
-    expect(parent).toMatchObject({ parent: RACINE, origine: 'tri', tri: { origine: 'voyage', lieu: 'Paris' } });
-    expect([...plan.dossiers.values()].filter((d) => d.parent === parent.id).map((d) => d.nom)).toEqual(['Paris_14.03.26', 'Lille_15.03.26']);
+    const parent = [...plan.dossiers.values()].find((d) => d.nom === 'Voyage_Rome_14-15.03.26')!;
+    expect(parent).toMatchObject({ parent: RACINE, origine: 'tri', tri: { origine: 'voyage', lieu: 'Rome' } });
+    expect([...plan.dossiers.values()].filter((d) => d.parent === parent.id).map((d) => d.nom)).toEqual(['Rome_14.03.26', 'Florence_15.03.26']);
   });
 
   it('une seule opération annulable', () => {

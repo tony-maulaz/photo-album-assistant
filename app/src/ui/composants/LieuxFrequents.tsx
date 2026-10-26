@@ -1,7 +1,8 @@
 // Suggestion de lieux connus (étape « Tri automatique », § 6.4) : un endroit photographié sur de
 // nombreux jours (maison, grands-parents, école, club) peut être enregistré
 // comme lieu connu sans quitter la page, même s'il faut d'abord choisir ou
-// créer le dossier de configuration.
+// créer le dossier de configuration. Dans une grande fenêtre, une carte par
+// endroit (D107) : ses photos, son adresse, un nom, « C'est notre maison ».
 
 import { signal } from '@preact/signals';
 import { useEffect, useMemo, useState } from 'preact/hooks';
@@ -14,6 +15,7 @@ import { distanceM, lieuxFrequents, type LieuFrequent } from '../../lib/tri';
 import { configuration, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { dateHeure, nombre, pluriel } from '../format';
 import { ChoixConfiguration } from './ChoixConfiguration';
+import { Fenetre } from './Dialogues';
 import { Miniature } from './GrillePhotos';
 
 /** Lieux écartés d'un clic (« ignorer ») pendant la session. */
@@ -29,16 +31,16 @@ function suggestions(plan: Plan, lieux: LieuConnu[]): LieuFrequent[] {
   ).slice(0, 6);
 }
 
-/** Des lieux fréquents sont-ils proposés au-dessus des réglages du tri (ni enregistrés, ni ignorés) ? */
-export function useLieuxProposes(): boolean {
+/** Nombre de lieux fréquents proposés au tri (ni enregistrés, ni écartés pour la séance). */
+export function useLieuxProposes(): number {
   const s = session.value!;
   const lieux = configuration.value?.lecture?.config?.lieux_connus ?? [];
   const caches = ignores.value;
-  return useMemo(() => suggestions(s.plan, lieux).some((l) => !caches.has(cleLieu(l))), [versionPlan.value, lieux.length, caches]);
+  return useMemo(() => suggestions(s.plan, lieux).filter((l) => !caches.has(cleLieu(l))).length, [versionPlan.value, lieux.length, caches]);
 }
 
-/** `ouvert` : la liste est dépliée (avant le calcul, c'est le moment de les enregistrer). */
-export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
+/** La fenêtre des lieux fréquents ; `fermer` la ferme (aussi quand il n'en reste plus). */
+export function LieuxFrequents({ fermer }: { fermer: () => void }) {
   const s = session.value!;
   versionPlan.value;
   const lieux = configuration.value?.lecture?.config?.lieux_connus ?? [];
@@ -66,6 +68,10 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
   const sansDomicile = !lieux.some((l) => l.domicile);
   // Lieu à enregistrer qui attend le dossier de configuration (choisi ou créé sans quitter l'étape).
   const [attente, setAttente] = useState<string | null>(null);
+  // Plus rien à nommer (le dernier vient d'être enregistré ou écarté) : la fenêtre se ferme.
+  useEffect(() => {
+    if (!visibles.length) fermer();
+  }, [visibles.length]);
   if (!visibles.length) return null;
 
   const enregistrer = async (lat: number, lon: number, cle: string) => {
@@ -105,8 +111,8 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
       notifier(
         'ok',
         commeDomicile
-          ? t`Domicile « ${nom} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.`
-          : t`Lieu « ${nom} » enregistré : rangez à nouveau pour en tenir compte.`,
+          ? t`« ${nom} » enregistré comme votre maison : les voyages sont maintenant reconnus.`
+          : t`« ${nom} » enregistré : il servira pour les noms de vos dossiers (rangez à nouveau si c’est déjà fait).`,
       );
     } catch (err) {
       notifier('erreur', texteErreur(err));
@@ -114,65 +120,85 @@ export function LieuxFrequents({ ouvert = false }: { ouvert?: boolean }) {
   };
 
   return (
-    <details class="tri-auto" open={ouvert}>
-      <summary>
-        <strong>{pluriel(visibles.length, 'lieu qui revient souvent', 'lieux qui reviennent souvent')}</strong> {t`— à enregistrer comme lieu connu (maison, grands-parents, école…)`}
-      </summary>
-      <p class="discret">
-        {t`Un lieu enregistré reçoit son propre dossier (« Maison », « Chez_Grands_Parents »…), rangé par sortie. L’adresse vient d’OpenStreetMap (seules les coordonnées sont envoyées).`}
-      </p>
+    <Fenetre
+      titre={t`Endroits qui reviennent souvent`}
+      intro={
+        sansDomicile
+          ? t`Photographiés sur de nombreux jours. Donnez-leur un nom : il servira pour vos dossiers (« Chez_Mamie_12.03.25 » plutôt que le nom de la commune). Indiquez aussi lequel est votre maison.`
+          : t`Photographiés sur de nombreux jours. Donnez-leur un nom : il servira pour vos dossiers (« Chez_Mamie_12.03.25 » plutôt que le nom de la commune).`
+      }
+      pied={t`Un nom enregistré sert à tous vos albums. « Pas maintenant » : l’endroit n’est plus proposé pendant cette séance. L’adresse vient d’OpenStreetMap : seule la position est envoyée.`}
+      fermer={fermer}
+    >
       <ul class="lieux-frequents">
         {visibles.map((l) => {
           const cle = cleLieu(l);
           const photos = l.photos.map((id) => s.plan.fichiers.get(id)).filter((f): f is FichierPlan => !!f);
           const toutes = deplies.has(cle);
+          const estDomicile = sansDomicile && domicile === cle;
+          const nom = noms[cle] ?? '';
           return (
             <li key={cle} class="lieu-frequent">
-              <div class="tete-lieu">
-                <strong>{pluriel(photos.length, 'photo')}</strong>
-                <span class="discret">{t`sur ${nombre(l.jours)} jours ·`}</span>
-                <span class="adresse-lieu" title={t`Coordonnées : ${l.lat.toFixed(4)}, ${l.lon.toFixed(4)}`}>
-                  {adresses[cle] ?? (sansAdresse ? t`Adresse indisponible (OpenStreetMap injoignable)` : t`Recherche de l’adresse…`)}
-                </span>
-              </div>
-              {/* Une photo par jour, pour reconnaître l'endroit d'un coup d'œil ; toutes sur demande. */}
-              <div class="bande-miniatures">
-                {(toutes ? photos.slice(0, 120) : unParJour(photos, 8)).map((f) => (
+              <div class="vignettes-lieu">
+                {unParJour(photos, 6).map((f) => (
                   <span key={f.id} title={`${f.nom} — ${dateHeure(f.date)}`}>
-                    <Miniature f={f} taille={Math.round(reglages.value.tailleMiniatures * (toutes ? 0.6 : 0.5))} />
+                    <Miniature f={f} taille={84} />
                   </span>
                 ))}
               </div>
-              <div class="actions-lieu">
-                <button type="button" class="lien" onClick={() => setDeplies(new Set(toutes ? [...deplies].filter((x) => x !== cle) : [...deplies, cle]))}>
-                  {toutes ? t`Moins de photos` : t`Voir les ${nombre(photos.length)} photos`}
-                </button>
-                <span class="espace" />
-                <input placeholder={t`Nom du lieu (ex. Maison)`} value={noms[cle] ?? ''} onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })} />
+              <div class="infos-lieu">
+                <strong class={`adresse-lieu${adresses[cle] ? '' : ' discret'}`} title={t`Coordonnées : ${l.lat.toFixed(4)}, ${l.lon.toFixed(4)}`}>
+                  {adresses[cle] ?? (sansAdresse ? t`Adresse indisponible (pas de connexion)` : t`Recherche de l’adresse…`)}
+                </strong>
+                <span class="discret">
+                  {t`${pluriel(photos.length, 'photo')} sur ${nombre(l.jours)} jours`} ·{' '}
+                  <button type="button" class="lien" onClick={() => setDeplies(new Set(toutes ? [...deplies].filter((x) => x !== cle) : [...deplies, cle]))}>
+                    {toutes ? t`Moins de photos` : t`Voir toutes les photos`}
+                  </button>
+                </span>
+                {toutes && (
+                  <div class="bande-miniatures">
+                    {photos.slice(0, 120).map((f) => (
+                      <span key={f.id} title={`${f.nom} — ${dateHeure(f.date)}`}>
+                        <Miniature f={f} taille={Math.round(reglages.value.tailleMiniatures * 0.5)} />
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div class="champ-lieu">
+                  <input
+                    type="text"
+                    aria-label={t`Nom de l’endroit`}
+                    placeholder={estDomicile ? t`Maison` : t`Son nom, par exemple « Chez Mamie »`}
+                    value={nom}
+                    onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })}
+                    onKeyDown={(e) => e.key === 'Enter' && (nom.trim() || estDomicile) && void enregistrer(l.lat, l.lon, cle)}
+                  />
+                  <button type="button" class="principal" disabled={!nom.trim() && !estDomicile} onClick={() => void enregistrer(l.lat, l.lon, cle)}>
+                    {t`Enregistrer`}
+                  </button>
+                </div>
                 {sansDomicile && (
-                  <label class="case" title={t`Le domicile sert à repérer les voyages (sorties loin de la maison qui s’enchaînent).`}>
-                    <input type="checkbox" checked={domicile === cle} onChange={(e) => setDomicile(e.currentTarget.checked ? cle : null)} /> {t`C’est notre domicile`}
+                  <label class="case" title={t`La maison sert à reconnaître les voyages et les sorties.`}>
+                    <input type="radio" name="domicile-propose" checked={estDomicile} onChange={() => setDomicile(cle)} /> {t`C’est notre maison`}
                   </label>
                 )}
-                <button type="button" onClick={() => void enregistrer(l.lat, l.lon, cle)}>
-                  {t`Enregistrer comme lieu connu`}
+                <button type="button" class="petit pas-maintenant" onClick={() => (ignores.value = new Set([...ignores.value, cle]))}>
+                  {t`Pas maintenant`}
                 </button>
-                <button type="button" class="lien" onClick={() => (ignores.value = new Set([...ignores.value, cle]))}>
-                  {t`ignorer`}
-                </button>
+                {attente === cle && (
+                  <ChoixConfiguration
+                    pourquoi={t`Les lieux connus sont gardés dans un dossier de configuration : choisissez-le ou créez-le, le lieu sera enregistré aussitôt.`}
+                    apres={() => enregistrer(l.lat, l.lon, cle)}
+                    annuler={() => setAttente(null)}
+                  />
+                )}
               </div>
-              {attente === cle && (
-                <ChoixConfiguration
-                  pourquoi={t`Les lieux connus sont gardés dans un dossier de configuration : choisissez-le ou créez-le, le lieu sera enregistré aussitôt.`}
-                  apres={() => enregistrer(l.lat, l.lon, cle)}
-                  annuler={() => setAttente(null)}
-                />
-              )}
             </li>
           );
         })}
       </ul>
-    </details>
+    </Fenetre>
   );
 }
 

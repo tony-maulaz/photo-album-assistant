@@ -26,7 +26,8 @@ import { duree, nombre, pluriel } from '../format';
 import { nombreSansGps, SansGps } from './AidesTri';
 import { BarreProgression } from './Cadre';
 import { Captures, capturesProposees } from './Captures';
-import { confirmer } from './Dialogues';
+import { confirmer, Fenetre } from './Dialogues';
+import { Icone } from './Icones';
 import { LieuxFrequents, useLieuxProposes } from './LieuxFrequents';
 import { montrerOnglet } from './ResultatTri';
 
@@ -69,7 +70,8 @@ export interface EtatTri {
   aRanger: FichierPlan[];
   /** Les photos ont déjà été rangées une fois. */
   range: boolean;
-  lieuxProposes: boolean;
+  /** Lieux fréquents à nommer (ni enregistrés, ni écartés pour la séance). */
+  lieuxProposes: number;
 }
 
 /** Sans configuration : toujours la même liste vide, pour que les calculs gardés en mémoire ne se refassent pas. */
@@ -113,23 +115,54 @@ export function restantsTri(e: EtatTri): string[] {
 
 type EtatLigne = 'afaire' | 'fait' | 'facultatif';
 
-/** Une ligne de la liste « À faire » : sa puce, ce qu'elle dit, ses boutons, et ce qui s'ouvre dessous. */
-function Ligne({ etat, titre, detail, note, boutons, panneau, classe = '' }: { etat: EtatLigne; titre: ComponentChildren; detail?: ComponentChildren; note?: string; boutons?: ComponentChildren; panneau?: ComponentChildren; classe?: string }) {
-  const puce = { afaire: '●', fait: '✓', facultatif: '○' }[etat];
+/**
+ * Une ligne de la liste « À faire » (D107) : un anneau d'état — orange à
+ * faire, vert coché fait, pointillé facultatif —, ce qu'elle dit, ses
+ * boutons à droite, et ce qui se règle dessous (les choix du rangement).
+ */
+function Ligne({ etat, titre, detail, boutons, dessous, classe = '' }: { etat: EtatLigne; titre: ComponentChildren; detail?: ComponentChildren; boutons?: ComponentChildren; dessous?: ComponentChildren; classe?: string }) {
   const etiquette = { afaire: t`À faire`, fait: t`Fait`, facultatif: t`Facultatif` }[etat];
   return (
     <li class={`ligne-afaire ${etat} ${classe}`}>
-      <span class="puce-afaire" title={etiquette} aria-label={etiquette}>
-        {puce}
+      <span class="puce-afaire" role="img" title={etiquette} aria-label={etiquette}>
+        {etat === 'fait' && <Icone nom="coche" taille={13} epaisseur={3} />}
       </span>
       <div class="texte-afaire">
-        <strong>{titre}</strong>
+        <strong>
+          {titre}
+          {etat === 'facultatif' && <span class="etiquette-facultatif">{t`facultatif`}</span>}
+        </strong>
         {detail && <div class="detail-afaire">{detail}</div>}
-        {note && <span class="note-afaire">{note}</span>}
       </div>
       {boutons && <div class="boutons-afaire">{boutons}</div>}
-      {panneau && <div class="panneau-afaire">{panneau}</div>}
+      {dessous && <div class="dessous-afaire">{dessous}</div>}
     </li>
+  );
+}
+
+/** Une liste de choix (D107) : une ligne par choix, son effet chiffré à droite, « conseillé » en simple texte. */
+function Choix<T>({ legende, valeur, choisir, options }: { legende: string; valeur: T; choisir: (v: T) => void; options: { v: T; nom: string; aide?: string; compte: string; sous?: string; conseille?: boolean }[] }) {
+  const [nomGroupe] = useState(() => `choix-${Math.random().toString(36).slice(2)}`);
+  return (
+    <fieldset class="question-tri">
+      <legend>{legende}</legend>
+      <div class="liste-choix">
+        {options.map((x) => (
+          <label key={String(x.v)} class={x.v === valeur ? 'choisi' : ''}>
+            <input type="radio" name={nomGroupe} checked={x.v === valeur} onChange={() => choisir(x.v)} />
+            <span class="nom-choix">
+              {x.nom}
+              {x.conseille && <em>{t`conseillé`}</em>}
+            </span>
+            <span class="compte-choix">
+              {x.compte}
+              {x.sous && <small>{x.sous}</small>}
+            </span>
+            {x.aide && <span class="aide-choix">{x.aide}</span>}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
@@ -142,6 +175,8 @@ export interface ApercuTri {
   /** Nombre de voyages pour chaque distance des crans, et de dossiers à la maison par mois et par semaine. */
   voyagesParCran: Map<number, number>;
   maisonPar: { mois: number; semaine: number };
+  /** Lieux visités des voyages (leurs sous-dossiers avec « un sous-dossier par lieu »). */
+  lieuxVisites: number;
 }
 
 /**
@@ -163,7 +198,8 @@ export function useApercuTri(e: EtatTri, o: OptionsTri): ApercuTri {
     const n = (maison: OptionsTri['maison']) => decouper(elements.photos, e.lieux, { ...o, maison }).morceaux.filter((m) => m.sorte === 'maison').length;
     return { mois: n('mois'), semaine: n('semaine') };
   }, [elements, e.lieux, o.distanceVoyageKm]);
-  return { apercu, voyagesParCran, maisonPar };
+  const lieuxVisites = decoupage.morceaux.reduce((n, m) => n + (m.sorte === 'voyage' && (m.etapes?.length ?? 0) > 1 ? m.etapes!.length : 0), 0);
+  return { apercu, voyagesParCran, maisonPar, lieuxVisites };
 }
 
 /** Réglages du tri choisis à l'écran, différents de ceux du dernier rangement ? */
@@ -172,20 +208,18 @@ const memesReglages = (a: OptionsTri, b: OptionsTri) => a.etapes === b.etapes &&
 export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: OptionsTri; setO: Dispatch<StateUpdater<OptionsTri>>; ap: ApercuTri; apercu: Resultat; actuel: Resultat | null }) {
   const s = session.value!;
   versionPlan.value;
-  const [panneau, setPanneau] = useState<'maison' | 'captures' | 'lieux' | 'gps' | null>(null);
+  const [fenetre, setFenetre] = useState<'lieux' | 'captures' | 'gps' | null>(null);
+  const [autrement, setAutrement] = useState(false);
   const [progres, setProgres] = useState<{ faits: number; total: number } | null>(null);
   const arreter = useRef(false);
   const changer = (m: Partial<OptionsTri>) => setO({ ...o, ...m });
-  const basculer = (p: typeof panneau) => setPanneau(panneau === p ? null : p);
   const n = compteSortes(apercu);
-  const dossiersPrevus = ap.apercu.length;
-  // Même compte que la barre du bas : les photos des dossiers du tri qui en contiennent encore.
-  const proposes = dossiersProposes(s.plan);
-  const resume = resumes(s.plan);
-  const photosRangees = proposes.reduce((a, d) => a + resume.get(d.id)!.photos, 0);
   const enregistres = optionsDuProjet(s.projet.tri);
   const change = e.range && !memesReglages(o, enregistres);
   const nSansGps = e.range ? nombreSansGps(s) : 0;
+  // Un seul bouton plein (D107) : celui de la première chose à faire ; les autres en contour.
+  const premier = !e.domicile ? 'maison' : e.nCopies ? 'copies' : e.captures.length ? 'captures' : !e.range || e.aRanger.length ? 'ranger' : null;
+  const style = (quoi: typeof premier) => (premier === quoi ? 'principal' : 'contour');
 
   /** `nouvelles` : seulement les photos pas encore rangées, sans toucher aux dossiers déjà faits. */
   const calculer = async (nouvelles = false) => {
@@ -257,60 +291,14 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
     );
   };
 
-  const question = (
-    <div class="question-tri">
-      <fieldset>
-        <legend>{t`Un voyage de plusieurs jours se range…`}</legend>
-        <label class="case">
-          <input type="radio" name="etapes-voyage" checked={o.etapes} onChange={() => changer({ etapes: true })} /> {t`dans un dossier, avec un sous-dossier par étape`}{' '}
-          <span class="conseille">{t`conseillé`}</span>
-        </label>
-        <label class="case">
-          <input type="radio" name="etapes-voyage" checked={!o.etapes} onChange={() => changer({ etapes: false })} /> {t`tout dans un seul dossier`}
-        </label>
-      </fieldset>
-      {e.domicile && (
-        <>
-          <div class="choix-tri-ligne">
-            <span class="libelle-choix">{t`C’est un voyage à partir de…`}</span>
-            <div class="choix-segmente choix-tri" role="radiogroup" aria-label={t`Distance d’un voyage`}>
-              {[...new Set([...CRANS_VOYAGE, o.distanceVoyageKm])].sort((a, b) => a - b).map((km) => (
-                <button key={km} type="button" role="radio" aria-checked={o.distanceVoyageKm === km} onClick={() => changer({ distanceVoyageKm: km })}>
-                  {t`${nombre(km)} km`}
-                  {km === 50 && <span class="conseille"> {t`conseillé`}</span>}
-                  {ap.voyagesParCran.has(km) && <span class="compte-choix">{pluriel(ap.voyagesParCran.get(km)!, 'voyage')}</span>}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div class="choix-tri-ligne">
-            <span class="libelle-choix">{t`À la maison, un dossier…`}</span>
-            <div class="choix-segmente choix-tri" role="radiogroup" aria-label={t`Dossiers à la maison`}>
-              <button type="button" role="radio" aria-checked={o.maison === 'mois'} onClick={() => changer({ maison: 'mois' })}>
-                {t`par mois`} <span class="conseille">{t`conseillé`}</span>
-                <span class="compte-choix">{pluriel(ap.maisonPar.mois, 'dossier')}</span>
-              </button>
-              <button type="button" role="radio" aria-checked={o.maison === 'semaine'} onClick={() => changer({ maison: 'semaine' })}>
-                {t`par semaine`}
-                <span class="compte-choix">{pluriel(ap.maisonPar.semaine, 'dossier')}</span>
-              </button>
-            </div>
-          </div>
-          <p class="aide-option">{t`Plusieurs jours de suite plus loin que cette distance, sans photo prise à la maison entre-temps, forment un voyage. Une journée chargée à la maison (10 photos ou plus) a toujours son propre dossier.`}</p>
-        </>
-      )}
-    </div>
-  );
-
-  const boutonRanger = progres ? (
+  const barreProgres = progres && (
     <div class="progression-tri">
       <BarreProgression faits={progres.faits} total={progres.total} texte={t`Noms des lieux (OpenStreetMap) : ${progres.faits} / ${progres.total} — encore ${duree((progres.total - progres.faits) * 1200)}`} />
       <button type="button" onClick={() => (arreter.current = true)}>
         {t`Arrêter (les noms déjà reçus sont gardés)`}
       </button>
     </div>
-  ) : null;
-  const apercuTexte = t`Avec vos photos : ${[...(n.voyage ? [pluriel(n.voyage, 'voyage')] : []), pluriel(n.sortie, 'sortie'), ...(n.maison ? [t`la maison en ${pluriel(n.maison, 'dossier')}`] : [])].join(', ')} (${pluriel(dossiersPrevus, 'dossier')} en tout).`;
+  );
   // Après un rangement, un autre réglage ne range rien en silence : l'écart se montre, on range ou on revient (D104).
   const avant = actuel ? compteSortes(actuel) : null;
   const ecart = (x: number, y?: number) => (y === undefined || x === y ? '' : ` (${x > y ? '+' : '−'}${nombre(Math.abs(x - y))})`);
@@ -318,8 +306,79 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
   const ecartTexte = pareil
     ? t`Ce réglage donne autant de voyages, de sorties et de dossiers à la maison.`
     : avant
-    ? t`Avec ce réglage : ${[pluriel(n.voyage, 'voyage') + ecart(n.voyage, avant.voyage), pluriel(n.sortie, 'sortie') + ecart(n.sortie, avant.sortie), t`la maison en ${pluriel(n.maison, 'dossier')}` + ecart(n.maison, avant.maison)].join(', ')}.`
-    : '';
+      ? t`Avec ce réglage : ${[pluriel(n.voyage, 'voyage') + ecart(n.voyage, avant.voyage), pluriel(n.sortie, 'sortie') + ecart(n.sortie, avant.sortie), t`la maison en ${pluriel(n.maison, 'dossier')}` + ecart(n.maison, avant.maison)].join(', ')}.`
+      : '';
+  const resumeRange = [...(n.voyage ? [pluriel(n.voyage, 'voyage')] : []), pluriel(n.sortie, 'sortie'), ...(n.maison ? [t`la maison en ${pluriel(n.maison, 'dossier')}`] : [])].join(', ');
+  const apercuTexte = t`Avec vos photos : ${resumeRange} (${pluriel(ap.apercu.length, 'dossier')} en tout).`;
+
+  const choix = (
+    <div class="reglages-tri">
+      {e.domicile ? (
+        <>
+          <Choix
+            legende={t`Les voyages de plusieurs jours`}
+            valeur={o.etapes}
+            choisir={(v) => changer({ etapes: v })}
+            options={[
+              { v: true, nom: t`Un sous-dossier par lieu visité`, conseille: true, aide: t`« Rome », « Florence »… dans le dossier du voyage.`, compte: pluriel(n.voyage, 'voyage'), ...(ap.lieuxVisites ? { sous: pluriel(ap.lieuxVisites, 'lieu visité', 'lieux visités') } : {}) },
+              { v: false, nom: t`Tout le voyage dans un seul dossier`, aide: t`Toutes ses photos ensemble.`, compte: pluriel(n.voyage, 'voyage'), sous: t`un dossier chacun` },
+            ]}
+          />
+          <Choix
+            legende={t`C’est un voyage quand on part à plus de…`}
+            valeur={o.distanceVoyageKm}
+            choisir={(v) => changer({ distanceVoyageKm: v })}
+            options={[...new Set([...CRANS_VOYAGE, o.distanceVoyageKm])]
+              .sort((a, b) => a - b)
+              .map((km) => ({
+                v: km,
+                nom: t`${nombre(km)} km de la maison`,
+                conseille: km === 50,
+                aide: km === 30 ? t`Les séjours proches deviennent aussi des voyages.` : km === 50 ? t`Le bon équilibre pour la plupart des familles.` : km === 100 ? t`Seulement les départs lointains ; le reste devient des sorties.` : undefined,
+                compte: ap.voyagesParCran.has(km) ? pluriel(ap.voyagesParCran.get(km)!, 'voyage') : '',
+              }))}
+          />
+          <Choix
+            legende={t`À la maison, un dossier…`}
+            valeur={o.maison}
+            choisir={(v) => changer({ maison: v })}
+            options={[
+              { v: 'mois' as const, nom: t`par mois`, conseille: true, aide: t`Une journée chargée (Noël, un anniversaire…) a toujours le sien.`, compte: pluriel(ap.maisonPar.mois, 'dossier') },
+              { v: 'semaine' as const, nom: t`par semaine`, aide: t`Des dossiers plus courts.`, compte: pluriel(ap.maisonPar.semaine, 'dossier') },
+            ]}
+          />
+        </>
+      ) : (
+        <p class="encart-info">{t`Indiquez d’abord votre maison : sans elle, l’application ne reconnaît ni les voyages ni les journées à la maison, et ne pose pas les questions qui les concernent.`}</p>
+      )}
+      {change && avant && (
+        <div class="ecart-reglage">
+          <span>{ecartTexte}</span>
+          <button type="button" class="principal" onClick={() => void calculer()}>
+            {t`Ranger avec ce réglage`}
+          </button>
+          <button type="button" class="contour" onClick={() => setO(enregistres)}>
+            {t`Revenir au réglage actuel`}
+          </button>
+        </div>
+      )}
+      {!e.range && (
+        <div class="ranger-tri">
+          {progres ? (
+            barreProgres
+          ) : (
+            <>
+              <button type="button" class={style('ranger')} disabled={!e.aTrier.length} onClick={() => void calculer()}>
+                {t`Ranger les photos`}
+              </button>
+              <span class="discret">{t`Vos photos d’origine ne bougent pas.`}</span>
+            </>
+          )}
+        </div>
+      )}
+      <p class="note-afaire">{t`Pour nommer les lieux, seule leur position est envoyée à OpenStreetMap (un service de cartes gratuit), jamais vos photos.`}</p>
+    </div>
+  );
 
   return (
     <section class="encart a-faire-tri">
@@ -329,9 +388,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           <Ligne
             etat="fait"
             titre={t`Votre maison : ${e.domicile.nom}`}
-            detail={t`Elle sert à reconnaître les voyages et les sorties.`}
             boutons={
-              <button type="button" onClick={() => (page.value = { nom: 'configuration' })}>
+              <button type="button" class="petit" onClick={() => (page.value = { nom: 'configuration' })}>
                 {t`Changer`}
               </button>
             }
@@ -340,20 +398,12 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           <Ligne
             etat="afaire"
             titre={t`Votre maison n’est pas encore indiquée`}
-            detail={t`Elle sert à reconnaître les voyages et les sorties : sans elle, aucun voyage n’est reconnu et chaque moment devient une sortie.`}
+            detail={e.lieuxProposes ? t`Choisissez-la parmi les endroits qui reviennent souvent.` : t`Indiquez-la dans la Configuration : sans elle, aucun voyage n’est reconnu.`}
             boutons={
-              <>
-                {e.lieuxProposes && (
-                  <button type="button" class="principal" aria-expanded={panneau === 'maison'} onClick={() => basculer('maison')}>
-                    {t`La choisir parmi les lieux fréquents`}
-                  </button>
-                )}
-                <button type="button" onClick={() => (page.value = { nom: 'configuration' })}>
-                  {t`L’indiquer dans la Configuration`}
-                </button>
-              </>
+              <button type="button" class={style('maison')} onClick={() => (e.lieuxProposes ? setFenetre('lieux') : (page.value = { nom: 'configuration' }))}>
+                {t`L’indiquer…`}
+              </button>
             }
-            panneau={panneau === 'maison' && <LieuxFrequents ouvert />}
           />
         )}
 
@@ -364,17 +414,16 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
             titre={pluriel(e.nCopies, 'photo en double', 'photos en double')}
             detail={
               e.range
-                ? t`Copies exactes d’une photo déjà gardée ailleurs : le tri les a rangées une seconde fois. Mettez-les de côté, puis rangez à nouveau.`
-                : t`Copies exactes d’une photo déjà gardée ailleurs. Sinon, elles seront rangées deux fois.`
+                ? t`Copies exactes d’une photo déjà gardée : le tri les a rangées une seconde fois. Rien n’est supprimé : elles vont dans « ${nomsSortie().misDeCote} ». Rangez à nouveau ensuite.`
+                : t`Copies exactes d’une photo déjà gardée. Rien n’est supprimé : elles vont dans « ${nomsSortie().misDeCote} ».`
             }
-            note={t`Rien n’est supprimé : elles vont dans « ${nomsSortie().misDeCote} ».`}
             boutons={
               <>
-                <button type="button" onClick={() => allerEtape('doublons')}>
-                  {t`Les voir`}
+                <button type="button" class="petit" onClick={() => allerEtape('doublons')}>
+                  {t`Voir`}
                 </button>
-                <button type="button" class="principal" onClick={ecarterCopies}>
-                  {t`Mettre ${pluriel(e.nCopies, 'copie')} de côté`}
+                <button type="button" class={style('copies')} onClick={ecarterCopies}>
+                  {t`Mettre de côté`}
                 </button>
               </>
             }
@@ -385,20 +434,18 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           <Ligne
             etat="afaire"
             classe="captures-avant-tri"
-            titre={t`${pluriel(e.captures.length, 'photo ressemble', 'photos ressemblent')} à des captures d’écran`}
-            detail={t`Elles iront dans « ${nomsSortie().captures} », hors de l’album. Sinon, elles seront rangées avec vos photos.`}
-            note={t`Rien n’est supprimé : le dossier « ${nomsSortie().captures} » est dans la sortie.`}
+            titre={pluriel(e.captures.length, 'capture d’écran', 'captures d’écran')}
+            detail={t`Elles iront dans leur propre dossier, « ${nomsSortie().captures} », hors de l’album. Rien n’est supprimé.`}
             boutons={
               <>
-                <button type="button" aria-expanded={panneau === 'captures'} onClick={() => basculer('captures')}>
-                  {panneau === 'captures' ? t`Masquer` : t`Les voir`}
+                <button type="button" class="petit" onClick={() => setFenetre('captures')}>
+                  {t`Voir`}
                 </button>
-                <button type="button" class="principal" onClick={() => appliquer(rangerCaptures(s.plan, e.captures.map((f) => f.id)))}>
-                  {t`Les mettre à part`}
+                <button type="button" class={style('captures')} onClick={() => appliquer(rangerCaptures(s.plan, e.captures.map((f) => f.id)))}>
+                  {t`Mettre à part`}
                 </button>
               </>
             }
-            panneau={panneau === 'captures' && <Captures />}
           />
         ) : (
           e.capturesRangees > 0 && (
@@ -408,8 +455,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
               detail={t`Dans « ${nomsSortie().captures} », hors de l’album.`}
               boutons={
                 e.range && (
-                  <button type="button" onClick={() => montrerOnglet('apart')}>
-                    {t`Les voir`}
+                  <button type="button" class="petit" onClick={() => montrerOnglet('apart')}>
+                    {t`Voir`}
                   </button>
                 )
               }
@@ -417,41 +464,21 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           )
         )}
 
-        {e.domicile && e.lieuxProposes && (
+        {e.domicile && e.lieuxProposes > 0 && (
           <Ligne
             etat="facultatif"
-            titre={t`Facultatif : des endroits reviennent souvent`}
-            detail={t`Chez des proches, le club… Les enregistrer comme lieux connus donne de meilleurs noms de dossiers.`}
+            titre={pluriel(e.lieuxProposes, 'endroit revient souvent', 'endroits reviennent souvent')}
+            detail={t`Donnez-leur un nom : vos dossiers seront mieux nommés.`}
             boutons={
-              <button type="button" aria-expanded={panneau === 'lieux'} onClick={() => basculer('lieux')}>
-                {panneau === 'lieux' ? t`Masquer` : t`Les voir`}
+              <button type="button" class="petit" onClick={() => setFenetre('lieux')}>
+                {t`Les nommer…`}
               </button>
             }
-            panneau={panneau === 'lieux' && <LieuxFrequents ouvert />}
           />
         )}
 
         {!e.range ? (
-          <Ligne
-            etat="afaire"
-            classe="ligne-ranger"
-            titre={t`Ranger les photos`}
-            detail={
-              <>
-                {question}
-                <span class="apercu-tri-chiffres">{apercuTexte}</span>
-                {!e.domicile && <span class="alerte-texte">{t`Sans maison, aucun voyage n’est reconnu.`}</span>}
-              </>
-            }
-            boutons={
-              boutonRanger ?? (
-                <button type="button" class="principal" disabled={!e.aTrier.length} onClick={() => void calculer()}>
-                  {t`Ranger les photos`}
-                </button>
-              )
-            }
-            note={t`Ensuite, les noms des endroits sont demandés à OpenStreetMap (Nominatim) : seules les coordonnées moyennes de chaque endroit sont envoyées, une par seconde.`}
-          />
+          <Ligne etat="afaire" classe="ligne-ranger" titre={t`Ranger les photos`} detail={t`Choisissez comment ; le résultat change à droite à chaque choix.`} dessous={<>{choix}<span class="apercu-tri-chiffres">{apercuTexte}</span></>} />
         ) : e.aRanger.length > 0 ? (
           <Ligne
             etat="afaire"
@@ -459,12 +486,12 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
             titre={pluriel(e.aRanger.length, 'nouvelle photo à ranger', 'nouvelles photos à ranger')}
             detail={t`Arrivées depuis le dernier rangement : les dossiers déjà faits ne bougent pas.`}
             boutons={
-              boutonRanger ?? (
+              barreProgres || (
                 <>
-                  <button type="button" onClick={() => void calculer()}>
+                  <button type="button" class="contour" onClick={() => void calculer()}>
                     {t`Tout ranger à nouveau`}
                   </button>
-                  <button type="button" class="principal" onClick={() => void calculer(true)}>
+                  <button type="button" class={style('ranger')} onClick={() => void calculer(true)}>
                     {t`Ranger ${pluriel(e.aRanger.length, 'nouvelle photo', 'nouvelles photos')}`}
                   </button>
                 </>
@@ -475,30 +502,27 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           <Ligne
             etat="fait"
             classe="ligne-ranger"
-            titre={t`${pluriel(photosRangees, 'photo rangée', 'photos rangées')} dans ${pluriel(proposes.length, 'dossier')}`}
-            detail={
-              <details class="autrement" open={change}>
-                <summary>{t`Ranger autrement…`}</summary>
-                {question}
-                {change && (
-                  <div class="ecart-reglage">
-                    <span>{ecartTexte}</span>
-                    <button type="button" class="principal" onClick={() => void calculer()}>
-                      {t`Ranger avec ce réglage`}
-                    </button>
-                    <button type="button" onClick={() => setO(enregistres)}>
-                      {t`Revenir au réglage actuel`}
-                    </button>
-                  </div>
-                )}
-              </details>
-            }
+            titre={t`Photos rangées : ${resumeRange}`}
+            detail={t`Vos photos d’origine n’ont pas bougé.`}
             boutons={
-              boutonRanger ?? (
+              barreProgres || (
+                <button type="button" class="petit" aria-expanded={autrement || change} onClick={() => setAutrement(!autrement)}>
+                  {t`Ranger autrement…`}
+                </button>
+              )
+            }
+            dessous={
+              (autrement || change) && (
                 <>
-                  <button type="button" onClick={() => void calculer()}>
-                    {t`Ranger à nouveau`}
-                  </button>
+                  {choix}
+                  {!change && (
+                    <div class="ranger-tri">
+                      <button type="button" class="contour" onClick={() => void calculer()}>
+                        {t`Ranger à nouveau`}
+                      </button>
+                      <span class="discret">{t`Les déplacements faits à la main dans ces dossiers seraient remplacés (Ctrl+Z annule).`}</span>
+                    </div>
+                  )}
                 </>
               )
             }
@@ -508,17 +532,27 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
         {nSansGps > 0 && (
           <Ligne
             etat="facultatif"
-            titre={t`Facultatif : ${pluriel(nSansGps, 'photo sans GPS', 'photos sans GPS')}`}
-            detail={t`Rangées avec les photos prises juste avant ou après. L’IA peut proposer un meilleur dossier ; son coût est affiché avant de la lancer.`}
+            titre={pluriel(nSansGps, 'photo sans position', 'photos sans position')}
+            detail={t`Sans GPS, elles sont rangées avec les photos prises juste avant ou après. Une aide IA peut proposer mieux ; son coût est affiché avant de la lancer.`}
             boutons={
-              <button type="button" aria-expanded={panneau === 'gps'} onClick={() => basculer('gps')}>
-                {panneau === 'gps' ? t`Masquer` : t`Demander à l’IA…`}
+              <button type="button" class="petit" onClick={() => setFenetre('gps')}>
+                {t`Demander à l’IA…`}
               </button>
             }
-            panneau={panneau === 'gps' && <SansGps />}
           />
         )}
       </ul>
+      {fenetre === 'lieux' && <LieuxFrequents fermer={() => setFenetre(null)} />}
+      {fenetre === 'captures' && (
+        <Fenetre titre={t`Captures d’écran trouvées`} intro={t`Reconnues à leur nom de fichier, à leurs dimensions d’écran et à l’absence de marque d’appareil.`} fermer={() => setFenetre(null)}>
+          <Captures />
+        </Fenetre>
+      )}
+      {fenetre === 'gps' && (
+        <Fenetre titre={t`Photos sans position`} fermer={() => setFenetre(null)}>
+          <SansGps />
+        </Fenetre>
+      )}
     </section>
   );
 }

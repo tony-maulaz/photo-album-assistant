@@ -301,32 +301,42 @@ moins des photos d'un dossier ont été prises est montré sur sa carte, et
 proposé comme nom au Nommage. Sans domicile, aucun voyage n'est reconnu et
 chaque moment devient une sortie : la page le dit.
 
-**La liste « À faire »**, en haut de la page, une ligne par chose, chacune
-avec son état — ● à faire, ✓ fait, ○ facultatif (écrit en toutes lettres) :
-- **la maison** (le domicile) : à choisir parmi les lieux qui reviennent
-  souvent (photos, adresse OpenStreetMap, « C'est notre domicile ») ou dans la
-  Configuration ;
+**La liste « À faire »**, à gauche (D107), une ligne par chose, chacune avec
+un anneau d'état — orange à faire, vert coché fait, pointillé facultatif
+(avec l'étiquette « facultatif ») —, ses boutons à droite, et **un seul bouton
+plein** : celui de la première chose à faire, les autres en contour :
+- **la maison** (le domicile) : « L'indiquer… » ouvre la fenêtre des endroits
+  qui reviennent souvent (ou la Configuration s'il n'y en a pas) ;
 - **les photos en double** (copies exactes pas encore mises de côté, D85) :
-  « Les voir » (étape Doublons), « Mettre les N copies de côté » ; rien n'est
-  supprimé, elles vont dans `_mis_de_cote/` ;
-- **les captures d'écran** parmi les photos à trier : « Les voir » ouvre
-  leurs miniatures sous la ligne (décocher une vraie photo, l'agrandir),
-  « Les mettre à part » les range dans `Captures_ecran/`, hors du tri et de
-  l'album ;
-- facultatif, **les autres lieux qui reviennent souvent** (chez des proches,
-  le club), à enregistrer pour de meilleurs noms ;
-- **ranger les photos**, avec trois choix, chacun avec ce qu'il donne
-  (D104) : « Un voyage de plusieurs jours se range… » dans un dossier avec un
-  sous-dossier par étape (conseillé) ou tout dans un seul dossier ; « C'est
-  un voyage à partir de… » 30, 50 (conseillé) ou 100 km, avec le nombre de
-  voyages de chaque cran ; « À la maison, un dossier… » par mois (conseillé)
-  ou par semaine, avec le nombre de dossiers. Une fois rangé : « Ranger à
-  nouveau », et sous « Ranger autrement… » les mêmes choix : un autre réglage ne range rien en silence,
-  l'écart s'affiche (« Avec ce réglage : 16 voyages (+2)… ») avec « Ranger
-  avec ce réglage » et « Revenir au réglage actuel » ;
-- après le rangement, facultatif, **les photos sans GPS** (IA, coût affiché,
-  « Demander à l'IA… » ouvre l'aide sous la ligne).
-La barre du bas reprend ce qui reste ● (« Encore 2 choses à faire : … »).
+  « Voir » (étape Doublons), « Mettre de côté » ; rien n'est supprimé, elles
+  vont dans `_mis_de_cote/` ;
+- **les captures d'écran** parmi les photos à trier : « Voir » ouvre une
+  fenêtre (décocher une vraie photo, l'agrandir), « Mettre à part » les
+  range dans `Captures_ecran/`, hors du tri et de l'album ;
+- facultatif, **les endroits qui reviennent souvent** : « Les nommer… » ouvre
+  une **grande fenêtre** (composant `Fenetre`, une seule façon d'ouvrir une
+  fenêtre dans l'application) : une carte par endroit, six photos, l'adresse
+  (OpenStreetMap), « Voir toutes les photos », un champ pour son nom avec
+  « Enregistrer » (grisé tant qu'il est vide), « C'est notre maison » quand il
+  n'y a pas de domicile, « Pas maintenant » (pour la séance) ; Échap ferme ;
+- **ranger les photos**, avec trois **listes de choix** (une ligne par choix,
+  son effet chiffré à droite, « conseillé » en simple texte, D104, D107) :
+  « Les voyages de plusieurs jours » (un sous-dossier par lieu visité,
+  conseillé — avec le nombre de lieux visités —, ou tout le voyage dans un seul
+  dossier), « C'est un voyage quand on part à plus de… » (30, 50 conseillé,
+  100 km de la maison, chacun avec son nombre de voyages), « À la maison, un
+  dossier… » (par mois conseillé, par semaine) ; sans domicile, une phrase dit
+  de l'indiquer d'abord et ces questions ne sont pas posées. Puis le bouton
+  « Ranger les photos » (« Vos photos d'origine ne bougent pas. ») et une
+  ligne sur OpenStreetMap (« seule leur position est envoyée, jamais vos
+  photos »). Une fois rangé : « Photos rangées : 14 voyages, 119 sorties, la
+  maison en 26 dossiers », et « Ranger autrement… » qui rouvre les mêmes
+  choix : un autre réglage ne range rien en silence, l'écart s'affiche
+  (« Avec ce réglage : 16 voyages (+2)… ») avec « Ranger avec ce réglage » et
+  « Revenir au réglage actuel » ; sinon « Ranger à nouveau » ;
+- après le rangement, facultatif, **les photos sans position** : « Demander à
+  l'IA… » ouvre l'aide dans une fenêtre (coût affiché avant de la lancer).
+La barre du bas rappelle ce qui reste à faire (« Encore 2 choses à faire »).
 
 **Le résultat**, **à droite de la liste** (deux colonnes, D105 : il reste à
 l'écran et défile seul, et l'on voit l'effet d'un cran sans descendre ; sous
@@ -336,13 +346,16 @@ ranger, c'est un aperçu en direct** (D104), recalculé à chaque choix
 (quelques dizaines de millisecondes pour une année) : ce qui vient
 d'apparaître est marqué « nouveau » et les comptes montrent l'écart
 (« 16 voyages (+2) »). Une **ligne** par dossier, sans miniatures, dans
-l'ordre du temps, mois par mois : son nom, ses dates en clair, le nombre de
-photos, la distance de la maison, l'événement du calendrier (« Calendrier :
-« … » — vous choisirez le nom au Nommage ») ; pour un voyage, ses étapes en
-pastilles, « Voir les étapes » les déplie. Avant le rangement, OpenStreetMap
-n'est pas interrogé : un lieu déjà nommé à 1 km près garde son nom, sinon la
-ligne s'appelle d'après l'événement du calendrier ou sa date (« Sortie du
-sam. 22 mars »), jamais « Lieu_01 ». Aucune correction sur cette page
+l'ordre du temps, mois par mois, avec un **titre lisible** (D107) : « La
+maison en juillet », « Voyage à Rome », « Florence, sam. 22 mars » ; avant le
+rangement, tant qu'un lieu n'a pas de nom, la date (« Voyage du 24 juillet au
+7 août », « Sortie du sam. 9 août »). Dessous : les dates en clair, le nombre
+de photos, la distance de la maison, l'événement du calendrier (« Votre
+calendrier : « … » — vous choisirez le nom au Nommage ») et, une fois rangé,
+le dossier en petit (« Dossier « Maison/07.25 » ») ; pour un voyage, ses lieux
+visités en pastilles, « Voir les lieux » les déplie. Avant le rangement,
+OpenStreetMap n'est pas interrogé : un lieu déjà nommé à 1 km près garde son
+nom, sinon la ligne s'appelle d'après sa date, jamais « Lieu_01 ». Aucune correction sur cette page
 (« Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et
 sorties » ») : l'étape 6 range, l'étape 7 corrige. **Mis à part** : captures
 d'écran, photos sans date, vidéos sans photo du même moment, avec leur

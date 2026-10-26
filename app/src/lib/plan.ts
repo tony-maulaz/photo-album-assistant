@@ -237,7 +237,7 @@ export interface ResumeDossier {
 /**
  * Date de prise de vue sur laquelle compter pour une période : pas celle du
  * fichier (photo sans date), souvent celle d'une copie, qui étirerait par
- * exemple « Belgique » du 24.07.25 au jour de la copie.
+ * exemple un voyage de juillet jusqu’au jour de la copie.
  */
 export function dateSure(f: { date?: string; origineDate?: OrigineDate }): string | undefined {
   return f.origineDate === 'fichier' ? undefined : f.date;

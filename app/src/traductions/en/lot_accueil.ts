@@ -34,7 +34,6 @@ export const TEXTES: Record<string, string> = {
 
   // LieuxFrequents.tsx
   'Ce lieu est déjà enregistré dans la configuration : « {0} ».': 'This place is already saved in the configuration: “{0}”.',
-  'Adresse indisponible (OpenStreetMap injoignable)': 'Address unavailable (OpenStreetMap cannot be reached)',
   'Les lieux connus sont gardés dans un dossier de configuration : choisissez-le ou créez-le, le lieu sera enregistré aussitôt.':
     'Known places are kept in a configuration folder: choose or create it, and the place will be saved right away.',
 

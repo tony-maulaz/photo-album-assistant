@@ -40,18 +40,42 @@ function dates(c: { du?: string; au?: string }): string {
 const ICONES: Record<SorteLigne, NomIcone> = { voyage: 'voyage', sortie: 'sortie', maison: 'maison' };
 const SORTES: Record<SorteLigne, () => string> = { voyage: () => t`Voyage`, sortie: () => t`Sortie`, maison: () => t`À la maison` };
 
-/** Titre d'une ligne : son nom, ou, tant que son lieu n'a pas de nom, l'événement du calendrier ou la date. */
-function titre(l: LigneTri, evt: string | undefined): string {
-  if (!l.provisoire) return l.nom;
-  if (evt) return `« ${evt} »`;
-  if (!l.du || !l.au) return SORTES[l.sorte]();
-  if (l.du === l.au) return l.sorte === 'voyage' ? t`Voyage du ${nomJour(l.du)}` : t`Sortie du ${nomJour(l.du)}`;
-  return l.sorte === 'voyage' ? t`Voyage du ${nomJour(l.du)} au ${nomJour(l.au)}` : t`Sortie du ${nomJour(l.du)} au ${nomJour(l.au)}`;
+/** « sam. 9 août », en milieu de phrase. */
+const jourMin = (j: string) => nomJour(j).replace(/^./, (c) => c.toLowerCase());
+
+/** « 24 juillet », « 24 juillet → 7 août ». */
+function periodeCourte(du?: string, au?: string): string {
+  if (!du || !au) return '';
+  const f = (j: string) => nomJour(j).replace(/^\S+ /, '');
+  return du === au ? f(du) : `${f(du)} → ${f(au)}`;
 }
 
-const nomEtape = (e: EtapeLigne, i: number) => (e.provisoire ? t`${i + 1}ᵉ étape` : e.nom);
+/**
+ * Titre lisible d'une ligne (D107), le nom du dossier venant en petit
+ * dessous : « La maison en juillet », « Voyage à Rome », « Florence,
+ * sam. 9 août » ; tant que le lieu n'a pas de nom d'OpenStreetMap, la
+ * date (« Sortie du sam. 9 août ») ; l'événement du calendrier a sa ligne.
+ */
+function titre(l: LigneTri): string {
+  if (l.sorte === 'maison') {
+    if (l.du && l.au && l.du.slice(0, 7) === l.au.slice(0, 7) && /^\d{2}\.\d{2}$/.test(l.nom)) return t`La maison en ${nomMois(l.du.slice(0, 7)).replace(/ \d{4}$/, '').toLowerCase()}`;
+    if (l.du && l.au) return l.du === l.au ? t`À la maison, ${jourMin(l.du)}` : t`À la maison, ${periodeCourte(l.du, l.au)}`;
+    return l.nom;
+  }
+  const lieu = !l.provisoire && l.lieu ? l.lieu.replace(/_/g, ' ') : null;
+  if (l.sorte === 'voyage') {
+    if (lieu) return t`Voyage à ${lieu}`;
+    return l.du && l.au ? t`Voyage du ${periodeCourte(l.du, l.au).replace(' → ', ' au ')}` : l.nom;
+  }
+  if (lieu && l.du) return `${lieu}, ${l.du === l.au ? jourMin(l.du) : periodeCourte(l.du, l.au)}`;
+  if (!l.du || !l.au) return l.nom;
+  return l.du === l.au ? t`Sortie du ${jourMin(l.du)}` : t`Sortie du ${periodeCourte(l.du, l.au).replace(' → ', ' au ')}`;
+}
 
-function Ligne({ l, evts, nouveau }: { l: LigneTri; evts: EvenementCalendrier[]; nouveau: boolean }) {
+/** Une étape sans nom encore : « 1er lieu », « 2e lieu »… */
+const nomEtape = (e: EtapeLigne, i: number) => (!e.provisoire ? e.nom : i === 0 ? t`1er lieu` : t`${i + 1}e lieu`);
+
+function Ligne({ l, evts, nouveau, apercu }: { l: LigneTri; evts: EvenementCalendrier[]; nouveau: boolean; apercu: boolean }) {
   const [ouvert, setOuvert] = useState(false);
   // L'événement de l'aperçu est déjà trouvé ; pour un dossier rangé, il se calcule sur ses dates.
   const evt = useMemo(() => {
@@ -70,7 +94,7 @@ function Ligne({ l, evts, nouveau }: { l: LigneTri; evts: EvenementCalendrier[];
       </span>
       <div class="corps-ligne">
         <div class="titre-ligne">
-          <h3 title={l.nom}>{titre(l, evt)}</h3>
+          <h3 title={l.chemin}>{titre(l)}</h3>
           <span class="sorte-ligne">{SORTES[l.sorte]()}</span>
           {nouveau && <span class="badge-nouveau">{t`nouveau`}</span>}
         </div>
@@ -79,21 +103,22 @@ function Ligne({ l, evts, nouveau }: { l: LigneTri; evts: EvenementCalendrier[];
           {l.videos > 0 && ` · ${pluriel(l.videos, 'vidéo')}`}
           {l.km !== undefined && l.sorte !== 'maison' && ` · ${t`à ${nombre(l.km)} km de la maison`}`}
         </span>
+        {evt && <span class="calendrier-ligne">{t`Votre calendrier : « ${evt} » — vous choisirez le nom au Nommage.`}</span>}
         {l.provisoire ? (
           <span class="discret">{t`Le nom du lieu viendra au rangement (OpenStreetMap).`}</span>
         ) : (
-          evt && <span class="discret">{t`Calendrier : « ${evt} » — vous choisirez le nom au Nommage.`}</span>
+          !apercu && <span class="dossier-ligne">{t`Dossier « ${l.chemin} »`}</span>
         )}
         {l.etapes.length > 1 && (
           <div class="etapes-ligne">
-            <strong>{pluriel(l.etapes.length, 'étape')} :</strong>
+            <strong>{pluriel(l.etapes.length, 'lieu visité', 'lieux visités')} :</strong>
             {l.etapes.map((e, i) => (
               <span key={e.cle} class="pastille-etape">
                 {nomEtape(e, i)} · {nombre(e.photos)}
               </span>
             ))}
             <button type="button" class="lien" aria-expanded={ouvert} onClick={() => setOuvert(!ouvert)}>
-              {ouvert ? t`Masquer les étapes` : t`Voir les étapes`}
+              {ouvert ? t`Masquer les lieux` : t`Voir les lieux`}
             </button>
           </div>
         )}
@@ -176,11 +201,7 @@ export function ResultatTri({ r, apercu }: { r: Resultat; apercu: boolean }) {
     <section class="resultat-tri" id="resultat-tri">
       <div class="tete-resultat">
         <h2>{titreResultat || t`Vos dossiers`}</h2>
-        <p class="discret">
-          {apercu
-            ? t`Aperçu : rien n’est encore rangé. Il suit vos réglages ; les noms des lieux sont demandés à OpenStreetMap au rangement.`
-            : t`Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ».`}
-        </p>
+        {apercu ? <span class="apercu-badge">{t`Aperçu : rien n’est encore rangé`}</span> : <p class="discret">{t`Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ».`}</p>}
       </div>
       <nav class="onglets-doublons" aria-label={t`Sortes de dossiers`}>
         {ONGLETS.map(([o, nom]) => (
@@ -198,7 +219,7 @@ export function ResultatTri({ r, apercu }: { r: Resultat; apercu: boolean }) {
             return (
               <div key={l.cle} class="place-ligne">
                 {mois !== lignes[i - 1]?.du?.slice(0, 7) && <h3 class="mois-lignes">{mois ? nomMois(mois) : t`Sans date`}</h3>}
-                <Ligne l={l} evts={evts} nouveau={nouveaux.has(repereLigne(l))} />
+                <Ligne l={l} evts={evts} nouveau={nouveaux.has(repereLigne(l))} apercu={apercu} />
               </div>
             );
           })}

@@ -28,6 +28,10 @@ export interface LigneTri {
   cle: string;
   sorte: SorteLigne;
   nom: string;
+  /** Chemin du dossier sous Photos/ (« Maison/07.25 »), montré en petit sous le titre lisible (D107). */
+  chemin: string;
+  /** Lieu du dossier (nom de commune, lieu connu ; pour un voyage, celui de sa plus grande étape). */
+  lieu?: string;
   provisoire: boolean;
   du?: string;
   au?: string;
@@ -94,7 +98,7 @@ export function resultatPropose(dossiers: DossierPropose[], fichier: (id: string
     const sorte: SorteLigne = d.sorte === 'sans_lieu' ? 'sortie' : d.sorte;
     if (sorte === 'voyage' && d.chemin.length > 1) {
       const cle = d.chemin[0];
-      const v = lignes.get(cle) ?? { cle, sorte, nom: cle, provisoire: false, photos: 0, videos: 0, dates: [], etapes: [] };
+      const v = lignes.get(cle) ?? { cle, sorte, nom: cle, chemin: cle, ...(d.infoParent?.lieu ? { lieu: d.infoParent.lieu } : {}), provisoire: false, photos: 0, videos: 0, dates: [], etapes: [] };
       v.photos += c.photos;
       v.videos += c.videos;
       v.dates.push(...c.dates);
@@ -108,6 +112,8 @@ export function resultatPropose(dossiers: DossierPropose[], fichier: (id: string
         cle,
         sorte,
         nom: d.chemin.at(-1)!,
+        chemin: cle,
+        ...(d.info.lieu && d.info.origine !== 'lieu_connu' ? { lieu: d.info.lieu } : {}),
         provisoire: !!d.nomProvisoire,
         ...c,
         etapes: [],
@@ -155,7 +161,10 @@ export function resultatDuPlan(plan: Plan, domicile?: LieuConnu): ResultatTri {
     const c = compter(fichiers);
     if (!c.photos && !c.videos) return;
     const k = etapes.some((e) => e.km !== undefined) ? Math.max(...etapes.map((e) => e.km ?? 0)) : km(d);
-    lignes.push({ cle: d.id, sorte, nom: d.nom, provisoire: false, ...c, ...bornes(c.dates), etapes, ...(k !== undefined && domicile ? { km: k } : {}) });
+    const parent = d.parent ? plan.dossiers.get(d.parent) : undefined;
+    const chemin = parent && parent.parent !== null ? `${parent.nom}/${d.nom}` : d.nom;
+    const lieu = d.tri?.origine !== 'lieu_connu' ? d.tri?.lieu : undefined;
+    lignes.push({ cle: d.id, sorte, nom: d.nom, chemin, ...(lieu ? { lieu } : {}), provisoire: false, ...c, ...bornes(c.dates), etapes, ...(k !== undefined && domicile ? { km: k } : {}) });
   };
   for (const d of plan.dossiers.values()) {
     if (!duTri(d) || (d.parent && plan.dossiers.get(d.parent) && duTri(plan.dossiers.get(d.parent)!))) continue;

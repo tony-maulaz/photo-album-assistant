@@ -1303,6 +1303,34 @@ remette l'arborescence d'avant, sous-dossiers vides compris. Les réunions faite
 avec l'ancien encart restent telles quelles. Reste à mesurer : un projet sans
 domicile, où l'encart était le seul à réunir un voyage éclaté.
 
+**D107 — Étape 6 : mise en page refaite, relue par quatre agents.**
+L'utilisateur jugeait la page « pas du tout » : le panneau des lieux
+fréquents s'ouvrait dans une ligne de la colonne de gauche (« imbriqué, tout
+serré à gauche »), et les réglages en boutons segmentés étaient illisibles.
+Une maquette a été relue deux fois, avant d'être montrée, par quatre agents
+(spécialiste UX, utilisateur sans connaissance, amateur de belles
+interfaces, critique pointilleux : 7,5 à 8,5 sur 10 à la deuxième lecture,
+5 à 7 à la première), puis alignée avec l'audit d'interface en cours (D108).
+Retenu : des **anneaux d'état** (orange à faire, vert coché fait, pointillé
+facultatif avec son étiquette) ; **un seul bouton plein**, la première chose
+à faire, les autres en contour (comme aux Doublons, D98) ; les réglages en
+**listes de choix**, une ligne par choix avec son effet chiffré à droite et
+« conseillé » en simple texte ; le bouton « Ranger les photos » **après** les
+choix (l'utilisateur sans connaissance cliquait avant de les lire) ; un
+composant **`Fenetre`** (Dialogues.tsx) pour tout contenu riche — lieux
+fréquents en cartes (photos, adresse, nom, « C'est notre maison », « Pas
+maintenant »), captures d'écran, aide IA des photos sans position — avec un
+seul « Fermer », Échap, le clavier gardé dans la fenêtre et le focus rendu ;
+des **titres lisibles** à droite (« La maison en juillet », « Voyage à
+Rome », « Florence, sam. 22 mars ») avec le dossier en petit dessous, et
+« lieux visités » au lieu d'« étapes » (le mot désignait aussi les étapes de
+l'application) ; des phrases qui rassurent (« Vos photos d'origine ne
+bougent pas », « seule leur position est envoyée, jamais vos photos ») ;
+sans domicile, les questions sur les voyages et la maison ne sont pas posées.
+Après le rangement, « Ranger autrement… » rouvre les choix (« Ranger à
+nouveau » y passe). Corrigé au passage : « 1ᵉ étape » au lieu de « 1er lieu »
+pour une étape sans nom. Maquette : https://claude.ai/artifact/V14LUpJAEzT1cYQMArq7Zk.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

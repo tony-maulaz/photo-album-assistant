@@ -31,20 +31,20 @@ function plan(dossiers: Record<string, [InfoTri | undefined, string[]]>, parents
 
 const MAISON: LieuConnu = { id: 'Maison', nom: 'Maison', lat: 45, lon: 5, rayon_m: 300, domicile: true, un_seul_dossier: false, notes: '' };
 const maison: InfoTri = { origine: 'lieu_connu', lieu: 'Maison', lat: 45, lon: 5 };
-const PARIS = { lat: 48.8584, lon: 2.2945 };
+const ROME = { lat: 41.9028, lon: 12.4964 };
 
 describe('resultatDuPlan', () => {
   const p = plan(
     {
       'Maison/06.25': [maison, ['2025-06-02T10:00:00', '2025-06-20T10:00:00']],
       'Maison/24-25.12.25': [maison, ['2025-12-24T18:00:00', '2025-12-25T10:00:00']],
-      'Voyage_Paris_10-12.07.25/Paris_10-11.07.25': [{ origine: 'etape', lieu: 'Paris', ...PARIS }, ['2025-07-10T10:00:00', '2025-07-11T10:00:00']],
-      'Voyage_Paris_10-12.07.25/Versailles_12.07.25': [{ origine: 'etape', lieu: 'Versailles', lat: 48.8049, lon: 2.1204 }, ['2025-07-12T10:00:00']],
+      'Voyage_Rome_10-12.07.25/Rome_10-11.07.25': [{ origine: 'etape', lieu: 'Rome', ...ROME }, ['2025-07-10T10:00:00', '2025-07-11T10:00:00']],
+      'Voyage_Rome_10-12.07.25/Tivoli_12.07.25': [{ origine: 'etape', lieu: 'Tivoli', lat: 41.9637, lon: 12.7986 }, ['2025-07-12T10:00:00']],
       'Lyon_05.06.25': [{ origine: 'gps', lieu: 'Lyon', lat: 45.76, lon: 4.84 }, ['2025-06-05T15:00:00']],
       _sans_date: [{ origine: 'sans_lieu' }, ['2024-01-01']],
       '_videos_non_classees/2025-08': [{ origine: 'sans_lieu' }, ['2025-08-01T10:00:00']],
     },
-    { Maison: maison, 'Voyage_Paris_10-12.07.25': { origine: 'voyage', lieu: 'Paris' } },
+    { Maison: maison, 'Voyage_Rome_10-12.07.25': { origine: 'voyage', lieu: 'Rome' } },
   );
   const r = resultatDuPlan(p, MAISON);
 
@@ -52,7 +52,7 @@ describe('resultatDuPlan', () => {
     expect(r.lignes.map((l) => [l.nom, l.sorte])).toEqual([
       ['06.25', 'maison'],
       ['Lyon_05.06.25', 'sortie'],
-      ['Voyage_Paris_10-12.07.25', 'voyage'],
+      ['Voyage_Rome_10-12.07.25', 'voyage'],
       ['24-25.12.25', 'maison'],
     ]);
     expect(compteSortes(r)).toEqual({ voyage: 1, sortie: 1, maison: 2 });
@@ -61,8 +61,8 @@ describe('resultatDuPlan', () => {
   it('un voyage porte ses étapes, ses dates, ses photos et la distance de sa plus lointaine étape', () => {
     const v = r.lignes.find((l) => l.sorte === 'voyage')!;
     expect(v.etapes.map((e) => [e.nom, e.photos])).toEqual([
-      ['Paris_10-11.07.25', 2],
-      ['Versailles_12.07.25', 1],
+      ['Rome_10-11.07.25', 2],
+      ['Tivoli_12.07.25', 1],
     ]);
     expect([v.du, v.au, v.photos]).toEqual(['2025-07-10', '2025-07-12', 3]);
     expect(v.km).toBe(Math.max(...v.etapes.map((e) => e.km!)));
@@ -83,8 +83,8 @@ describe('resultatDuPlan', () => {
   });
 
   it('un voyage d’un seul dossier : la distance du centre de ses photos situées', () => {
-    const q = plan({ 'Voyage_Paris_10-11.07.25': [{ origine: 'voyage', lieu: 'Paris' }, ['2025-07-10T10:00:00', '2025-07-11T10:00:00']] });
-    for (const f of q.fichiers.values()) f.gps = PARIS;
+    const q = plan({ 'Voyage_Rome_10-11.07.25': [{ origine: 'voyage', lieu: 'Rome' }, ['2025-07-10T10:00:00', '2025-07-11T10:00:00']] });
+    for (const f of q.fichiers.values()) f.gps = ROME;
     expect(resultatDuPlan(q, MAISON).lignes[0].km).toBeGreaterThan(400);
   });
 
@@ -107,7 +107,7 @@ describe('resultatPropose (aperçu en direct, D104)', () => {
   const dossiers: DossierPropose[] = [
     { chemin: ['Voyage_Lieu_01_14-15.03.26', 'Lieu_02_14.03.26'], photos: ['a'], sorte: 'voyage', info: { origine: 'etape', lieu: 'Lieu_02' }, infoParent: { origine: 'voyage', lieu: 'Lieu_01' }, km: 300, nomProvisoire: true },
     { chemin: ['Voyage_Lieu_01_14-15.03.26', 'Lieu_01_15.03.26'], photos: ['b', 'c'], sorte: 'voyage', info: { origine: 'etape', lieu: 'Lieu_01' }, infoParent: { origine: 'voyage', lieu: 'Lieu_01' }, km: 450, nomProvisoire: true },
-    { chemin: ['Annecy_20.03.26'], photos: ['d'], sorte: 'sortie', info: { origine: 'gps', lieu: 'Annecy' }, km: 40, evenement: 'Ski' },
+    { chemin: ['Florence_20.03.26'], photos: ['d'], sorte: 'sortie', info: { origine: 'gps', lieu: 'Florence' }, km: 40, evenement: 'Ski' },
     { chemin: ['Maison', '04.26'], photos: ['e'], sorte: 'maison', info: { origine: 'lieu_connu', lieu: 'Maison' } },
     { chemin: ['_sans_date'], photos: ['x'], sorte: 'sans_lieu', info: { origine: 'sans_lieu' } },
   ];
@@ -116,7 +116,7 @@ describe('resultatPropose (aperçu en direct, D104)', () => {
   it('les étapes d’un voyage réunies sous lui ; un lieu sans nom est signalé provisoire', () => {
     expect(r.lignes.map((l) => [l.sorte, l.nom, l.provisoire])).toEqual([
       ['voyage', 'Voyage_Lieu_01_14-15.03.26', true],
-      ['sortie', 'Annecy_20.03.26', false],
+      ['sortie', 'Florence_20.03.26', false],
       ['maison', '04.26', false],
     ]);
     const v = r.lignes[0];

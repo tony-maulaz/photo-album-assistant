@@ -51,7 +51,7 @@ function PageTriVrac() {
   return (
     <div class="page avec-barre page-tri">
       <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique`} cle="tri" outils={<CurseurTaille />}>
-        {t`L’application range vos photos dans l’ordre du temps : un dossier par voyage (avec ses étapes), un par sortie, et la maison mois par mois. Le calendrier ne découpe rien : il propose des noms, que vous choisirez au Nommage. Faites d’abord ce qui est marqué ● ; ce qui est marqué ○ est facultatif. Vos dossiers se voient à droite, et suivent vos réglages.`}
+        {t`Rangez vos photos en dossiers : un par voyage, un par sortie, et la maison mois par mois. Vos photos d’origine ne bougent pas : l’application prépare un plan, la copie se fait à la dernière étape.`}
       </TeteEtape>
       <div class="colonnes-tri">
         <TriAuto e={e} o={o} setO={setO} ap={ap} apercu={apercu} actuel={actuel} />
@@ -59,7 +59,7 @@ function PageTriVrac() {
       </div>
       <BarreValidation
         resume={e.range ? `${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(proposes.length, 'dossier')}` : t`Photos pas encore rangées`}
-        alertes={restants.length ? [restants.length === 1 ? t`● Encore 1 chose à faire : ${restants[0]}` : t`● Encore ${restants.length} choses à faire : ${restants.join(', ')}`] : []}
+        alertes={restants.length ? [restants.length === 1 ? t`Encore 1 chose à faire : ${restants[0]}` : t`Encore ${restants.length} choses à faire`] : []}
         revenir={() => revenirDe('tri')}
         valider={() => validerEtape('tri')}
         validerActif={e.range}

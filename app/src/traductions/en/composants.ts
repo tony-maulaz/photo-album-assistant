@@ -177,24 +177,9 @@ export const TEXTES: Record<string, string> = {
 
   // LieuxFrequents.tsx
   'Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).': 'First give the place a name (e.g. Grandparents).',
-  'Domicile « {0} » enregistré : les voyages seront repérés au prochain calcul de l’arborescence.':
-    'Home “{0}” saved: trips will be detected the next time the folder tree is calculated.',
-  'lieu qui revient souvent': 'place that comes up often',
-  'lieux qui reviennent souvent': 'places that come up often',
-  '— à enregistrer comme lieu connu (maison, grands-parents, école…)': '— to save as a known place (home, grandparents, school…)',
-  'Un lieu enregistré reçoit son propre dossier (« Maison », « Chez_Grands_Parents »…), rangé par sortie. L’adresse vient d’OpenStreetMap (seules les coordonnées sont envoyées).':
-    'A saved place gets its own folder (“Home”, “Grandparents”…), arranged by outing. The address comes from OpenStreetMap (only the coordinates are sent).',
-  'sur {0} jours ·': 'over {0} days ·',
   'Coordonnées : {0}, {1}': 'Coordinates: {0}, {1}',
   'Recherche de l’adresse…': 'Looking up the address…',
   'Moins de photos': 'Fewer photos',
-  'Voir les {0} photos': 'See all {0} photos',
-  'Nom du lieu (ex. Maison)': 'Place name (e.g. Home)',
-  'Le domicile sert à repérer les voyages (sorties loin de la maison qui s’enchaînent).':
-    'Home is used to detect trips (outings far from home that follow one another).',
-  'C’est notre domicile': 'This is our home',
-  'Enregistrer comme lieu connu': 'Save as a known place',
-  ignorer: 'ignore',
 
   // LigneDeTemps.tsx
   'Aucun dossier daté.': 'No dated folders.',
@@ -341,7 +326,6 @@ export const TEXTES: Record<string, string> = {
   'nouvelle photo': 'new photo',
   'nouvelles photos': 'new photos',
   // Tri automatique (D87, D103).
-  'Lieu « {0} » enregistré : rangez à nouveau pour en tenir compte.': 'Place “{0}” saved: arrange again to take it into account.',
   'Ranger à nouveau ?': 'Arrange again?',
   'Les photos à trier seront rangées à nouveau : les déplacements faits à la main depuis le dernier rangement seront remplacés (Ctrl+Z annule).':
     'The photos to sort will be arranged again: moves made by hand since the last arrangement will be replaced (Ctrl+Z undoes).',
@@ -349,8 +333,6 @@ export const TEXTES: Record<string, string> = {
   'Noms des lieux indisponibles (OpenStreetMap injoignable) : les dossiers ont des noms provisoires (« {0}_01 »…). Renommez-les plus tard, ou rangez à nouveau une fois connecté.':
     'Place names unavailable (OpenStreetMap cannot be reached): the folders have temporary names (“{0}_01”…). Rename them later, or arrange again once connected.',
   'Tout ranger à nouveau': 'Arrange everything again',
-  'Ensuite, les noms des endroits sont demandés à OpenStreetMap (Nominatim) : seules les coordonnées moyennes de chaque endroit sont envoyées, une par seconde.':
-    'The place names are then asked from OpenStreetMap (Nominatim): only the average coordinates of each place are sent, one per second.',
   ' : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; l’IA peut situer les photos sans GPS.':
     ': put screenshots aside, save the places that come up often, choose how to arrange (the result shows at once), then “Arrange the photos”; the AI can locate photos without GPS.',
   'Photos pas encore rangées': 'Photos not arranged yet',

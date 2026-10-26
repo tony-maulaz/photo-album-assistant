@@ -444,29 +444,35 @@ try {
   // Étape 6 : tri automatique (D103) ; la liste « À faire » : captures d'écran, copies, maison, puis ranger.
   await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
   const captures = page.locator('.captures-avant-tri');
-  verifier((await captures.innerText()).includes('1 photo ressemble à des captures d’écran') && (await captures.locator('.puce-afaire').innerText()) === '●', 'à faire : 1 capture d’écran trouvée, marquée ●');
-  await captures.getByRole('button', { name: 'Les mettre à part' }).click();
+  verifier((await captures.innerText()).includes('1 capture d’écran') && (await captures.locator('.puce-afaire').getAttribute('aria-label')) === 'À faire', 'à faire : 1 capture d’écran trouvée, anneau « à faire »');
+  // Les captures se voient dans une fenêtre (D107), qui se ferme par Échap.
+  await captures.getByRole('button', { name: 'Voir', exact: true }).click();
+  verifier((await page.locator('.fenetre[role=dialog]').innerText()).includes('Captures d’écran trouvées'), 'les captures s’ouvrent dans une fenêtre');
+  await page.keyboard.press('Escape');
+  await page.locator('.fenetre').waitFor({ state: 'detached' });
+  await captures.getByRole('button', { name: 'Mettre à part' }).click();
   await page.getByText('1 capture d’écran mise à part').waitFor();
   verifier(true, `capture d’écran rangée dans ${N.captures}, la ligne passe à ✓`);
   const copies = page.locator('.copies-avant-tri');
   verifier((await copies.innerText()).includes('2 photos en double'), 'à faire : les 2 copies pas encore écartées sont signalées');
-  await copies.getByRole('button', { name: 'Mettre 2 copies de côté' }).click();
+  verifier((await copies.locator('button.principal').count()) === 0, 'un seul bouton plein : la maison d’abord, les copies en contour (D107)');
+  await copies.getByRole('button', { name: 'Mettre de côté' }).click();
   await copies.waitFor({ state: 'detached' });
   verifier(true, 'un clic met les copies de côté avant le tri');
   verifier((await page.locator('.ligne-afaire.afaire', { hasText: 'Votre maison n’est pas encore indiquée' }).count()) === 1, 'sans domicile : la maison est à indiquer (●)');
-  verifier((await page.locator('.barre-validation .alerte').innerText()).includes('indiquer votre maison'), `barre du bas : ${await page.locator('.barre-validation .alerte').innerText()}`);
+  verifier(/Encore 2 choses à faire/.test(await page.locator('.barre-validation .alerte').innerText()), `barre du bas : ${await page.locator('.barre-validation .alerte').innerText()}`);
   // Avant de ranger : l'aperçu en direct, ligne par ligne, sans miniatures (D104).
   verifier((await page.locator('.resultat-tri .tete-resultat').innerText()).includes('Aperçu : rien n’est encore rangé') && (await page.locator('.resultat-tri .ligne-tri').count()) > 0, `aperçu avant de ranger : ${await page.locator('.resultat-tri .ligne-tri').count()} lignes`);
   verifier((await page.locator('.resultat-tri img').count()) === 0 && (await page.getByRole('button', { name: /^Couper|^Réunir/ }).count()) === 0, 'ni miniatures, ni « Couper… », ni « Réunir »');
   // Une seule question, et les chiffres calculés avec les photos avant de ranger.
   const chiffres = await page.locator('.ligne-ranger .apercu-tri-chiffres').innerText();
   const prevus = Number(chiffres.match(/(\d+) dossiers? en tout/)[1]);
-  verifier(prevus > 0 && (await page.getByRole('radio', { name: /avec un sous-dossier par étape/ }).isChecked()), `avant de ranger : ${chiffres}`);
+  verifier(prevus > 0 && (await page.locator('.ligne-ranger .encart-info').count()) === 1, `avant de ranger, sans maison : pas de questions sur les voyages ; ${chiffres}`);
   await capturer(page, 'v3a_reglages_tri');
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
   await page.locator('.ligne-ranger.fait').waitFor({ timeout: 60_000 });
   const resume = await page.locator('.ligne-ranger .texte-afaire > strong').innerText();
-  verifier(/photos? rangées? dans \d+ dossiers?/.test(resume), `rangé : ${resume}`);
+  verifier(/^Photos rangées : /.test(resume), `rangé : ${resume}`);
   verifier(requetesNominatim.length > 0, `${requetesNominatim.length} requête(s) à OpenStreetMap (simulé)`);
   const lignesTri = await page.locator('.resultat-tri .ligne-tri').count();
   verifier(lignesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout') && (await page.locator('.resultat-tri .tete-resultat').innerText()).includes('étape suivante'), `résultat : ${lignesTri} lignes dans l’onglet « Tout »`);
@@ -476,6 +482,7 @@ try {
   verifier((await page.locator('.mis-a-part').innerText()).includes('Captures d’écran'), 'onglet « Mis à part » : la capture d’écran');
   await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Tout' }).click();
   const avant = requetesNominatim.length;
+  await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger autrement…' }).click();
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger à nouveau' }).click();
   await page.locator('.dialogue').getByRole('button', { name: 'Ranger à nouveau' }).click();
   await page.waitForTimeout(500);
@@ -668,7 +675,7 @@ try {
   verifier(true, 'inventaire mis à jour : 2 fichiers ajoutés, le reste gardé');
   await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
-  verifier((await page.locator('.barre-validation .alerte').innerText()).includes('ranger 1 nouvelle photo'), 'à faire : la nouvelle photo à ranger (barre du bas)');
+  verifier((await page.locator('.ligne-ranger.afaire').innerText()).includes('1 nouvelle photo à ranger') && /Encore/.test(await page.locator('.barre-validation .alerte').innerText()), 'à faire : la nouvelle photo à ranger (ligne marquée « à faire », rappel dans la barre du bas)');
   await page.getByRole('button', { name: 'Ranger 1 nouvelle photo' }).click();
   // Rangée quand la ligne « Ranger » passe à ✓ (le nom du nouveau lieu est demandé à OpenStreetMap).
   await page.locator('.ligne-ranger.fait').waitFor({ timeout: 60_000 });
