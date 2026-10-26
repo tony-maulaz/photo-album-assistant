@@ -44,7 +44,7 @@ import { executerRequete } from '../../navigateur/executeur';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
 import { Visionneuse } from '../composants/Visionneuse';
-import { annuler, appliquer, configuration, contexteExecution, notifier, page, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
+import { annuler, appliquer, configuration, contexteExecution, evenements, notifier, page, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
 import { jourCourt, nombre, nomJour, pluriel } from '../format';
@@ -216,6 +216,7 @@ function contexteDe(s: Session, reunions: Reunion[], aLaMaison: number[]): Conte
     aLaMaison,
     nomDonne: (d) => !estNomAutomatique(d.nom, dossierDe(s, d.id)?.tri?.nom),
     voyages,
+    evts: evenements.value,
   };
 }
 
@@ -251,15 +252,18 @@ function raison(p: Proposition): string {
       : t`${pluriel(n, 'jour')} loin de la maison, sans photo prise à la maison entre-temps.`;
   }
   const r = p.rencontre;
-  if (!r) return p.noms ? t`Des noms proches, à moins de ${JOURS_MAX_NOMS_PROCHES} jours d’écart.` : '';
+  // Le calendrier (D106) : seul, ou en plus de ce que disent les photos.
+  const calendrier = p.evenement ? t`Pris pendant « ${p.evenement} » (votre calendrier), au même endroit.` : '';
+  if (!r) return [p.noms ? t`Des noms proches, à moins de ${JOURS_MAX_NOMS_PROCHES} jours d’écart.` : '', calendrier].filter(Boolean).join(' ');
   const ecart = r.minutes < 1 ? t`moins d’une minute` : r.minutes < 60 ? t`${nombre(r.minutes)} min` : t`${nombre(r.minutes / 60, r.minutes < 600 ? 1 : 0)} h`;
-  if (r.km === null) return t`Des photos prises à ${ecart} d’écart (lieu inconnu pour l’un des dossiers).`;
+  if (r.km === null) return [t`Des photos prises à ${ecart} d’écart (lieu inconnu pour l’un des dossiers).`, calendrier].filter(Boolean).join(' ');
   const distance = r.km < 1 ? t`${nombre(Math.max(10, Math.round(r.km * 100) * 10))} m` : t`${nombre(r.km, r.km < 10 ? 1 : 0)} km`;
-  return t`Des photos prises à ${ecart} et ${distance} d’écart.`;
+  return [t`Des photos prises à ${ecart} et ${distance} d’écart.`, calendrier].filter(Boolean).join(' ');
 }
 
 /** Le titre d'une proposition selon sa sorte. */
 function titreSorte(p: Proposition): string {
+  if (p.sorte === 'sortie' && p.evenement && !p.rencontre && !p.noms) return t`Un même événement en plusieurs dossiers ?`;
   if (p.sorte === 'sortie') return t`Une sortie coupée en plusieurs dossiers ?`;
   return p.voyageEntier ? t`Un voyage en un seul dossier ?` : t`Un week-end ou un petit voyage ?`;
 }

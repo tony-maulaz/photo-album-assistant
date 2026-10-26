@@ -4,13 +4,16 @@
 // dossiers et des `Lieu_*`, et propose des fusions et des renommages.
 // Sans IA (D91) : les dossiers dont des photos se suivent (une sortie coupée
 // en deux) et les étapes d'un week-end ou d'un petit voyage sont proposés,
-// avec des réglages dont on voit l'effet ; l'utilisateur décide.
+// avec des réglages dont on voit l'effet ; l'utilisateur décide. Le
+// calendrier y ajoute les dossiers d'un même événement au même endroit
+// (D106, à la place des regroupements de l'étape 7).
 
 import consigneConsolidation from '../ia/consignes/consolidation_consigne.txt?raw';
 import sectionPlanches from '../ia/consignes/consolidation_section_planches.txt?raw';
 import consigneSysteme from '../ia/consignes/consolidation_systeme.txt?raw';
+import { dureeEvenement, evenementPrincipal, evenementsUtiles, type EvenementCalendrier } from './ics';
 import { cleNom } from './noms';
-import { photosDuDossier, IGNORES_NOMMAGE, cleRequete, coutEstime, jetonsPlanche, MOTIF_DATE_SEULE, normaliserNom, premierObjet, sansDateFinale, texteCourt, type BlocContenu, type Estimation, type RequeteIA } from './nommage';
+import { photosDuDossier, IGNORES_NOMMAGE, cleRequete, coutEstime, jetonsPlanche, MOTIF_DATE_SEULE, nomDepuisEvenement, normaliserNom, premierObjet, sansDateFinale, texteCourt, type BlocContenu, type Estimation, type RequeteIA } from './nommage';
 import type { FichierPlan, Plan } from './plan';
 import { minutes } from './selection';
 import { nomsSortie } from './sortie';
@@ -467,6 +470,8 @@ export interface Proposition {
   noms: boolean;
   /** Voyage : toutes les étapes d'un dossier de voyage (le parent) ; on peut les réunir en un seul dossier. */
   voyageEntier: boolean;
+  /** Sortie : l'événement du calendrier pendant lequel ses dossiers ont été pris, au même endroit (D106). */
+  evenement?: string;
   /** Proposée ou confirmée par l'IA (IA6) : nom proposé et raison. */
   ia?: { cible: string; raison: string };
 }
@@ -484,6 +489,8 @@ export interface ContexteReunions {
   nomDonne: (d: DossierInfo) => boolean;
   /** Dossiers de voyage : faits par le tri (ses étapes peuvent être réunies), ou choisis à cette étape (rien à proposer). */
   voyages: ReadonlyMap<string, 'tri' | 'choisi'>;
+  /** Le calendrier (sans lui, pas de proposition « même événement »). */
+  evts?: EvenementCalendrier[];
 }
 
 /**
@@ -623,8 +630,84 @@ function petitsVoyages(g: GroupeFreres, r: ReglagesConsolidation, c: ContexteReu
 }
 
 /**
+ * Un événement de 4 jours au plus (une fête, un concours, un week-end) : au
+ * delà, une période (« Vacances d'automne ») réunissait des voyages entiers
+ * (sur 2025, 16 regroupements faux sur 22 avec 21 jours, D106).
+ */
+export const JOURS_MAX_EVENEMENT_REUNION = 4;
+/** Dossiers d'un même événement à 5 km au plus l'un de l'autre : le même endroit (deux sorties à 32 km d’écart pendant un même événement n’en sont pas un). */
+export const KM_MAX_EVENEMENT = 5;
+
+/**
+ * Dossiers d'un même événement au même endroit (D106) : chacun pris pendant
+ * cet événement (au moins la moitié de ses photos, la règle de l'événement
+ * montré sous un dossier, D94), à 5 km au plus de tous les autres, hors
+ * dossiers de voyage. Le calendrier trouve ce que les photos ne relient pas :
+ * une fête sur deux jours avec retour à la maison, un concours en deux
+ * séances.
+ */
+function memesEvenements(g: GroupeFreres, v: Voisinage, c: ContexteReunions): Proposition[] {
+  if (!c.evts?.length) return [];
+  const courts = evenementsUtiles(c.evts).filter((e) => dureeEvenement(e) <= JOURS_MAX_EVENEMENT_REUNION * 86_400);
+  if (!courts.length) return [];
+  const parEvenement = new Map<string, { titre: string; dossiers: DossierInfo[] }>();
+  for (const d of g.dossiers) {
+    if (c.voyages.has(d.id)) continue;
+    const e = evenementPrincipal(courts, d.photos.map((p) => p.date).filter((x): x is string => !!x));
+    if (!e) continue;
+    const cle = `${e.titre}|${e.debut}`;
+    const x = parEvenement.get(cle) ?? { titre: e.titre, dossiers: [] };
+    x.dossiers.push(d);
+    parEvenement.set(cle, x);
+  }
+  const resultat: Proposition[] = [];
+  const pres = (a: DossierInfo, b: DossierInfo) => {
+    const [p, q] = [v.centres.get(a.id), v.centres.get(b.id)];
+    return !p || !q || kmEntre(p, q) <= KM_MAX_EVENEMENT;
+  };
+  for (const { titre, dossiers } of parEvenement.values()) {
+    // Au même endroit : les plus grands d'abord, chacun rejoint le premier groupe dont il est près de tous.
+    const groupes: DossierInfo[][] = [];
+    for (const d of [...dossiers].sort((a, b) => b.photos.length - a.photos.length)) {
+      const ou = groupes.find((x) => x.every((y) => pres(d, y)));
+      if (ou) ou.push(d);
+      else groupes.push([d]);
+    }
+    for (const x of groupes) {
+      if (x.length < 2 || paires(x.map((d) => d.id)).every((p) => c.ignorees.has(p))) continue;
+      resultat.push(proposition('sortie', g.parent, x, { evenement: titre }));
+    }
+  }
+  return resultat;
+}
+
+/**
+ * Ajoute les propositions du calendrier (D106) : sur les mêmes dossiers
+ * qu'une proposition faite d'après les photos (ou une partie), il la
+ * confirme ; s'il en réunit davantage, il la remplace en gardant ce que les
+ * photos disaient ; s'il n'en recoupe qu'une partie, il se tait (deux
+ * propositions contradictoires) ; sinon il s'ajoute.
+ */
+function avecCalendrier(liste: Proposition[], parEvenement: Proposition[]): Proposition[] {
+  const resultat = [...liste];
+  for (const ev of parEvenement) {
+    const ids = new Set(ev.dossiers.map((d) => d.id));
+    const recoupees = resultat.filter((p) => p.parent === ev.parent && p.dossiers.some((d) => ids.has(d.id)));
+    if (!recoupees.length) {
+      resultat.push(ev);
+      continue;
+    }
+    if (recoupees.length !== 1) continue;
+    const p = recoupees[0];
+    if (p.dossiers.every((d) => ids.has(d.id)) && p.sorte === 'sortie') resultat.splice(resultat.indexOf(p), 1, { ...ev, rencontre: p.rencontre, noms: p.noms });
+    else if (ev.dossiers.every((d) => p.dossiers.some((x) => x.id === d.id))) p.evenement = ev.evenement;
+  }
+  return resultat;
+}
+
+/**
  * Propositions de l'étape avec ces réglages (D91), dans l'ordre du temps :
- * sorties coupées et petits voyages. Un groupe qui est à la fois l'un et
+ * sorties coupées, petits voyages, et dossiers d'un même événement (D106). Un groupe qui est à la fois l'un et
  * l'autre est montré comme voyage (on choisit alors un ou plusieurs dossiers).
  */
 export function propositions(v: Voisinage, r: ReglagesConsolidation, c: ContexteReunions): Proposition[] {
@@ -632,7 +715,7 @@ export function propositions(v: Voisinage, r: ReglagesConsolidation, c: Contexte
   for (const g of v.groupes) {
     const voyages = petitsVoyages(g, r, c);
     const memes = new Set(voyages.map((p) => p.cle.slice(p.cle.indexOf(':'))));
-    resultat.push(...sortiesCoupees(g, v, r, c).filter((p) => !memes.has(p.cle.slice(p.cle.indexOf(':')))), ...voyages);
+    resultat.push(...avecCalendrier([...sortiesCoupees(g, v, r, c).filter((p) => !memes.has(p.cle.slice(p.cle.indexOf(':')))), ...voyages], memesEvenements(g, v, c)));
   }
   return resultat.sort((a, b) => (a.du ?? '9').localeCompare(b.du ?? '9') || (a.sorte === b.sorte ? 0 : a.sorte === 'sortie' ? -1 : 1));
 }
@@ -687,6 +770,8 @@ export function nomReuni(nom: string, du?: string, au?: string): string {
  */
 export function nomPropose(p: Proposition, choix: 'un' | 'etapes', nomParent = ''): string {
   if (choix === 'un' && p.ia) return p.ia.cible;
+  // Le titre de l'événement, suivi des dates (convention Theme_Lieu_JJ.MM.AA, D106).
+  if (choix === 'un' && p.evenement && p.du && p.au) return normaliserNom(nomDepuisEvenement(p.evenement, p.du, p.au));
   if (choix === 'un' && p.voyageEntier && nomParent) return nomParent;
   const pr = principal(p.dossiers);
   if (choix === 'un') return nomReuni(pr.nom, p.du, p.au);

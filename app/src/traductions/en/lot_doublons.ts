@@ -152,15 +152,6 @@ export const TEXTES: Record<string, string> = {
 
   // Organiser.tsx, lib/regroupements.ts : dossiers d'un même événement du calendrier (D83)
   'Réunir {0} dans « {1} »': 'Gather {0} into “{1}”',
-  'regroupement proposé': 'suggested grouping',
-  'regroupements proposés': 'suggested groupings',
-  ': {0} pendant cet événement.': ': {0} during this event.',
-  'dossier pris': 'folder taken',
-  'dossiers pris': 'folders taken',
-  'Les ranger dans « {0} »': 'Put them in “{0}”',
-  'Toutes les photos dans un seul dossier, sans sous-dossiers': 'All the photos in a single folder, without subfolders',
-  'ou les fusionner en un seul dossier': 'or merge them into a single folder',
-  Ignorer: 'Ignore',
 
   // Raccourcis.tsx
   'J et K (ou ↓ ↑)': 'J and K (or ↓ ↑)',

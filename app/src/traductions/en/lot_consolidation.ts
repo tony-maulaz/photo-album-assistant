@@ -93,4 +93,8 @@ export const TEXTES: Record<string, string> = {
   réunions: 'gatherings',
   refusée: 'declined',
   refusées: 'declined',
+  // D106 : le calendrier propose les dossiers d'un même événement au même endroit ; « un seul dossier » aplatit
+  'Pris pendant « {0} » (votre calendrier), au même endroit.': 'Taken during “{0}” (your calendar), at the same place.',
+  'Un même événement en plusieurs dossiers ?': 'One event in several folders?',
+  'Remettre « {0} »': 'Put back “{0}”',
 };

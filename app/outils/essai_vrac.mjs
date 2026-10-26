@@ -511,12 +511,9 @@ try {
   await page.getByRole('button', { name: 'Ligne de temps' }).click();
   verifier((await page.locator('.ldt-barre.actif').count()) >= 1, 'ligne de temps : le dossier choisi est mis en évidence');
   await page.getByRole('button', { name: 'Photos', exact: true }).click();
-  // Les dossiers pris pendant le voyage du calendrier : proposés à réunir sous son titre (D83).
-  const regroupement = page.locator('.regroupements-calendrier');
-  const texteRegroupement = (await regroupement.innerText()).replace(/\s+/g, ' ');
+  // Plus d'encart des regroupements du calendrier à cette étape : ils passent à la Consolidation (D106).
   await capturer(page, 'v3c_calendrier');
-  verifier(await regroupement.evaluate((d) => d.open), 'regroupements du calendrier ouverts d’office (D94)');
-  verifier(texteRegroupement.includes('« Voyage Thaïlande »') && /Les ranger dans « Voyage_Thailande_/.test(texteRegroupement), `calendrier : ${texteRegroupement.slice(0, 160)}`);
+  verifier((await page.locator('.regroupements-calendrier').count()) === 0, 'étape 7 : plus d’encart des regroupements du calendrier (D106)');
   // Le calendrier avec les photos (D94) : sous le nom du dossier et sur sa journée ; un clic sur l'événement de la
   // journée sélectionne les photos prises pendant.
   await ligneDe('Ko_Samui').click();

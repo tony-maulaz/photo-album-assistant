@@ -3,11 +3,10 @@
 // avant de créer la sortie.
 
 import { nomsSortie } from '../../lib/sortie';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { cheminDossier, contenu, resumes, RACINE, type DossierPlan, type FichierPlan } from '../../lib/plan';
 import { premierDossierAvecPhotos } from '../../lib/rangement';
-import { regrouperDossiers, regroupementsProposes, type RegroupementPropose } from '../../lib/regroupements';
-import { nomPourJournee, normaliserNom } from '../../lib/nommage';
+import { nomPourJournee } from '../../lib/nommage';
 import { groupesParJour } from '../../lib/selection';
 import { BarreValidation } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
@@ -19,7 +18,7 @@ import { LigneDeTemps } from '../composants/LigneDeTemps';
 import { DialogueDeplacer, Visionneuse } from '../composants/Visionneuse';
 import { evenementsDesPhotos, prisePendant, type EvenementCalendrier } from '../../lib/ics';
 import { t } from '../../lib/langue';
-import { allerEtape, annuler, appliquer, changerReglages, evenements, notifier, reglages, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
+import { allerEtape, annuler, changerReglages, evenements, reglages, retablir, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
 import { jourCourt, nombre, nomJour, periode, pluriel } from '../format';
 import {
@@ -46,56 +45,6 @@ import {
 function estChampDeSaisie(e: KeyboardEvent): boolean {
   const t = e.target as HTMLElement;
   return t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName);
-}
-
-/**
- * Dossiers photographiés pendant un même événement du calendrier (D83) : une
- * proposition par événement, à accepter (« Les ranger dans … ») ou à ignorer.
- */
-function RegroupementsCalendrier() {
-  const s = session.value!;
-  versionPlan.value;
-  versionIA.value;
-  const ignores = s.aides.get<string[]>('regroupements_ignores') ?? [];
-  const propositions = useMemo(() => regroupementsProposes(s.plan, evenements.value, new Set(ignores)), [versionPlan.value, versionIA.value, evenements.value]);
-  if (!propositions.length) return null;
-  const nomDe = (id: string) => s.plan.dossiers.get(id)?.nom ?? '';
-  const reunir = (r: RegroupementPropose) => {
-    const m = regrouperDossiers(s.plan, r);
-    if (!m) return;
-    appliquer(m);
-    notifier('ok', m.libelle, { libelle: t`Annuler`, faire: annuler });
-  };
-  const ignorer = (r: RegroupementPropose) => void s.aides.set('regroupements_ignores', [...ignores, r.cle]).then(() => versionIA.value++);
-  return (
-    <details class="regroupements-calendrier" open>
-      <summary>{t`Calendrier : ${pluriel(propositions.length, 'regroupement proposé', 'regroupements proposés')}`}</summary>
-      <ul>
-        {propositions.map((r) => (
-          <li key={r.cle}>
-            <p>
-              <strong>« {r.titre} »</strong> {t`: ${pluriel(r.dossiers.length, 'dossier pris', 'dossiers pris')} pendant cet événement.`}{' '}
-              <span class="discret">{r.dossiers.map(nomDe).join(' · ')}</span>
-            </p>
-            <p class="actions">
-              <button type="button" class="principal" onClick={() => reunir(r)}>
-                {r.sousDossiers ? t`Les ranger dans « ${normaliserNom(r.nom)} »` : t`Les réunir dans « ${normaliserNom(r.nom)} »`}
-              </button>
-              {r.sousDossiers && (
-                <button type="button" class="lien" onClick={() => reunir({ ...r, sousDossiers: false })} title={t`Toutes les photos dans un seul dossier, sans sous-dossiers`}>
-                  {t`ou les fusionner en un seul dossier`}
-                </button>
-              )}
-              <span class="espace" />
-              <button type="button" class="lien" onClick={() => ignorer(r)}>
-                {t`Ignorer`}
-              </button>
-            </p>
-          </li>
-        ))}
-      </ul>
-    </details>
-  );
 }
 
 /** Un événement et ses heures, pour une infobulle : « Souper chez Mamie, 22.03.25 19:00 – 22:00 ». */
@@ -326,7 +275,6 @@ export function PageOrganiser() {
           </div>
           <BoutonAide cle="lieux" ouverte={!arborescencePrete} libelle={t`Aide`} />
         </div>
-        {arborescencePrete && <RegroupementsCalendrier />}
         {choisis.size > 0 && !enAutres && !temps && (
           <div class="barre-action" role="toolbar" aria-label={t`Photos sélectionnées`}>
             <span class="compte-selection">{pluriel(choisis.size, 'sélectionnée', 'sélectionnées')}</span>

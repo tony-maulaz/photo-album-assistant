@@ -21,6 +21,7 @@ import {
   type DossierInfo,
   type Proposition,
 } from '../src/lib/consolidation';
+import type { EvenementCalendrier } from '../src/lib/ics';
 import { deplacerDossier, planVide, RACINE, type FichierPlan, type Plan } from '../src/lib/plan';
 import { defaireReunion, rangerEnVoyage, reunionEnPlace, reunirEnUn } from '../src/lib/reunions';
 
@@ -295,5 +296,67 @@ describe('réunir et défaire', () => {
     expect(p.dossiers.get('d:Bourg_B_29.06.25')!.parent).toBe('d:Autre');
     expect(() => deplacerDossier(p, 'd:Autre', 'd:Bourg_B_29.06.25')).toThrow();
     expect(deplacerDossier(p, 'd:Bourg_B_29.06.25', 'd:Autre')).toBeNull();
+  });
+});
+
+describe('même événement, même endroit (D106)', () => {
+  const evt = (titre: string, debut: string, fin: string): EvenementCalendrier => ({ titre, debut, fin, journee: true, recurrent: false });
+  const fete = evt('Fête du village', '2026-03-14', '2026-03-16');
+  const p = () =>
+    plan({
+      // Samedi et lundi : deux jours d'écart, aucune photo qui se suive.
+      'Fete_14.03.26': [['2026-03-14T15:00:00', aKm(2)], ['2026-03-14T16:00:00', aKm(2)]],
+      'Fete_16.03.26': [['2026-03-16T15:00:00', aKm(3)]],
+      // Le même événement, à 40 km : pas le même endroit.
+      'Ailleurs_15.03.26': [['2026-03-15T10:00:00', aKm(40)]],
+    });
+
+  it('les dossiers d’un même événement au même endroit sont proposés, nommés d’après lui', () => {
+    const x = p();
+    const l = calculer(x, reglagesParDefaut(), contexte(x, { evts: [fete] }));
+    expect(noms(l)).toEqual([['sortie', ['Fete_14.03.26', 'Fete_16.03.26']]]);
+    expect(l[0]).toMatchObject({ evenement: 'Fête du village', rencontre: null });
+    expect(nomPropose(l[0], 'un')).toBe('Fete_du_village_14-16.03.26');
+    // Sans calendrier, rien : les photos ne se suivent pas.
+    expect(calculer(x)).toEqual([]);
+  });
+
+  it('pas pour une période de plus de 4 jours, un refus ou un dossier de voyage', () => {
+    const x = p();
+    expect(calculer(x, reglagesParDefaut(), contexte(x, { evts: [evt('Vacances', '2026-03-10', '2026-03-20')] }))).toEqual([]);
+    expect(calculer(x, reglagesParDefaut(), contexte(x, { evts: [fete], ignorees: new Set([clePaire('d:Fete_14.03.26', 'd:Fete_16.03.26')]) }))).toEqual([]);
+    const y = plan({ 'Fete_14.03.26': [['2026-03-14T15:00:00', aKm(2)]], 'Fete_16.03.26': [['2026-03-16T15:00:00', aKm(3)]] }, ['Fete_16.03.26']);
+    expect(calculer(y, reglagesParDefaut(), contexte(y, { evts: [fete] }))).toEqual([]);
+  });
+
+  it('le calendrier confirme une sortie coupée sur les mêmes dossiers', () => {
+    const x = plan({
+      'Rando_28.06.25': [['2025-06-28T10:00:00', aKm(30)], ['2025-06-28T11:00:00', aKm(30)]],
+      'Col_28.06.25': [['2025-06-28T11:31:00', aKm(32.4)], ['2025-06-28T12:30:00', aKm(32.4)]],
+    });
+    const [s] = calculer(x, reglagesParDefaut(), contexte(x, { evts: [evt('Course', '2025-06-28', '2025-06-28')] }));
+    expect(s).toMatchObject({ sorte: 'sortie', evenement: 'Course', rencontre: { minutes: 31 } });
+  });
+});
+
+describe('réunir en un seul dossier : vraiment un seul (D106)', () => {
+  const dossiersDe = (p: Plan) => Object.fromEntries([...p.dossiers.values()].map((d) => [d.nom, p.dossiers.get(d.parent ?? '')?.nom ?? null]));
+  it('les sous-dossiers sont vidés dans le dossier réuni ; défaire remet tout, sous-dossiers vides compris', () => {
+    const p = plan({
+      'A_28.06.25': [['2025-06-28T10:00:00', aKm(60)], ['2025-06-28T18:00:00', aKm(60)]],
+      'B_29.06.25/Matin': [['2025-06-29T09:00:00', aKm(61)]],
+      'B_29.06.25/Soir/Feu': [['2025-06-29T21:00:00', aKm(61)]],
+    });
+    p.dossiers.set('d:B_29.06.25/Vide', { id: 'd:B_29.06.25/Vide', nom: 'Vide', parent: 'd:B_29.06.25', origine: 'tri' });
+    const avant = dossiersDe(p);
+    const fichiers = [...p.fichiers.values()].map((f) => [f.id, f.dossier]);
+    const info = (id: string): DossierInfo => ({ id, nom: p.dossiers.get(id)!.nom, photos: [...p.fichiers.values()].filter((f) => f.dossier.startsWith(id)) });
+    const { reunion } = reunirEnUn(p, 'sortie:essai', [info('d:A_28.06.25'), info('d:B_29.06.25')], 'A_28-29.06.25');
+    expect(dossiersDe(p)).toEqual({ Photos: null, 'A_28-29.06.25': 'Photos' });
+    expect([...p.fichiers.values()].every((f) => f.dossier === 'd:A_28.06.25')).toBe(true);
+    expect(p.fichiers.size).toBe(fichiers.length);
+    defaireReunion(p, reunion);
+    expect(dossiersDe(p)).toEqual(avant);
+    expect([...p.fichiers.values()].map((f) => [f.id, f.dossier])).toEqual(fichiers);
   });
 });

@@ -365,11 +365,9 @@ un dossier de plusieurs jours, « Nouveau dossier avec cette journée » la sort
 dans un dossier voisin, nommé d'après l'événement ou le lieu et le jour.
 
 **Vues** : arborescence, ligne de temps, filtre « seulement les alertes ».
-**Calendrier** (D83) : quand plusieurs dossiers ont été photographiés pendant
-un même événement (80 % de leurs photos au moins), l'application propose de
-les réunir sous son titre : en sous-dossiers pour un événement de plusieurs
-jours, fusionnés pour un seul jour ; ou d'ignorer la proposition. La liste est
-ouverte d'office.
+**Calendrier** : les dossiers d'un même événement ne sont plus proposés à
+réunir à cette étape (D106) : la Consolidation (§ 6.7) le fait, photos à
+l'appui, pour un même événement au même endroit.
 **Corrections** : panneau des dossiers et déplacement (§ 5.3), fusionner
 (« Fusionner avec… », les dossiers les plus proches dans le temps en tête, ou
 en glissant un dossier sur un autre), sortir une journée, renommer, mettre
@@ -431,7 +429,15 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   défaut 3 h et 4 km, 2 × la taille d'un endroit du tri d'avant D103), les week-ends et petits
   voyages (dossiers à plus de 10 km de la maison, jours qui se suivent, sans
   photo prise à la maison entre-temps, jusqu'à 3 jours, 4 jours, 1 ou 2
-  semaines ; il faut un domicile). En avancé : les noms proches à 2 jours près
+  semaines ; il faut un domicile), et les dossiers d'un **même événement du
+  calendrier au même endroit** (D106 : événement de 4 jours au plus, pas
+  récurrent, pendant lequel au moins la moitié des photos de chaque dossier
+  ont été prises — la règle de l'événement montré sous un dossier —, dossiers
+  à 5 km au plus l'un de l'autre, hors dossiers de voyage ; une fête sur deux
+  jours avec retour à la maison, un concours en deux séances). Sur les mêmes
+  dossiers qu'une sortie coupée, le calendrier la confirme (« Pris pendant
+  « … » (votre calendrier), au même endroit ») ; le nom proposé est alors son
+  titre suivi des dates. En avancé : les noms proches à 2 jours près
   (noms donnés au Nommage), et proposer à nouveau ce qui a été refusé.
 - **Des groupes, pas des paires**, dans l'ordre du temps : la liste à gauche
   (comme les petits dossiers), une proposition à la fois à droite. Ses
@@ -732,8 +738,9 @@ l'étape 5 (suggestions).
 Ajouter un `.ics` (copié dans `config/calendriers/`), voir le nombre
 d'événements et la période, activer ou désactiver, inclure les récurrents
 (avancé : les anniversaires d'une année sur l'autre). Utilisés à l'étape
-Lieux et sorties (ligne de temps, dossiers à réunir), sur les cartes du tri
-automatique (sans rien découper, D103), au Nommage (titre de l'événement
+Lieux et sorties (ligne de temps, titres des journées), sur les cartes du tri
+automatique (sans rien découper, D103), à la Consolidation (même événement au
+même endroit, D106), au Nommage (titre de l'événement
 proposé comme nom) et pour les textes de l'album (D83).
 
 ### 8.5 Appareils

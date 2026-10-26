@@ -729,7 +729,7 @@ captures d'écran et les photos des lieux fréquents, plus petites, en suivent
 l'échelle. L'inventaire annonce aussi les rafales à relire, comme les copies
 exactes.
 
-**D83 — Le calendrier nomme et regroupe.** Les titres du calendrier familial
+**D83 — Le calendrier nomme et regroupe.** (Regroupements de l’étape 7 retirés par D106.) Les titres du calendrier familial
 sont souvent les noms les plus parlants (« 18 ans de Lea », « Vacances Tessin
 ») : l'utilisateur les a écrits lui-même. Jusqu'ici, seule l'IA du nommage les
 lisait, et rien ne s'en servait sans IA. Désormais, tous les événements des
@@ -1203,8 +1203,8 @@ au niveau des sous-dossiers (76 sur 146, contre 71) ; le plus long voyage fait
 bouge à peine entre 2 et 4 h, 30 et 80 km, 8 et 15 photos par journée : plus
 de taille d'endroit ni de durée de sortie à l'écran. Défauts connus : trois
 fêtes le même jour sans retour à la maison font un dossier ; une fête de
-plusieurs jours où l'on rentre le soir est coupée (la Consolidation les
-réunit). La Consolidation et le badge « même sortie ? » gardent leur distance
+plusieurs jours où l'on rentre le soir est coupée (la Consolidation ne la
+réunit que si le calendrier la connaît, D106). La Consolidation et le badge « même sortie ? » gardent leur distance
 (2 × l'ancienne taille d'endroit, 2 km par défaut). **Page** : une liste « À
 faire » où chaque ligne dit son état (● à faire, ✓ fait, ○ facultatif écrit
 en toutes lettres) — la maison (sans elle, aucun voyage), les photos en
@@ -1277,6 +1277,31 @@ corriger, à côté de « Ranger à nouveau » qui efface les corrections), un
 tiroir (il cache les réglages), la fusion des étapes 6 et 7 (D54, D104) ; les
 photos d'un dossier au clic, refusées par l'utilisateur (pas de photos sur
 cette page).
+
+**D106 — Les regroupements du calendrier passent de l'étape 7 à la
+Consolidation.** L'encart de l'étape 7 (D83) était jugé « nul » : ouvert
+d'office et grand, deux choix incompris (« Les ranger dans… » / « ou les
+fusionner en un seul dossier »), aucune photo. Quatre analyses, dont une
+mesure sur 2025 après le nouveau tri : 22 propositions, 4 justes, 16 fausses
+(une période de vacances réunissait deux voyages, deux sorties à 32 km d'écart
+étaient réunies pour un même événement), 5 qui enfonçaient un voyage du tri
+d'un niveau, 10 qui se chevauchaient ; « fusionner en un seul dossier »
+gardait en fait les sous-dossiers ; l'événement de l'encart (80 %) n'était pas
+celui affiché sous le dossier (50 %). La Consolidation (D91) pose déjà la même
+question, photos à l'appui. L'encart est retiré ; la Consolidation gagne une
+troisième source : les dossiers d'un **même événement au même endroit**
+(événement utile de 4 jours au plus couvrant au moins la moitié des photos de
+chaque dossier, la règle de D94 ; dossiers à 5 km au plus l'un de l'autre ;
+hors dossiers de voyage). Sur 2025 : 5 propositions, 3 justes, dont 2 que rien
+d'autre ne trouve (une fête sur deux jours avec retour à la maison, un
+concours en deux séances). Sur les mêmes dossiers qu'une sortie coupée, le
+calendrier la confirme ; s'il en réunit plus, il la remplace ; s'il n'en
+recoupe qu'une partie, il se tait. Le nom proposé est le titre de l'événement
+suivi des dates. « Réunir en un seul dossier » aplatit désormais vraiment les
+sous-dossiers des dossiers réunis et de la cible, notés pour que « Défaire »
+remette l'arborescence d'avant, sous-dossiers vides compris. Les réunions faites
+avec l'ancien encart restent telles quelles. Reste à mesurer : un projet sans
+domicile, où l'encart était le seul à réunir un voyage éclaté.
 
 ## 2. Calibrations sur photos réelles
 

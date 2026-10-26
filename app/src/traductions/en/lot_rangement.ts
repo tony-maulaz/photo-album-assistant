@@ -47,7 +47,6 @@ export const TEXTES: Record<string, string> = {
   jours: 'days',
   'Aucun dossier ne correspond.': 'No folder matches.',
   'Chaque petit dossier a sa décision : vous pouvez continuer.': 'Every small folder has its decision: you can continue.',
-  'Les réunir dans « {0} »': 'Group them in “{0}”',
 
   // Organisation.tsx : consolidation
   '{0} : elles ne sont plus proposées.': '{0}: they are no longer suggested.',
