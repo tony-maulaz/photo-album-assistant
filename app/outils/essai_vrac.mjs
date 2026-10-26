@@ -289,12 +289,21 @@ try {
   await page.keyboard.press('Control+z');
   await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
   verifier(true, 'un clic garde une copie proposée à l’écart ; Ctrl+Z annule');
+  // Chaque bouton au-dessus de ce qu'il touche (D98) : l'explication sans bouton, puis la rangée de l'onglet, puis les filtres.
+  const ordreBlocs = await page.evaluate(() => [...document.querySelectorAll('.encart-onglet, .rangee-onglet, .outils-doublons')].map((x) => x.className.split(' ').at(-1)));
+  verifier(
+    (await page.locator('.encart-onglet button').count()) === 0 &&
+      ordreBlocs.join(',') === 'encart-onglet,rangee-onglet,outils-doublons' &&
+      (await page.locator('.outils-doublons button', { hasText: 'Accepter' }).count()) === 0 &&
+      (await page.locator('.rangee-onglet').innerText()).includes('Relus : 0 sur 2'),
+    `boutons de tout l’onglet dans leur rangée, entre l’explication et les filtres : ${ordreBlocs.join(', ')}`,
+  );
   const cartes = await page.locator('.carte-doublons').count();
-  await page.getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
+  await page.locator('.rangee-onglet').getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
   await page.locator('.onglet-doublons.actif', { hasText: '✓ 2' }).waitFor();
   verifier(
-    (await page.locator('.carte-doublons').count()) === cartes && (await page.locator('.tuile-doublon.ecartee').count()) === 2,
-    'copies exactes écartées : les groupes restent à leur place, les copies marquées « Écartée »',
+    (await page.locator('.carte-doublons').count()) === cartes && (await page.locator('.carte-doublons.repliee').count()) === 2,
+    'copies exactes écartées : les groupes restent à leur place, repliés comme après « Accepter » d’un groupe',
   );
   await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
   await page.locator('.tuile-doublon.ecartee').first().waitFor();

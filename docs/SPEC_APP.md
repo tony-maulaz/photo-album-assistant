@@ -419,10 +419,19 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
 - **Onglets** (D71), un par sorte de doublons, chacun avec ce qui reste à
   relire : **Copies exactes** (avec les photos présentes dans plusieurs
   dossiers gardés, D86), **Rafales**, **Même scène (IA)**, **Mis de côté**
-  (tout ce que l'étape a écarté, à remettre d'un clic). En haut, toujours visibles : Afficher (À relire,
-  Relus, Tous), Classer, l'avancement et « Accepter les propositions » de la
-  journée affichée. À gauche, la liste des journées (puis des dossiers
-  gardés, puis des photos sans date) ; on relit une journée à la fois.
+  (tout ce que l'étape a écarté, à remettre d'un clic). Chaque bouton est
+  juste au-dessus de ce qu'il touche, avec une étiquette de portée (D98) :
+  sous l'explication de l'onglet (texte seul), la **rangée de l'onglet**
+  (« Tout l'onglet », ce qui reste à relire, la jauge ; pour les copies
+  seulement : « Accepter les N propositions » et « Garder tous les
+  exemplaires ») ; puis la barre des filtres, toujours visible en haut :
+  Afficher (À relire, Relus, Tous), Grouper, taille, Classer ; puis la page.
+  En tête de la section affichée : son titre, ce qui reste à relire et
+  « Accepter les N propositions de cette journée / de ce mois » (s'il reste
+  au moins deux groupes ; pas pour les copies groupées par dossier, qui ont
+  « Écarter N exemplaires de ce dossier »). À gauche, la liste des journées
+  (puis des dossiers gardés, puis des photos sans date) ; on relit une
+  journée à la fois, et toute la liste de ses groupes s'affiche.
   « Grouper » : par journée, par mois ou par dossier (par défaut par
   journée, par mois au-delà de 20 journées) ; par dossier, une copie se
   range sous chaque dossier de la source où elle a un exemplaire (même

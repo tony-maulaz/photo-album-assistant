@@ -229,7 +229,8 @@ try {
   await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 3_600_000 });
   noter(`rafales repérées en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_doublons.png') });
-  const accepterJournee = page.getByRole('button', { name: /^Accepter (la proposition|les \d+ propositions) · / });
+  // Bouton de la section, dans son en-tête (D98) : seulement s'il reste au moins deux groupes.
+  const accepterJournee = page.locator('.tete-section-doublons').getByRole('button', { name: /^Accepter les \d+ propositions / });
   if (await accepterJournee.count()) {
     debut = performance.now();
     await accepterJournee.click();

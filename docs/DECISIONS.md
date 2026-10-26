@@ -1041,6 +1041,28 @@ Groupée par dossier, elle montre les dossiers imbriqués : chaque dossier
 parent une fois, ses sous-dossiers en retrait sous leur seul nom (le chemin
 complet dans la bulle), au lieu de chemins entiers difficiles à lire.
 
+**D98 — Doublons : chaque bouton juste au-dessus de ce qu'il touche.** Les
+boutons de tout l'onglet (« Accepter les N propositions », « Tout garder »)
+étaient collés au texte explicatif, et celui de la journée au bout de la
+barre des filtres, où il passait à la ligne et épaississait la barre
+collante : trois « Accepter » verts pour trois portées (onglet, section,
+groupe), rien ne les distinguait qu'un « · Août ». Analyse par cinq agents
+(interface intuitive, moderne, cohérence, critique, avocat du diable) et
+maquette ; choix de Tony : l'explication garde son texte seul ; une
+**rangée de l'onglet** (étiquette « Tout l'onglet », relus sur total, jauge)
+entre l'explication et les filtres ; ses boutons pour les copies seulement
+(rafales et IA : on regarde avant de choisir), « Tout garder » renommé
+« Garder tous les exemplaires » (il ne change pas la sortie mais marque les
+groupes relus) ; la barre des filtres ne garde que la vue et tient sur une
+ligne ; le bouton de la section dans son en-tête (« … de ce mois »), s'il
+reste au moins deux groupes, jamais pour les copies groupées par dossier
+(une copie y a son autre exemplaire ailleurs : seulement « Écarter N
+exemplaires de ce dossier », D86) ; pas de rappel en bas de section. Les
+actions groupées sont en contour, « Accepter » d'un groupe vu reste le seul
+bouton plein ; comme lui, elles replient les cartes acceptées. Au passage :
+l'en-tête de section compte comme la jauge (les photos dans plusieurs
+dossiers à part), les flèches sans section voisine disparaissent.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

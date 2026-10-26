@@ -67,17 +67,61 @@
   margin: 0;
 }
 
-.encart-onglet .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 
 .page-doublons .encart-ia {
   margin-top: 16px;
 }
 
-/* Afficher, Classer, avancement, accepter la journée : toujours visibles en haut, au défilement. */
+/*
+ * Chaque bouton juste au-dessus de ce qu'il touche (D98) : la rangée de l'onglet entre son explication et les
+ * filtres, ceux de la section dans son en-tête, ceux d'un groupe dans sa carte ; une étiquette dit la portée.
+ */
+.rangee-onglet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--accent-doux);
+}
+
+.rangee-onglet .espace {
+  flex: 1;
+}
+
+.rangee-onglet .actions,
+.tete-section-doublons .actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.etiquette-portee {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.etiquette-portee.section {
+  align-self: center;
+  background: var(--encre);
+}
+
+/* Action groupée : visible, mais moins forte que « Accepter » d'un groupe, qu'on a vu. */
+.page-doublons button.contour {
+  border-color: var(--accent);
+  color: var(--accent-doux-texte);
+}
+
+/* Afficher, Grouper, taille, Classer : la vue seulement, sur une ligne, toujours visible en haut au défilement. */
 .outils-doublons {
   position: sticky;
   top: 0;
@@ -216,7 +260,7 @@
 .tete-section-doublons {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 8px 14px;
 }
 

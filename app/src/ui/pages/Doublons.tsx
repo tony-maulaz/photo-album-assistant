@@ -285,22 +285,39 @@ function ListeSections({ liste, choisie, choisir, avancement = true }: { liste: 
   );
 }
 
-/** En tête de la section : son titre, et les sections voisines. */
-function TeteSection({ liste, section, choisir, detail }: { liste: Section[]; section: Section; choisir: (cle: string) => void; detail: string }) {
+/** Ce que désigne une section, pour dire la portée de ses boutons : « Ce mois », « Cette journée »… */
+function porteeSection(x: Section): string {
+  if (x.cle.startsWith('jour:')) return t`Cette journée`;
+  if (x.cle.startsWith('mois:')) return t`Ce mois`;
+  if (estDossier(x)) return t`Ce dossier`;
+  return t`Sans date`;
+}
+
+/**
+ * En tête de la section : sa portée, son titre, ses actions (juste au-dessus des groupes qu'elles
+ * touchent, D98), et les sections voisines.
+ */
+function TeteSection({ liste, section, choisir, detail, actions }: { liste: Section[]; section: Section; choisir: (cle: string) => void; detail: string; actions?: ComponentChildren }) {
   const i = liste.indexOf(section);
   const avant = liste[i - 1];
   const apres = liste[i + 1];
   return (
     <div class="tete-section-doublons">
+      {actions && <span class="etiquette-portee section">{porteeSection(section)}</span>}
       <h2>{section.titre}</h2>
       <span class="discret">{detail}</span>
+      {actions}
       <span class="espace" />
-      <button type="button" disabled={!avant} onClick={() => avant && choisir(avant.cle)} title={t`Touche P`}>
-        ‹ {avant?.nom ?? ''}
-      </button>
-      <button type="button" disabled={!apres} onClick={() => apres && choisir(apres.cle)} title={t`Touche N`}>
-        {apres?.nom ?? ''} ›
-      </button>
+      {avant && (
+        <button type="button" onClick={() => choisir(avant.cle)} title={t`Touche P`}>
+          ‹ {avant.nom}
+        </button>
+      )}
+      {apres && (
+        <button type="button" onClick={() => choisir(apres.cle)} title={t`Touche N`}>
+          {apres.nom} ›
+        </button>
+      )}
     </div>
   );
 }
@@ -520,7 +537,7 @@ function CarteGroupe({
 // Les groupes d'un onglet
 // ---------------------------------------------------------------------------
 
-function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cote'>; groupes: GroupeDoublons[] }) {
+function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis_de_cote'>; groupes: GroupeDoublons[]; titre: string }) {
   const s = session.value!;
   versionPlan.value;
   const plan = s.plan;
@@ -569,8 +586,12 @@ function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cot
     .sort((a, b) => Number(partout(a.g)) - Number(partout(b.g)) || (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b)));
   const iPartout = visibles.findIndex((e) => partout(e.g));
   const enAttente = visibles.filter((e) => aRelire(e.g, fichier)).map((e) => e.g);
-  // Copies : quand toute la journée est tout l'onglet, le bouton de l'encart (« Accepter les N propositions ») suffit.
-  const commeLOnglet = onglet === 'copies' && enAttente.length === groupes.filter((g) => aRelire(g, fichier)).length;
+  // Copies : tout l'onglet a ses boutons (rangée de l'onglet) ; à relire dans l'onglet entier, hors photos dans plusieurs dossiers.
+  const enAttenteOnglet = copies ? groupes.filter((g) => !partout(g) && aRelire(g, fichier)) : [];
+  // Bouton de la section : pas pour un seul groupe (son « Accepter » suffit), ni quand la section est tout l'onglet
+  // des copies, ni groupé par dossier (une copie peut y avoir son autre exemplaire ailleurs : seulement les actions
+  // du dossier, D86) (D98).
+  const boutonSection = enAttente.length >= 2 && !(copies && enAttente.length === enAttenteOnglet.length) && !(copies && groupement === 'dossier');
   const { relus, total } = avancementGroupes(
     groupes.filter((g) => !partout(g)),
     fichier,
@@ -582,6 +603,14 @@ function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cot
   const aEcarterDossier = dossierChoisi === null ? [] : exemplairesAEcarterDans(groupesSection, dansDossier, fichier);
   const ecartesDossier = dossierChoisi === null ? [] : exemplairesEcartesDans(groupesSection, dansDossier, fichier);
   const ouverte = (cle: string) => rouvertes.has(cle) || !(fermees.has(cle) || relusAuDepart.has(cle));
+  // En-tête de section, compté comme la jauge : les photos dans plusieurs dossiers gardés à part (rien à relire).
+  const dansSection = elements.filter((e) => e.section === section?.cle);
+  const nPartout = dansSection.filter((e) => partout(e.g)).length;
+  const nGroupes = dansSection.length - nPartout;
+  const nRelus = dansSection.filter((e) => !partout(e.g) && !e.relire).length;
+  const detail = [nGroupes > 0 && `${pluriel(nGroupes, 'groupe')} · ${pluriel(nRelus, 'relu', 'relus')}`, nPartout > 0 && pluriel(nPartout, 'photo dans plusieurs dossiers', 'photos dans plusieurs dossiers')]
+    .filter(Boolean)
+    .join(' · ');
 
   /** Après une action sur tout un groupe : la carte se replie à sa place, le clavier passe à la suivante. */
   const agirGroupe = (cles: string[], m: Modification | null, message: string) => {
@@ -657,8 +686,55 @@ function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cot
   const gComparee = visibles[iComparee]?.g;
   const pct = total ? Math.round((relus / total) * 100) : 100;
 
+  const photosOnglet = enAttenteOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  const ceci = section?.cle.startsWith('jour:') ? t`de cette journée` : section?.cle.startsWith('mois:') ? t`de ce mois` : section && estDossier(section) ? t`de ce dossier` : t`ci-dessous`;
+
   return (
     <>
+      {/* Tout l'onglet : entre son explication et les filtres ; ses boutons seulement pour les copies (D71, D98). */}
+      <div class="rangee-onglet">
+        <span class="etiquette-portee">{t`Tout l’onglet`}</span>
+        <strong>{titre}</strong>
+        <span class="avance-doublons">
+          {total ? t`Relus : ${nombre(relus)} sur ${nombre(total)}` : t`Rien à relire`}
+          {total > 0 && (
+            <span class="jauge-doublons" aria-hidden="true">
+              <span style={{ width: `${pct}%` }} />
+            </span>
+          )}
+        </span>
+        <span class="espace" />
+        {enAttenteOnglet.length > 0 && (
+          <span class="actions">
+            <button
+              type="button"
+              class="contour"
+              onClick={() =>
+                agirGroupe(
+                  enAttenteOnglet.map((g) => g.cle),
+                  accepter(plan, enAttenteOnglet),
+                  texteEcartees(photosOnglet, 'doublons_exacts'),
+                )
+              }
+            >
+              {enAttenteOnglet.length === 1 ? t`Accepter la proposition` : t`Accepter les ${nombre(enAttenteOnglet.length)} propositions`}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                agirGroupe(
+                  enAttenteOnglet.map((g) => g.cle),
+                  garderTout(plan, enAttenteOnglet),
+                  t`Tous les exemplaires sont gardés.`,
+                )
+              }
+            >
+              {t`Garder tous les exemplaires`}
+            </button>
+          </span>
+        )}
+      </div>
+
       <div class="outils-doublons">
         <span class="discret">{t`Afficher`}</span>
         <div class="choix-segmente" role="radiogroup" aria-label={t`Groupes affichés`}>
@@ -683,18 +759,6 @@ function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cot
             <option value="taille">{t`les plus grands groupes d’abord`}</option>
           </select>
         </label>
-        <span class="avance-doublons">
-          {t`Relus : ${nombre(relus)} sur ${nombre(total)}`}
-          <span class="jauge-doublons" aria-hidden="true">
-            <span style={{ width: `${pct}%` }} />
-          </span>
-        </span>
-        <span class="espace" />
-        {enAttente.length > 0 && section && !commeLOnglet && (
-          <button type="button" class="principal" onClick={accepterSection}>
-            {enAttente.length === 1 ? t`Accepter la proposition · ${section.nom}` : t`Accepter les ${nombre(enAttente.length)} propositions · ${section.nom}`}
-          </button>
-        )}
       </div>
       <p class="discret aide-doublons">{t`Un clic sur une photo la garde ou l’écarte, la photo ★ comprise. Clavier : J et K d’un groupe à l’autre, Espace pour garder ou écarter, A pour accepter, N et P pour avancer dans la liste de gauche.`}</p>
 
@@ -702,33 +766,45 @@ function ListeGroupes({ onglet, groupes }: { onglet: Exclude<Onglet, 'mis_de_cot
         <ListeSections liste={liste} choisie={section?.cle} choisir={choisir} />
         <section class="contenu-doublons" ref={zone}>
           {section && (
-            <TeteSection liste={liste} section={section} choisir={choisir} detail={`${pluriel(section.total, 'groupe')} · ${pluriel(section.total - section.aRelire, 'relu', 'relus')}`} />
-          )}
-          {(aEcarterDossier.length > 0 || ecartesDossier.length > 0) && (
-            <p class="actions actions-dossier-copies">
-              {aEcarterDossier.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    agirDossier(
-                      ecarterDoublons(
-                        plan,
-                        aEcarterDossier.map((id) => ({ id, raison: 'doublons_exacts' })),
-                      ),
-                      texteEcartees(aEcarterDossier.length, 'doublons_exacts'),
-                    )
-                  }
-                >
-                  {t`Écarter ${pluriel(aEcarterDossier.length, 'exemplaire')} de ce dossier`}
-                </button>
-              )}
-              {ecartesDossier.length > 0 && (
-                <button type="button" onClick={() => agirDossier(garderAussi(plan, ecartesDossier), t`${pluriel(ecartesDossier.length, 'exemplaire remis', 'exemplaires remis')} dans ce dossier.`)}>
-                  {t`Remettre ${pluriel(ecartesDossier.length, 'exemplaire')} de ce dossier`}
-                </button>
-              )}
-              {aEcarterDossier.length > 0 && <span class="discret">{t`Seulement les photos gardées aussi dans un autre dossier : aucune ne disparaît.`}</span>}
-            </p>
+            <TeteSection
+              liste={liste}
+              section={section}
+              choisir={choisir}
+              detail={detail}
+              actions={
+                (boutonSection || aEcarterDossier.length > 0 || ecartesDossier.length > 0) && (
+                  <span class="actions actions-dossier-copies">
+                    {boutonSection && (
+                      <button type="button" class="contour" onClick={accepterSection}>
+                        {t`Accepter les ${nombre(enAttente.length)} propositions ${ceci}`}
+                      </button>
+                    )}
+                    {aEcarterDossier.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          agirDossier(
+                            ecarterDoublons(
+                              plan,
+                              aEcarterDossier.map((id) => ({ id, raison: 'doublons_exacts' })),
+                            ),
+                            texteEcartees(aEcarterDossier.length, 'doublons_exacts'),
+                          )
+                        }
+                      >
+                        {t`Écarter ${pluriel(aEcarterDossier.length, 'exemplaire')} de ce dossier`}
+                      </button>
+                    )}
+                    {ecartesDossier.length > 0 && (
+                      <button type="button" onClick={() => agirDossier(garderAussi(plan, ecartesDossier), t`${pluriel(ecartesDossier.length, 'exemplaire remis', 'exemplaires remis')} dans ce dossier.`)}>
+                        {t`Remettre ${pluriel(ecartesDossier.length, 'exemplaire')} de ce dossier`}
+                      </button>
+                    )}
+                    {aEcarterDossier.length > 0 && <span class="discret">{t`Seulement les photos gardées aussi dans un autre dossier : aucune ne disparaît.`}</span>}
+                  </span>
+                )
+              }
+            />
           )}
           {visibles.length === 0 && (
             <div class="encart">
@@ -1070,8 +1146,6 @@ export function PageDoublons() {
     const { relus, total } = avancement(o);
     return `${nom} ${nombre(relus)} / ${nombre(total)}`;
   };
-  const pending = groupes.copies.filter((g) => aRelire(g, fichier));
-  const photosCopies = pending.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
 
   return (
     <div class="page large avec-barre page-doublons">
@@ -1117,35 +1191,8 @@ export function PageDoublons() {
                 {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « ${dossierMisDeCote('doublons_exacts')} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo ou, en groupant par dossier, tout un dossier d’un coup.`}
                 {intouches > 0 && t` Les dossiers « Ne pas toucher » ne sont pas examinés : leurs copies sont voulues.`}
               </p>
-              {pending.length > 0 && (
-                <div class="actions">
-                  <button
-                    type="button"
-                    class="principal"
-                    onClick={() => {
-                      const m = accepter(plan, pending);
-                      if (!m) return;
-                      appliquer(m);
-                      notifier('ok', texteEcartees(photosCopies, 'doublons_exacts'), { libelle: t`Annuler`, faire: annuler });
-                    }}
-                  >
-                    {pending.length === 1 ? t`Accepter la proposition` : t`Accepter les ${nombre(pending.length)} propositions`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const m = garderTout(plan, pending);
-                      if (!m) return;
-                      appliquer(m);
-                      notifier('ok', t`Tous les exemplaires sont gardés.`, { libelle: t`Annuler`, faire: annuler });
-                    }}
-                  >
-                    {t`Tout garder`}
-                  </button>
-                </div>
-              )}
             </div>
-            <ListeGroupes key="copies" onglet="copies" groupes={[...groupes.copies, ...groupes.dossiers]} />
+            <ListeGroupes key="copies" onglet="copies" groupes={[...groupes.copies, ...groupes.dossiers]} titre={t`Toutes les copies exactes`} />
           </>
         ))}
 
@@ -1159,7 +1206,7 @@ export function PageDoublons() {
             <p class="encart encart-onglet">
               {t`Photos quasi identiques prises à quelques secondes d’intervalle, repérées sur l’ordinateur (gratuit). Proposition : garder la plus nette ★ de chaque rafale.`}
             </p>
-            <ListeGroupes key="rafales" onglet="rafales" groupes={groupes.rafales} />
+            <ListeGroupes key="rafales" onglet="rafales" groupes={groupes.rafales} titre={t`Toutes les rafales`} />
           </>
         ))}
 
@@ -1177,7 +1224,7 @@ export function PageDoublons() {
               <summary>{t`Analyse IA faite — la relancer : ${cout}`}</summary>
               {reglagesIA}
             </details>
-            {groupes.ia.length ? <ListeGroupes key="ia" onglet="ia" groupes={groupes.ia} /> : <p class="encart">{t`L’IA n’a trouvé aucune autre scène en double.`}</p>}
+            {groupes.ia.length ? <ListeGroupes key="ia" onglet="ia" groupes={groupes.ia} titre={t`Toutes les scènes en double`} /> : <p class="encart">{t`L’IA n’a trouvé aucune autre scène en double.`}</p>}
           </>
         ))}
 

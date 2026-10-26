@@ -95,6 +95,20 @@ lancement.
 - Donner cet avis **avant** de coder et attendre l'accord de l'utilisateur
   pour tout ce qui change le comportement ou l'interface. Seuls les bogues
   évidents se corrigent sans attendre.
+- **Toute demande d'analyse lance plusieurs agents en parallèle**, chacun
+  avec un rôle, avant de rendre une synthèse et une recommandation. Rôles à
+  adapter au sujet :
+  - spécialiste d'une interface intuitive et facile à utiliser (pour un
+    utilisateur non informaticien) ;
+  - contrôleur d'une interface moderne (applications photo de référence,
+    bonnes pratiques actuelles) ;
+  - chercheur de la meilleure technique (algorithmes, bibliothèques,
+    autres approches) ;
+  - critique qui cherche tous les défauts, de l'existant comme des
+    propositions ;
+  - avocat du diable, qui défend l'option contraire ou le statu quo.
+  Rapports écrits dans le scratchpad ; captures d'écran si l'interface est
+  en jeu ; maquette quand plusieurs dispositions sont possibles.
 
 ## Conventions
 
