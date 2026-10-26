@@ -455,7 +455,9 @@ try {
   verifier(true, 'un clic met les copies de côté avant le tri');
   verifier((await page.locator('.ligne-afaire.afaire', { hasText: 'Votre maison n’est pas encore indiquée' }).count()) === 1, 'sans domicile : la maison est à indiquer (●)');
   verifier((await page.locator('.barre-validation .alerte').innerText()).includes('indiquer votre maison'), `barre du bas : ${await page.locator('.barre-validation .alerte').innerText()}`);
-  verifier((await page.locator('.resultat-tri .onglet-doublons:disabled').count()) === 6, 'avant de ranger : les onglets du résultat sont grisés');
+  // Avant de ranger : l'aperçu en direct, ligne par ligne, sans miniatures (D104).
+  verifier((await page.locator('.resultat-tri .tete-resultat').innerText()).includes('Aperçu : rien n’est encore rangé') && (await page.locator('.resultat-tri .ligne-tri').count()) > 0, `aperçu avant de ranger : ${await page.locator('.resultat-tri .ligne-tri').count()} lignes`);
+  verifier((await page.locator('.resultat-tri img').count()) === 0 && (await page.getByRole('button', { name: /^Couper|^Réunir/ }).count()) === 0, 'ni miniatures, ni « Couper… », ni « Réunir »');
   // Une seule question, et les chiffres calculés avec les photos avant de ranger.
   const chiffres = await page.locator('.ligne-ranger .apercu-tri-chiffres').innerText();
   const prevus = Number(chiffres.match(/(\d+) dossiers? en tout/)[1]);
@@ -466,8 +468,8 @@ try {
   const resume = await page.locator('.ligne-ranger .texte-afaire > strong').innerText();
   verifier(/photos? rangées? dans \d+ dossiers?/.test(resume), `rangé : ${resume}`);
   verifier(requetesNominatim.length > 0, `${requetesNominatim.length} requête(s) à OpenStreetMap (simulé)`);
-  const cartesTri = await page.locator('.resultat-tri .carte-tri').count();
-  verifier(cartesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout'), `résultat : ${cartesTri} cartes dans l’onglet « Tout »`);
+  const lignesTri = await page.locator('.resultat-tri .ligne-tri').count();
+  verifier(lignesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout') && (await page.locator('.resultat-tri .tete-resultat').innerText()).includes('étape suivante'), `résultat : ${lignesTri} lignes dans l’onglet « Tout »`);
   verifier((await page.getByRole('button', { name: 'Afficher les dossiers →' }).count()) >= 1, 'après le rangement : « Afficher les dossiers → »');
   await capturer(page, 'v3_tri');
   await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Mis à part' }).click();

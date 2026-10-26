@@ -240,6 +240,30 @@ describe('découpage chronologique (D103)', () => {
     expect(chemins(arbre(ps, [{ ...MAISON, un_seul_dossier: true }]))).toEqual({ Maison: 26 });
   });
 
+  it('la maison par semaine (D104) : du lundi au dimanche, nommée par les jours de ses photos', () => {
+    // Mardi 2, jeudi 4 et lundi 8 décembre 2025.
+    const ps = [chez('2025-12-02T10:00:00'), chez('2025-12-04T10:00:00'), chez('2025-12-08T10:00:00')];
+    expect(chemins(arbre(ps, [MAISON], O({ maison: 'semaine' })))).toEqual({ 'Maison/02-04.12.25': 2, 'Maison/08.12.25': 1 });
+    expect(chemins(arbre(ps))).toEqual({ 'Maison/12.25': 3 });
+  });
+
+  it('distance de la maison et nom provisoire, pour l’écran (D104)', () => {
+    const ps = [
+      a('2026-03-10T10:00:00', PARC),
+      ...[14, 15, 16].map((h) => a(`2026-03-14T${h}:00:00`, PARIS)),
+      ...[14, 15, 16, 17].map((h) => a(`2026-03-15T${h}:00:00`, LILLE)),
+    ];
+    const kmDe = (l: { lat: number; lon: number }) => Math.round(distanceM(l.lat, l.lon, MAISON.lat, MAISON.lon) / 1000);
+    const [parc, paris, lille] = arbre(ps);
+    expect([parc.km, paris.km, lille.km]).toEqual([kmDe(PARC), kmDe(PARIS), kmDe(LILLE)]);
+    // Un voyage d'un seul dossier : la distance de sa plus lointaine étape.
+    expect(arbre(ps, [MAISON], O({ etapes: false }))[1].km).toBe(Math.max(kmDe(PARIS), kmDe(LILLE)));
+    expect(arbre(ps).some((x) => x.nomProvisoire)).toBe(false);
+    // Hors ligne : « Lieu_01 »… est signalé provisoire.
+    const sans = arborescence(decouper(ps, [MAISON]), () => null);
+    expect(sans.map((x) => !!x.nomProvisoire)).toEqual([true, true, true]);
+  });
+
   it('une photo sans GPS rejoint le moment voisin du même jour ; seule ce jour-là, elle fait une sortie sans lieu', () => {
     const ps = [a('2026-03-14T10:00:00', PARC), a('2026-03-14T14:30:00'), a('2026-03-20T10:00:00')];
     expect(chemins(arbre(ps))).toEqual({ 'Parc_14.03.26': 2, 'Sans_lieu_20.03.26': 1 });
@@ -323,6 +347,8 @@ describe('réglages enregistrés (optionsDuProjet)', () => {
     expect(optionsDuProjet(undefined)).toEqual(OPTIONS_TRI_DEFAUT);
     expect(optionsDuProjet({ distanceVoyageKm: 30 }).distanceVoyageKm).toBe(50);
     expect(optionsDuProjet({ distanceVoyageKm: 80, etapes: false, rayonKm: 5, parMois: true, dureeMaxJours: 3 })).toEqual({ ...OPTIONS_TRI_DEFAUT, etapes: false, distanceVoyageKm: 80 });
+    expect(optionsDuProjet({ maison: 'semaine' }).maison).toBe('semaine');
+    expect(optionsDuProjet({ maison: 'jour' }).maison).toBe('mois');
     expect(optionsDuProjet({ distanceVoyageKm: -1, etapes: 'oui' })).toEqual(OPTIONS_TRI_DEFAUT);
   });
 });

@@ -16,23 +16,25 @@ import { combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type
 import { nomsSortie } from './sortie';
 
 /**
- * Réglages du tri (D103) : une seule question à l'écran (les étapes d'un
- * voyage), la distance d'un voyage en réglage avancé. Le reste est fixe
- * (constantes ci-dessous), mesuré sur une année réelle : le résultat bouge à
- * peine entre 2 et 4 h de trou, ou entre 30 et 80 km.
+ * Réglages du tri (D103, D104) : les étapes d'un voyage, la distance d'un
+ * voyage (en crans à l'écran) et la maison par mois ou par semaine. Le reste
+ * est fixe (constantes ci-dessous), mesuré sur une année réelle : le résultat
+ * bouge à peine entre 2 et 4 h de trou ou entre 8 et 15 photos par journée.
  */
 export interface OptionsTri {
   /** Un voyage de plusieurs jours : un sous-dossier par étape (true, conseillé) ou tout dans un seul dossier. */
   etapes: boolean;
-  /** Distance au domicile (km) au-delà de laquelle une absence de plusieurs jours est un voyage (réglage avancé). */
+  /** Distance au domicile (km) au-delà de laquelle une absence de plusieurs jours est un voyage. */
   distanceVoyageKm: number;
+  /** À la maison, un dossier par mois (conseillé) ou par semaine (D104). */
+  maison: 'mois' | 'semaine';
   /** Nomme les dossiers d'après les fichiers nommés à la main. */
   nomsFichiers: boolean;
   /** Utilise les lieux connus de la configuration. */
   lieuxConnus: boolean;
 }
 
-export const OPTIONS_TRI_DEFAUT: OptionsTri = { etapes: true, distanceVoyageKm: 50, nomsFichiers: true, lieuxConnus: true };
+export const OPTIONS_TRI_DEFAUT: OptionsTri = { etapes: true, distanceVoyageKm: 50, maison: 'mois', nomsFichiers: true, lieuxConnus: true };
 
 /** 30 km : l'ancienne distance par défaut d'un voyage, enregistrée dans les projets sans avoir été choisie (D87). */
 const ANCIENNE_DISTANCE_VOYAGE = 30;
@@ -51,6 +53,7 @@ export function optionsDuProjet(enregistrees: unknown): OptionsTri {
     ...d,
     etapes: typeof x.etapes === 'boolean' ? x.etapes : d.etapes,
     distanceVoyageKm: distance === ANCIENNE_DISTANCE_VOYAGE ? d.distanceVoyageKm : distance,
+    maison: x.maison === 'semaine' ? 'semaine' : 'mois',
   };
 }
 
@@ -371,7 +374,7 @@ export interface Morceau {
   lieuConnu?: LieuConnu;
   /** Voyage : ses étapes (sorte « sortie »), dans l'ordre du temps, toujours calculées. */
   etapes?: Morceau[];
-  /** Maison : journée(s) chargée(s) plutôt qu'un mois. */
+  /** Maison : journée(s) chargée(s) plutôt qu'un mois ou une semaine. */
   journee?: boolean;
 }
 
@@ -437,7 +440,8 @@ function morceau(sorte: Morceau['sorte'], photos: PhotoTri[], lieuDe: Map<PhotoT
  *    lendemain, sans retour à la maison, reste la même sortie. Un lieu connu
  *    autre que le domicile (des proches, le club) est « dehors » : il nomme
  *    la sortie ;
- * 4. à la maison, un dossier par mois ; une journée d'au moins 10 photos
+ * 4. à la maison, un dossier par mois (ou par semaine, du lundi au
+ *    dimanche, D104) ; une journée d'au moins 10 photos
  *    forme le sien, réuni avec les journées chargées qui la suivent (Noël,
  *    les 24 et 25).
  * Sans domicile, ni maison ni voyage : tout devient sortie.
@@ -556,15 +560,19 @@ export function decouper(photos: PhotoTri[], lieux: LieuConnu[], o: OptionsTri =
   }
   for (const s of sorties) morceaux.push(morceau('sortie', s.moments.flatMap((m) => m.photos), lieuDe, domicile));
 
-  // 4. Maison : par mois, et les journées chargées à part (celles qui se suivent ensemble).
+  // 4. Maison : par mois (ou par semaine), et les journées chargées à part (celles qui se suivent ensemble).
   const parJour = new Map<string, number>();
   for (const m of maisons) for (const p of m.photos) parJour.set(jourDe(p.date)!, (parJour.get(jourDe(p.date)!) ?? 0) + 1);
   const chargee = (j: string) => (parJour.get(j) ?? 0) >= PHOTOS_JOURNEE_CHARGEE;
   const veille = (j: string) => new Date(Date.parse(`${j}T12:00:00Z`) - JOUR_MS).toISOString().slice(0, 10);
+  const lundi = (j: string) => {
+    const t = Date.parse(`${j}T12:00:00Z`);
+    return new Date(t - ((new Date(t).getUTCDay() + 6) % 7) * JOUR_MS).toISOString().slice(0, 10);
+  };
   const periodes = new Map<string, { photos: PhotoTri[]; journee: boolean }>();
   for (const m of maisons) {
     const j = jourDe(m.photos[0].date)!;
-    let cle = j.slice(0, 7);
+    let cle = o.maison === 'semaine' ? `S${lundi(j)}` : j.slice(0, 7);
     if (chargee(j)) {
       let debut = j;
       while (chargee(veille(debut))) debut = veille(debut);
@@ -656,6 +664,10 @@ export interface DossierPropose {
   /** Premier et dernier jour (AAAA-MM-JJ). */
   du?: string;
   au?: string;
+  /** Distance de la maison (km, arrondie) : du centre d'une sortie ou d'une étape, de la plus lointaine étape d'un voyage. */
+  km?: number;
+  /** Le nom contient un lieu pas encore nommé par OpenStreetMap (« Lieu_01 ») : l'écran ne le montre pas tel quel (D104). */
+  nomProvisoire?: boolean;
   /**
    * Titre de l'événement du calendrier (pas récurrent, 21 jours au plus)
    * pendant lequel au moins la moitié des photos ont été prises : il se montre,
@@ -669,7 +681,8 @@ export interface DossierPropose {
  * - une sortie : `[desc_]Lieu_JJ.MM.AA` (le lieu connu, sinon le nom
  *   géocodé, sinon « Lieu_01 »…) ; dans un lieu connu « un seul dossier »,
  *   le dossier du lieu ; sans aucune photo située, `Sans_lieu_JJ.MM.AA` ;
- * - la maison : `Domicile/MM.AA`, une journée chargée `Domicile/JJ.MM.AA`
+ * - la maison : `Domicile/MM.AA` (par semaine : `Domicile/JJ-JJ.MM.AA`, les
+ *   jours de ses photos), une journée chargée `Domicile/JJ.MM.AA`
  *   (précédée d'un nom de fichier parlant) ;
  * - un voyage : `Voyage_<lieu de sa plus grande étape>_<dates>/`, avec un
  *   sous-dossier par étape (`o.etapes`, dès deux étapes) ou tout dedans.
@@ -678,6 +691,7 @@ export interface DossierPropose {
 export function arborescence(d: Decoupage, nom: (lat: number, lon: number) => string | null | undefined, o: OptionsTri = OPTIONS_TRI_DEFAUT, evts: EvenementCalendrier[] = []): DossierPropose[] {
   const s = nomsSortie();
   const nomsPoints = new Map<string, string>();
+  const provisoires = new Set<string>();
   let anonymes = 0;
   const lieuNom = (m: Morceau): string => {
     if (m.lieuConnu) return sanitize(m.lieuConnu.nom);
@@ -685,6 +699,7 @@ export function arborescence(d: Decoupage, nom: (lat: number, lon: number) => st
     const cle = `${m.lat},${m.lon}`;
     if (!nomsPoints.has(cle)) {
       const n = nom(m.lat, m.lon);
+      if (!n) provisoires.add(`${s.lieu}_${deux(anonymes + 1)}`);
       nomsPoints.set(cle, n ? sanitize(n) : `${s.lieu}_${deux(++anonymes)}`);
     }
     return nomsPoints.get(cle)!;
@@ -706,6 +721,11 @@ export function arborescence(d: Decoupage, nom: (lat: number, lon: number) => st
     return nomUnique(base, sousDossiers.get(parent)!);
   };
 
+  /** Distance de la maison et nom provisoire d'un morceau, d'après les lieux de son nom. */
+  const enPlus = (m: Morceau, ...lieux: string[]): Pick<DossierPropose, 'km' | 'nomProvisoire'> => ({
+    ...(d.domicile && m.lat !== undefined && m.lon !== undefined ? { km: Math.round(kmEntre({ lat: m.lat, lon: m.lon }, d.domicile)) } : {}),
+    ...(lieux.some((l) => provisoires.has(l)) ? { nomProvisoire: true } : {}),
+  });
   const proposes: DossierPropose[] = [];
   const ajouter = (m: Morceau, x: Omit<DossierPropose, 'photos' | 'du' | 'au'>) => proposes.push({ ...x, photos: m.photos.map((p) => p.id), du: m.du, au: m.au });
   for (const m of d.morceaux) {
@@ -716,7 +736,7 @@ export function arborescence(d: Decoupage, nom: (lat: number, lon: number) => st
       if (dom.un_seul_dossier) ajouter(m, { chemin: [nomDom], info, sorte: 'maison' });
       else {
         const x = m.journee ? desc(m) : null;
-        const sous = m.journee ? (x ? `${x}_${dateDeNom(m.du, m.au)}` : dateDeNom(m.du, m.au)) : moisDeNom(m.du.slice(0, 7));
+        const sous = m.journee ? (x ? `${x}_${dateDeNom(m.du, m.au)}` : dateDeNom(m.du, m.au)) : o.maison === 'semaine' ? dateDeNom(m.du, m.au) : moisDeNom(m.du.slice(0, 7));
         ajouter(m, { chemin: [nomDom, unique(nomDom, sous)], info, infoParent: info, sorte: 'maison' });
       }
     } else if (m.sorte === 'voyage') {
@@ -727,9 +747,12 @@ export function arborescence(d: Decoupage, nom: (lat: number, lon: number) => st
       if (o.etapes && etapes.length > 1) {
         for (const e of etapes) {
           const lieu = lieuNom(e);
-          ajouter(e, { chemin: [parent, unique(parent, nomDe(e, lieu))], info: { origine: 'etape', lieu, lat: e.lat, lon: e.lon }, infoParent, sorte: 'voyage' });
+          ajouter(e, { chemin: [parent, unique(parent, nomDe(e, lieu))], info: { origine: 'etape', lieu, lat: e.lat, lon: e.lon }, infoParent, sorte: 'voyage', ...enPlus(e, principal, lieu) });
         }
-      } else ajouter(m, { chemin: [parent], info: { ...infoParent }, sorte: 'voyage' });
+      } else {
+        const loin = Math.max(...etapes.map((e) => enPlus(e).km ?? 0));
+        ajouter(m, { chemin: [parent], info: { ...infoParent }, sorte: 'voyage', ...enPlus(m, principal), ...(d.domicile ? { km: loin } : {}) });
+      }
     } else if (m.lieuConnu?.un_seul_dossier) {
       const l = m.lieuConnu;
       ajouter(m, { chemin: [sanitize(l.nom)], info: { origine: 'lieu_connu', lieu: l.nom, lat: l.lat, lon: l.lon }, sorte: 'sortie' });
@@ -739,7 +762,7 @@ export function arborescence(d: Decoupage, nom: (lat: number, lon: number) => st
     } else {
       // Sortie (ou photos à la maison sans domicile enregistré : il n'y en a pas, tout est dehors).
       const lieu = lieuNom(m);
-      ajouter(m, { chemin: [nomUnique(nomDe(m, lieu), haut)], info: { origine: 'gps', lieu, lat: m.lat, lon: m.lon }, sorte: 'sortie' });
+      ajouter(m, { chemin: [nomUnique(nomDe(m, lieu), haut)], info: { origine: 'gps', lieu, lat: m.lat, lon: m.lon }, sorte: 'sortie', ...enPlus(m, lieu) });
     }
   }
 

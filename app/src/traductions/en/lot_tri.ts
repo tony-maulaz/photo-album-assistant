@@ -15,8 +15,6 @@ export const TEXTES: Record<string, string> = {
   'sans date': 'no date',
 
   // Page (Tri.tsx)
-  'L’application range vos photos dans l’ordre du temps : un dossier par voyage (avec ses étapes), un par sortie, et la maison mois par mois. Le calendrier ne découpe rien : il propose des noms, que vous choisirez au Nommage. Faites d’abord ce qui est marqué ● ; ce qui est marqué ○ est facultatif.':
-    'The application arranges your photos in time order: one folder per trip (with its stages), one per outing, and home month by month. The calendar does not split anything: it suggests names, which you will choose at the Naming step. First do what is marked ●; what is marked ○ is optional.',
   'photo rangée': 'photo arranged',
   'photos rangées': 'photos arranged',
   '● Encore 1 chose à faire : {0}': '● 1 more thing to do: {0}',
@@ -41,10 +39,6 @@ export const TEXTES: Record<string, string> = {
   'dans un dossier, avec un sous-dossier par étape': 'in one folder, with a subfolder per stage',
   conseillé: 'recommended',
   'tout dans un seul dossier': 'all in a single folder',
-  'Un voyage commence à': 'A trip starts at',
-  'km de la maison': 'km from home',
-  'Plusieurs jours de suite plus loin que cette distance, sans photo prise à la maison entre-temps, forment un voyage.':
-    'Several days in a row further than this distance, with no photo taken at home in between, make a trip.',
   'Avec vos photos : {0} ({1} en tout).': 'With your photos: {0} ({1} in all).',
   sortie: 'outing',
   sorties: 'outings',
@@ -87,37 +81,13 @@ export const TEXTES: Record<string, string> = {
   'Facultatif : {0}': 'Optional: {0}',
   'Rangées avec les photos prises juste avant ou après. L’IA peut proposer un meilleur dossier ; son coût est affiché avant de la lancer.':
     'Arranged with the photos taken just before or after. The AI can suggest a better folder; its cost is shown before starting it.',
-  'Voir dans « À vérifier »': 'See in “To check”',
 
   // Résultat en cartes (ResultatTri.tsx)
   '{0} → {1} · {2} jours': '{0} → {1} · {2} days',
   'À la maison': 'At home',
-  '« {0} » et « {1} » sont réunis.': '“{0}” and “{1}” are joined.',
-  'Pour couper « {0} » : sélectionnez les photos à sortir, ou cliquez sur « Nouveau dossier avec cette journée » au-dessus d’une journée.':
-    'To split “{0}”: select the photos to take out, or click “New folder with this day” above a day.',
   'Calendrier : « {0} » — vous choisirez le nom au Nommage.': 'Calendar: “{0}” — you will choose the name at the Naming step.',
-  'Réunir avec « {0} »': 'Join with “{0}”',
-  'Réunir avec le précédent': 'Join with the previous one',
-  'Ouvrir ce dossier à l’étape suivante pour le couper': 'Open this folder at the next step to split it',
-  'Couper…': 'Split…',
   'Masquer les étapes': 'Hide the stages',
   'Voir les étapes': 'See the stages',
-  'Mettre {0} avec leur mois': 'Put {0} with their month',
-  'petite sortie': 'small outing',
-  'petites sorties': 'small outings',
-  '{0} avec la maison du même mois.': '{0} with home of the same month.',
-  'petite sortie mise': 'small outing put',
-  'petites sorties mises': 'small outings put',
-  'sortie d’une ou deux photos': 'outing of one or two photos',
-  'sorties d’une ou deux photos': 'outings of one or two photos',
-  'Souvent une photo prise en passant. Mettez-les avec la maison du même mois, ou gardez-les seules : l’étape « Petits dossiers » vous les montrera alors une à une, entre leurs voisins.':
-    'Often a photo taken in passing. Put them with home of the same month, or keep them on their own: the “Small folders” step will then show them one by one, between their neighbours.',
-  'Les garder seules': 'Keep them on their own',
-  'Dans « {0} »': 'In “{0}”',
-  'Avec le mois': 'With the month',
-  'Garder seule': 'Keep on its own',
-  '✓ Rien de particulier à vérifier.': '✓ Nothing in particular to check.',
-  'Hors de l’album, dans leur propre dossier. Une vraie photo parmi elles ? Déplacez-la à l’étape suivante.': 'Outside the album, in their own folder. A real photo among them? Move it at the next step.',
   'Ni l’appareil ni le nom du fichier ne donnent leur date : l’application ne sait pas à quelle sortie elles appartiennent.':
     'Neither the camera nor the file name gives their date: the application does not know which outing they belong to.',
   'Vidéos seules': 'Videos on their own',
@@ -125,12 +95,36 @@ export const TEXTES: Record<string, string> = {
   'Rien n’est mis à part.': 'Nothing is set aside.',
   Voyages: 'Trips',
   Sorties: 'Outings',
-  'À vérifier': 'To check',
   'Mis à part': 'Set aside',
   'la maison en {0}': 'home in {0}',
   'Vos dossiers': 'Your folders',
   'Sortes de dossiers': 'Kinds of folders',
-  '{0} à voir': '{0} to see',
-  'Rangez les photos : les dossiers s’afficheront ici, voyage par voyage et mois par mois.': 'Arrange the photos: the folders will show here, trip by trip and month by month.',
   'Aucun dossier de cette sorte.': 'No folder of this kind.',
+
+  // D104 : réglages en crans, maison par semaine, aperçu en direct sans miniatures
+  'L’application range vos photos dans l’ordre du temps : un dossier par voyage (avec ses étapes), un par sortie, et la maison mois par mois. Le calendrier ne découpe rien : il propose des noms, que vous choisirez au Nommage. Faites d’abord ce qui est marqué ● ; ce qui est marqué ○ est facultatif. Le résultat se voit dessous, et suit vos réglages.':
+    'The application arranges your photos in time order: one folder per trip (with its stages), one per outing, and home month by month. The calendar does not split anything: it suggests names, which you will choose at the Naming step. First do what is marked ●; what is marked ○ is optional. The result shows below and follows your settings.',
+  'C’est un voyage à partir de…': 'It is a trip from…',
+  'Distance d’un voyage': 'Distance of a trip',
+  'À la maison, un dossier…': 'At home, one folder…',
+  'Dossiers à la maison': 'Folders at home',
+  'par semaine': 'per week',
+  'Plusieurs jours de suite plus loin que cette distance, sans photo prise à la maison entre-temps, forment un voyage. Une journée chargée à la maison (10 photos ou plus) a toujours son propre dossier.':
+    'Several days in a row further than this distance, with no photo taken at home in between, make a trip. A busy day at home (10 photos or more) always has its own folder.',
+  'Avec ce réglage : {0}.': 'With this setting: {0}.',
+  'Ce réglage donne autant de voyages, de sorties et de dossiers à la maison.': 'This setting gives as many trips, outings and folders at home.',
+  'Ranger avec ce réglage': 'Arrange with this setting',
+  'Revenir au réglage actuel': 'Back to the current setting',
+  'Demander à l’IA…': 'Ask the AI…',
+  '{0}ᵉ étape': 'stage {0}',
+  'Voyage du {0}': 'Trip on {0}',
+  'Sortie du {0}': 'Outing on {0}',
+  'Voyage du {0} au {1}': 'Trip from {0} to {1}',
+  'Sortie du {0} au {1}': 'Outing from {0} to {1}',
+  'à {0} km de la maison': '{0} km from home',
+  'Le nom du lieu viendra au rangement (OpenStreetMap).': 'The place name will come when arranging (OpenStreetMap).',
+  'Hors de l’album, dans leur propre dossier.': 'Outside the album, in their own folder.',
+  'Aperçu : rien n’est encore rangé. Il suit vos réglages ; les noms des lieux sont demandés à OpenStreetMap au rangement.':
+    'Preview: nothing is arranged yet. It follows your settings; place names are requested from OpenStreetMap when arranging.',
+  'Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ».': 'To split a folder or move photos: next step, “Places and outings”.',
 };

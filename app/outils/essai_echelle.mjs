@@ -139,11 +139,11 @@ try {
       await page.getByText('Recherche de l’adresse…').first().waitFor({ state: 'detached', timeout: 20_000 }).catch(() => undefined);
       await page.waitForTimeout(2000);
       await page.screenshot({ path: join(CAPTURES, 'echelle_lieux_frequents.png') });
-      await page.locator('.tri-auto').last().screenshot({ path: join(CAPTURES, 'echelle_tri_reglages.png') });
+      await page.locator('.a-faire-tri').screenshot({ path: join(CAPTURES, 'echelle_tri_reglages.png') });
     }
     debut = performance.now();
-    await page.getByRole('button', { name: /^Ranger les photos dans ces/ }).click();
-    await page.getByText(/dossiers? proposés?/).first().waitFor({ timeout: 1_800_000 });
+    await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
+    await page.locator('.ligne-ranger.fait').waitFor({ timeout: 1_800_000 });
     noter(`tri par lieux en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
     if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_tri.png') });
     for (const [numero, titre] of [[6, /Lieux et sorties/], [7, /Petits dossiers/], [8, /Nommage/], [9, /Consolidation/]]) {

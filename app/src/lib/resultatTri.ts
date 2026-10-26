@@ -1,123 +1,194 @@
-// Résultat du tri automatique (étape « Tri automatique », D103) : les dossiers
-// faits par le tri, lus dans le plan (corrections à la main comprises), en
-// cartes par sorte — voyage avec ses étapes, sortie, maison — dans l'ordre du
-// temps, avec ce qui est mis à part (captures, sans date, vidéos seules) et ce
-// qui mérite un coup d'œil (les sorties d'une ou deux photos).
+// Résultat du tri automatique (étape « Tri automatique », D103, D104) : une
+// ligne par voyage (avec ses étapes), sortie ou période à la maison, dans
+// l'ordre du temps, sans miniatures. Avant de ranger, les lignes viennent de
+// l'arborescence proposée, recalculée à chaque réglage (aperçu en direct) ;
+// après, des dossiers du plan, corrections à la main comprises. À part : les
+// captures d'écran, les photos sans date et les vidéos seules.
 
+import type { LieuConnu } from './config';
+import { cleNom } from './noms';
 import { enfants, type DossierPlan, type FichierPlan, type Plan } from './plan';
 import { nomsSortie } from './sortie';
-import { moisDeNom } from './tri';
-import { cleNom } from './noms';
+import { distanceM, type DossierPropose } from './tri';
 
-export type SorteCarte = 'voyage' | 'sortie' | 'maison';
+export type SorteLigne = 'voyage' | 'sortie' | 'maison';
 
-export interface EtapeCarte {
-  id: string;
+export interface EtapeLigne {
+  cle: string;
   nom: string;
+  /** Nom fait d'un lieu pas encore nommé par OpenStreetMap : l'écran ne le montre pas tel quel. */
+  provisoire: boolean;
   du?: string;
   au?: string;
-  fichiers: FichierPlan[];
+  photos: number;
+  km?: number;
 }
 
-export interface CarteTri {
-  /** Dossier montré par la carte (pour un voyage, le dossier parent). */
-  id: string;
-  sorte: SorteCarte;
+export interface LigneTri {
+  cle: string;
+  sorte: SorteLigne;
   nom: string;
-  lieu?: string;
+  provisoire: boolean;
   du?: string;
   au?: string;
-  /** Photos et vidéos gardées, sous-dossiers compris, dans l'ordre du temps. */
-  fichiers: FichierPlan[];
+  photos: number;
+  videos: number;
+  /** Dates des photos et vidéos, pour l'événement du calendrier. */
+  dates: string[];
   /** Voyage : ses étapes (sous-dossiers) ; vide pour un voyage d'un seul dossier. */
-  etapes: EtapeCarte[];
+  etapes: EtapeLigne[];
+  /** Distance de la maison (km) : la plus lointaine étape d'un voyage. */
+  km?: number;
+  /** Événement du calendrier déjà trouvé (arborescence proposée). */
+  evenement?: string;
 }
 
 export interface ResultatTri {
-  cartes: CarteTri[];
-  captures: FichierPlan[];
-  sansDate: FichierPlan[];
-  videosSeules: FichierPlan[];
+  lignes: LigneTri[];
+  captures: number;
+  sansDate: number;
+  videosSeules: number;
 }
 
-/** Une sortie d'une ou deux photos : souvent une photo prise en passant (D103). */
-export const PHOTOS_PETITE_SORTIE = 2;
+type Fichier = Pick<FichierPlan, 'categorie' | 'date'> & Partial<Pick<FichierPlan, 'statut' | 'gps'>>;
 
-const parDate = (a: FichierPlan, b: FichierPlan) => (a.date ?? '').localeCompare(b.date ?? '') || a.id.localeCompare(b.id);
+const bornes = (dates: string[]) => {
+  const jours = dates.map((d) => d.slice(0, 10)).sort();
+  return jours.length ? { du: jours[0], au: jours.at(-1)! } : {};
+};
+
+const compter = (fichiers: (Fichier | undefined)[]) => {
+  // Une photo mise de côté (copie, floue) n'est pas rangée : l'aperçu ne la compte pas.
+  const f = fichiers.filter((x): x is Fichier => !!x && x.statut !== 'mis_de_cote');
+  return { photos: f.filter((x) => x.categorie === 'photo').length, videos: f.filter((x) => x.categorie === 'video').length, dates: f.map((x) => x.date).filter((d): d is string => !!d) };
+};
+
+const parDate = (a: { du?: string; nom: string }, b: { du?: string; nom: string }) => (a.du ?? '9').localeCompare(b.du ?? '9') || a.nom.localeCompare(b.nom);
+
+/** Lieu sans nom d'OpenStreetMap (« Lieu_01 »…, donné hors ligne ou avant de ranger). */
+const provisoire = (lieu?: string) => !!lieu && new RegExp(`^${nomsSortie().lieu}_\\d{2,}$`).test(lieu);
+
+/** Dossiers d'à côté : `_sans_date`, `_videos_non_classees`. */
+function aPart(nom: string): 'sansDate' | 'videos' | null {
+  const n = nomsSortie();
+  if (cleNom(nom) === cleNom(n.sansDate)) return 'sansDate';
+  if (cleNom(nom) === cleNom(n.videosNonClassees)) return 'videos';
+  return null;
+}
 
 /**
- * Cartes du résultat. `domicile` : nom du lieu connu « domicile » ; ses
- * sous-dossiers (mois, journées chargées) sont les cartes « à la maison »,
- * ceux d'un autre lieu connu (projet trié avant D103) sont des sorties.
+ * Lignes de l'arborescence proposée (aperçu avant de ranger, D104). Les
+ * étapes d'un voyage sont réunies sous lui ; `fichier` donne la sorte et la
+ * date de chaque élément ; `captures` : celles déjà mises à part.
  */
-export function resultatTri(plan: Plan, domicile?: string): ResultatTri {
+export function resultatPropose(dossiers: DossierPropose[], fichier: (id: string) => Fichier | undefined, captures = 0): ResultatTri {
+  const lignes = new Map<string, LigneTri>();
+  let sansDate = 0;
+  let videosSeules = 0;
+  for (const d of dossiers) {
+    const c = compter(d.photos.map(fichier));
+    const cote = aPart(d.chemin[0]);
+    if (cote === 'sansDate') sansDate += c.photos + c.videos;
+    if (cote === 'videos') videosSeules += c.photos + c.videos;
+    if (cote || (!c.photos && !c.videos)) continue;
+    const sorte: SorteLigne = d.sorte === 'sans_lieu' ? 'sortie' : d.sorte;
+    if (sorte === 'voyage' && d.chemin.length > 1) {
+      const cle = d.chemin[0];
+      const v = lignes.get(cle) ?? { cle, sorte, nom: cle, provisoire: false, photos: 0, videos: 0, dates: [], etapes: [] };
+      v.photos += c.photos;
+      v.videos += c.videos;
+      v.dates.push(...c.dates);
+      v.provisoire = provisoire(d.infoParent?.lieu);
+      if (d.km !== undefined) v.km = Math.max(v.km ?? 0, d.km);
+      v.etapes.push({ cle: d.chemin.join('/'), nom: d.chemin[1], provisoire: provisoire(d.info.lieu), photos: c.photos + c.videos, ...bornes(c.dates), ...(d.km !== undefined ? { km: d.km } : {}) });
+      lignes.set(cle, v);
+    } else {
+      const cle = d.chemin.join('/');
+      lignes.set(cle, {
+        cle,
+        sorte,
+        nom: d.chemin.at(-1)!,
+        provisoire: !!d.nomProvisoire,
+        ...c,
+        etapes: [],
+        ...(d.km !== undefined ? { km: d.km } : {}),
+        ...(d.evenement ? { evenement: d.evenement } : {}),
+      });
+    }
+  }
+  const resultat = [...lignes.values()].map((l) => ({ ...l, ...bornes(l.dates), etapes: l.etapes.sort(parDate) }));
+  // Un voyage à étapes : son événement est celui de ses étapes, recalculé à l'écran sur toutes ses dates.
+  return { lignes: resultat.sort(parDate), captures, sansDate, videosSeules };
+}
+
+/**
+ * Lignes des dossiers faits par le tri, lus dans le plan. Les sous-dossiers
+ * du domicile (mois, semaines, journées chargées) sont « à la maison » ; ceux
+ * d'un autre lieu connu (projet trié avant D103) sont des sorties.
+ */
+export function resultatDuPlan(plan: Plan, domicile?: LieuConnu): ResultatTri {
   const gardes = new Map<string, FichierPlan[]>();
-  const captures: FichierPlan[] = [];
+  let captures = 0;
   for (const f of plan.fichiers.values()) {
     if (f.statut !== 'archive' || f.categorie === 'autre') continue;
-    if (f.capture) captures.push(f);
+    if (f.capture) captures++;
     else gardes.set(f.dossier, [...(gardes.get(f.dossier) ?? []), f]);
   }
   const contenu = (id: string): FichierPlan[] => [...(gardes.get(id) ?? []), ...enfants(plan, id).flatMap((e) => contenu(e.id))];
-  const bornes = (fichiers: FichierPlan[]) => {
-    const jours = fichiers.map((f) => f.date?.slice(0, 10)).filter((j): j is string => !!j).sort();
-    return jours.length ? { du: jours[0], au: jours.at(-1)! } : {};
-  };
   const duTri = (d: DossierPlan) => d.origine === 'tri';
-  const noms = nomsSortie();
-  const estDomicile = (d: DossierPlan) => !!domicile && d.tri?.origine === 'lieu_connu' && cleNom(d.tri.lieu ?? '') === cleNom(domicile);
-
-  const cartes: CarteTri[] = [];
-  let sansDate: FichierPlan[] = [];
-  let videosSeules: FichierPlan[] = [];
-  const carte = (d: DossierPlan, sorte: SorteCarte, etapes: EtapeCarte[] = []) => {
-    const fichiers = contenu(d.id).sort(parDate);
-    if (fichiers.length) cartes.push({ id: d.id, sorte, nom: d.nom, ...(d.tri?.lieu ? { lieu: d.tri.lieu } : {}), ...bornes(fichiers), fichiers, etapes });
+  const estDomicile = (d: DossierPlan) => !!domicile && d.tri?.origine === 'lieu_connu' && cleNom(d.tri.lieu ?? '') === cleNom(domicile.nom);
+  // Distance du centre du dossier (celui du tri, sinon celui de ses photos situées, pour un voyage d'un seul dossier).
+  const km = (d: DossierPlan) => {
+    if (!domicile || estDomicile(d)) return undefined;
+    let c = d.tri?.lat !== undefined && d.tri.lon !== undefined ? { lat: d.tri.lat, lon: d.tri.lon } : null;
+    if (!c) {
+      const g = contenu(d.id).filter((f) => f.gps);
+      if (g.length) c = { lat: g.reduce((a, f) => a + f.gps!.lat, 0) / g.length, lon: g.reduce((a, f) => a + f.gps!.lon, 0) / g.length };
+    }
+    return c ? Math.round(distanceM(c.lat, c.lon, domicile.lat, domicile.lon) / 1000) : undefined;
   };
-  // Les dossiers du tri qui ne sont pas dans un autre dossier du tri.
+
+  const lignes: LigneTri[] = [];
+  let sansDate = 0;
+  let videosSeules = 0;
+  const ligne = (d: DossierPlan, sorte: SorteLigne, fichiers: FichierPlan[], etapes: EtapeLigne[] = []) => {
+    const c = compter(fichiers);
+    if (!c.photos && !c.videos) return;
+    const k = etapes.some((e) => e.km !== undefined) ? Math.max(...etapes.map((e) => e.km ?? 0)) : km(d);
+    lignes.push({ cle: d.id, sorte, nom: d.nom, provisoire: false, ...c, ...bornes(c.dates), etapes, ...(k !== undefined && domicile ? { km: k } : {}) });
+  };
   for (const d of plan.dossiers.values()) {
     if (!duTri(d) || (d.parent && plan.dossiers.get(d.parent) && duTri(plan.dossiers.get(d.parent)!))) continue;
     const sous = enfants(plan, d.id);
-    if (cleNom(d.nom) === cleNom(noms.sansDate)) sansDate = contenu(d.id).sort(parDate);
-    else if (cleNom(d.nom) === cleNom(noms.videosNonClassees)) videosSeules = contenu(d.id).sort(parDate);
-    else if (d.tri?.origine === 'voyage')
-      carte(
-        d,
-        'voyage',
-        sous.map((e) => ({ id: e.id, nom: e.nom, fichiers: contenu(e.id).sort(parDate) })).filter((e) => e.fichiers.length).map((e) => ({ ...e, ...bornes(e.fichiers) })),
-      );
-    else if (d.tri?.origine === 'lieu_connu' && sous.length) {
-      // Un lieu connu (le domicile) : chacun de ses sous-dossiers est une carte ; ses photos à lui aussi.
-      const sorte: SorteCarte = estDomicile(d) ? 'maison' : 'sortie';
-      for (const e of sous) carte(e, sorte);
-      if (gardes.get(d.id)?.length) cartes.push({ id: d.id, sorte, nom: d.nom, fichiers: [...gardes.get(d.id)!].sort(parDate), etapes: [], ...bornes(gardes.get(d.id)!) });
-    } else carte(d, estDomicile(d) ? 'maison' : 'sortie');
+    const cote = aPart(d.nom);
+    if (cote === 'sansDate') sansDate += contenu(d.id).length;
+    else if (cote === 'videos') videosSeules += contenu(d.id).length;
+    else if (d.tri?.origine === 'voyage') {
+      const etapes = sous
+        .map((e) => {
+          const c = compter(contenu(e.id));
+          const k = km(e);
+          return { cle: e.id, nom: e.nom, provisoire: false, photos: c.photos + c.videos, ...bornes(c.dates), ...(k !== undefined ? { km: k } : {}) };
+        })
+        .filter((e) => e.photos)
+        .sort(parDate);
+      ligne(d, 'voyage', contenu(d.id), etapes);
+    } else if (d.tri?.origine === 'lieu_connu' && sous.length) {
+      // Un lieu connu (le domicile) : chacun de ses sous-dossiers est une ligne ; ses photos à lui aussi.
+      const sorte: SorteLigne = estDomicile(d) ? 'maison' : 'sortie';
+      for (const e of sous) ligne(e, sorte, contenu(e.id));
+      ligne(d, sorte, gardes.get(d.id) ?? []);
+    } else ligne(d, estDomicile(d) ? 'maison' : 'sortie', contenu(d.id));
   }
-  cartes.sort((a, b) => (a.du ?? '9').localeCompare(b.du ?? '9') || a.nom.localeCompare(b.nom));
-  return { cartes, captures: captures.sort(parDate), sansDate, videosSeules };
+  return { lignes: lignes.sort(parDate), captures, sansDate, videosSeules };
 }
 
-/** Sorties d'une ou deux photos, hors voyage. */
-export function petitesSorties(r: ResultatTri): CarteTri[] {
-  return r.cartes.filter((c) => c.sorte === 'sortie' && c.fichiers.length <= PHOTOS_PETITE_SORTIE);
+/** Nombre de voyages, de sorties et de périodes à la maison. */
+export function compteSortes(r: ResultatTri): Record<SorteLigne, number> {
+  const n = { voyage: 0, sortie: 0, maison: 0 };
+  for (const l of r.lignes) n[l.sorte]++;
+  return n;
 }
 
-/**
- * Dossier « maison » du même mois qu'une petite sortie, pour l'y mettre :
- * celui du mois (« 08.25 ») de préférence, sinon une carte « maison » qui
- * couvre ce jour. `null` sans domicile ou sans photo à la maison ce mois-là.
- */
-export function moisDeLaSortie(r: ResultatTri, c: CarteTri): string | null {
-  if (!c.du) return null;
-  const maisons = r.cartes.filter((m) => m.sorte === 'maison');
-  const nomMois = moisDeNom(c.du.slice(0, 7));
-  const duMois = maisons.find((m) => cleNom(m.nom) === cleNom(nomMois));
-  if (duMois) return duMois.id;
-  return maisons.find((m) => m.du && m.au && m.du <= c.du! && c.du! <= m.au)?.id ?? null;
-}
-
-/** Jusqu'à `n` fichiers répartis sur toute la période (le premier, le dernier, et entre les deux). */
-export function repartis<T>(liste: T[], n: number): T[] {
-  if (liste.length <= n) return liste;
-  return Array.from({ length: n }, (_, i) => liste[Math.round((i * (liste.length - 1)) / (n - 1))]);
-}
+/** Identité d'une ligne d'un réglage à l'autre : sa sorte et ses dates (les noms changent). */
+export const repereLigne = (l: Pick<LigneTri, 'sorte' | 'du' | 'au'>) => `${l.sorte}|${l.du ?? ''}|${l.au ?? ''}`;

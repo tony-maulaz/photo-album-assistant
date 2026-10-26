@@ -1224,6 +1224,40 @@ précédent », « Couper… » (ouvre l'étape suivante), petites sorties d'une
 deux photos à mettre avec leur mois ou à garder seules. Maquette validée :
 https://claude.ai/artifact/9Nm2tPWoKnSCAMTJJ98PQ9.
 
+**D104 — Tri automatique : trois choix en crans, aperçu en direct, sans
+miniatures ni corrections.** Retours de l'utilisateur sur D103 (« vraiment
+mieux ») : plus de réglages ? pas de miniatures, pas de « Couper… », et les
+voyages et sorties en direct quand on change un réglage. Cinq analyses, puis
+une mesure sur 2024 (rangement de la famille) et 2026 (vrac) en plus de 2025 :
+aucun paramètre caché ne fait gagner plus de deux à quatre dossiers retrouvés,
+et ce qui gagne une année perd l'année suivante (plateau) ; les valeurs de
+D103 (3 h, 5 km, 10 photos, mois) sont confirmées. Seule la distance d'un
+voyage change ce qu'on voit, de façon compréhensible (2025 : 16 / 14 / 8
+voyages à 30 / 50 / 100 km ; même courbe en 2024 et 2026) : elle passe du
+réglage avancé à **trois crans visibles**, chacun avec son nombre de voyages.
+La **maison par semaine** est proposée, choisie par l'utilisateur, avec son
+nombre de dossiers (2025 : 48 au lieu de 26, sept sous-dossiers « maison » de
+la famille retrouvés en plus ; aucun gain sur 2024 : le mois reste conseillé).
+Un curseur « sorties plus longues / plus courtes » est écarté (l'accord
+baisse). Les **cartes deviennent des lignes sans miniatures** (dates, photos,
+distance de la maison, événement, étapes) ; **« Couper… », « Réunir avec le
+précédent » et l'onglet « À vérifier » sont retirés** : l'étape 6 range,
+l'étape 7 corrige. « Réunir avec le précédent » avait un défaut : le
+« précédent » était la carte qui commence avant, et un mois à la maison
+commencé le 1er pouvait être rangé comme étape d'un voyage du 3 au 15. Les
+photos sans GPS restent une ligne facultative de la liste « À faire », leur
+aide s'ouvrant dessous. **Aperçu en direct** : avant de ranger, le résultat
+est l'arborescence proposée, recalculée à chaque choix ; les lignes apparues
+sont marquées « nouveau », les comptes montrent l'écart ; OpenStreetMap n'est
+pas interrogé pendant qu'on règle : le nom connu le plus proche à 1 km sert
+(91 à 100 % des lieux après un premier rangement), sinon la ligne prend
+l'événement du calendrier ou sa date, jamais « Lieu_01 ». Après un
+rangement, un autre réglage ne range rien en silence (les corrections faites
+à la main seraient perdues) : l'écart s'affiche, avec « Ranger avec ce
+réglage » ou « Revenir au réglage actuel ». Une photo mise de côté n'est plus
+comptée dans l'aperçu ; un voyage d'un seul dossier prend la distance du
+centre de ses photos.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
@@ -1242,6 +1276,7 @@ https://claude.ai/artifact/9Nm2tPWoKnSCAMTJJ98PQ9.
 | Rafales 2025, essai de l'IA (26 rafales, 22 départagées par Tony) | Photo acceptable : la plus nette 16, Haiku 1024 px 19, **Haiku 1568 px 21**, Haiku + visages 21, Sonnet 20-21 ; yeux fermés reconnus sur 59 photos : 1568 px 50, visages recadrés 35 | Haiku, 1568 px, sans visages (D102) |
 | Tri 2025, distance d'un voyage | 10 / 20 / 30 / 50 / 100 / 200 km → 8 / 7 / 6 / 5 / 5 / 3 voyages ; à 30, un faux voyage de deux excursions ; à 100, des étapes perdues | 50 km (D87) |
 | Tri 2025 dans l'ordre du temps (D103), 3 080 photos datées, contre le rangement de la famille | Trou 2 / 3 / 4 h, voyage 30 / 50 / 80 km, journée chargée 8 / 10 / 15 photos : F1 au premier niveau 0,84-0,85, 66 à 69 dossiers retrouvés sur 95 | Plateau : 3 h, 50 km, 10 photos, rien à l'écran |
+| Tri dans l'ordre du temps sur trois années (D104) : 2024 (3 550 photos, 61 % avec GPS, contre le rangement de la famille), 2026 (5 387 photos, 97 % avec GPS, vrac) | Toutes les variantes de trou, même lieu, journée chargée, étape, petit arrêt : 47 à 59 dossiers de la famille sur 94 retrouvés en 2024 (55 par défaut) ; distance 20 / 30 / 50 / 80 / 100 / 150 km → 16 / 16 / 16 / 15 / 10 / 4 voyages (2024), 17 / 15 / 13 / 12 / 8 / 3 (2026) ; maison par semaine : sans gain sur 2024 | Valeurs de D103 gardées ; distance en crans 30 / 50 / 100 ; semaine en option, mois conseillé |
 
 ## 3. Incidents et corrections (tests de non-régression)
 

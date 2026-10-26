@@ -1,4 +1,4 @@
-/* Étape « Tri automatique » (D103) : liste « À faire » en haut, résultat en cartes et onglets dessous. */
+/* Étape « Tri automatique » (D103, D104) : liste « À faire » en haut, résultat ligne par ligne et onglets dessous. */
 
 .page-tri {
   max-width: 1120px;
@@ -97,13 +97,17 @@
 }
 
 .question-tri {
+  margin: 6px 0 4px;
+  color: var(--texte);
+}
+
+.question-tri fieldset {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin: 6px 0 4px;
+  margin: 0;
   padding: 0;
   border: 0;
-  color: var(--texte);
 }
 
 .question-tri legend {
@@ -112,14 +116,14 @@
   font-weight: 600;
 }
 
+.choix-tri [aria-checked='true'] .conseille {
+  color: inherit;
+}
+
 .question-tri .conseille {
   color: var(--accent);
   font-size: 13px;
   font-weight: 600;
-}
-
-.question-tri .avances {
-  margin-top: 4px;
 }
 
 .apercu-tri-chiffres {
@@ -146,7 +150,7 @@
   min-width: 280px;
 }
 
-/* Résultat : en-tête, onglets (ceux des Doublons), cartes par mois. */
+/* Résultat : en-tête, onglets (ceux des Doublons), lignes par mois. */
 .resultat-tri {
   display: flex;
   flex-direction: column;
@@ -168,24 +172,14 @@
   font-size: 19px;
 }
 
-.resultat-tri .onglet-doublons:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.vide-resultat {
-  padding: 24px;
-  text-align: center;
-}
-
-.cartes-tri {
+.lignes-tri {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.mois-cartes {
-  margin: 12px 0 6px;
+.mois-lignes {
+  margin: 12px 0 4px;
   color: var(--discret);
   font-size: 13px;
   font-weight: 700;
@@ -193,70 +187,69 @@
   text-transform: uppercase;
 }
 
-.carte-tri {
+/* Une ligne par voyage, sortie ou période à la maison, sans miniatures (D104). */
+.ligne-tri {
   display: flex;
-  flex-direction: column;
   gap: 12px;
-  padding: 16px 18px;
-  border: 1px solid var(--bord);
-  border-radius: var(--rayon-carte);
-  background: var(--surface);
-  box-shadow: var(--ombre-douce);
-}
-
-.tete-carte {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 16px;
   align-items: flex-start;
+  padding: 12px 16px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  background: var(--surface);
 }
 
-.icone-carte {
+.ligne-tri.nouvelle {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-doux);
+}
+
+.icone-ligne {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   background: var(--accent-doux);
   color: var(--accent-doux-texte);
 }
 
-.carte-tri.maison .icone-carte,
-.carte-tri.maison .sorte-carte {
+.ligne-tri.maison .icone-ligne,
+.ligne-tri.maison .sorte-ligne {
   background: var(--attention-doux);
   color: var(--attention);
 }
 
-.carte-tri.sortie .icone-carte,
-.carte-tri.sortie .sorte-carte {
+.ligne-tri.sortie .icone-ligne,
+.ligne-tri.sortie .sorte-ligne {
   background: var(--ia-fond);
   color: var(--ia-texte);
 }
 
-.titre-carte {
+.corps-ligne {
   display: flex;
-  flex: 999 1 380px;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
-.ligne-titre {
+.titre-ligne {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 4px 10px;
   align-items: baseline;
 }
 
-.ligne-titre h3 {
+.titre-ligne h3 {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 17px;
+  font-size: 16px;
 }
 
-.sorte-carte {
+.sorte-ligne,
+.badge-nouveau {
   padding: 2px 8px;
   border-radius: 999px;
   background: var(--accent-doux);
@@ -265,23 +258,21 @@
   font-weight: 600;
 }
 
-.actions-carte {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.badge-nouveau {
+  background: var(--accent);
+  color: var(--accent-texte);
 }
 
-.vignettes-carte {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.details-ligne {
+  font-size: 14px;
 }
 
-.etapes-carte {
+.etapes-ligne {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  margin-top: 4px;
 }
 
 .pastille-etape {
@@ -293,7 +284,7 @@
 }
 
 .liste-etapes {
-  margin: 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
   border: 1px solid var(--bord);
@@ -303,9 +294,9 @@
 .liste-etapes li {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
-  padding: 10px 12px;
+  gap: 4px 14px;
+  align-items: baseline;
+  padding: 8px 12px;
   border-top: 1px solid var(--bord);
 }
 
@@ -313,45 +304,56 @@
   border-top: 0;
 }
 
-.liste-etapes li > div:first-child {
-  display: flex;
-  flex: 1 1 220px;
-  flex-direction: column;
-}
-
-/* À vérifier et Mis à part. */
-.a-verifier,
 .mis-a-part {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.a-verifier h3,
-.mis-a-part h3 {
-  margin: 0 0 4px;
-  font-size: 16px;
-}
-
-.petites-sorties {
-  margin: 8px 0 0;
+  gap: 8px;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.petites-sorties li {
+.mis-a-part li {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
-  padding: 8px 0;
-  border-top: 1px solid var(--bord);
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  background: var(--surface);
 }
 
-.petites-sorties li > div:nth-child(2) {
+/* Réglages en crans, chacun avec ce qu'il donne (D104). */
+.choix-tri-ligne {
   display: flex;
-  flex: 1 1 200px;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.libelle-choix {
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.choix-tri .compte-choix {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.ecart-reglage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--rayon);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
 }
 
 @media (max-width: 640px) {

@@ -51,6 +51,26 @@ export class Geocodage {
     return this.cache[cleGeocodage(lat, lon)];
   }
 
+  /**
+   * Nom déjà connu le plus proche, à `km` au plus, sans réseau : pour montrer
+   * le tri avant de ranger (D104), quand un réglage déplace un peu le centre
+   * d'une sortie. `null` si aucun nom connu n'est assez proche.
+   */
+  procheConnu(lat: number, lon: number, km = 1): string | null {
+    const exact = this.connu(lat, lon);
+    if (exact) return exact.nom;
+    let meilleur: { d: number; nom: string } | null = null;
+    const r = Math.PI / 180;
+    for (const [cle, e] of Object.entries(this.cache)) {
+      if (!e.nom) continue;
+      const [a, b] = cle.split(',').map(Number);
+      const x = (b - lon) * r * Math.cos(((a + lat) / 2) * r);
+      const d = Math.hypot(x, (a - lat) * r) * 6371;
+      if (d <= km && (!meilleur || d < meilleur.d)) meilleur = { d, nom: e.nom };
+    }
+    return meilleur?.nom ?? null;
+  }
+
   /** Points qu'il faudra demander à Nominatim (pour annoncer la durée : environ 1 à 2 s chacun). */
   manquants(points: { lat: number; lon: number }[]): number {
     return new Set(points.filter((p) => !this.connu(p.lat, p.lon)).map((p) => cleGeocodage(p.lat, p.lon))).size;

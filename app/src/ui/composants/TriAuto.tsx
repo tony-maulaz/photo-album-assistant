@@ -1,27 +1,29 @@
-// Tri automatique d'un dossier en vrac (étape « Tri automatique », D103) : une
-// liste « À faire » où chaque ligne dit son état — ● à faire, ✓ fait,
+// Tri automatique d'un dossier en vrac (étape « Tri automatique », D103, D104) :
+// une liste « À faire » où chaque ligne dit son état — ● à faire, ✓ fait,
 // ○ facultatif — la maison, les copies et les captures à mettre de côté, les
-// lieux qui reviennent souvent, puis « Ranger les photos » avec une seule
-// question (un voyage par étapes ou en un seul dossier). Le rangement suit
+// lieux qui reviennent souvent, puis « Ranger les photos » avec trois choix
+// (les étapes d'un voyage, sa distance en crans, la maison par mois ou par
+// semaine), chacun avec ce qu'il donne. Le rangement suit
 // l'ordre du temps (lib/tri.ts), demande les noms des lieux à OpenStreetMap,
 // puis l'arborescence remplace le vrac dans le plan (annulable). Sans
 // connexion, les lieux gardent des noms provisoires : le tri n'est jamais
-// bloqué. Le résultat se voit dessous, en cartes (ResultatTri).
+// bloqué. Le résultat se voit dessous (ResultatTri), en direct avant de ranger.
 
 import type { ComponentChildren } from 'preact';
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState, type StateUpdater, type Dispatch } from 'preact/hooks';
 import type { LieuConnu } from '../../lib/config';
 import { acceptablesSansVider, accepter, aEcarter, copiesEnAttente, groupesCopies } from '../../lib/groupesDoublons';
 import { rangerCaptures } from '../../lib/inventaire';
 import { t } from '../../lib/langue';
 import { gardeSaPlace, RACINE, resumes, traitementDe, type DossierPlan, type FichierPlan, type Plan } from '../../lib/plan';
 import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
+import { compteSortes, type ResultatTri as Resultat } from '../../lib/resultatTri';
 import { appliquerTri, arborescenceComplete, decouper, elementsATrier, optionsDuProjet, pointsANommer, type DossierPropose, type OptionsTri } from '../../lib/tri';
 import { ETAPE } from '../../navigateur/projet';
 import { useCopiesExactes } from '../copiesExactes';
 import { allerEtape, annuler, appliquer, changerEtape, configuration, evenements, journal, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionPlan, versionProjet } from '../etat';
-import { duree, pluriel } from '../format';
-import { nombreSansGps } from './AidesTri';
+import { duree, nombre, pluriel } from '../format';
+import { nombreSansGps, SansGps } from './AidesTri';
 import { BarreProgression } from './Cadre';
 import { Captures, capturesProposees } from './Captures';
 import { confirmer } from './Dialogues';
@@ -70,10 +72,13 @@ export interface EtatTri {
   lieuxProposes: boolean;
 }
 
+/** Sans configuration : toujours la même liste vide, pour que les calculs gardés en mémoire ne se refassent pas. */
+const AUCUN_LIEU: LieuConnu[] = [];
+
 export function useEtatTri(): EtatTri {
   const s = session.value!;
   versionPlan.value;
-  const lieux = configuration.value?.lecture?.config?.lieux_connus ?? [];
+  const lieux = configuration.value?.lecture?.config?.lieux_connus ?? AUCUN_LIEU;
   const exactes = useCopiesExactes();
   const lieuxProposes = useLieuxProposes();
   const aTrier = fichiersATrier(s.plan);
@@ -128,37 +133,58 @@ function Ligne({ etat, titre, detail, note, boutons, panneau, classe = '' }: { e
   );
 }
 
-/** Voyages, sorties et dossiers de la maison d'une arborescence proposée. */
-function compter(dossiers: DossierPropose[]) {
-  return {
-    voyages: new Set(dossiers.filter((d) => d.sorte === 'voyage').map((d) => d.chemin[0])).size,
-    sorties: dossiers.filter((d) => d.sorte === 'sortie').length,
-    maison: dossiers.filter((d) => d.sorte === 'maison').length,
-    dossiers: dossiers.length,
-  };
+/** Distances d'un voyage proposées à l'écran (D104) : le résultat change vraiment entre elles. */
+export const CRANS_VOYAGE = [30, 50, 100];
+
+/** Ce que donneraient les réglages, recalculé à chaque changement (quelques dizaines de ms pour une année). */
+export interface ApercuTri {
+  apercu: DossierPropose[];
+  /** Nombre de voyages pour chaque distance des crans, et de dossiers à la maison par mois et par semaine. */
+  voyagesParCran: Map<number, number>;
+  maisonPar: { mois: number; semaine: number };
 }
 
-export function TriAuto({ e }: { e: EtatTri }) {
+/**
+ * Aperçu du tri : l'arborescence des photos à trier avec les réglages
+ * choisis, nommée sans réseau (le nom déjà connu le plus proche, à 1 km au
+ * plus ; sinon le lieu reste à nommer au rangement, D104).
+ */
+export function useApercuTri(e: EtatTri, o: OptionsTri): ApercuTri {
+  const s = session.value!;
+  const evts = evenements.value;
+  const elements = useMemo(() => elementsATrier(e.aTrier), [versionPlan.value]);
+  const decoupage = useMemo(() => decouper(elements.photos, e.lieux, o), [elements, e.lieux, o.distanceVoyageKm, o.maison, o.lieuxConnus]);
+  const apercu = useMemo(() => arborescenceComplete(elements, decoupage, (lat, lon) => s.geocodage.procheConnu(lat, lon), o, evts), [decoupage, o.etapes, o.nomsFichiers, evts]);
+  const voyagesParCran = useMemo(
+    () => new Map(CRANS_VOYAGE.map((km) => [km, decouper(elements.photos, e.lieux, { ...o, distanceVoyageKm: km }).morceaux.filter((m) => m.sorte === 'voyage').length])),
+    [elements, e.lieux],
+  );
+  const maisonPar = useMemo(() => {
+    const n = (maison: OptionsTri['maison']) => decouper(elements.photos, e.lieux, { ...o, maison }).morceaux.filter((m) => m.sorte === 'maison').length;
+    return { mois: n('mois'), semaine: n('semaine') };
+  }, [elements, e.lieux, o.distanceVoyageKm]);
+  return { apercu, voyagesParCran, maisonPar };
+}
+
+/** Réglages du tri choisis à l'écran, différents de ceux du dernier rangement ? */
+const memesReglages = (a: OptionsTri, b: OptionsTri) => a.etapes === b.etapes && a.distanceVoyageKm === b.distanceVoyageKm && a.maison === b.maison;
+
+export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: OptionsTri; setO: Dispatch<StateUpdater<OptionsTri>>; ap: ApercuTri; apercu: Resultat; actuel: Resultat | null }) {
   const s = session.value!;
   versionPlan.value;
-  const [o, setO] = useState<OptionsTri>(() => optionsDuProjet(s.projet.tri));
-  const [panneau, setPanneau] = useState<'maison' | 'captures' | 'lieux' | null>(null);
+  const [panneau, setPanneau] = useState<'maison' | 'captures' | 'lieux' | 'gps' | null>(null);
   const [progres, setProgres] = useState<{ faits: number; total: number } | null>(null);
   const arreter = useRef(false);
   const changer = (m: Partial<OptionsTri>) => setO({ ...o, ...m });
   const basculer = (p: typeof panneau) => setPanneau(panneau === p ? null : p);
-  const evts = evenements.value;
-
-  // Ce que donnerait le rangement, recalculé à chaque réglage (bien moins d'une seconde pour une année),
-  // avec les noms de lieux déjà connus ; les autres sont demandés à OpenStreetMap au moment de ranger.
-  const elements = useMemo(() => elementsATrier(e.aTrier), [versionPlan.value]);
-  const decoupage = useMemo(() => decouper(elements.photos, e.lieux, o), [elements, e.lieux, o]);
-  const apercu = useMemo(() => arborescenceComplete(elements, decoupage, (lat, lon) => s.geocodage.connu(lat, lon)?.nom ?? null, o, evts), [decoupage, o, evts]);
-  const n = compter(apercu);
+  const n = compteSortes(apercu);
+  const dossiersPrevus = ap.apercu.length;
   // Même compte que la barre du bas : les photos des dossiers du tri qui en contiennent encore.
   const proposes = dossiersProposes(s.plan);
   const resume = resumes(s.plan);
   const photosRangees = proposes.reduce((a, d) => a + resume.get(d.id)!.photos, 0);
+  const enregistres = optionsDuProjet(s.projet.tri);
+  const change = e.range && !memesReglages(o, enregistres);
   const nSansGps = e.range ? nombreSansGps(s) : 0;
 
   /** `nouvelles` : seulement les photos pas encore rangées, sans toucher aux dossiers déjà faits. */
@@ -203,7 +229,10 @@ export function TriAuto({ e }: { e: EtatTri }) {
           : t`Tri dans l’ordre du temps : ${pluriel(nb, 'dossier proposé', 'dossiers proposés')} pour ${pluriel(e.aTrier.length, 'fichier')}`,
         { options: o, endroits: points.length },
       );
-      notifier('ok', t`${pluriel(liste.length, 'fichier rangé', 'fichiers rangés')} dans ${pluriel(nb, 'dossier')} : voyez-les ci-dessous.`);
+      // Même compte que la barre du bas : les photos rangées dans les dossiers du tri.
+      const resume = resumes(s.plan);
+      const photos = nouvelles ? liste.filter((f) => f.categorie === 'photo').length : dossiersProposes(s.plan).reduce((a, x) => a + resume.get(x.id)!.photos, 0);
+      notifier('ok', t`${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(nb, 'dossier')} : voyez-les ci-dessous.`);
       document.getElementById('resultat-tri')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       if (sansNoms)
         notifier(
@@ -230,32 +259,48 @@ export function TriAuto({ e }: { e: EtatTri }) {
   };
 
   const question = (
-    <fieldset class="question-tri">
-      <legend>{t`Un voyage de plusieurs jours se range…`}</legend>
-      <label class="case">
-        <input type="radio" name="etapes-voyage" checked={o.etapes} onChange={() => changer({ etapes: true })} /> {t`dans un dossier, avec un sous-dossier par étape`}{' '}
-        <span class="conseille">{t`conseillé`}</span>
-      </label>
-      <label class="case">
-        <input type="radio" name="etapes-voyage" checked={!o.etapes} onChange={() => changer({ etapes: false })} /> {t`tout dans un seul dossier`}
-      </label>
-      <details class="avances">
-        <summary>{t`Réglages avancés`}</summary>
-        <label>
-          {t`Un voyage commence à`}{' '}
-          <input
-            type="number"
-            class="tres-court"
-            min={1}
-            step={1}
-            value={o.distanceVoyageKm}
-            onChange={(ev) => changer({ distanceVoyageKm: Math.max(1, Number(ev.currentTarget.value) || 1) })}
-          />{' '}
-          {t`km de la maison`}
+    <div class="question-tri">
+      <fieldset>
+        <legend>{t`Un voyage de plusieurs jours se range…`}</legend>
+        <label class="case">
+          <input type="radio" name="etapes-voyage" checked={o.etapes} onChange={() => changer({ etapes: true })} /> {t`dans un dossier, avec un sous-dossier par étape`}{' '}
+          <span class="conseille">{t`conseillé`}</span>
         </label>
-        <p class="aide-option">{t`Plusieurs jours de suite plus loin que cette distance, sans photo prise à la maison entre-temps, forment un voyage.`}</p>
-      </details>
-    </fieldset>
+        <label class="case">
+          <input type="radio" name="etapes-voyage" checked={!o.etapes} onChange={() => changer({ etapes: false })} /> {t`tout dans un seul dossier`}
+        </label>
+      </fieldset>
+      {e.domicile && (
+        <>
+          <div class="choix-tri-ligne">
+            <span class="libelle-choix">{t`C’est un voyage à partir de…`}</span>
+            <div class="choix-segmente choix-tri" role="radiogroup" aria-label={t`Distance d’un voyage`}>
+              {[...new Set([...CRANS_VOYAGE, o.distanceVoyageKm])].sort((a, b) => a - b).map((km) => (
+                <button key={km} type="button" role="radio" aria-checked={o.distanceVoyageKm === km} onClick={() => changer({ distanceVoyageKm: km })}>
+                  {t`${nombre(km)} km`}
+                  {km === 50 && <span class="conseille"> {t`conseillé`}</span>}
+                  {ap.voyagesParCran.has(km) && <span class="compte-choix">{pluriel(ap.voyagesParCran.get(km)!, 'voyage')}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div class="choix-tri-ligne">
+            <span class="libelle-choix">{t`À la maison, un dossier…`}</span>
+            <div class="choix-segmente choix-tri" role="radiogroup" aria-label={t`Dossiers à la maison`}>
+              <button type="button" role="radio" aria-checked={o.maison === 'mois'} onClick={() => changer({ maison: 'mois' })}>
+                {t`par mois`} <span class="conseille">{t`conseillé`}</span>
+                <span class="compte-choix">{pluriel(ap.maisonPar.mois, 'dossier')}</span>
+              </button>
+              <button type="button" role="radio" aria-checked={o.maison === 'semaine'} onClick={() => changer({ maison: 'semaine' })}>
+                {t`par semaine`}
+                <span class="compte-choix">{pluriel(ap.maisonPar.semaine, 'dossier')}</span>
+              </button>
+            </div>
+          </div>
+          <p class="aide-option">{t`Plusieurs jours de suite plus loin que cette distance, sans photo prise à la maison entre-temps, forment un voyage. Une journée chargée à la maison (10 photos ou plus) a toujours son propre dossier.`}</p>
+        </>
+      )}
+    </div>
   );
 
   const boutonRanger = progres ? (
@@ -266,7 +311,16 @@ export function TriAuto({ e }: { e: EtatTri }) {
       </button>
     </div>
   ) : null;
-  const apercuTexte = t`Avec vos photos : ${[...(n.voyages ? [pluriel(n.voyages, 'voyage')] : []), pluriel(n.sorties, 'sortie'), ...(n.maison ? [t`la maison en ${pluriel(n.maison, 'dossier')}`] : [])].join(', ')} (${pluriel(n.dossiers, 'dossier')} en tout).`;
+  const apercuTexte = t`Avec vos photos : ${[...(n.voyage ? [pluriel(n.voyage, 'voyage')] : []), pluriel(n.sortie, 'sortie'), ...(n.maison ? [t`la maison en ${pluriel(n.maison, 'dossier')}`] : [])].join(', ')} (${pluriel(dossiersPrevus, 'dossier')} en tout).`;
+  // Après un rangement, un autre réglage ne range rien en silence : l'écart se montre, on range ou on revient (D104).
+  const avant = actuel ? compteSortes(actuel) : null;
+  const ecart = (x: number, y?: number) => (y === undefined || x === y ? '' : ` (${x > y ? '+' : '−'}${nombre(Math.abs(x - y))})`);
+  const pareil = !!avant && avant.voyage === n.voyage && avant.sortie === n.sortie && avant.maison === n.maison;
+  const ecartTexte = pareil
+    ? t`Ce réglage donne autant de voyages, de sorties et de dossiers à la maison.`
+    : avant
+    ? t`Avec ce réglage : ${[pluriel(n.voyage, 'voyage') + ecart(n.voyage, avant.voyage), pluriel(n.sortie, 'sortie') + ecart(n.sortie, avant.sortie), t`la maison en ${pluriel(n.maison, 'dossier')}` + ecart(n.maison, avant.maison)].join(', ')}.`
+    : '';
 
   return (
     <section class="encart a-faire-tri">
@@ -424,10 +478,20 @@ export function TriAuto({ e }: { e: EtatTri }) {
             classe="ligne-ranger"
             titre={t`${pluriel(photosRangees, 'photo rangée', 'photos rangées')} dans ${pluriel(proposes.length, 'dossier')}`}
             detail={
-              <details class="autrement">
+              <details class="autrement" open={change}>
                 <summary>{t`Ranger autrement…`}</summary>
                 {question}
-                <span class="apercu-tri-chiffres">{apercuTexte}</span>
+                {change && (
+                  <div class="ecart-reglage">
+                    <span>{ecartTexte}</span>
+                    <button type="button" class="principal" onClick={() => void calculer()}>
+                      {t`Ranger avec ce réglage`}
+                    </button>
+                    <button type="button" onClick={() => setO(enregistres)}>
+                      {t`Revenir au réglage actuel`}
+                    </button>
+                  </div>
+                )}
               </details>
             }
             boutons={
@@ -451,10 +515,11 @@ export function TriAuto({ e }: { e: EtatTri }) {
             titre={t`Facultatif : ${pluriel(nSansGps, 'photo sans GPS', 'photos sans GPS')}`}
             detail={t`Rangées avec les photos prises juste avant ou après. L’IA peut proposer un meilleur dossier ; son coût est affiché avant de la lancer.`}
             boutons={
-              <button type="button" onClick={() => montrerOnglet('verifier')}>
-                {t`Voir dans « À vérifier »`}
+              <button type="button" aria-expanded={panneau === 'gps'} onClick={() => basculer('gps')}>
+                {panneau === 'gps' ? t`Masquer` : t`Demander à l’IA…`}
               </button>
             }
+            panneau={panneau === 'gps' && <SansGps />}
           />
         )}
       </ul>
