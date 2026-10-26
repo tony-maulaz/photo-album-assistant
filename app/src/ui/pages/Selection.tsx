@@ -584,7 +584,7 @@ export function PageSelection() {
             <button type="button" class="principal" disabled={!elements.length} onClick={() => ouvrirTri()} title={t`Touche T`}>
               {t`Tri rapide`}
             </button>
-            <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title="Ctrl+Z">
+            <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
               {t`Annuler`}
             </button>
             <label class="curseur" title={t`Taille des photos (jusqu’à 600 px)`}>

@@ -201,10 +201,13 @@ function Ligne({
   const k = n?.calendrier ?? [];
   return (
     <tr class={renomme ? 'renomme' : choisie?.source === 'ia' && (choisie.confiance ?? 0) < 6 ? 'a-verifier' : ''}>
-      <td class="miniatures-nommage">
-        {c.photos.slice(0, 1).concat(c.photos.length > 2 ? [c.photos[Math.floor(c.photos.length / 2)]] : [], c.photos.length > 1 ? [c.photos.at(-1)!] : []).map((f) => (
-          <Miniature key={f.id} f={f} taille={64} />
-        ))}
+      <td>
+        {/* Le flex sur un div : posé sur le td, la cellule perdait la hauteur de la ligne et décalait ses traits. */}
+        <div class="miniatures-nommage">
+          {c.photos.slice(0, 1).concat(c.photos.length > 2 ? [c.photos[Math.floor(c.photos.length / 2)]] : [], c.photos.length > 1 ? [c.photos.at(-1)!] : []).map((f) => (
+            <Miniature key={f.id} f={f} taille={64} />
+          ))}
+        </div>
       </td>
       <td>
         {renomme ? (

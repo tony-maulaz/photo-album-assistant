@@ -119,7 +119,7 @@ export function PageFloues() {
           <option value="ecartees">{t`Seulement celles qui seront écartées`}</option>
         </select>
         <span class="espace" />
-        <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title="Ctrl+Z">
+        <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
           {t`Annuler`}
         </button>
       </div>
