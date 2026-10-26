@@ -72,7 +72,7 @@ export const TEXTES: Record<string, string> = {
   'Arrêter (les réponses déjà reçues sont gardées)': 'Stop (answers already received are kept)',
   Dossier: 'Folder',
   'Groupes affichés': 'Groups shown',
-  'À relire': 'To review',
+  'À valider': 'To validate',
   groupe: 'group',
   groupes: 'groups',
 
@@ -228,8 +228,7 @@ export const TEXTES: Record<string, string> = {
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
   ' : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».':
     ': set the tolerance; S saves a photo, X sets aside a failed photo. Nothing is set aside before “Confirm”.',
-  ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic sur une photo la garde ou l’écarte, « Accepter » applique la proposition.':
-    ' : one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: one click on a photo keeps it or sets it aside, “Accept” applies the suggestion.',
+  ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » valide le groupe.': ': one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: a click chooses the photo to keep, “Accept” validates the group.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
   ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',
   ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':

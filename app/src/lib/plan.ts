@@ -99,6 +99,36 @@ export interface FichierPlan {
   doublon?: InfoDoublon;
   /** Gardée volontairement à l'étape « Doublons » : jamais reproposée comme doublon (I10). */
   protegee?: boolean;
+  /**
+   * Choix fait à l'étape « Doublons », pas encore validé (D101) : true = à garder, false = à écarter.
+   * Une case par famille de groupes, pour qu'un choix dans une rafale ne décide pas d'une copie exacte.
+   * « Accepter » l'applique et l'efface ; sans effet sur la sortie tant qu'il attend.
+   */
+  choixDoublons?: Partial<Record<'doublons' | 'doublons_exacts', boolean>>;
+}
+
+/** La photo sans son choix en attente à l'étape « Doublons » (d'une famille, ou de toutes). */
+export function sansChoixDoublons<F extends FichierPlan>(f: F, raison?: 'doublons' | 'doublons_exacts'): F {
+  if (!f.choixDoublons) return f;
+  const { choixDoublons, ...reste } = f;
+  if (!raison) return reste as F;
+  const { [raison]: _retire, ...autres } = choixDoublons;
+  return (Object.keys(autres).length ? { ...reste, choixDoublons: autres } : reste) as F;
+}
+
+/**
+ * Pose (ou retire, `undefined`) le choix en attente de photos à l'étape « Doublons » (D101) : un clic,
+ * même s'il touche toute une rafale, est un seul Ctrl+Z ; rien n'est mis de côté.
+ */
+export function choisirDoublons(plan: Plan, raison: 'doublons' | 'doublons_exacts', choix: { id: string; garder: boolean | undefined }[]): Modification | null {
+  const tx = new Transaction(plan);
+  for (const c of choix) {
+    const f = plan.fichiers.get(c.id);
+    if (!f || f.choixDoublons?.[raison] === c.garder) continue;
+    const sans = sansChoixDoublons(f, raison);
+    tx.fichier(c.garder === undefined ? sans : { ...sans, choixDoublons: { ...sans.choixDoublons, [raison]: c.garder } });
+  }
+  return tx.terminer(t`Choisir une photo`);
 }
 
 export type Rotation = 0 | 90 | 180 | 270;
@@ -657,22 +687,27 @@ export function ecarterDoublons(plan: Plan, decisions: { id: string; raison: 'do
   let n = 0;
   for (const d of decisions) {
     const f = plan.fichiers.get(d.id);
+    // Déjà écartée par cette étape : seul son choix en attente s'efface.
+    if (f && f.statut === 'mis_de_cote' && f.raison === d.raison && f.choixDoublons?.[d.raison] !== undefined) tx.fichier(sansChoixDoublons(f, d.raison));
     if (!f || f.categorie !== 'photo' || f.statut !== 'archive') continue;
-    const { protegee: _p, doublon: _d, ...reste } = f;
+    const { protegee: _p, doublon: _d, ...reste } = sansChoixDoublons(f, d.raison);
     tx.fichier(d.doublon ? { ...reste, statut: 'mis_de_cote', raison: d.raison, doublon: d.doublon } : { ...reste, statut: 'mis_de_cote', raison: d.raison });
     n++;
   }
   return tx.terminer(t`Écarter ${pluriel(n, 'photo')}`);
 }
 
-/** « Garder aussi » : le doublon revient dans son dossier et ne sera plus jamais proposé (I10). */
-export function garderAussi(plan: Plan, ids: string[]): Modification | null {
+/**
+ * « Garder aussi » : le doublon revient dans son dossier et ne sera plus jamais proposé (I10) ; son choix
+ * en attente (de la famille `raison`, sinon tous) est appliqué, donc effacé.
+ */
+export function garderAussi(plan: Plan, ids: string[], raison?: 'doublons' | 'doublons_exacts'): Modification | null {
   const tx = new Transaction(plan);
   const aRanger: string[] = [];
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f) continue;
-    const { doublon: _d, ...reste } = f;
+    const { doublon: _d, ...reste } = sansChoixDoublons(f, raison);
     tx.fichier({ ...reste, protegee: true });
     if (f.statut === 'mis_de_cote') aRanger.push(id);
   }

@@ -8,7 +8,7 @@
 
 import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { useMemo, useRef, useState } from 'preact/hooks';
-import { accepter, aEcarter, copiesEnAttente, groupesCopies } from '../../lib/groupesDoublons';
+import { acceptablesSansVider, accepter, aEcarter, copiesEnAttente, groupesCopies } from '../../lib/groupesDoublons';
 import { gardeSaPlace, RACINE, resumes, traitementDe, type DossierPlan, type FichierPlan, type Plan } from '../../lib/plan';
 import { appliquerTri, arborescenceComplete, elementsATrier, grouper, modeTri, optionsDuMode, optionsDuProjet, type ModeTri, type OptionsTri } from '../../lib/tri';
 import { useCopiesExactes } from '../copiesExactes';
@@ -79,7 +79,8 @@ export function CopiesAvantTri() {
   const copies = useCopiesExactes();
   if (!copies) return null;
   const fichier = (id: string) => s.plan.fichiers.get(id);
-  const groupes = copiesEnAttente(groupesCopies(copies, fichier), new Set(fichiersATrier(s.plan).map((f) => f.id)), fichier);
+  // Jamais un groupe dont aucun exemplaire n'est choisi : ce choix-là attend d'être vu à l'étape Doublons (D101).
+  const groupes = acceptablesSansVider(copiesEnAttente(groupesCopies(copies, fichier), new Set(fichiersATrier(s.plan).map((f) => f.id)), fichier), fichier);
   const n = groupes.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
   if (!n) return null;
   const dejaTrie = [...s.plan.dossiers.values()].some((d) => d.origine === 'tri');

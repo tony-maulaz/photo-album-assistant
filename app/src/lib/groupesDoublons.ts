@@ -3,14 +3,16 @@
 // scènes vérifiées par l'IA, présentés de la même façon. Chaque photo d'un groupe porte une proposition (la garder ou
 // l'écarter) ; son état se lit dans le plan : écartée par cette étape,
 // gardée, ou « à écarter » tant que la proposition n'est pas acceptée. Un clic
-// inverse ce que l'on voit, « Accepter » applique les propositions qui
-// restent : rien n'est écarté sans action de l'utilisateur (règle d'or 3), et
-// chaque choix, écrit dans le plan, est enregistré et annulable.
+// pose un choix en attente (D101 : dans une rafale ou une même scène, il
+// choisit cette photo seule, sauf « Garder plusieurs photos ») ; seul
+// « Accepter » l'applique et valide le groupe : rien n'est écarté sans action
+// de l'utilisateur (règle d'or 3), et chaque choix, écrit dans le plan, est
+// enregistré et annulable.
 
 import type { Proposition } from './doublons';
 import type { GroupeExact } from './doublonsExacts';
 import { t } from './langue';
-import { combiner, dateSure, deplacerFichiers, ecarterDoublons, garderAussi, type FichierPlan, type InfoDoublon, type Modification, type Plan } from './plan';
+import { choisirDoublons, combiner, dateSure, deplacerFichiers, ecarterDoublons, garderAussi, type FichierPlan, type InfoDoublon, type Modification, type Plan } from './plan';
 import { pluriel } from '../ui/format';
 
 /**
@@ -18,7 +20,12 @@ import { pluriel } from '../ui/format';
  * plusieurs dossiers gardés, toute gardée), montrée avec les copies (D86).
  */
 export type Sorte = 'copies' | 'dossiers' | 'rafales' | 'ia';
-export type EtatPhoto = 'gardee' | 'ecartee' | 'a_ecarter';
+/**
+ * Validé : « gardée », « écartée ». En attente : « à écarter » (proposition ou choix pas encore acceptés),
+ * « choisie » (choisie pour être gardée, pas encore acceptée : une photo écartée qu'on reprend, ou une photo
+ * proposée à l'écart qu'on garde) (D101).
+ */
+export type EtatPhoto = 'gardee' | 'ecartee' | 'a_ecarter' | 'choisie';
 
 export interface MembreGroupe {
   id: string;
@@ -63,8 +70,16 @@ export function raisonDe(g: GroupeDoublons): 'doublons' | 'doublons_exacts' {
  */
 export function etatPhoto(g: GroupeDoublons, m: MembreGroupe, f: FichierPlan | undefined): EtatPhoto | undefined {
   if (!f) return undefined;
-  if (f.statut === 'mis_de_cote') return f.raison === raisonDe(g) ? 'ecartee' : undefined;
+  const raison = raisonDe(g);
+  const choix = f.choixDoublons?.[raison];
+  if (f.statut === 'mis_de_cote') return f.raison !== raison ? undefined : choix === true ? 'choisie' : 'ecartee';
+  if (choix !== undefined) return choix ? 'choisie' : 'a_ecarter';
   return !m.garder && !f.protegee ? 'a_ecarter' : 'gardee';
+}
+
+/** Gardée après « Accepter » : gardée, ou choisie. */
+export function aGarder(etat: EtatPhoto): boolean {
+  return etat === 'gardee' || etat === 'choisie';
 }
 
 export interface PhotoDuGroupe {
@@ -124,9 +139,18 @@ export function exemplairesEcartesDans(groupes: GroupeDoublons[], dans: (f: Fich
   );
 }
 
-/** À relire : une proposition d'écarter attend encore. */
+/**
+ * À valider : une proposition ou un choix attend encore « Accepter » ; un clic sur une photo ne valide
+ * jamais le groupe (D101).
+ */
 export function aRelire(g: GroupeDoublons, fichier: Fichiers): boolean {
-  return aEcarter(g, fichier).length > 0;
+  return photosDuGroupe(g, fichier).some((x) => x.etat === 'a_ecarter' || x.etat === 'choisie');
+}
+
+/** Un choix de l'utilisateur attend sur une photo du groupe (pas seulement la proposition). */
+export function choixEnAttente(g: GroupeDoublons, fichier: Fichiers): boolean {
+  const raison = raisonDe(g);
+  return photosDuGroupe(g, fichier).some((x) => x.f.choixDoublons?.[raison] !== undefined);
 }
 
 /** Groupes relus et groupes en tout (visibles seulement). */
@@ -143,7 +167,7 @@ export function avancementGroupes(groupes: GroupeDoublons[], fichier: Fichiers):
 function ecarter(plan: Plan, g: GroupeDoublons, ids: string[]): Modification | null {
   if (!ids.length) return null;
   const sauf = new Set(ids);
-  const restent = photosDuGroupe(g, (id) => plan.fichiers.get(id)).filter((x) => x.etat === 'gardee' && !sauf.has(x.m.id));
+  const restent = photosDuGroupe(g, (id) => plan.fichiers.get(id)).filter((x) => aGarder(x.etat) && !sauf.has(x.m.id));
   const garde = restent.find((x) => x.m.id === g.etoile)?.m.id ?? restent[0]?.m.id ?? g.etoile;
   const membres = new Map(g.membres.map((m) => [m.id, m]));
   const raison = raisonDe(g);
@@ -160,12 +184,27 @@ function ecarter(plan: Plan, g: GroupeDoublons, ids: string[]): Modification | n
   );
 }
 
-/** Un clic sur une photo : ce que l'on voit s'inverse (gardée ↔ écartée ; « à écarter » devient gardée). */
-export function basculer(plan: Plan, g: GroupeDoublons, id: string): Modification | null {
-  const m = g.membres.find((x) => x.id === id);
-  const etat = m && etatPhoto(g, m, plan.fichiers.get(id));
-  if (!etat) return null;
-  return etat === 'gardee' ? ecarter(plan, g, [id]) : garderAussi(plan, [id]);
+/**
+ * Un clic sur une photo (D101) : un choix en attente, rien n'est mis de côté avant « Accepter ».
+ * `seule` (rafale, même scène) : cette photo est choisie et les autres passent « à écarter » ; sinon
+ * (copies, « Garder plusieurs photos ») seule cette photo change. Un choix égal à ce que ferait
+ * « Accepter » sans lui n'est pas noté.
+ */
+export function choisir(plan: Plan, g: GroupeDoublons, id: string, seule: boolean): Modification | null {
+  const fichier = (x: string) => plan.fichiers.get(x);
+  const photos = photosDuGroupe(g, fichier);
+  const cliquee = photos.find((x) => x.m.id === id);
+  if (!cliquee) return null;
+  return choisirDoublons(
+    plan,
+    raisonDe(g),
+    photos.map((x) => {
+      const garder = seule ? x.m.id === id : x.m.id === id ? !aGarder(x.etat) : aGarder(x.etat);
+      // Ce que deviendrait la photo sans choix : écartée si elle l'est, sinon selon sa proposition.
+      const parDefaut = x.f.statut === 'mis_de_cote' ? false : x.m.garder || !!x.f.protegee;
+      return { id: x.m.id, garder: garder === parDefaut ? undefined : garder };
+    }),
+  );
 }
 
 /**
@@ -177,32 +216,43 @@ export function accepter(plan: Plan, groupes: GroupeDoublons[]): Modification | 
   const modifications: (Modification | null)[] = [];
   let n = 0;
   for (const g of groupes) {
+    if (!aRelire(g, fichier)) continue;
     const ids = aEcarter(g, fichier);
-    if (!ids.length) continue;
+    // Les photos choisies (reprises ou gardées contre la proposition) reviennent ou sont gardées ; les choix s'effacent.
+    const choisies = photosDuGroupe(g, fichier)
+      .filter((x) => x.etat === 'choisie')
+      .map((x) => x.m.id);
     n++;
     const r = g.remplacement;
     const original = r && photosDuGroupe(g, fichier).find((x) => x.m.id === r.original);
-    const deplacer = r && ids.includes(r.copie) && original?.etat === 'gardee' && original.f.dossier !== r.dossier && plan.dossiers.has(r.dossier);
+    const deplacer = r && ids.includes(r.copie) && original && aGarder(original.etat) && original.f.dossier !== r.dossier && plan.dossiers.has(r.dossier);
     modifications.push(ecarter(plan, g, ids));
+    if (choisies.length) modifications.push(garderAussi(plan, choisies, raisonDe(g)));
     if (deplacer) modifications.push(deplacerFichiers(plan, [r.original], r.dossier));
   }
   return combiner(t`Accepter ${pluriel(n, 'proposition')}`, ...modifications);
 }
 
 /**
- * Groupes qu'un « Accepter » groupé peut traiter sans les vider : il reste une
- * photo gardée. Celui dont la ★ a été écartée (au clic, ou floue) écarterait
- * tout sans avoir été vu ; il reste à relire, avec son alerte (D99).
+ * Groupes qu'un « Accepter » groupé (section, onglet) valide : au moins une photo y sera gardée. Celui où
+ * aucune n'est choisie écarterait tout sans avoir été vu ; il reste à valider, avec son alerte (D99, D101).
  */
 export function acceptablesSansVider(groupes: GroupeDoublons[], fichier: Fichiers): GroupeDoublons[] {
-  return groupes.filter((g) => photosDuGroupe(g, fichier).some((x) => x.etat === 'gardee'));
+  return groupes.filter((g) => photosDuGroupe(g, fichier).some((x) => aGarder(x.etat)));
 }
 
-/** « Tout garder » : les photos écartées reviennent, celles « à écarter » sont gardées. */
+/** « Tout garder » : les photos écartées reviennent, celles « à écarter » sont gardées ; le groupe est validé. */
 export function garderTout(plan: Plan, groupes: GroupeDoublons[]): Modification | null {
   const fichier = (id: string) => plan.fichiers.get(id);
-  const ids = [...new Set(groupes.flatMap((g) => photosDuGroupe(g, fichier).filter((x) => x.etat !== 'gardee').map((x) => x.m.id)))];
-  return ids.length ? garderAussi(plan, ids) : null;
+  return combiner(
+    t`Tout garder`,
+    ...groupes.map((g) => {
+      const ids = photosDuGroupe(g, fichier)
+        .filter((x) => x.etat !== 'gardee')
+        .map((x) => x.m.id);
+      return ids.length ? garderAussi(plan, ids, raisonDe(g)) : null;
+    }),
+  );
 }
 
 /** « Tout écarter » : toutes les photos du groupe, la ★ comprise, vont dans `_mis_de_cote/` (rien n'est supprimé). */

@@ -360,14 +360,21 @@ try {
   verifier((await page.locator('.carte-doublons').count()) === groupes, 'relancer l’analyse retrouve les mêmes groupes');
   // La photo proposée (★) n'est plus intouchable : un clic l'écarte, un autre la remet.
   const carte = page.locator('.carte-doublons').first();
-  await carte.locator('.tuile-doublon.gardee').first().click();
-  await carte.locator('.tuile-doublon.ecartee').first().waitFor();
-  await carte.locator('.tuile-doublon.ecartee').first().click();
-  verifier((await carte.locator('.tuile-doublon.ecartee').count()) === 0, 'la photo gardée s’écarte d’un clic et revient d’un autre');
+  // Un clic choisit, sans rien écarter ni valider (D101) ; Ctrl+Z revient à la proposition.
+  const aEcarterAvant = await carte.locator('.tuile-doublon.a_ecarter').count();
+  await carte.locator('.tuile-doublon.choisie').first().click();
+  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.a_ecarter').length > n, aEcarterAvant);
+  verifier(
+    (await carte.locator('.tuile-doublon.ecartee').count()) === 0 && (await carte.locator('.pastille-attente').count()) === 1 && (await carte.locator('[data-action="accepter"]').count()) === 1,
+    'un clic sur la photo proposée : « à écarter », rien n’est mis de côté, le groupe reste à valider',
+  );
+  await page.evaluate(() => document.activeElement?.blur());
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.a_ecarter').length === n, aEcarterAvant);
   await carte.locator('[data-action="accepter"]').click();
   await page.waitForTimeout(300);
   verifier((await page.locator('.barre-validation .resume').innerText()).includes('1 photo écartée'), 'un doublon écarté après relecture');
-  verifier((await page.locator('.carte-doublons').count()) === groupes - 1, 'avec « À relire », le groupe accepté s’en va (D100)');
+  verifier((await page.locator('.carte-doublons').count()) === groupes - 1, 'avec « À valider », le groupe accepté s’en va (D100)');
 
   // Étape 9 : sélection au clavier, tri rapide, rotation.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();

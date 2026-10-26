@@ -133,7 +133,7 @@ async function analyser() {
     s.doublons = r.etat;
     const fichier = (id: string) => s.plan.fichiers.get(id);
     const n = groupesScenes(r.etat.dossiers, fichier).filter((g) => g.sorte === 'rafales' && groupeVisible(g, fichier) && aRelire(g, fichier)).length;
-    if (aChercher.length) journal('doublons', t`Rafales cherchées en ${Math.round((performance.now() - debut) / 1000)} s : ${pluriel(n, 'groupe à relire', 'groupes à relire')}`);
+    if (aChercher.length) journal('doublons', t`Rafales cherchées en ${Math.round((performance.now() - debut) / 1000)} s : ${pluriel(n, 'groupe à valider', 'groupes à valider')}`);
   } catch (err) {
     notifier('erreur', t`Analyse interrompue : ${texteErreur(err)}`);
   }

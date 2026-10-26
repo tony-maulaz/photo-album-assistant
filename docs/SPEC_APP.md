@@ -427,9 +427,10 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   exemplaires ») ; puis la barre des filtres, toujours visible en haut :
   Afficher (À relire, Relus, Tous), Grouper, taille, Classer ; puis la page.
   En tête de la section affichée : son titre, ce qui reste à relire et
-  « Accepter les N propositions de cette journée / de ce mois / de ce
-  dossier » (s'il reste au moins deux groupes) : on parcourt la section en
-  gardant ou écartant d'un clic, puis on la valide d'un coup (D100) ; pas de
+  « Valider les N groupes de cette journée / de ce mois / de ce dossier »
+  (s'il reste au moins deux groupes ; ceux où au moins une photo est
+  choisie, « dont N où vous n'avez rien choisi ») : on parcourt la section
+  en choisissant d'un clic, puis on la valide d'un coup (D100, D101) ; pas de
   boutons vers les sections voisines (N et P au clavier). La liste de gauche
   et la première carte commencent à la même hauteur. Groupé par dossier, la
   photo du dossier choisi est à gauche dans chaque groupe. À gauche, la liste des journées
@@ -442,18 +443,24 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   recherche. Un curseur règle la taille des photos (le même réglage qu'à la
   Sélection).
 - **Un groupe par carte** : heure, sorte, emplacement, proposition. Chaque
-  photo a une proposition (garder ou écarter) et un état lu dans le plan :
-  gardée, écartée, ou « à écarter » tant que la proposition n'est pas
-  acceptée. Un clic sur n'importe quelle photo, la ★ comprise, inverse ce
-  qu'on voit ; **Accepter**, **Tout garder**, **Tout écarter**, **Comparer
-  en grand** (zoom synchronisé, dossier de chaque photo, ← → d'un groupe à
-  l'autre, 1, 2, 3… gardent ou écartent la photo de ce numéro, « Accepter et
-  groupe suivant »). Un clic sur une photo ne fait rien disparaître ; avec
-  « À relire », un groupe validé (Accepter, Tout garder, Tout écarter) s'en
-  va, « Annuler » le fait revenir ; avec « Relus » ou « Tous », il se replie
-  à sa place (« Revoir » le rouvre, « Replier » le referme) (D100).
-  Un groupe non relu garde ses photos dans l'archive. Tout s'annule
-  (Ctrl+Z). Clavier : J et K, ← et →, Espace, A, C, N et P.
+  photo a une proposition (garder ou écarter). **Un clic choisit, « Accepter »
+  valide** (D101) : un clic sur une photo pose un choix en attente (« à
+  garder », « à écarter », en pointillés ; « Votre choix · pas encore
+  validé »), noté dans le plan, annulable, sans rien mettre de côté ; dans
+  une rafale ou une même scène, il choisit cette photo seule (les autres
+  passent « à écarter »), sauf la case **Garder plusieurs photos** du groupe
+  (cochée d'office dès deux photos choisies ; Ctrl+clic ajoute une photo) ;
+  pour les copies exactes, il change cette photo seule. **Accepter : garder
+  N, écarter M** applique les choix et valide le groupe (« Gardée »,
+  « Écartée », « ✓ Validé ») ; aussi **Tout garder**, **Tout écarter**,
+  **Comparer en grand** (zoom synchronisé, dossier de chaque photo, ← → d'un
+  groupe à l'autre, 1, 2, 3… choisissent la photo de ce numéro, « Accepter
+  et groupe suivant »). Filtres **À valider**, **Validés**, **Tous** : avec
+  « À valider », un groupe validé s'en va, « Annuler » le fait revenir ; avec
+  « Validés » ou « Tous », il se replie à sa place (« Revoir » le rouvre,
+  « Replier » le referme) (D100). Un groupe non validé garde ses photos dans
+  l'archive. Tout s'annule (Ctrl+Z). Clavier : J et K, ← et →, Espace, A, C,
+  N et P.
 - **Copies exactes** sur tout le projet, quels que soient le dossier et la
   date (D61) : même contenu (empreinte du fichier) ou **même photo en
   version réduite** (WhatsApp : très semblable, dimensions plus petites,
@@ -476,9 +483,11 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   remarque au plus quand elle se distingue nettement des autres du groupe
   (« plus nette », « plus sombre », « trop claire (zones blanches) »,
   « contre-jour »), d'après la netteté et l'exposition mesurées par
-  l'analyse. La ★ d'une rafale reste la plus nette ; quand les photos se
-  valent, la proposition le dit (« gardez celle que vous préférez »). Un
-  « Accepter » groupé ne vide jamais un groupe dont la ★ a été écartée.
+  l'analyse. La ★ ne s'affiche que si une photo est vraiment meilleure (la
+  plus nette d'une rafale, le choix de l'IA, l'original d'une copie
+  réduite) ; quand les photos se valent, une photo est choisie sans ★ et la
+  proposition le dit (D101). Un « Accepter » groupé ne valide jamais un
+  groupe où aucune photo n'est choisie.
 - Réglage simple de l'IA : **Prudent** (défaut, les expressions différentes
   sont gardées) ou **Strict**. Son coût est affiché dans l'onglet « Même
   scène (IA) », où elle se lance.

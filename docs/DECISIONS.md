@@ -1114,6 +1114,38 @@ l'en-tête (encombrants ; N et P au clavier), placé au-dessus de la colonne
 des groupes pour que la liste de gauche et la première carte commencent à
 la même hauteur.
 
+**D101 — Doublons : un clic choisit, « Accepter » valide.** Retours de Tony
+sur la rafale de la piscine : un clic écrivait tout de suite dans le plan,
+donc cliquer la photo 3 la gardait en plus de la ★ et le groupe passait en
+« relu » sans validation ; la ★ ressemblait à une vraie proposition alors
+qu'elle tombe au hasard dans 246 rafales sur 257 (D99). Décisions de Tony :
+pas d'étoile au hasard ; un clic ne valide jamais, seuls « Accepter » et la
+validation de la section le font ; valider la section accepte les groupes
+où au moins une photo est choisie ; un clic choisit cette photo seule, avec
+une case « Garder plusieurs photos ». Analyse par cinq agents (interface
+intuitive, moderne, technique, critique, avocat du diable) et maquette ;
+toutes les applications de référence séparent aussi le choix de la
+validation (Apple « Ne garder que la sélection », Google « Garder 1,
+supprimer le reste »). Modèle : un **choix en attente** sur la photo, dans
+le plan (`choixDoublons`, une case par famille — copies exactes d'un côté,
+rafales et mêmes scènes de l'autre —, pour qu'un choix dans une rafale ne
+décide pas d'une copie) ; il est enregistré au fil de l'eau et annulable
+comme le reste du plan, sans effet sur la sortie ; « Accepter » l'applique
+et l'efface. Un groupe est à valider tant qu'une photo est « à écarter » ou
+« choisie » (reprise ou gardée contre la proposition) : aucun ancien projet
+ne change d'état, rien à convertir (les groupes passés en relu par l'ancien
+clic restent relus, à revoir avec « Validés »). « Un clic = une seule » pour
+les rafales et la même scène (choix de Tony), pas pour les copies exactes
+(on y garde un exemplaire par dossier) ; la case se coche d'office dès deux
+photos choisies (pas de mode caché), Ctrl+clic ajoute une photo ; la
+décocher garde la première choisie. La ★ ne s'affiche que si une photo est
+vraiment meilleure (plus nette d'une rafale, choix de l'IA, original d'une
+copie réduite) ; la photo choisie par défaut ne change pas en interne (elle
+entre dans la clé du groupe et dans celle de l'IA). « À relire / Relus »
+deviennent « À valider / Validés ». Le tri automatique (D85) n'accepte
+jamais un groupe de copies où aucun exemplaire n'est choisi. Sur 2025 :
+86 % des rafales sont des paires, aucun groupe de plus de 6 photos.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

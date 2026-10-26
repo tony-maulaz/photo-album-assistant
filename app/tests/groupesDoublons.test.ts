@@ -4,7 +4,7 @@ import {
   accepter,
   aRelire,
   avancementGroupes,
-  basculer,
+  choisir,
   copiesEnAttente,
   ecarterTout,
   etatPhoto,
@@ -78,38 +78,63 @@ describe('état des photos d’un groupe (D71)', () => {
 });
 
 describe('décisions (un clic, Accepter, Tout garder, Tout écarter)', () => {
-  it('un clic inverse ce que l’on voit : « à écarter » devient gardée, même la ★ peut être écartée', () => {
+  it('un clic choisit la photo seule, sans rien écarter ni valider ; Ctrl+clic en ajoute une (D101)', () => {
     const p = plan();
-    basculer(p, rafale, 'b.jpg');
-    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'a_ecarter']);
-    expect(p.fichiers.get('b.jpg')!.protegee).toBe(true);
-    basculer(p, rafale, 'a.jpg');
-    expect(etats(p, rafale)).toEqual(['ecartee', 'gardee', 'a_ecarter']);
-    // La photo gardée à la place de la ★ : la première qui reste.
-    expect(p.fichiers.get('a.jpg')).toMatchObject({ statut: 'mis_de_cote', raison: 'doublons', doublon: { garde: 'b.jpg', source: 'rafale' } });
-    basculer(p, rafale, 'a.jpg');
-    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'a_ecarter']);
-    expect(p.fichiers.get('a.jpg')).toMatchObject({ statut: 'archive', dossier: RACINE, protegee: true });
+    choisir(p, rafale, 'b.jpg', true);
+    expect(etats(p, rafale)).toEqual(['a_ecarter', 'choisie', 'a_ecarter']);
+    expect([...p.fichiers.values()].some((f) => f.statut === 'mis_de_cote')).toBe(false);
+    expect(aRelire(rafale, fichiers(p))).toBe(true);
+    // Seuls les écarts à la proposition sont notés : c.jpg était déjà « à écarter ».
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toEqual({ doublons: false });
+    expect(p.fichiers.get('b.jpg')!.choixDoublons).toEqual({ doublons: true });
+    expect(p.fichiers.get('c.jpg')!.choixDoublons).toBeUndefined();
+    choisir(p, rafale, 'a.jpg', false);
+    expect(etats(p, rafale)).toEqual(['gardee', 'choisie', 'a_ecarter']);
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toBeUndefined();
   });
 
-  it('« Accepter » écarte ce qui est encore proposé, sans toucher aux choix faits ; Ctrl+Z annule', () => {
+  it('« Accepter » applique le choix et valide le groupe ; Ctrl+Z revient au choix', () => {
     const p = plan();
     const h = new Historique();
-    h.enregistrer(basculer(p, rafale, 'b.jpg'));
+    h.enregistrer(choisir(p, rafale, 'b.jpg', true));
     h.enregistrer(accepter(p, [rafale]));
-    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'ecartee']);
+    expect(etats(p, rafale)).toEqual(['ecartee', 'gardee', 'ecartee']);
     expect(aRelire(rafale, fichiers(p))).toBe(false);
-    expect(p.fichiers.get('c.jpg')!.doublon).toMatchObject({ garde: 'a.jpg', raison: 'quasi identique' });
+    expect(p.fichiers.get('b.jpg')!.protegee).toBe(true);
+    expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);
+    // La photo gardée à la place de la ★ : celle qui a été choisie.
+    expect(p.fichiers.get('a.jpg')).toMatchObject({ statut: 'mis_de_cote', raison: 'doublons', doublon: { garde: 'b.jpg', source: 'rafale' } });
     h.annuler(p);
-    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'a_ecarter']);
+    expect(etats(p, rafale)).toEqual(['a_ecarter', 'choisie', 'a_ecarter']);
   });
 
-  it('un « Accepter » groupé laisse à relire le groupe qu’il viderait : la ★ a été écartée (D99)', () => {
+  it('un groupe validé qu’on touche repasse à valider ; une photo écartée choisie revient à « Accepter »', () => {
     const p = plan();
-    basculer(p, rafale, 'a.jpg');
-    expect(etats(p, rafale)).toEqual(['ecartee', 'a_ecarter', 'a_ecarter']);
+    accepter(p, [rafale]);
+    expect(aRelire(rafale, fichiers(p))).toBe(false);
+    choisir(p, rafale, 'c.jpg', true);
+    expect(etats(p, rafale)).toEqual(['a_ecarter', 'ecartee', 'choisie']);
+    expect(aRelire(rafale, fichiers(p))).toBe(true);
+    accepter(p, [rafale]);
+    expect(etats(p, rafale)).toEqual(['ecartee', 'ecartee', 'gardee']);
+    expect(p.fichiers.get('c.jpg')).toMatchObject({ statut: 'archive', protegee: true });
+  });
+
+  it('un « Accepter » groupé laisse à valider le groupe où aucune photo n’est choisie (D99, D101)', () => {
+    const p = plan();
+    choisir(p, rafale, 'a.jpg', false);
+    expect(etats(p, rafale)).toEqual(['a_ecarter', 'a_ecarter', 'a_ecarter']);
     const autre: GroupeDoublons = { ...rafale, cle: 'rafale:IMG_1', etoile: 'IMG_1.jpg', membres: [{ id: 'IMG_1.jpg', garder: true }, { id: 'c.jpg', garder: false }] };
     expect(acceptablesSansVider([rafale, autre], fichiers(p))).toEqual([autre]);
+  });
+
+  it('un choix dans une rafale ne décide pas d’une copie exacte de la même photo (D101)', () => {
+    const p = plan();
+    const copie: GroupeDoublons = { cle: 'copie:a', sorte: 'copies', etoile: 'a.jpg', section: 'jour:2025-12-13', membres: [{ id: 'a.jpg', garder: true }, { id: 'IMG_1.jpg', garder: false }] };
+    choisir(p, rafale, 'b.jpg', true);
+    expect(etatPhoto(copie, copie.membres[0], p.fichiers.get('a.jpg'))).toBe('gardee');
+    accepter(p, [copie]);
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toEqual({ doublons: false });
   });
 
   it('« Tout écarter » écarte aussi la ★ ; « Tout garder » remet tout', () => {
