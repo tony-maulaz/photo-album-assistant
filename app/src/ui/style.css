@@ -1566,6 +1566,11 @@ main:has(.page-organiser) {
   padding-bottom: 66px;
 }
 
+/* Explication repliée : sans en-tête, le panneau et les photos prennent toute la hauteur (sinon une bande vide sous eux). */
+.page-organiser:not(:has(> .tete-organiser)) {
+  grid-template-rows: minmax(0, 1fr);
+}
+
 .tete-organiser {
   position: relative;
   grid-column: 1 / -1;
