@@ -100,8 +100,10 @@ lancement.
 - **La convivialité passe avant les décisions passées.** Une décision (D…)
   ou une contrainte qui gêne une interface simple, fluide et intuitive, ou
   une bonne mise en page, peut être levée : le dire à l'utilisateur avec son
-  numéro et proposer mieux. Les règles d'or ci-dessus ne sont pas
-  concernées : elles restent intouchables.
+  numéro et proposer mieux. Les règles d'or 1 à 3 et 5 à 7 restent
+  intouchables. La 4 et la 8 peuvent être revues si l'interface y gagne, en
+  le disant avec leur numéro : la 4 garde son but (la convivialité), ses
+  moyens peuvent changer ; pour la 8, lire `docs/DECISIONS.md` avant.
 - **Toute demande d'analyse lance plusieurs agents en parallèle**, chacun
   avec un rôle, avant de rendre une synthèse et une recommandation. Rapports
   écrits dans le scratchpad ; maquette quand plusieurs dispositions sont

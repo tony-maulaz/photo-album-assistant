@@ -39,8 +39,10 @@ quinze refontes ratées.
   un rapport destiné au dépôt (le dépôt est public).
 - Les décisions passées (D…) ne sont pas des acquis : une décision qui gêne
   une interface simple, fluide et intuitive se signale avec son numéro et
-  une proposition pour la lever. Les règles d'or de `CLAUDE.md` ne sont pas
-  concernées : elles restent intouchables.
+  une proposition pour la lever. Les règles d'or 1 à 3 et 5 à 7 de
+  `CLAUDE.md` restent intouchables ; la 4 (ses moyens, pas son but) et la 8
+  (après lecture de `docs/DECISIONS.md`) peuvent être revues, en le disant
+  avec leur numéro.
 - Vérifier avant d'affirmer : une affirmation sur le comportement cite
   `fichier:ligne` ou une capture. Ce qui n'est qu'un avis est marqué
   « avis ».

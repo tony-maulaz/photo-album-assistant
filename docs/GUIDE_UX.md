@@ -15,10 +15,12 @@ lit chaque bouton avant de cliquer et a peur de perdre ses photos. Écran de
 
 **Priorité.** La convivialité passe avant les décisions passées : une
 décision (D…) qui gêne une interface simple, fluide et intuitive peut être
-levée ; on le dit à l'utilisateur avec son numéro. Les règles d'or de
-`CLAUDE.md` ne sont pas concernées : elles restent intouchables (source
-jamais modifiée, rien ne se perd, l'humain décide, IA transparente et
-vérifiée, état écrit au fil de l'eau, seuils calibrés).
+levée ; on le dit à l'utilisateur avec son numéro. Les règles d'or 1 à 3
+et 5 à 7 de `CLAUDE.md` restent intouchables (source jamais modifiée, rien
+ne se perd, l'humain décide, IA transparente et vérifiée, état écrit au fil
+de l'eau). La 4 (convivialité) garde son but, mais ses moyens peuvent
+changer ; la 8 (seuils et consignes calibrés) peut être revue après lecture
+de `docs/DECISIONS.md`. Dans les deux cas, on le dit avec le numéro.
 
 Chaque règle est vérifiable sur une capture d'écran ou dans le code. Une
 règle marquée **(cible D108)** décrit l'état visé par la refonte ; tant
