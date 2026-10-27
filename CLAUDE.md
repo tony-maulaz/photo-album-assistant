@@ -25,7 +25,7 @@ lancement.
 | `docs/SPEC_APP.md` | **La spécification** : principes, étapes, interface, fonctions IA, configuration, sortie, tests, feuille de route |
 | `docs/DECISIONS.md` | Pourquoi chaque choix, calibrations sur photos réelles, incidents et leçons |
 | `docs/GUIDE_UX.md` | **Règles d'interface** (ossature, photos, annuler, réglages, mots, visuel), méthode de revue |
-| `docs/ux/` | Cadre des revues, inventaire des fonctions de chaque page, glossaire (un mot, un sens), recherche de bonnes pratiques avec sources |
+| `docs/ux/` | Demandes de l'utilisateur suivies (`DEMANDES.md`), cadre des revues, inventaire des fonctions de chaque page, glossaire (un mot, un sens), recherche de bonnes pratiques avec sources |
 | `docs/REFERENCE_SCRIPTS.md` | Algorithmes des scripts d'origine, formats, pièges connus |
 | `config.exemple/` | Modèle anonyme du dossier de configuration |
 | `CONTRIBUTING.md` | Comment contribuer (en anglais) |
@@ -109,25 +109,47 @@ lancement.
   écrits dans le scratchpad ; maquette quand plusieurs dispositions sont
   possibles. Pour un sujet technique : chercheur de la meilleure technique
   (algorithmes, bibliothèques, autres approches), critique, avocat du diable.
-- **Interface : les agents de `.claude/agents/` font le travail, de manière
-  sérieuse, à chaque fois** (même pour une petite remarque : mieux vaut
-  cinq agents qu'une page à refaire quinze fois). Ils appliquent
-  `docs/GUIDE_UX.md` et `docs/ux/CADRE_REVUE.md` :
-  1. **Captures** de l'existant (`node app/outils/captures_ux.mjs DOSSIER
-     DOSSIER_CAPTURES`, build figé : ne gêne pas les autres sessions), à
-     1440×900 et 1280×720.
-  2. **Revue en parallèle** par `ux-novice` (utilisateur sans connaissance),
-     `ux-ergonome` (parcours, annulation, erreurs), `ux-visuel` (pixel,
-     alignements, cohérence entre pages), `ux-reference` (applications
-     photo de référence, exemples cherchés sur Internet) et `ux-critique`
-     (défauts, inventaire des fonctions).
-  3. **Synthèse**, puis `ux-avocat` (et un contrôle indépendant des faits)
-     sur la proposition ; maquette si la disposition change. Ne présenter
-     à l'utilisateur que la version corrigée, avec un avis franc sur sa
-     demande ; **attendre son accord avant de coder**.
-  4. **Après le code**, `ux-controle` : captures avant/après, aucune fonction
-     perdue (`docs/ux/INVENTAIRE_FONCTIONS.md`), règles du guide, 1280×720,
-     traductions, tests et essais. Rien n'est commité sans son feu vert.
+- **Interface : dès qu'une remarque touche l'interface, les agents de
+  `.claude/agents/` font le travail, de manière sérieuse, à chaque fois**
+  (même pour une petite remarque : mieux vaut cinq agents qu'une page à
+  refaire quinze fois). La session qui traite la demande est le
+  **manager** : elle lance les agents, fait la synthèse et ne présente à
+  l'utilisateur que le résultat vérifié. Ils appliquent `docs/GUIDE_UX.md`
+  et `docs/ux/CADRE_REVUE.md` :
+  1. **Demande enregistrée** par `gardien-demandes` dans
+     `docs/ux/DEMANDES.md` ; **captures** de l'existant (`node
+     app/outils/captures_ux.mjs DOSSIER DOSSIER_CAPTURES`, build figé : ne
+     gêne pas les autres sessions), à 1440×900 et 1280×720.
+  2. **Revue en parallèle** :
+     - `ux-reference` (beau et moderne, applications photo de référence,
+       exemples cherchés sur Internet), `ux-mise-en-page` (place des menus,
+       contenus et boutons selon les standards), `ux-proportions` (tailles
+       relatives des titres, textes, labels, boutons, fenêtres),
+       `ux-espacements` (marges, padding, groupes, grille) ;
+     - `ux-novice` (compréhensible sans connaître l'application),
+       `ux-ergonome` (flux de travail, annulation, erreurs), `ux-simplicite`
+       (ce qu'on peut enlever), `ux-usage` (tâches réelles, nombre de
+       clics), `ux-accessibilite` (lisibilité, contraste, clavier) ;
+     - `ux-visuel` (le pointilleux, au pixel), `ux-critique` (défauts,
+       inventaire des fonctions), puis `ux-expert` (avis d'ensemble sur le
+       rendu, arbitre entre les avis).
+  3. **Proposition** : synthèse, maquette si la disposition change, puis
+     `ux-avocat` (avocat du diable), `technique` (fonctions existantes,
+     comment implémenter, coût, lenteurs) et `gardien-demandes` (toutes les
+     demandes traitées ou reportées, spécification et règles d'or
+     respectées, aucune fonction perdue). Ne présenter à l'utilisateur que
+     la version corrigée, avec un avis franc sur sa demande ; **attendre
+     son accord avant de coder**.
+  4. **Après le code** : `testeur` (tests unitaires et essais écrits, tout
+     passe), `relecture-code` (OK ou PAS OK), `ux-controle` (captures
+     avant/après, inventaire des fonctions, règles du guide, 1280×720,
+     traductions) et `gardien-demandes` (demandes passées en « faites »).
+     Rien n'est commité sans leur feu vert.
+
+  Deux niveaux : **tout le jeu** pour une refonte de page ou un changement
+  de disposition ; pour une petite correction d'interface, au moins
+  `gardien-demandes`, `ux-novice`, `ux-mise-en-page`, `ux-visuel`, puis
+  `testeur`, `relecture-code` et `ux-controle`.
 
 ## Conventions
 
