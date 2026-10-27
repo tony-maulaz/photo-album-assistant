@@ -24,6 +24,8 @@ lancement.
 |---|---|
 | `docs/SPEC_APP.md` | **La spécification** : principes, étapes, interface, fonctions IA, configuration, sortie, tests, feuille de route |
 | `docs/DECISIONS.md` | Pourquoi chaque choix, calibrations sur photos réelles, incidents et leçons |
+| `docs/GUIDE_UX.md` | **Règles d'interface** (ossature, photos, annuler, réglages, mots, visuel), méthode de revue |
+| `docs/ux/` | Cadre des revues, inventaire des fonctions de chaque page, recherche de bonnes pratiques avec sources |
 | `docs/REFERENCE_SCRIPTS.md` | Algorithmes des scripts d'origine, formats, pièges connus |
 | `config.exemple/` | Modèle anonyme du dossier de configuration |
 | `CONTRIBUTING.md` | Comment contribuer (en anglais) |
@@ -95,20 +97,35 @@ lancement.
 - Donner cet avis **avant** de coder et attendre l'accord de l'utilisateur
   pour tout ce qui change le comportement ou l'interface. Seuls les bogues
   évidents se corrigent sans attendre.
+- **La convivialité passe avant les décisions passées.** Une décision (D…)
+  ou une contrainte qui gêne une interface simple, fluide et intuitive, ou
+  une bonne mise en page, peut être levée : le dire à l'utilisateur avec son
+  numéro et proposer mieux. Les règles d'or ci-dessus ne sont pas
+  concernées : elles restent intouchables.
 - **Toute demande d'analyse lance plusieurs agents en parallèle**, chacun
-  avec un rôle, avant de rendre une synthèse et une recommandation. Rôles à
-  adapter au sujet :
-  - spécialiste d'une interface intuitive et facile à utiliser (pour un
-    utilisateur non informaticien) ;
-  - contrôleur d'une interface moderne (applications photo de référence,
-    bonnes pratiques actuelles) ;
-  - chercheur de la meilleure technique (algorithmes, bibliothèques,
-    autres approches) ;
-  - critique qui cherche tous les défauts, de l'existant comme des
-    propositions ;
-  - avocat du diable, qui défend l'option contraire ou le statu quo.
-  Rapports écrits dans le scratchpad ; captures d'écran si l'interface est
-  en jeu ; maquette quand plusieurs dispositions sont possibles.
+  avec un rôle, avant de rendre une synthèse et une recommandation. Rapports
+  écrits dans le scratchpad ; maquette quand plusieurs dispositions sont
+  possibles. Pour un sujet technique : chercheur de la meilleure technique
+  (algorithmes, bibliothèques, autres approches), critique, avocat du diable.
+- **Interface : les agents de `.claude/agents/` font le travail, de manière
+  sérieuse, à chaque fois** (même pour une petite remarque : mieux vaut
+  cinq agents qu'une page à refaire quinze fois). Ils appliquent
+  `docs/GUIDE_UX.md` et `docs/ux/CADRE_REVUE.md` :
+  1. **Captures** de l'existant (`node app/outils/captures_ux.mjs DOSSIER
+     DOSSIER_CAPTURES`, build figé : ne gêne pas les autres sessions), à
+     1440×900 et 1280×720.
+  2. **Revue en parallèle** par `ux-novice` (utilisateur sans connaissance),
+     `ux-ergonome` (parcours, annulation, erreurs), `ux-visuel` (pixel,
+     alignements, cohérence entre pages), `ux-reference` (applications
+     photo de référence, exemples cherchés sur Internet) et `ux-critique`
+     (défauts, inventaire des fonctions).
+  3. **Synthèse**, puis `ux-avocat` (et un contrôle indépendant des faits)
+     sur la proposition ; maquette si la disposition change. Ne présenter
+     à l'utilisateur que la version corrigée, avec un avis franc sur sa
+     demande ; **attendre son accord avant de coder**.
+  4. **Après le code**, `ux-controle` : captures avant/après, aucune fonction
+     perdue (`docs/ux/INVENTAIRE_FONCTIONS.md`), règles du guide, 1280×720,
+     traductions, tests et essais. Rien n'est commité sans son feu vert.
 
 ## Conventions
 
