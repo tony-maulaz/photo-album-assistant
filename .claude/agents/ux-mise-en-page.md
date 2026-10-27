@@ -27,7 +27,7 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format) et
    l'étape). Signale toute zone qui mélange ces rôles.
 4. **Cohérence entre pages** : la même chose au même endroit sur les treize
    étapes (règles O1 à O9).
-5. **Écrans** : 1440×900 et 1280×720 ; rien d'important sous le pli.
+5. **Écrans** : 1440×900 et 1280×580 ; rien d'important sous le pli.
 
 Pour chaque écart : ce qui est, ce que recommande la pratique (source), la
 correction proposée en schéma ASCII coté en px. Rapport au format du cadre

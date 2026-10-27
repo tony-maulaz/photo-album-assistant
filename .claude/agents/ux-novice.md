@@ -28,7 +28,7 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format).
    l'aide est-elle trouvable ? « Annuler » dit-il quoi ? les options d'une
    photo choisie sont-elles là où tu regardes ? une action a-t-elle un
    retour visible ? les chiffres se contredisent-ils d'un écran à l'autre ?
-   un écran à 1280×720 montre-t-il l'essentiel sans défiler ?
+   un écran à 1280×580 montre-t-il l'essentiel sans défiler ?
 
 Rapport au format du cadre commun, précédé du récit. Codes du guide
 (`docs/GUIDE_UX.md`) cités pour chaque constat.

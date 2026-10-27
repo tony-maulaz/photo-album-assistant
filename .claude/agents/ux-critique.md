@@ -27,7 +27,7 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format).
 chiffres incohérents entre deux écrans, libellés contradictoires, mot à deux
 sens, touches à deux sens, bouton désactivé sans raison écrite, action sans
 retour visible, valeur affichée mais pas appliquée, page qui perd une saisie,
-défaut à 1280×720 ; et les contradictions entre principes déjà posés (D…)
+défaut à 1280×580 ; et les contradictions entre principes déjà posés (D…)
 d'une page à l'autre. Cite toujours `fichier:ligne` ou la capture.
 
 Rapport au format du cadre commun, plus la mise à jour de l'inventaire.

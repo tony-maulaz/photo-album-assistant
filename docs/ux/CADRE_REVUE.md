@@ -1,6 +1,6 @@
 # Cadre commun des revues d'interface
 
-À lire par tout agent de revue (`.claude/agents/ux-*.md`) avant de commencer.
+À lire par tout agent de `.claude/agents/` avant de commencer.
 
 ## Ce qu'on attend
 
@@ -17,7 +17,8 @@ quinze refontes ratées.
 3. `docs/ux/RECHERCHE.md` : bonnes pratiques détaillées et sources
    (règles R1.1 à R13.x, check-list § 14, anti-modèles § 15).
 4. `docs/ux/INVENTAIRE_FONCTIONS.md` : ce que chaque page permet ; aucune
-   fonction ne doit disparaître.
+   fonction ne doit disparaître. `docs/ux/GLOSSAIRE.md` : un mot, un sens.
+   `docs/ux/DEMANDES.md` : les demandes de l'utilisateur et leur état.
 5. `docs/SPEC_APP.md` § 1 (principes P1 à P10) et § 5 (interface), et les
    décisions `docs/DECISIONS.md` citées par le sujet.
 6. Les captures fournies par l'agent principal (ou les produire : `node
@@ -46,7 +47,15 @@ quinze refontes ratées.
 - Vérifier avant d'affirmer : une affirmation sur le comportement cite
   `fichier:ligne` ou une capture. Ce qui n'est qu'un avis est marqué
   « avis ».
-- Toujours regarder la page à **1280×720** en plus de 1440×900.
+- Toujours regarder la page à **1280×580** en plus de 1440×900 : c'est la
+  place réelle d'un écran 1280×720 une fois la barre de Chrome et celle des
+  tâches déduites (ou d'un 1920×1080 à 150 %).
+- « Aucune fonction perdue » se vérifie **contre le code** (`fichier:ligne`
+  de chaque bouton, touche, geste, état, message), jamais contre les notes
+  du concepteur ou l'inventaire seul : la première maquette D108 en
+  perdait 22 en affirmant le contraire.
+- Une proposition qui touche une décision récente (D…) part de son état
+  actuel et cite son numéro pour tout écart.
 
 ## Gravité
 

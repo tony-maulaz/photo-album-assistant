@@ -28,7 +28,7 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format).
    source d'icônes (`Icones.tsx`), un seul bouton plein.
 4. Hiérarchie : qu'est-ce qui attire l'œil en premier ? Est-ce la prochaine
    chose à faire ? Densité, respiration, alignements de lignes de base.
-5. Regarde **toujours à 1280×720** : textes tronqués, barres sur deux
+5. Regarde **toujours à 1280×580** : textes tronqués, barres sur deux
    lignes, colonnes perdues, première photo sous le pli.
 
 Si une disposition est en jeu, propose un **schéma ASCII coté en px** à 1440

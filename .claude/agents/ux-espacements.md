@@ -24,7 +24,7 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` et `docs/GUIDE_UX.md` (règles V).
 4. **Alignements** : bords gauches communs, colonnes, lignes de base ; les
    éléments d'une barre centrés verticalement.
 5. **Cohérence entre pages** : mêmes marges et mêmes écarts pour les mêmes
-   éléments sur toutes les étapes. Vérifie à 1440×900 et 1280×720.
+   éléments sur toutes les étapes. Vérifie à 1440×900 et 1280×580.
 
 Pour chaque écart : mesure, règle, correction CSS (`fichier:ligne`). Rapport
 au format du cadre commun.

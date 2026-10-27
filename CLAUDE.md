@@ -119,7 +119,7 @@ lancement.
   1. **Demande enregistrée** par `gardien-demandes` dans
      `docs/ux/DEMANDES.md` ; **captures** de l'existant (`node
      app/outils/captures_ux.mjs DOSSIER DOSSIER_CAPTURES`, build figé : ne
-     gêne pas les autres sessions), à 1440×900 et 1280×720.
+     gêne pas les autres sessions), à 1440×900 et 1280×580 (place réelle d'un petit écran).
   2. **Revue en parallèle** :
      - `ux-reference` (beau et moderne, applications photo de référence,
        exemples cherchés sur Internet), `ux-mise-en-page` (place des menus,
@@ -142,7 +142,7 @@ lancement.
      son accord avant de coder**.
   4. **Après le code** : `testeur` (tests unitaires et essais écrits, tout
      passe), `relecture-code` (OK ou PAS OK), `ux-controle` (captures
-     avant/après, inventaire des fonctions, règles du guide, 1280×720,
+     avant/après, inventaire des fonctions, règles du guide, 1280×580,
      traductions) et `gardien-demandes` (demandes passées en « faites »).
      Rien n'est commité sans leur feu vert.
 

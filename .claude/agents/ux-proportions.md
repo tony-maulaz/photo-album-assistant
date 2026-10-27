@@ -26,7 +26,7 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` et `docs/GUIDE_UX.md` (règles V,
    visible que le principal).
 4. **Rapports** : bouton et texte qu'il contient, champ et son label, icône
    et texte voisin, miniature et légende.
-5. Vérifie à 1440×900 et 1280×720 que les proportions tiennent.
+5. Vérifie à 1440×900 et 1280×580 que les proportions tiennent.
 
 Pour chaque écart : mesure, règle, correction CSS (`fichier:ligne`). Rapport
 au format du cadre commun.

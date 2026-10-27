@@ -11,7 +11,9 @@ l'inventaire des fonctions de chaque page, dans
 
 **Pour qui.** Un membre de la famille, non informaticien, souvent âgé, qui
 lit chaque bouton avant de cliquer et a peur de perdre ses photos. Écran de
-1280×720 à 1920×1080, Chrome ou Edge, souris et clavier.
+1280×720 à 1920×1080, Chrome ou Edge, souris et clavier. Place réelle sur le
+plus petit : 1280×580, une fois la barre de Chrome et celle des tâches
+déduites (c'est aussi celle d'un 1920×1080 affiché à 150 %).
 
 **Priorité.** La convivialité passe avant les décisions passées : une
 décision (D…) qui gêne une interface simple, fluide et intuitive peut être
@@ -62,7 +64,7 @@ qu'elle n'est pas faite, elle s'applique à tout nouveau code.
   ne couvrent aucune photo ni aucun bouton.
 - **O8** Une seule grande fenêtre (`Fenetre` de `Dialogues.tsx`) et une seule
   visionneuse plein écran, avec les mêmes boutons partout.
-- **O9** À 1280×720, à la première visite (explication visible), la première
+- **O9** À 1280×580 (et à 1440×900), à la première visite (explication visible), la première
   photo ou la première décision de l'étape est visible sans défiler ; aucune
   barre ne passe sur deux lignes ; au moins 4 colonnes de photos.
 
@@ -194,16 +196,10 @@ qu'elle n'est pas faite, elle s'applique à tout nouveau code.
 
 ## Méthode de revue (obligatoire pour tout changement d'interface)
 
-1. **Captures** de l'existant et de la proposition : `node
-   app/outils/captures_ux.mjs DOSSIER_PHOTOS DOSSIER_CAPTURES` (build figé,
-   13 étapes, 1440×900 et 1280×720, positions mesurées de l'aide, de la
-   loupe et d'Annuler). Maquette quand plusieurs dispositions sont possibles.
-2. **Relecture en parallèle** par les agents de `.claude/agents/` :
-   `ux-novice`, `ux-ergonome`, `ux-visuel`, `ux-reference`, `ux-critique`
-   (et `ux-avocat` sur une proposition). Chacun cite les règles de ce guide
-   par leur code (O2, P1…).
-3. **Synthèse** à l'utilisateur : avis franc sur sa demande, décisions D à
-   lever, ce qui est gardé ; **accord avant de coder**.
-4. **Contrôle de livraison** (`ux-controle`) : captures avant/après,
-   inventaire des fonctions (aucune ne disparaît), règles de ce guide,
-   1280×720, traductions, tests et essais.
+Le déroulé en quatre temps et la liste des agents sont dans `CLAUDE.md`
+(puce « Interface ») ; le cadre commun des revues dans
+`docs/ux/CADRE_REVUE.md`. Ce guide en est la grille : chaque agent cite ses
+règles par leur code (O2, P1…). Captures de l'existant et de la proposition
+avec `node app/outils/captures_ux.mjs DOSSIER_PHOTOS DOSSIER_CAPTURES`
+(build figé, 13 étapes, positions mesurées de l'aide, de la loupe et
+d'Annuler) ; maquette quand plusieurs dispositions sont possibles.
