@@ -1401,6 +1401,37 @@ et les D… deviennent indicatives. Quand un style lui plaira, il sera figé
 dans `docs/ux/CHARTE.md` et le nouvel agent `gardien-style` le fera
 respecter, en priorité sur les autres agents d'interface.
 
+**D110 — Charte « Table lumineuse » : le style figé, les dispositions
+provisoires.** Après D109, une analyse des pages principales par dix agents
+libres (style sans règle commune : environ 21 tailles de texte, 20 rayons, 80
+couleurs en dur ; aucune photo visible sans défiler à 1280×580 sur Doublons
+et Album ; commandes communes à des places différentes) a donné trois
+directions maquettées : A « Table lumineuse » (plate et calme, les photos
+sur une table gris chaud), B « Pas à pas » (très guidée), C « Atelier »
+(sombre). L'utilisateur retient A, améliorée par les remarques de
+l'utilisateur novice sur B : état écrit dans une bande sous la photo, rien
+de posé ni de pâli sur l'image avant « Accepter », une seule police (Inter,
+zéro rond, embarquée), IA sans couleur propre avec son prix sur le bouton,
+« Rien n'est supprimé » sur chaque page, un seul bouton plein qui est la
+prochaine action utile, contour jaune et noir au clavier, liste « À faire
+ici » sur les pages de décisions. Une maquette v3 (Doublons, Comparer en
+grand, Sélection, Nommage, Tri ; clair et sombre ; portraits ; relue par
+neuf agents, corrigée, contrôlée par quatre) est dans `docs/ux/charte/`.
+Choix de l'utilisateur : figer le **style** (police, tailles, couleurs,
+commandes, icônes, espacements, états, mots : `docs/ux/CHARTE.md` C-1 à
+C-6, C-9, C-10), laisser les **dispositions** (gabarits, places fixes)
+provisoires jusqu'à l'essai avec de vraies photos et les pages manquantes ;
+un groupe accepté reste visible, replié (D100 levée sur ce point) ; des
+miniatures au Tri (D104 levée sur ce point) ; le dossier de la photo dans
+l'infobulle et dans Comparer (D96 levée sur ce point) ; « Autres choix ▾ »
+à Doublons avec « Tout garder » et « Garder plusieurs photos » visibles ;
+accepter une journée passe par une fenêtre qui chiffre ce qui sera écarté.
+L'agent `gardien-style` fait respecter le style figé, en priorité. Coût
+estimé de l'application : 25 à 30 jours ; premier lot conseillé (4 jours,
+sans changer la disposition) : couleurs, tailles, police embarquée,
+contour du clavier, essai qui contrôle la charte et test qui refuse les
+couleurs et tailles écrites en dur.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

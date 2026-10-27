@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A2 v3 · Comparer en grand</title>
+<style>
+/* ===== Direction A2 « Table lumineuse », améliorée : v3 (après les 9 revues de la v2). =====
+   Police : Inter 4 (zéro ouvert, l à queue cv05, I à empattements cv08). Chargée en ligne pour la
+   maquette seulement ; dans l'application, sous-ensemble embarqué (voir systeme.md). */
+@font-face { font-family: "InterA2"; font-weight: 100 900; font-style: normal; font-display: block;
+  src: url("https://cdn.jsdelivr.net/npm/inter-ui@4.0.2/variable/InterVariable.woff2") format("woff2"); }
+
+:root {
+  color-scheme: light;
+  /* Typographie : 4 tailles (14 / 16 / 20 / 24), 3 graisses. Le titre d'étape a la même taille aux deux écrans. */
+  --t-petit: 14px; --lh-petit: 20px;
+  --t-corps: 16px; --lh-corps: 24px;
+  --t-section: 20px; --lh-section: 28px;
+  --t-titre: 24px; --lh-titre: 32px;
+  /* Espacements, rayons */
+  --e1: 4px; --e2: 8px; --e3: 12px; --e4: 16px; --e5: 24px; --e6: 32px; --e7: 48px;
+  --r-photo: 6px; --r-commande: 10px; --r-objet: 16px;
+  --ombre-flottant: 0 10px 30px rgba(15, 15, 15, .18);
+  /* Ossature : 5 bandes de hauteur fixe */
+  --h-app: 52px; --h-entete: 76px; --h-outils: 60px; --h-valid: 64px;
+  /* Hauteurs de commande : 44 (bouton plein, barre du bas), 40 (standard), 36 (pastille), 28 (frise) */
+  --h-plein: 44px; --h-btn: 40px; --h-puce: 36px;
+  --l-liste: 248px; --l-afaire: 440px; --l-panneau: 304px;
+  --h-photo: 172px;
+
+  /* Couleurs, thème clair */
+  --fond: #f6f5f2;  --surface: #ffffff;  --table: #ebeae5;
+  --filet: #dcdbd4; --filet-fort: #c4c2b9; --contour: #7e828a;
+  --texte: #1c1d20; --texte-2: #4b505a;
+  --accent: #0f766e; --accent-survol: #0b5f58; --sur-accent: #ffffff;
+  --accent-doux: #e1f0ec; --accent-doux-texte: #0b544e;
+  --afaire: #8f4508; --afaire-doux: #fcefe2;
+  --perte: #b42318; --perte-doux: #fdecea;
+  --etoile: #f2b01e; --etoile-trait: #7a4f00; --etoile-doux: #fcf1d2; --etoile-texte: #5c3d00;
+  --neutre-doux: #f1f0ec;
+  --focus-jaune: #ffd60a; --focus-noir: #0b0c0c;
+  --ph-1: #c9c7c0; --ph-2: #aeaca5; --ph-texte: #2f3034;
+  --mat: #dddcd5;
+}
+:root[data-theme="sombre"] {
+  color-scheme: dark;
+  --fond: #121315;  --surface: #1b1d20;  --table: #0e0f11;
+  --filet: #2c2f34; --filet-fort: #3d4148; --contour: #8b9099;
+  --texte: #ecebe7; --texte-2: #b0b5bd;
+  --accent: #4fc1b2; --accent-survol: #6fd0c3; --sur-accent: #062420;
+  --accent-doux: #173a36; --accent-doux-texte: #a7e3da;
+  --afaire: #f0b27a; --afaire-doux: #33241a;
+  --perte: #ff8a7a; --perte-doux: #3a1d1a;
+  --etoile: #f2b01e; --etoile-trait: #f2b01e; --etoile-doux: #3a2f12; --etoile-texte: #f6d67a;
+  --neutre-doux: #24272b;
+  --ph-1: #5a5c61; --ph-2: #43454a; --ph-texte: #e4e3df;
+  --mat: #1d1f22;
+}
+/* Petit écran (1280×580 et moins haut) : mêmes zones, plus compactes. Le titre garde sa taille. */
+@media (max-height: 700px) {
+  :root { --h-app: 44px; --h-entete: 52px; --h-outils: 56px; --h-valid: 56px; --h-photo: 136px; }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--fond); color: var(--texte);
+  font: var(--t-corps)/var(--lh-corps) "InterA2", system-ui, sans-serif;
+  font-feature-settings: "cv05", "cv08"; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+/* Chiffres de largeur fixe : sur le nombre seul, jamais sur une phrase (sinon « Rangez - les ») */
+.num { font-variant-numeric: tabular-nums; }
+.petit { font-size: var(--t-petit); line-height: var(--lh-petit); }
+.gris { color: var(--texte-2); }
+.fort { font-weight: 600; }
+.espace { flex: 1; }
+.nowrap { white-space: nowrap; }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round; }
+svg.i.p { width: 16px; height: 16px; }
+svg.i.etoile { color: var(--etoile); stroke: var(--etoile-trait); }
+
+/* ---------- Focus clavier : jaune cerné de noir, à l'extérieur, clavier seulement ----------
+   « Choisie » est dessinée à l'intérieur de la case : les deux se voient ensemble. */
+:focus { outline: none; }
+:focus-visible, .focus-clavier {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px var(--focus-noir), 0 0 0 5px var(--focus-jaune), 0 0 0 7px var(--focus-noir);
+}
+
+/* ---------- Boutons : plein (un seul), contour, lien ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--e2);
+  height: var(--h-btn); padding: 0 var(--e4); border-radius: var(--r-commande);
+  border: 1.5px solid var(--contour); background: var(--surface); color: var(--texte);
+  font-weight: 600; white-space: nowrap; cursor: pointer; flex: none; }
+.btn:hover { background: var(--neutre-doux); }
+/* Le seul aplat vert de l'écran : la prochaine action utile */
+.btn.plein { height: var(--h-plein); background: var(--accent); border-color: var(--accent); color: var(--sur-accent); }
+.btn.plein:hover { background: var(--accent-survol); }
+.btn.carre { width: var(--h-btn); padding: 0; }
+/* Désactivé : bord en pointillé et texte gris, jamais sans sa raison écrite à côté */
+.btn[aria-disabled="true"] { color: var(--texte-2); border-style: dashed; border-color: var(--filet-fort); background: var(--fond); cursor: not-allowed; }
+.btn .chev { width: 16px; height: 16px; margin-right: -4px; color: var(--texte-2); }
+.lien { display: inline-flex; align-items: center; gap: var(--e1); min-height: 24px; padding: 0;
+  border: 0; background: none; color: var(--accent-doux-texte); font-weight: 600; cursor: pointer;
+  text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; white-space: nowrap; }
+:root[data-theme="sombre"] .lien { color: var(--accent); }
+/* Aide IA : même bouton contour, reconnue à son icône ✦ et à son prix écrit dessus */
+.prix { display: inline-block; height: 24px; line-height: 22px; padding: 0 var(--e2); border-radius: 999px;
+  background: var(--neutre-doux); border: 1px solid var(--filet); font-size: var(--t-petit); font-weight: 400;
+  color: var(--texte); white-space: nowrap; }
+
+/* Liste nommée (réglage d'une liste de gauche) : ne ressemble ni à un onglet ni à une pastille */
+.choix { display: inline-flex; align-items: center; gap: var(--e2); white-space: nowrap; }
+.choix > .etiq { color: var(--texte-2); }
+.choix > .boite { display: inline-flex; align-items: center; gap: var(--e2); height: var(--h-btn);
+  padding: 0 var(--e2) 0 var(--e3); border: 1.5px solid var(--contour); border-radius: var(--r-commande);
+  background: var(--surface); font-weight: 600; }
+.choix > .boite svg { color: var(--texte-2); }
+.liste .choix { display: flex; justify-content: space-between; }
+.liste .choix > .boite { flex: 0 1 148px; min-width: 0; justify-content: space-between; }
+
+/* Filtres d'état de la table : pastilles dans la barre d'outils, après « Afficher : » */
+.puces { display: flex; align-items: center; gap: var(--e2); }
+.puce { display: inline-flex; align-items: center; gap: var(--e2); height: var(--h-puce); padding: 0 var(--e3);
+  border-radius: 999px; border: 1.5px solid var(--contour); background: var(--surface); font-weight: 600;
+  white-space: nowrap; cursor: pointer; }
+.puce svg + span, .puce svg + svg { margin-left: calc(-1 * var(--e1)); }
+.puce .n { font-weight: 400; color: var(--texte-2); font-variant-numeric: tabular-nums; }
+.puce.active { background: var(--accent-doux); border-color: var(--accent); color: var(--accent-doux-texte); }
+.puce.active .n { color: var(--accent-doux-texte); }
+.puce.secondaire { border-style: solid; border-color: var(--filet-fort); font-weight: 400; }
+
+/* Case à cocher */
+.case { display: inline-flex; align-items: center; gap: var(--e2); cursor: pointer; white-space: nowrap; }
+.case .boite { width: 20px; height: 20px; border: 1.5px solid var(--contour); border-radius: 4px;
+  display: grid; place-items: center; background: var(--surface); flex: none; }
+.case.cochee .boite { background: var(--accent); border-color: var(--accent); color: var(--sur-accent); }
+.case .boite svg { width: 14px; height: 14px; stroke-width: 2.5; }
+
+/* Champ */
+.champ { display: flex; align-items: center; gap: var(--e2); height: var(--h-btn); padding: 0 var(--e3);
+  border: 1.5px solid var(--contour); border-radius: var(--r-commande); background: var(--surface); color: var(--texte-2); min-width: 0; }
+
+/* ===================== Ossature : 5 bandes ===================== */
+.app { display: grid; height: 100vh; min-height: 0;
+  grid-template-rows: var(--h-app) var(--h-entete) var(--h-outils) minmax(0, 1fr) var(--h-valid); }
+
+/* 1. Barre de l'application : le nom de l'étape n'y est pas (il est dans le titre juste dessous) */
+.barre-app { display: flex; align-items: center; gap: var(--e4); padding: 0 var(--e5);
+  background: var(--surface); border-bottom: 1px solid var(--filet); min-width: 0; }
+.projet { display: flex; align-items: center; gap: var(--e2); font-weight: 600; white-space: nowrap; min-width: 0; }
+.projet .nom { overflow: hidden; text-overflow: ellipsis; }
+.projet svg { color: var(--accent); width: 24px; height: 24px; }
+.frise { display: flex; gap: var(--e1); flex: none; }
+.frise a { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px;
+  font-size: var(--t-petit); font-variant-numeric: tabular-nums; color: var(--texte-2);
+  border: 1.5px solid var(--filet-fort); text-decoration: none; }
+.frise a.fait { background: var(--accent-doux); border-color: var(--accent-doux); color: var(--accent-doux-texte); }
+.frise a.fait svg { width: 16px; height: 16px; stroke-width: 2.5; }
+.frise a.cours { border: 2px solid var(--accent); color: var(--texte); font-weight: 700; background: var(--surface); }
+.etape-menu { display: inline-flex; align-items: center; gap: var(--e1); height: var(--h-btn); padding: 0 var(--e2);
+  border: 0; background: none; border-radius: var(--r-commande); white-space: nowrap; cursor: pointer; font-weight: 600; flex: none; }
+.ia-compteur { display: inline-flex; align-items: center; gap: var(--e2); color: var(--texte-2); white-space: nowrap; flex: none; }
+.ia-compteur b { color: var(--texte); font-weight: 600; font-variant-numeric: tabular-nums; }
+.barre-app .btn { flex: none; }
+
+/* 2. En-tête d'étape */
+.entete { display: flex; align-items: center; gap: var(--e5); padding: 0 var(--e5);
+  background: var(--surface); min-width: 0; }
+.entete .titres { flex: 1; min-width: 0; }
+.entete h1 { font-size: var(--t-titre); line-height: var(--lh-titre); font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.entete .consigne { color: var(--texte-2); white-space: nowrap; }
+.entete .btn + .btn { margin-left: calc(-1 * var(--e4)); }
+@media (max-height: 700px) {
+  .entete .titres { display: flex; align-items: baseline; gap: var(--e4); }
+}
+
+/* 3. Barre d'outils */
+.outils { display: flex; align-items: stretch; gap: var(--e5); padding: 0 var(--e5);
+  background: var(--surface); border-bottom: 1px solid var(--filet); min-width: 0; }
+.outils .droite { margin-left: auto; display: flex; align-items: center; gap: var(--e3); }
+.outils .gauche { display: flex; align-items: center; gap: var(--e3); min-width: 0; }
+/* Onglets = la liste « À faire ici » des pages de photos : chacun dit ce qui reste */
+.taches { display: flex; align-items: stretch; gap: var(--e1); margin-left: calc(-1 * var(--e4)); }
+.tache { display: flex; flex-direction: column; justify-content: center; padding: 0 var(--e4);
+  border: 0; background: none; border-bottom: 3px solid transparent; margin-bottom: -1px; text-align: left;
+  cursor: pointer; white-space: nowrap; }
+.tache .nom { font-weight: 600; display: inline-flex; align-items: center; gap: var(--e1); color: var(--texte-2); }
+.tache .etat { font-size: var(--t-petit); line-height: var(--lh-petit); color: var(--texte-2); }
+.tache .etat.afaire { color: var(--afaire); font-weight: 600; }
+.tache .etat.fait { color: var(--accent-doux-texte); }
+:root[data-theme="sombre"] .tache .etat.fait { color: var(--accent); }
+.tache[aria-selected="true"] { border-bottom-color: var(--accent); }
+.tache[aria-selected="true"] .nom { color: var(--texte); }
+.taille { display: inline-flex; align-items: center; gap: var(--e2); color: var(--texte-2); }
+
+/* 4. Corps : liste | table | panneau */
+.corps { display: grid; grid-template-columns: var(--l-liste) minmax(0, 1fr) auto; min-height: 0; }
+.corps.decisions { grid-template-columns: var(--l-afaire) minmax(0, 1fr) auto; }
+.liste { background: var(--surface); border-right: 1px solid var(--filet); overflow: auto; position: relative;
+  padding: var(--e4); min-height: 0; }
+.table { background: var(--table); overflow: auto; padding: var(--e4) var(--e5) var(--e5); min-height: 0; }
+.panneau { width: var(--l-panneau); background: var(--surface); border-left: 1px solid var(--filet);
+  overflow: auto; padding: var(--e4) var(--e5) var(--e5); min-height: 0; }
+.panneau h2 { font-size: var(--t-corps); font-weight: 600; }
+.liste-cadre { position: relative; min-height: 0; display: flex; }
+.liste-cadre > .liste { flex: 1; }
+/* Poignée : zone de prise de 24 px, trait visible de 4 px ; réglable aussi au clavier (← →) */
+.poignee { position: absolute; top: 0; bottom: 0; right: -12px; width: 24px; cursor: col-resize; z-index: 1; display: grid; place-items: center; }
+.poignee::after { content: ""; width: 4px; height: 32px; border-radius: 2px; background: var(--filet-fort); }
+/* Lignes d'une liste de gauche : un seul bord de texte (x = 16), le fond déborde de 8 px */
+.ligne-liste { padding: var(--e2); margin: 0 calc(-1 * var(--e2)) var(--e1); border-radius: var(--r-commande); cursor: pointer; }
+.ligne-liste.actif { background: var(--accent-doux); box-shadow: inset 3px 0 0 var(--accent); }
+
+/* 5. Barre de validation : la ligne 1 rassure, la ligne 2 dit toujours que rien n'est supprimé */
+.validation { display: flex; align-items: center; gap: var(--e4); padding: 0 var(--e5);
+  background: var(--surface); border-top: 1px solid var(--filet); min-width: 0; }
+.resume { flex: 1; min-width: 0; }
+.resume .l1 { white-space: nowrap; overflow: hidden; }
+.resume .l2 { display: flex; align-items: center; gap: var(--e2); font-size: var(--t-petit); line-height: var(--lh-petit);
+  color: var(--texte-2); white-space: nowrap; overflow: hidden; }
+.resume .l2 svg { color: var(--accent); width: 16px; height: 16px; }
+.validation .btn { height: var(--h-plein); }
+.btn.revenir { min-width: 140px; }
+.btn.valider { min-width: 260px; }
+
+/* ===================== Photos simulées ===================== */
+.ph { background: linear-gradient(155deg, var(--ph-1), var(--ph-2)); color: var(--ph-texte);
+  display: grid; place-items: center; text-align: center; font-size: var(--t-petit); line-height: 20px;
+  padding: 4px; border-radius: var(--r-photo); overflow: hidden; }
+.ph.t2 { --ph-1: #bdbbb4; --ph-2: #a19f98; }
+.ph.t3 { --ph-1: #d2d0c9; --ph-2: #b8b6af; }
+:root[data-theme="sombre"] .ph.t2 { --ph-1: #4e5055; --ph-2: #393b40; }
+:root[data-theme="sombre"] .ph.t3 { --ph-1: #64666b; --ph-2: #4b4d52; }
+.pale { opacity: .5; }
+
+/* Case photo d'une page : la photo, puis sa bande d'état écrite dessous. Rien posé sur la photo.
+   La case fait au moins 96 px de large : le mot de la bande tient toujours (Taille a un minimum). */
+.cell { width: max(96px, calc(var(--rc) * var(--h-photo))); flex: none; display: flex; flex-direction: column; cursor: pointer; border-radius: var(--r-photo);
+  background: linear-gradient(var(--mat), var(--mat)) top / 100% var(--h-photo) no-repeat; }
+.cell > .ph { width: calc(var(--r) * var(--h-photo)); height: var(--h-photo); margin: 0 auto; border-radius: var(--r-photo) var(--r-photo) 0 0; }
+/* Bande d'état : un état, jamais la forme d'un bouton (ni l'aplat vert plein, ni le bord gris des commandes) */
+.bande { height: 28px; display: flex; align-items: center; justify-content: center; gap: var(--e1);
+  font-size: var(--t-petit); font-weight: 600; white-space: nowrap; overflow: hidden;
+  border-radius: 0 0 var(--r-photo) var(--r-photo); padding: 0 var(--e1); }
+.bande svg { width: 16px; height: 16px; stroke-width: 2.25; }
+/* État positif : fond doux, texte foncé, filet de 3 px en haut */
+.bande.garder { background: var(--accent-doux); color: var(--accent-doux-texte); box-shadow: inset 0 3px 0 var(--accent); }
+:root[data-theme="sombre"] .bande.garder { color: var(--accent-doux-texte); }
+/* État « laisser » : bande neutre, sans bord, texte gris */
+.bande.ecarter, .bande.pas { background: var(--surface); color: var(--texte-2); }
+.bande.mis { background: var(--neutre-doux); color: var(--texte-2); }
+.bande.album { background: var(--etoile-doux); color: var(--etoile-texte); box-shadow: inset 0 3px 0 var(--etoile); }
+.bande.grande { background: var(--etoile); color: #1c1d20; }
+.bande.grande svg.etoile { color: #1c1d20; stroke: #1c1d20; }
+.bande.decider { background: var(--surface); color: var(--texte-2); font-weight: 400; }
+.bande .fin { margin-left: auto; display: inline-flex; align-items: center; gap: var(--e1); }
+/* Remarque : 14 px, deux lignes au plus ; le texte entier est dans l'infobulle et dans « Comparer en grand » */
+.remarque { font-size: var(--t-petit); line-height: var(--lh-petit); color: var(--texte-2); margin-top: var(--e1);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.remarque svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+.remarque.court { letter-spacing: -0.005em; }
+
+/* Ratios des photos simulées : --r réel, --rc largeur de la case (au moins 0,8 pour la bande) */
+.p34 { --r: .75; --rc: .75; }  .p916 { --r: .5625; --rc: .8; }  .l43 { --r: 1.3333; --rc: 1.3333; }
+.l32 { --r: 1.5; --rc: 1.5; }  .l169 { --r: 1.7778; --rc: 1.7778; }  .c11 { --r: 1; --rc: 1; }
+
+/* Vignettes (listes) */
+.vignettes { display: flex; gap: var(--e1); margin-top: var(--e2); }
+.vignettes .ph { height: 32px; padding: 0; border-radius: 4px; }
+.vignettes .ph.p34 { width: 24px; } .vignettes .ph.l43 { width: 43px; } .vignettes .ph.p916 { width: 18px; } .vignettes .ph.l32 { width: 48px; }
+
+/* Mot d'état (texte) */
+.etat-mot { display: inline-flex; align-items: center; gap: var(--e1); font-size: var(--t-petit); line-height: var(--lh-petit); white-space: nowrap; }
+.etat-mot.afaire { color: var(--afaire); font-weight: 600; }
+.etat-mot.fait { color: var(--accent-doux-texte); }
+:root[data-theme="sombre"] .etat-mot.fait { color: var(--accent); }
+.etat-mot.pastille { color: var(--afaire); background: var(--afaire-doux); padding: 0 var(--e2); border-radius: 999px; font-weight: 600; }
+
+/* ===================== Gabarit « Décisions » : liste « À faire ici » numérotée ===================== */
+.col-afaire { background: var(--surface); border-right: 1px solid var(--filet); overflow: auto; padding: var(--e4) var(--e5) 0; min-height: 0; display: flex; flex-direction: column; }
+.col-afaire > h2 { font-size: var(--t-section); line-height: var(--lh-section); font-weight: 600; margin-bottom: var(--e2); }
+.col-afaire > ol { flex: 1; }
+.tachen { display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: var(--e3); padding: var(--e3) 0; border-top: 1px solid var(--filet); }
+.tachen .rond { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+  font-size: var(--t-petit); font-variant-numeric: tabular-nums; border: 1.5px solid var(--contour); color: var(--texte-2); background: var(--surface); }
+.tachen.fait .rond { background: var(--accent-doux); border-color: var(--accent-doux); color: var(--accent-doux-texte); }
+.tachen.fait .rond svg { width: 18px; height: 18px; stroke-width: 2.5; }
+.tachen.cours .rond { background: var(--texte); border-color: var(--texte); color: var(--surface); }
+.tachen h3 { font-size: var(--t-corps); font-weight: 600; line-height: 30px; }
+.tachen .detail { color: var(--texte-2); font-size: var(--t-petit); line-height: var(--lh-petit); }
+.tachen.cours { border-top: 2px solid var(--texte); }
+/* Point fait : une ligne « titre · résultat », et « Revoir » en lien à droite */
+.tachen.fait { padding: var(--e2) 0; }
+.tachen.fait .ligne { display: flex; align-items: center; gap: var(--e2); min-width: 0; }
+.tachen.fait h3 { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tachen.fait .ligne .lien { margin-left: auto; }
+.tachen .ligne-a-faire { display: flex; align-items: center; gap: var(--e2); flex-wrap: wrap; }
+.facultatif { font-size: var(--t-petit); font-weight: 400; color: var(--texte-2); }
+/* Le bouton plein du point en cours vient en dernier ; s'il ne tient pas, il reste collé en bas de la colonne */
+.pied-colle { position: sticky; bottom: 0; background: var(--surface); padding: var(--e3) 0 var(--e4); margin-top: var(--e2); z-index: 1; }
+.pied-colle .btn.plein { width: 100%; }
+.radios { border: 1.5px solid var(--filet-fort); border-radius: var(--r-commande); overflow: hidden; }
+.radio { display: flex; align-items: center; gap: var(--e3); min-height: 44px; padding: var(--e1) var(--e3); }
+.radio + .radio { border-top: 1px solid var(--filet); }
+.radio .rd { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--contour); flex: none; background: var(--surface); }
+.radio.on { background: var(--accent-doux); }
+.radio.on .rd { border: 6px solid var(--accent); }
+.radio .eff { margin-left: auto; font-size: var(--t-petit); color: var(--texte-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.radio.on .eff { color: var(--accent-doux-texte); }
+.conseille { font-size: var(--t-petit); color: var(--accent-doux-texte); font-weight: 600; }
+:root[data-theme="sombre"] .conseille { color: var(--accent); }
+.reglage { margin-top: var(--e3); }
+.reglage > .leg { font-size: var(--t-petit); line-height: var(--lh-petit); font-weight: 600; margin-bottom: var(--e1); }
+
+/* Segmenté (2 à 4 cases) : la case allumée est l'état ; allumage doux, jamais plein */
+.seg { display: inline-flex; border: 1.5px solid var(--contour); border-radius: var(--r-commande); overflow: hidden; flex: none; }
+.seg button { display: inline-flex; align-items: center; gap: var(--e1); height: 37px; padding: 0 var(--e3); border: 0;
+  background: transparent; font-weight: 600; white-space: nowrap; cursor: pointer; color: var(--texte); }
+.seg button + button { border-left: 1.5px solid var(--contour); }
+.seg button.on { background: var(--accent-doux); color: var(--accent-doux-texte); box-shadow: inset 0 0 0 2px var(--accent); }
+.seg button svg { width: 16px; height: 16px; }
+
+/* Objet manipulé (dossier proposé) : seule carte de la page */
+.objet { background: var(--surface); border: 1px solid var(--filet); border-radius: var(--r-objet); }
+
+/* Écran moins large (1280) : placé en dernier pour l'emporter */
+@media (max-width: 1360px) {
+  :root { --l-liste: 232px; --l-afaire: 420px; --l-panneau: 288px; }
+  .frise a { width: 24px; }
+  .barre-app { gap: var(--e3); }
+  .taches { margin-left: calc(-1 * var(--e3)); }
+  .tache { padding: 0 var(--e3); }
+}
+/* Palier « texte agrandi » (zoom de 125 % sur 1280, soit 1024 px) : rien ne sort de l'écran */
+@media (max-width: 1180px) {
+  .projet .nom, .frise { display: none; }
+  :root { --h-outils: auto; }
+  .outils { flex-wrap: wrap; row-gap: var(--e2); padding-top: var(--e2); padding-bottom: var(--e2); }
+  .outils .taches { min-height: 52px; }
+  .taille > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .tache { padding: 0 var(--e2); } .taches { margin-left: calc(-1 * var(--e2)); }
+  .table-tete, .jour-tete { flex-wrap: wrap; height: auto; row-gap: var(--e2); }
+  .dossier { grid-template-columns: minmax(0, 1fr) auto; } .dossier .gauche-col { grid-row: auto; grid-column: 1 / 3; }
+  .dossier .actuel, .dossier .propositions, .dossier .pourquoi { grid-column: 1 / 3; }
+  .resume .l1, .resume .l2 { white-space: normal; }
+  .validation { height: auto; }
+}
+
+/* ---- Comparer en grand : une salle sombre neutre dans les deux thèmes (juger couleurs et lumière).
+   Thème clair : gris ardoise, plus doux à l'arrivée depuis une page claire ; thème sombre : presque noir. ---- */
+body { background: #000; }
+.vue-comparer {
+  --c-fond: #2a2c30; --c-barre: #222427; --c-carte: #36393e; --c-filet: #4a4e55; --c-mat: #3d4046;
+  --surface: #36393e; --texte: #f2f1ed; --texte-2: #cdd2d8; --contour: #a0a6af; --filet: #4a4e55; --filet-fort: #5a5f67;
+  --neutre-doux: #4a4e55; --fond: #2a2c30; --accent: #4fc1b2; --accent-survol: #6fd0c3; --sur-accent: #062420;
+  --accent-doux: #1f4743; --accent-doux-texte: #bff0e8;
+  --ph-1: #74767b; --ph-2: #5b5d62; --ph-texte: #f1f0ec;
+  /* Hauteur de photo : la scène moins ses marges (16 + 16) */
+  --h-cmp: calc(100vh - 48px - 32px - 56px - 32px); --h-leg: 72px; --h-vign: 80px; --col-vign: 1;
+  color-scheme: dark; height: 100vh; display: grid; grid-template-rows: 48px 32px minmax(0, 1fr) 56px;
+  background: var(--c-fond); color: var(--texte); overflow: hidden; }
+:root[data-theme="sombre"] .vue-comparer {
+  --c-fond: #121316; --c-barre: #191b1f; --c-carte: #1f2125; --c-filet: #2c2f35; --c-mat: #26282d;
+  --surface: #1f2125; --texte: #ecebe7; --texte-2: #aeb4bc; --contour: #8b9099; --filet: #2c2f35; --filet-fort: #3d4148;
+  --neutre-doux: #2f3238; --fond: #121316; --accent-doux: #173a36; --accent-doux-texte: #a7e3da;
+  --ph-1: #5a5c61; --ph-2: #43454a; --ph-texte: #e4e3df; }
+.vue-comparer .ph.t2 { --ph-1: #6a6c71; --ph-2: #535559; } .vue-comparer .ph.t3 { --ph-1: #7e8085; --ph-2: #66686d; }
+:root[data-theme="sombre"] .vue-comparer .ph.t2 { --ph-1: #4e5055; --ph-2: #393b40; }
+:root[data-theme="sombre"] .vue-comparer .ph.t3 { --ph-1: #64666b; --ph-2: #4b4d52; }
+/* Petit écran : la bande de vignettes passe sur 2 colonnes, les 6 photos restent visibles */
+@media (max-height: 700px) { .vue-comparer { --h-vign: 96px; --col-vign: 2; } }
+.vue-comparer + .vue-comparer { border-top: 6px solid #000; }
+
+.cmp-haut, .cmp-ligne, .cmp-bas { display: flex; align-items: center; gap: var(--e2); padding: 0 var(--e5); background: var(--c-barre); white-space: nowrap; min-width: 0; }
+.cmp-haut { border-bottom: 1px solid var(--c-filet); }
+.cmp-haut h1 { font-size: var(--t-corps); font-weight: 700; overflow: hidden; text-overflow: ellipsis; min-width: 0; margin-left: var(--e1); }
+.cmp-haut h1 .gris { font-weight: 400; }
+.cmp-haut .sep { width: 1px; height: 24px; background: var(--c-filet); flex: none; margin: 0 var(--e1); }
+.cmp-haut .seg { margin-right: var(--e2); }
+.cmp-haut .btn { padding: 0 10px; } .cmp-haut .seg button { padding: 0 10px; }
+.cmp-ligne { gap: var(--e4); border-bottom: 1px solid var(--c-filet); font-size: var(--t-petit); }
+.cmp-ligne .ia { display: inline-flex; align-items: center; gap: var(--e2); min-width: 0; overflow: hidden; }
+.cmp-ligne .ia svg { width: 16px; height: 16px; }
+.cmp-ligne .rassure { display: inline-flex; align-items: center; gap: var(--e2); color: var(--texte-2); }
+.cmp-ligne .rassure svg { color: var(--accent); width: 16px; height: 16px; }
+.cmp-ligne .case .boite { width: 18px; height: 18px; }
+.btn.compact { height: 28px; padding: 0 var(--e3); font-size: var(--t-petit); }
+.btn.compact .prix { height: 20px; line-height: 18px; }
+
+.cmp-scene { min-height: 0; padding: var(--e4) var(--e5); }
+/* « Une à la fois » : photo | légende à droite (220) | bande de vignettes */
+.cmp-scene.une { display: grid; grid-template-columns: minmax(0, 1fr) 220px auto; gap: var(--e4); }
+.cmp-grande { display: flex; justify-content: flex-end; align-items: flex-start; min-width: 0; }
+.cmp-grande > .ph { width: min(100%, calc(var(--h-cmp) * var(--r))); aspect-ratio: var(--r); font-size: var(--t-corps); border-radius: 8px; }
+.legende-d { display: flex; flex-direction: column; gap: var(--e3); min-width: 0; }
+.legende-d .titre { font-weight: 700; }
+.etat-v { display: grid; gap: 0; border: 1.5px solid var(--contour); border-radius: var(--r-commande); overflow: hidden; }
+.etat-v button, .etat-h button { display: flex; align-items: center; gap: var(--e2); height: 40px; padding: 0 var(--e3); border: 0;
+  background: transparent; color: var(--texte-2); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.etat-v button + button { border-top: 1.5px solid var(--contour); }
+.etat-v button svg, .etat-h button svg { width: 16px; height: 16px; stroke-width: 2.25; }
+/* État allumé : doux et bordé, jamais l'aplat du bouton plein */
+.vue-comparer .on.garder { background: var(--accent-doux); color: var(--accent-doux-texte); box-shadow: inset 0 0 0 2px var(--accent); }
+.vue-comparer .on.ecarter { background: var(--neutre-doux); color: var(--texte); box-shadow: inset 0 0 0 2px var(--contour); }
+.infos { display: grid; gap: var(--e1); font-size: var(--t-petit); line-height: var(--lh-petit); color: var(--texte-2); }
+.infos b { color: var(--texte); font-weight: 600; }
+.infos svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+
+/* Bande de vignettes : 1 colonne (1440) ou 2 (1280) ; au-delà de ce qui tient, elle défile et « N de plus » est un bouton */
+.bande-vign { min-height: 0; display: flex; flex-direction: column; }
+.bande-vign ol { display: grid; grid-template-columns: repeat(var(--col-vign), auto); gap: var(--e1); align-content: start; overflow-y: auto; min-height: 0; }
+.vg { padding: var(--e1); border-radius: 8px; cursor: pointer; }
+.vg.affichee { background: var(--c-carte); box-shadow: inset 0 0 0 2px var(--texte); }
+.vg .boite-v { height: var(--h-vign); display: flex; justify-content: center; background: var(--c-mat); border-radius: 4px 4px 0 0; }
+.vg .ph { height: var(--h-vign); aspect-ratio: var(--r); padding: 0; border-radius: 4px 4px 0 0; font-size: 0; }
+.vg .bande { height: 24px; }
+.vg .bande.ecarter { background: var(--c-carte); color: var(--texte-2); }
+.vg .bande.garder { background: var(--accent-doux); color: var(--accent-doux-texte); box-shadow: inset 0 3px 0 var(--accent); }
+.vg .boite-v .ph.l43 { --r: 1.3333; } .vg .boite-v { width: calc(var(--h-vign) * 1.3333); }
+
+/* « Côte à côte » : une carte par photo, légende dessous, carte de la largeur de la photo */
+.cmp-scene.cote { display: flex; justify-content: center; align-items: flex-start; gap: var(--e4); }
+.cmp-carte { background: var(--c-carte); border-radius: 12px; padding: var(--e2); display: flex; flex-direction: column; }
+.cmp-carte > .ph { aspect-ratio: var(--r); border-radius: 6px; font-size: var(--t-corps);
+  /* la plus petite des deux limites : la hauteur de la scène, ou la largeur partagée entre les N photos */
+  height: min(calc(var(--h-cmp) - var(--h-leg) - 16px), calc(((100vw - 48px - (var(--n) - 1) * 16px) / var(--n) - 16px) / var(--r))); }
+.legende { width: 0; min-width: 100%; height: var(--h-leg); padding-top: var(--e2); display: grid; grid-template-rows: 40px 24px; gap: var(--e1); }
+.etat-h { display: inline-flex; border: 1.5px solid var(--contour); border-radius: var(--r-commande); overflow: hidden; justify-self: start; }
+.etat-h button + button { border-left: 1.5px solid var(--contour); }
+.etat-h button { height: 37px; }
+.legende .l2 { font-size: var(--t-petit); line-height: 24px; color: var(--texte-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legende .l2 b { color: var(--texte); font-weight: 600; }
+
+.cmp-bas { gap: var(--e3); border-top: 1px solid var(--c-filet); }
+.cmp-bas .touches { font-size: var(--t-petit); color: var(--texte-2); margin-left: var(--e2); }
+.cmp-bas .zoom { display: inline-flex; align-items: center; gap: var(--e2); color: var(--texte-2); margin-left: auto; }
+.cmp-bas .btn.plein { margin-left: auto; }
+kbd { font: inherit; font-weight: 600; color: var(--texte); }
+@media (max-width: 1180px) {
+  .cmp-bas .touches, .cmp-bas .zoom > .mot { display: none; }
+  .cmp-ligne .rassure .suite { display: none; }
+  .cmp-haut, .cmp-ligne, .cmp-bas { padding: 0 var(--e3); }
+  .cmp-scene.une { grid-template-columns: minmax(0, 1fr) 180px auto; }
+}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<defs>
+<symbol id="i-aide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.6v.4"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-annuler" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+<symbol id="i-retablir" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+<symbol id="i-ia" viewBox="0 0 24 24"><path d="M11 3.5l1.7 4.6 4.6 1.7-4.6 1.7L11 16.1l-1.7-4.6L4.7 9.8l4.6-1.7z"/><path d="M18.5 14.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+<symbol id="i-etoile" viewBox="0 0 24 24"><path fill="currentColor" stroke-width="1.2" d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/></symbol>
+<symbol id="i-etoile-vide" viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/></symbol>
+<symbol id="i-comparer" viewBox="0 0 24 24"><rect x="3" y="5" width="7.5" height="14" rx="1.5"/><rect x="13.5" y="5" width="7.5" height="14" rx="1.5"/></symbol>
+<symbol id="i-une" viewBox="0 0 24 24"><rect x="3" y="4" width="13" height="16" rx="1.5"/><path d="M19.5 5v3M19.5 11v2M19.5 16v3"/></symbol>
+<symbol id="i-calendrier" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+<symbol id="i-bas" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-haut" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+<symbol id="i-droite" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+<symbol id="i-gauche" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+<symbol id="i-fleche" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></symbol>
+<symbol id="i-maison" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/></symbol>
+<symbol id="i-lieu" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+<symbol id="i-ecran" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
+<symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7.5A2 2 0 0 1 5 5.5h4l2 2h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+<symbol id="i-moins" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-chercher" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m3.5 17 5.5-5.5 4 4 2.5-2.5 5 5"/><circle cx="15.5" cy="8.8" r="1.6"/></symbol>
+<symbol id="i-voyage" viewBox="0 0 24 24"><path d="M10.5 4.5h3l1 3h5v11h-15v-11h5z"/><path d="M4.5 12h15"/></symbol>
+<symbol id="i-sortie" viewBox="0 0 24 24"><path d="m3 19 6-10 4 6 3-4 5 8z"/><circle cx="17" cy="6" r="2"/></symbol>
+<symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12 2.3 2.3 4.3-4.6"/></symbol>
+<symbol id="i-panneau" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></symbol>
+<symbol id="i-tourner" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4 4v4.5h4.5"/></symbol>
+<symbol id="i-recadrer" viewBox="0 0 24 24"><path d="M7 3v14h14"/><path d="M3 7h14v14"/></symbol>
+<symbol id="i-deplacer" viewBox="0 0 24 24"><path d="M3 7.5A2 2 0 0 1 5 5.5h4l2 2h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h6M12.5 10.5 15 13l-2.5 2.5"/></symbol>
+<symbol id="i-pile" viewBox="0 0 24 24"><rect x="3" y="8" width="13" height="12" rx="1.5"/><path d="M7 5h12.5a1.5 1.5 0 0 1 1.5 1.5V16"/></symbol>
+<symbol id="i-filtre" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+<symbol id="i-crayon" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5z"/></symbol>
+<symbol id="i-lecture" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></symbol>
+<symbol id="i-entier" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+<symbol id="i-carte" viewBox="0 0 24 24"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+<symbol id="i-poignee" viewBox="0 0 24 24"><circle cx="9" cy="7" r="1.2"/><circle cx="15" cy="7" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="17" r="1.2"/><circle cx="15" cy="17" r="1.2"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></symbol>
+</defs></svg>
+
+
+<!-- ============ Écran 1 : rafale de 6 photos (portraits et paysages) — présentation calculée : « Une à la fois » ============ -->
+<section class="vue-comparer" aria-label="Comparer en grand : rafale de 6 photos">
+  <header class="cmp-haut">
+    <button class="btn" title="Échap"><svg class="i"><use href="#i-x"/></svg>Fermer</button>
+    <span class="sep"></span>
+    <h1>Rafale 2 sur 3 <span class="gris">· sam. 12 juillet</span></h1>
+    <span class="espace"></span>
+    <span class="seg" role="radiogroup" aria-label="Présentation">
+      <button title="Entrée"><svg class="i"><use href="#i-comparer"/></svg>Côte à côte</button>
+      <button class="on" aria-checked="true"><svg class="i"><use href="#i-une"/></svg>Une à la fois</button>
+    </span>
+    <button class="btn" title="Ctrl+Z"><svg class="i"><use href="#i-annuler"/></svg>Annuler : photo 4 « À garder »</button>
+    <button class="btn" title="Ctrl+Y"><svg class="i"><use href="#i-retablir"/></svg>Rétablir</button>
+    <button class="btn"><svg class="i"><use href="#i-aide"/></svg>Aide</button>
+  </header>
+  <div class="cmp-ligne" aria-live="polite">
+    <span class="ia" title="Réponse de l'IA pour cette rafale"><svg class="i"><use href="#i-ia"/></svg>Sur la photo 4, tout le monde regarde l'appareil.</span>
+    <span class="espace"></span>
+    <span class="rassure" title="Rien n'est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d'origine ne bougent pas."><svg class="i"><use href="#i-bouclier"/></svg>Pas encore accepté · Rien n'est supprimé<span class="suite"> : ce que vous écartez va dans « Mis de côté »</span>.</span>
+  </div>
+  <div class="cmp-scene une">
+    <div class="cmp-grande l43"><div class="ph t2">Photo 4 · paysage 4:3<br>(la photo « À garder », affichée à l'ouverture)</div></div>
+    <div class="legende-d">
+      <p class="titre">Photo 4 sur 6</p>
+      <div class="etat-v" role="radiogroup" aria-label="Photo 4">
+        <button class="on garder" aria-checked="true" title="Touche 4"><svg class="i"><use href="#i-check"/></svg>À garder</button>
+        <button class="ecarter" title="Touche 4"><svg class="i"><use href="#i-x"/></svg>À écarter</button>
+      </div>
+      <span class="case"><span class="boite"></span>Garder plusieurs photos</span>
+      <div class="infos">
+        <span><svg class="i"><use href="#i-ia"/></svg><b>Conseillée par l'IA</b></span>
+        <span>La plus nette</span>
+        <span class="num">10:41:43</span>
+        <span>Bord du lac / IMG_2041.jpg</span>
+      </div>
+    </div>
+    <nav class="bande-vign" aria-label="Les 6 photos (↑ ↓)">
+      <ol>
+        <li class="vg"><div class="boite-v"><div class="ph p34"></div></div><div class="bande ecarter">1 · À écarter</div></li>
+        <li class="vg"><div class="boite-v"><div class="ph l43 t3"></div></div><div class="bande ecarter">2 · À écarter</div></li>
+        <li class="vg"><div class="boite-v"><div class="ph p916"></div></div><div class="bande ecarter">3 · À écarter</div></li>
+        <li class="vg affichee" aria-current="true"><div class="boite-v"><div class="ph l43 t2"></div></div><div class="bande garder"><svg class="i"><use href="#i-check"/></svg>4 · À garder</div></li>
+        <li class="vg"><div class="boite-v"><div class="ph p34 t3"></div></div><div class="bande ecarter">5 · À écarter</div></li>
+        <li class="vg"><div class="boite-v"><div class="ph p34"></div></div><div class="bande ecarter">6 · À écarter</div></li>
+      </ol>
+    </nav>
+  </div>
+  <footer class="cmp-bas">
+    <button class="btn" title="← ou Page préc."><svg class="i"><use href="#i-gauche"/></svg>Groupe précédent</button>
+    <button class="btn" title="→ ou Page suiv.">Groupe suivant<svg class="i"><use href="#i-droite"/></svg></button>
+    <span class="touches"><kbd>↑ ↓</kbd> photo · <kbd>← →</kbd> groupe</span>
+    <span class="zoom"><span class="mot">Zoom</span>
+      <button class="btn carre" aria-label="Zoom arrière (−)"><svg class="i"><use href="#i-moins"/></svg></button>
+      <button class="btn" title="Touche 0"><svg class="i"><use href="#i-entier"/></svg>Photo entière</button>
+      <button class="btn carre" aria-label="Zoom avant (+)"><svg class="i"><use href="#i-plus"/></svg></button></span>
+    <button class="btn plein" title="Touche A ; puis le groupe suivant s'ouvre"><svg class="i"><use href="#i-check"/></svg>Accepter : garder 1, écarter 5</button>
+  </footer>
+</section>
+
+<!-- ============ Écran 2 : rafale de 3 portraits, l'IA n'est pas encore passée — présentation calculée : côte à côte ============ -->
+<section class="vue-comparer" aria-label="Comparer en grand : rafale de 3 photos">
+  <header class="cmp-haut">
+    <button class="btn" title="Échap"><svg class="i"><use href="#i-x"/></svg>Fermer</button>
+    <span class="sep"></span>
+    <h1>Rafale 3 sur 3 <span class="gris">· sam. 12 juillet</span></h1>
+    <span class="espace"></span>
+    <span class="seg" role="radiogroup" aria-label="Présentation">
+      <button class="on" aria-checked="true"><svg class="i"><use href="#i-comparer"/></svg>Côte à côte</button>
+      <button title="Entrée"><svg class="i"><use href="#i-une"/></svg>Une à la fois</button>
+    </span>
+    <button class="btn" title="Ctrl+Z"><svg class="i"><use href="#i-annuler"/></svg>Annuler : rafale de 10:41 acceptée</button>
+    <button class="btn" title="Ctrl+Y"><svg class="i"><use href="#i-retablir"/></svg>Rétablir</button>
+    <button class="btn"><svg class="i"><use href="#i-aide"/></svg>Aide</button>
+  </header>
+  <div class="cmp-ligne">
+    <button class="btn compact"><svg class="i p"><use href="#i-ia"/></svg>Choisir avec l'IA <span class="prix num">environ 0,01 CHF</span></button>
+    <span class="gris">Proposition : la plus nette.</span>
+    <span class="espace"></span>
+    <span class="case"><span class="boite"></span>Garder plusieurs photos</span>
+    <span class="rassure" title="Rien n'est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d'origine ne bougent pas."><svg class="i"><use href="#i-bouclier"/></svg>Pas encore accepté · Rien n'est supprimé</span>
+  </div>
+  <div class="cmp-scene cote" style="--n: 3">
+    <figure class="cmp-carte p34">
+      <div class="ph">Photo 1 · portrait 3:4</div>
+      <figcaption class="legende">
+        <span class="etat-h" role="radiogroup" aria-label="Photo 1"><button class="on garder" aria-checked="true" title="Touche 1"><svg class="i"><use href="#i-check"/></svg>À garder</button><button class="ecarter" title="Touche 1"><svg class="i"><use href="#i-x"/></svg>À écarter</button></span>
+        <span class="l2"><b>1</b> · la plus nette · <span class="num">11:20:02</span></span>
+      </figcaption>
+    </figure>
+    <figure class="cmp-carte p34">
+      <div class="ph t2">Photo 2 · portrait 3:4</div>
+      <figcaption class="legende">
+        <span class="etat-h" role="radiogroup" aria-label="Photo 2"><button class="garder" title="Touche 2"><svg class="i"><use href="#i-check"/></svg>À garder</button><button class="on ecarter" aria-checked="true" title="Touche 2"><svg class="i"><use href="#i-x"/></svg>À écarter</button></span>
+        <span class="l2"><b>2</b> · plus sombre · <span class="num">11:20:03</span></span>
+      </figcaption>
+    </figure>
+    <figure class="cmp-carte p34">
+      <div class="ph t3">Photo 3 · portrait 3:4</div>
+      <figcaption class="legende">
+        <span class="etat-h" role="radiogroup" aria-label="Photo 3"><button class="garder" title="Touche 3"><svg class="i"><use href="#i-check"/></svg>À garder</button><button class="on ecarter" aria-checked="true" title="Touche 3"><svg class="i"><use href="#i-x"/></svg>À écarter</button></span>
+        <span class="l2"><b>3</b> · un peu floue · <span class="num">11:20:05</span></span>
+      </figcaption>
+    </figure>
+  </div>
+  <footer class="cmp-bas">
+    <button class="btn" title="← ou Page préc."><svg class="i"><use href="#i-gauche"/></svg>Groupe précédent</button>
+    <button class="btn" title="→ ou Page suiv.">Groupe suivant<svg class="i"><use href="#i-droite"/></svg></button>
+    <span class="touches"><kbd>↑ ↓</kbd> photo · <kbd>← →</kbd> groupe</span>
+    <span class="zoom"><span class="mot">Zoom</span>
+      <button class="btn carre" aria-label="Zoom arrière (−)"><svg class="i"><use href="#i-moins"/></svg></button>
+      <button class="btn" title="Touche 0"><svg class="i"><use href="#i-entier"/></svg>Photo entière</button>
+      <button class="btn carre" aria-label="Zoom avant (+)"><svg class="i"><use href="#i-plus"/></svg></button></span>
+    <button class="btn plein" title="Touche A ; puis le groupe suivant s'ouvre"><svg class="i"><use href="#i-check"/></svg>Accepter : garder 1, écarter 2</button>
+  </footer>
+</section>
+
+<!-- ============ Écran 3 : paire de copies exactes en portrait — toujours côte à côte ; le dossier vient en premier ============ -->
+<section class="vue-comparer" aria-label="Comparer en grand : deux copies exactes">
+  <header class="cmp-haut">
+    <button class="btn" title="Échap"><svg class="i"><use href="#i-x"/></svg>Fermer</button>
+    <span class="sep"></span>
+    <h1>Copies exactes 2 sur 3 <span class="gris">· dim. 13 juillet</span></h1>
+    <span class="espace"></span>
+    <span class="seg" role="radiogroup" aria-label="Présentation">
+      <button class="on" aria-checked="true"><svg class="i"><use href="#i-comparer"/></svg>Côte à côte</button>
+      <button title="Entrée"><svg class="i"><use href="#i-une"/></svg>Une à la fois</button>
+    </span>
+    <button class="btn" title="Ctrl+Z"><svg class="i"><use href="#i-annuler"/></svg>Annuler : photo 2 « À écarter »</button>
+    <button class="btn" title="Ctrl+Y"><svg class="i"><use href="#i-retablir"/></svg>Rétablir</button>
+    <button class="btn"><svg class="i"><use href="#i-aide"/></svg>Aide</button>
+  </header>
+  <div class="cmp-ligne" aria-live="polite">
+    <span>Proposition : garder l'exemplaire du dossier « Photos à trier ».</span>
+    <span class="espace"></span>
+    <span class="case"><span class="boite"></span>Garder les deux</span>
+    <span class="rassure" title="Rien n'est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d'origine ne bougent pas."><svg class="i"><use href="#i-bouclier"/></svg>Pas encore accepté · Rien n'est supprimé</span>
+  </div>
+  <div class="cmp-scene cote" style="--n: 2">
+    <figure class="cmp-carte p34">
+      <div class="ph">Photo 1 · portrait 3:4</div>
+      <figcaption class="legende">
+        <span class="etat-h" role="radiogroup" aria-label="Photo 1"><button class="on garder" aria-checked="true" title="Touche 1"><svg class="i"><use href="#i-check"/></svg>À garder</button><button class="ecarter" title="Touche 1"><svg class="i"><use href="#i-x"/></svg>À écarter</button></span>
+        <span class="l2" title="Photos à trier / 2025 / IMG_2041.jpg · 3000 × 4000 · 2,4 Mo"><b>Photos à trier</b></span>
+      </figcaption>
+    </figure>
+    <figure class="cmp-carte p34">
+      <div class="ph">Photo 2 · portrait 3:4</div>
+      <figcaption class="legende">
+        <span class="etat-h" role="radiogroup" aria-label="Photo 2"><button class="garder" title="Touche 2"><svg class="i"><use href="#i-check"/></svg>À garder</button><button class="on ecarter" aria-checked="true" title="Touche 2"><svg class="i"><use href="#i-x"/></svg>À écarter</button></span>
+        <span class="l2" title="Sauvegarde du téléphone / IMG_2041.jpg · 3000 × 4000 · 2,4 Mo"><b>Sauvegarde du téléphone</b></span>
+      </figcaption>
+    </figure>
+  </div>
+  <footer class="cmp-bas">
+    <button class="btn" title="← ou Page préc."><svg class="i"><use href="#i-gauche"/></svg>Groupe précédent</button>
+    <button class="btn" title="→ ou Page suiv.">Groupe suivant<svg class="i"><use href="#i-droite"/></svg></button>
+    <span class="touches"><kbd>↑ ↓</kbd> photo · <kbd>← →</kbd> groupe</span>
+    <span class="zoom"><span class="mot">Zoom</span>
+      <button class="btn carre" aria-label="Zoom arrière (−)"><svg class="i"><use href="#i-moins"/></svg></button>
+      <button class="btn" title="Touche 0"><svg class="i"><use href="#i-entier"/></svg>Photo entière</button>
+      <button class="btn carre" aria-label="Zoom avant (+)"><svg class="i"><use href="#i-plus"/></svg></button></span>
+    <button class="btn plein" title="Touche A ; puis le groupe suivant s'ouvre"><svg class="i"><use href="#i-check"/></svg>Accepter : garder 1, écarter 1</button>
+  </footer>
+</section>
+<script>
+/* Thème : <html data-theme="sombre"> ; pour la maquette, ?theme=sombre ou #sombre dans l'adresse. */
+(function () { var q = location.search + location.hash;
+  if (/sombre/.test(q)) document.documentElement.dataset.theme = 'sombre';
+  if (/clair/.test(q)) document.documentElement.dataset.theme = 'clair'; })();
+</script>
+</body>
+</html>
