@@ -419,11 +419,11 @@ async function essayer(n, nom, bloc) {
     await page.keyboard.press('Escape').catch(() => undefined);
     await page.screenshot({ path: join(SP, `zz_echec_${nom}.png`) }).catch(() => undefined);
     // Passer à l'étape suivante pour que la suite du parcours reste capturée.
-    await page.getByRole('button', { name: 'Valider et continuer' }).click({ timeout: 3000 }).catch(() => undefined);
+    await page.locator('[data-action=valider]').click({ timeout: 3000 }).catch(() => undefined);
   }
 }
 
-const valider = () => page.getByRole('button', { name: 'Valider et continuer' }).click();
+const valider = () => page.locator('[data-action=valider]').click();
 const allerEtape = async (re) => {
   await page.locator('.bandeau .etape', { hasText: re }).first().click();
   await attendre(800);
@@ -566,17 +566,17 @@ try {
   // ---------- Étape 2 : Inventaire ----------
   entrer(2);
   debut = performance.now();
-  await page.getByRole('button', { name: 'Valider et continuer' }).waitFor({ timeout: 120_000 });
+  await page.locator('[data-action=valider]').waitFor({ timeout: 120_000 });
   await attendre(1500);
   await etat('04_etape02_inventaire_analyse_en_cours', 'Étape 2 Inventaire : analyse locale en cours');
-  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 1_800_000 });
+  await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 1_800_000 });
   noter(`analyse terminée (${duree(debut)})`);
   await capturer('05_etape02_inventaire', 'Étape 2 Inventaire : analyse terminée');
   await valider();
 
   // ---------- Étape 3 : Dossiers ----------
   await essayer(3, '06_etape03_dossiers', async () => {
-    await page.getByRole('heading', { name: /Dossiers/ }).first().waitFor();
+    await page.locator('main[data-etape=dossiers]').first().waitFor();
     await capturer('06_etape03_dossiers', 'Étape 3 Dossiers : que faire des sous-dossiers');
     await page.locator('.sous-dossiers tr.ligne-sous-dossier', { hasText: 'Sous_dossier' }).getByRole('radio', { name: 'Trier' }).click();
     await page.locator('.sous-dossiers tr.ligne-sous-dossier', { hasText: 'Copies' }).locator('.nom-sous-dossier').click();
@@ -587,7 +587,7 @@ try {
 
   // ---------- Étape 4 : Floues ----------
   await essayer(4, '08_etape04_floues', async () => {
-    await page.getByRole('heading', { name: /Photos floues/ }).waitFor();
+    await page.locator('main[data-etape=floues]').waitFor();
     await page.waitForFunction(() => document.querySelectorAll('img').length > 3, null, { timeout: 20_000 }).catch(() => undefined);
     await capturer('08_etape04_floues', 'Étape 4 Photos floues');
     await valider();
@@ -595,7 +595,7 @@ try {
 
   // ---------- Étape 5 : Doublons ----------
   await essayer(5, '09_etape05_doublons', async () => {
-    await page.getByRole('heading', { name: /Doublons/ }).waitFor();
+    await page.locator('main[data-etape=doublons]').waitFor();
     await page.locator('.carte-doublons, .encart').first().waitFor({ timeout: 120_000 });
     await attendre(1500);
     await capturer('09_etape05_doublons', 'Étape 5 Doublons : onglet d’arrivée (copies exactes)');
@@ -611,7 +611,7 @@ try {
 
   // ---------- Étape 6 : Tri automatique ----------
   await essayer(6, '11_etape06_tri', async () => {
-    await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
+    await page.locator('main[data-etape=tri]').waitFor();
     await page.getByText('Recherche de l’adresse…').first().waitFor({ state: 'detached', timeout: 30_000 }).catch(() => undefined);
     await attendre(2000);
     await capturer('11_etape06_tri_avant', 'Étape 6 Tri automatique : avant de ranger (aperçu, réglages)');
@@ -678,7 +678,7 @@ try {
 
   // ---------- Étape 8 : Petits dossiers ----------
   await essayer(8, '22_etape08_petits', async () => {
-    await page.getByRole('heading', { name: /Petits dossiers/ }).first().waitFor({ timeout: 60_000 });
+    await page.locator('main[data-etape=petits]').first().waitFor({ timeout: 60_000 });
     await attendre(2000);
     await capturer('22_etape08_petits', 'Étape 8 Petits dossiers : arrivée');
     const item = page.locator('.liste-petits .ligne-liste-petit').nth(1);
@@ -701,7 +701,7 @@ try {
 
   // ---------- Étape 9 : Nommage ----------
   await essayer(9, '25_etape09_nommage', async () => {
-    await page.getByRole('heading', { name: /Nommage/ }).first().waitFor({ timeout: 60_000 });
+    await page.locator('main[data-etape=nommage]').first().waitFor({ timeout: 60_000 });
     await attendre(2500);
     await capturer('25_etape09_nommage', 'Étape 9 Nommage : arrivée, sans IA');
     if (await page.locator('.tableau.nommage').count()) await etat('26_etape09_nommage_liste_zoom', 'Étape 9 Nommage : zoom sur la liste (tableau), sans IA', { element: '.tableau.nommage' });
@@ -726,7 +726,7 @@ try {
     // Clé factice, le temps du bouton IA (API simulée).
     await page.evaluate((cle) => sessionStorage.setItem('album:cle_api', cle), CLE_FACTICE);
     await page.reload();
-    await page.getByRole('heading', { name: /Nommage/ }).first().waitFor({ timeout: 60_000 });
+    await page.locator('main[data-etape=nommage]').first().waitFor({ timeout: 60_000 });
     const ia = page.getByRole('button', { name: /Nommer les sorties avec l’IA/ });
     if ((await ia.count()) && (await ia.isEnabled())) {
       await ia.click();
@@ -753,13 +753,18 @@ try {
     if (await sur.count()) await sur.click();
     await attendre(800);
     await valider();
-    const dialogue = page.getByRole('button', { name: 'Ne pas les appliquer' });
-    if (await dialogue.isVisible({ timeout: 1500 }).catch(() => false)) await dialogue.click();
+    // Noms encore dans les champs : récapitulatif à cocher (D108), capturé puis quitté sans rien renommer.
+    const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
+    if (await recap.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await capturer('28b_etape09_nommage_recapitulatif', 'Étape 9 Nommage : récapitulatif des noms à appliquer en quittant');
+      for (const c of await recap.getByRole('checkbox').all()) await c.uncheck();
+      await recap.getByRole('button', { name: 'Continuer sans renommer' }).click();
+    }
   });
 
   // ---------- Étape 10 : Consolidation ----------
   await essayer(10, '29_etape10_consolidation', async () => {
-    await page.getByRole('heading', { name: /Consolidation/ }).first().waitFor({ timeout: 60_000 });
+    await page.locator('main[data-etape=consolidation]').first().waitFor({ timeout: 60_000 });
     await attendre(2500);
     await capturer('29_etape10_consolidation', 'Étape 10 Consolidation : arrivée (réglages et propositions)');
     if (await page.locator('.reglages-reunion').count()) await etat('30_etape10_consolidation_reglages', 'Étape 10 Consolidation : bloc des réglages « Que proposer ? »', { element: '.reglages-reunion' });

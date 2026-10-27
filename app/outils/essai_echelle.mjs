@@ -111,29 +111,29 @@ try {
   await page.fill('#nom-projet', 'Essai à l’échelle');
   debut = performance.now();
   await page.getByRole('button', { name: 'Créer le projet' }).click();
-  await page.getByRole('button', { name: 'Valider et continuer' }).waitFor({ timeout: 600_000 });
+  await page.locator('[data-action=valider]').waitFor({ timeout: 600_000 });
   noter(`inventaire : ${(await page.locator('.tableau-bord').innerText()).replace(/\s+/g, ' ')} (${duree(debut)})`);
   if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_inventaire.png'), fullPage: true });
 
   if (VRAC) {
     debut = performance.now();
     // Analyse des photos et des copies exactes : toute seule après l'inventaire (D56).
-    await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
+    await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
     noter(`analyse locale et copies exactes en ${duree(debut)} : ${(await page.locator('.a-verifier').innerText()).split('\n').slice(1, 4).join(' ')}`);
-    await page.getByRole('button', { name: 'Valider et continuer' }).click();
+    await page.locator('[data-action=valider]').click();
     // Étape « Dossiers » : tout est retrié par lieux (s'il y a des sous-dossiers).
-    await page.getByRole('heading', { name: /Dossiers|Photos floues/ }).first().waitFor();
+    await page.locator('main[data-etape=dossiers], main[data-etape=floues]').first().waitFor();
     if (await page.locator('.choix-segmente').count()) {
       await page.locator('p.actions').getByRole('button', { name: 'Trier', exact: true }).click();
-      await page.getByRole('button', { name: 'Valider et continuer' }).click();
+      await page.locator('[data-action=valider]').click();
     }
-    await page.getByRole('heading', { name: /Photos floues/ }).waitFor();
+    await page.locator('main[data-etape=floues]').waitFor();
     noter(`floues : ${await page.locator('.compteur-floues').innerText()}`);
-    await page.getByRole('button', { name: 'Valider et continuer' }).click();
+    await page.locator('[data-action=valider]').click();
     // Doublons (journée par journée) : passés ici, on mesure le tri.
-    await page.getByRole('heading', { name: /Doublons/ }).waitFor();
-    await page.getByRole('button', { name: 'Valider et continuer' }).click();
-    await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
+    await page.locator('main[data-etape=doublons]').waitFor();
+    await page.locator('[data-action=valider]').click();
+    await page.locator('main[data-etape=tri]').waitFor();
     if (CAPTURES) {
       // Lieux fréquents : on laisse arriver les miniatures et les noms proches (OpenStreetMap simulé).
       await page.getByText('Recherche de l’adresse…').first().waitFor({ state: 'detached', timeout: 20_000 }).catch(() => undefined);
@@ -146,12 +146,19 @@ try {
     await page.locator('.ligne-ranger.fait').waitFor({ timeout: 1_800_000 });
     noter(`tri par lieux en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
     if (CAPTURES) await page.screenshot({ path: join(CAPTURES, 'echelle_tri.png') });
-    for (const [numero, titre] of [[6, /Lieux et sorties/], [7, /Petits dossiers/], [8, /Nommage/], [9, /Consolidation/]]) {
+    for (const code of ['lieux', 'petits', 'nommage', 'consolidation']) {
       debut = performance.now();
-      await page.getByRole('button', { name: 'Valider et continuer' }).click();
-      await page.getByRole('heading', { name: titre }).waitFor({ timeout: 120_000 });
-      noter(`étape ${numero} affichée en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
-      if (CAPTURES) await page.screenshot({ path: join(CAPTURES, `echelle_etape${numero}.png`) });
+      await page.locator('[data-action=valider]').click();
+      // En quittant le Nommage, les noms proposés passent par un récapitulatif (D108) : l'essai n'en applique aucun.
+      const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
+      await page.locator(`main[data-etape=${code}]`).or(recap).first().waitFor({ timeout: 120_000 });
+      if (await recap.isVisible()) {
+        for (const c of await recap.getByRole('checkbox').all()) await c.uncheck();
+        await recap.getByRole('button', { name: 'Continuer sans renommer' }).click();
+        await page.locator(`main[data-etape=${code}]`).waitFor({ timeout: 120_000 });
+      }
+      noter(`étape ${code} affichée en ${duree(debut)} : ${await page.locator('.barre-validation .resume').innerText()}`);
+      if (CAPTURES) await page.screenshot({ path: join(CAPTURES, `echelle_${code}.png`) });
     }
     await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
     await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).waitFor({ timeout: 120_000 });
@@ -165,10 +172,10 @@ try {
     throw new Error('FIN_VRAC');
   }
   debut = performance.now();
-  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
+  await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 3_600_000 });
   noter(`analyse locale (netteté, ressemblance, copies) de toutes les photos en ${duree(debut)}`);
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
-  await page.getByRole('heading', { name: /Doublons/ }).waitFor();
+  await page.locator('[data-action=valider]').click();
+  await page.locator('main[data-etape=doublons]').waitFor();
 
   // Arborescence : le plus gros dossier, ses miniatures, un déplacement de toute la sélection.
   await page.locator('.bandeau .etape', { hasText: 'Lieux et sorties' }).click();
@@ -204,7 +211,7 @@ try {
   noter(`annulé en ${duree(debut)}`);
 
   // Sortie (dossier déjà trié : « Lieux et sorties » validée mène à la sélection ; on passe à la création de la sortie).
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
   await page.locator('.page-selection').waitFor();
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();
   await page.getByRole('button', { name: 'Créer / mettre à jour la sortie' }).waitFor({ timeout: 120_000 });

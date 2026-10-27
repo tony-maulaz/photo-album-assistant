@@ -134,7 +134,7 @@ qu'elle n'est pas faite, elle s'applique à tout nouveau code.
 ## 5. Mots
 
 - **M1** Un mot = un sens dans toute l'application. Avant d'ajouter un
-  libellé, chercher le mot dans `app/src/traductions/` et le glossaire. Mots
+  libellé, chercher le mot dans `docs/ux/GLOSSAIRE.md` et `app/src/traductions/`. Mots
   déjà pris : « sortie » (une balade ; le dossier de résultat porte encore ce
   nom, à résoudre dans le lot du vocabulaire), « tri » (le rangement par
   date et lieu), « étape »
@@ -181,6 +181,16 @@ qu'elle n'est pas faite, elle s'applique à tout nouveau code.
   évident.
 
 ---
+
+## Repères pour les essais
+
+- **E1** Les essais (`app/outils/*.mjs`) visent un repère stable, pas un
+  libellé qui peut changer : `main[data-etape=nommage]` pour l'étape
+  affichée (code de `CODES_ETAPES`), `[data-action=valider]` et
+  `[data-action=revenir]` pour la barre de validation. Un bouton qu'un essai
+  doit trouver reçoit un `data-action` au nom unique dans sa page ; on ne
+  renomme pas un `data-action` existant (le clavier ou un essai s'en sert).
+  Les anciens sélecteurs par libellé migrent avec le lot de leur page.
 
 ## Méthode de revue (obligatoire pour tout changement d'interface)
 

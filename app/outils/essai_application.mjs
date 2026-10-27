@@ -108,13 +108,13 @@ try {
   await page.getByRole('button', { name: 'Créer le projet' }).click();
 
   // Inventaire.
-  await page.getByRole('button', { name: 'Valider et continuer' }).waitFor({ timeout: 60_000 });
+  await page.locator('[data-action=valider]').waitFor({ timeout: 60_000 });
   await capturer(page, '03_inventaire');
   const tableau = (await page.locator('.tableau-bord').innerText()).replace(/\s+/g, ' ');
   // Toute la source, mis de côté compris : la 18e photo et le 6e dossier sont « _a_supprimer ».
   verifier(tableau.startsWith('18 photos 0 vidéos 1 autres fichiers 6 dossiers'), `inventaire : ${tableau}`);
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
-  await page.getByRole('heading', { name: /Doublons/ }).waitFor();
+  await page.locator('[data-action=valider]').click();
+  await page.locator('main[data-etape=doublons]').waitFor();
   verifier(true, 'dossier déjà trié : après l’inventaire, les doublons (le tri automatique est sauté)');
   verifier((await page.locator('.bandeau .etape.inutile', { hasText: 'Tri automatique' }).count()) === 1, 'frise : le tri automatique est marqué inutile pour un dossier déjà trié');
   verifier((await page.locator('.bandeau .etape.inutile', { hasText: 'Dossiers' }).count()) === 1, 'frise : l’étape « Dossiers » aussi');
@@ -217,7 +217,7 @@ try {
   verifier((await page.locator('.ligne-dossier.speciale', { hasText: 'Mis de côté' }).locator('.nombre-dossier').innerText()) === '2', 'Suppr met de côté');
 
   // Valider (dossier déjà trié : on arrive à la sélection), puis créer la sortie.
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
   await page.locator('.page-selection').waitFor();
   verifier(true, 'dossier déjà trié : après les lieux et sorties, la sélection');
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();

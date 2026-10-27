@@ -109,7 +109,10 @@ export function App() {
     <div class={`app page-${p.nom}${p.nom === 'etape' ? ` etape-${p.numero}` : ''}`}>
       <Entete />
       {p.nom === 'etape' && s && <BandeauSource />}
-      <main ref={zone}>{contenu}</main>
+      {/* Repère stable pour les essais : le code de l'étape, quel que soit son titre affiché. */}
+      <main ref={zone} data-etape={p.nom === 'etape' && s ? CODES_ETAPES[p.numero - 1] : undefined}>
+        {contenu}
+      </main>
       <Messages />
       <Dialogues />
       <Raccourcis />

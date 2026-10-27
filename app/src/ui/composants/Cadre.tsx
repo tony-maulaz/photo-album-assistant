@@ -268,12 +268,12 @@ export function BarreValidation({
       </div>
       <div class="actions">
         {revenir && (
-          <button type="button" onClick={revenir}>
+          <button type="button" data-action="revenir" onClick={revenir}>
             {t`Revenir`}
           </button>
         )}
         {valider && (
-          <button type="button" class="principal" disabled={!validerActif} onClick={valider}>
+          <button type="button" class="principal" data-action="valider" disabled={!validerActif} onClick={valider}>
             {libelleValider}
           </button>
         )}

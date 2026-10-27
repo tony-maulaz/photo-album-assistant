@@ -25,7 +25,7 @@ lancement.
 | `docs/SPEC_APP.md` | **La spécification** : principes, étapes, interface, fonctions IA, configuration, sortie, tests, feuille de route |
 | `docs/DECISIONS.md` | Pourquoi chaque choix, calibrations sur photos réelles, incidents et leçons |
 | `docs/GUIDE_UX.md` | **Règles d'interface** (ossature, photos, annuler, réglages, mots, visuel), méthode de revue |
-| `docs/ux/` | Cadre des revues, inventaire des fonctions de chaque page, recherche de bonnes pratiques avec sources |
+| `docs/ux/` | Cadre des revues, inventaire des fonctions de chaque page, glossaire (un mot, un sens), recherche de bonnes pratiques avec sources |
 | `docs/REFERENCE_SCRIPTS.md` | Algorithmes des scripts d'origine, formats, pièges connus |
 | `config.exemple/` | Modèle anonyme du dossier de configuration |
 | `CONTRIBUTING.md` | Comment contribuer (en anglais) |

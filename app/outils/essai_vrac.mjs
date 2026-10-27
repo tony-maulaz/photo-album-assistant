@@ -206,16 +206,16 @@ try {
   await page.getByRole('button', { name: 'Créer le projet' }).click();
 
   // Étape 2 : inventaire, des informations seulement ; l'analyse des photos se fait toute seule (D56).
-  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
+  await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   const aVerifier = await page.locator('.a-verifier').innerText();
   verifier(aVerifier.includes('2 sous-dossiers') && aVerifier.includes('2 copies exactes'), `inventaire : ce qui attend aux étapes suivantes (${aVerifier.split('\n').slice(1, 3).join(' / ')})`);
   verifier((await page.locator('.outils-etape').innerText()).includes('Mettre à jour l’inventaire'), '« Mettre à jour l’inventaire » en haut de la page');
   verifier((await page.locator('#copies, #captures, .sous-dossiers').count()) === 0, 'ni copies, ni captures, ni sous-dossiers à l’inventaire (D61)');
   await capturer(page, 'v1_inventaire');
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
 
   // Étape 3 : que faire des sous-dossiers (D61).
-  await page.getByRole('heading', { name: /Dossiers/ }).waitFor();
+  await page.locator('main[data-etape=dossiers]').waitFor();
   const LIGNES = '.sous-dossiers tr.ligne-sous-dossier';
   const lignes = await page.locator(LIGNES).allInnerTexts();
   verifier(lignes.length === 2 && lignes[0].includes('BESTOF') && lignes[1].includes('janvier'), 'étape « Dossiers » : BESTOF et janvier listés, par nom');
@@ -265,10 +265,10 @@ try {
   await janvier.locator('.fleche-dossier').click();
   verifier((await page.locator('.photos-ligne').count()) === 0, 'la flèche referme la ligne');
   await capturer(page, 'v1b_dossiers');
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
 
   // Étape 4 : floues.
-  await page.getByRole('heading', { name: /Photos floues/ }).waitFor();
+  await page.locator('main[data-etape=floues]').waitFor();
   const compteur = await page.locator('.compteur-floues').innerText();
   verifier(/photos? écartées?/.test(compteur), `curseur de netteté et compteur en direct : ${compteur}`);
   await page.locator('.curseur-flou input').fill(String(Math.round(Math.log(900) * 100)));
@@ -276,10 +276,10 @@ try {
   verifier(compteurHaut !== compteur, `le compteur suit le curseur : ${compteurHaut}`);
   await page.getByRole('button', { name: /Revenir au réglage conseillé/ }).click();
   await capturer(page, 'v2_floues');
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
 
   // Étape 5 : doublons, comparés journée par journée tant que le dossier est en vrac.
-  await page.getByRole('heading', { name: /Doublons/ }).waitFor();
+  await page.locator('main[data-etape=doublons]').waitFor();
   verifier(true, 'après les floues, les doublons (nettoyer avant de ranger)');
   // Onglets (D71) : on arrive sur les copies exactes ; un exemplaire gardé par emplacement, l'utilisateur peut changer (D61).
   await page.locator('.onglet-doublons.actif', { hasText: 'Copies exactes' }).waitFor({ timeout: 60_000 });
@@ -439,10 +439,10 @@ try {
   await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA/ }).waitFor({ state: 'detached' });
   verifier(true, 'IA des rafales : déjà examinée, la rafale n’est plus proposée (relancer ne repaie pas)');
   await page.evaluate(() => sessionStorage.removeItem('album:cle_api'));
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
 
   // Étape 6 : tri automatique (D103) ; la liste « À faire » : captures d'écran, copies, maison, puis ranger.
-  await page.getByRole('heading', { name: /Tri automatique/ }).waitFor();
+  await page.locator('main[data-etape=tri]').waitFor();
   const captures = page.locator('.captures-avant-tri');
   verifier((await captures.innerText()).includes('1 capture d’écran') && (await captures.locator('.puce-afaire').getAttribute('aria-label')) === 'À faire', 'à faire : 1 capture d’écran trouvée, anneau « à faire »');
   // Les captures se voient dans une fenêtre (D107), qui se ferme par Échap.
@@ -495,7 +495,7 @@ try {
   await page.getByText(/Calendriers \(1\)/).waitFor();
   verifier(true, 'configuration avec un calendrier .ics choisie');
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
 
   // Étape 7 : lieux et sorties.
   await page.locator('.panneau-dossiers').waitFor();
@@ -546,8 +546,8 @@ try {
   );
 
   // Étapes 8 à 10 (IA simulée).
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
-  await page.getByRole('heading', { name: /Petits dossiers/ }).waitFor();
+  await page.locator('[data-action=valider]').click();
+  await page.locator('main[data-etape=petits]').waitFor();
   verifier(true, 'après les lieux et sorties, on passe aux petits dossiers (étape 8)');
   await capturer(page, 'v4_petits_dossiers');
   // Un petit dossier à la fois, entre le dossier juste avant et juste après (D90).
@@ -571,8 +571,8 @@ try {
   await page.getByRole('button', { name: 'Annuler ce choix' }).click();
   await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
   verifier(true, 'touche G : gardé seul ; « Annuler ce choix » le remet à décider');
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
-  await page.getByRole('heading', { name: /Nommage/ }).waitFor();
+  await page.locator('[data-action=valider]').click();
+  await page.locator('main[data-etape=nommage]').waitFor();
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
   const boutonNommage = page.getByRole('button', { name: /Nommer les sorties avec l’IA/ });
   verifier(/environ .* CHF/.test(await boutonNommage.innerText()), `nommage : coût estimé affiché (${await boutonNommage.innerText()})`);
@@ -599,7 +599,7 @@ try {
     await accepter.click();
     verifier(true, 'noms de l’IA de confiance 8 ou plus acceptés en un clic');
   }
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
   // Noms encore dans les champs (Ko Samui : deux événements) : récapitulatif à cocher avant de quitter, les peu sûrs décochés (D108).
   const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
   await recap.waitFor();
@@ -610,13 +610,13 @@ try {
   // Cocher applique le nom en quittant l'étape.
   await cases.first().check();
   await recap.getByRole('button', { name: 'Renommer et continuer' }).click();
-  await page.getByRole('heading', { name: /Consolidation/ }).waitFor();
+  await page.locator('main[data-etape=consolidation]').waitFor();
   verifier((await page.getByText('1 dossier renommé.').count()) > 0, 'Nommage : le nom coché dans le récapitulatif est appliqué, avec un message');
   await page.getByRole('button', { name: /Proposer des fusions avec l’IA/ }).click();
   await page.getByText(/propositions? dans/).first().waitFor({ timeout: 60_000 });
   verifier(appelsIA.consolidation > 0, `consolidation IA6 : ${appelsIA.consolidation} répertoire(s) relus`);
   await capturer(page, 'v6_consolidation');
-  await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  await page.locator('[data-action=valider]').click();
   await page.locator('.page-selection').waitFor();
   verifier(true, 'étapes 8, 9 et 10 parcourues jusqu’à la sélection');
 
@@ -685,7 +685,7 @@ try {
   await page.locator('.bandeau-source').getByRole('button', { name: 'Mettre à jour l’inventaire' }).click();
   await page.getByText(/Inventaire mis à jour : 2 fichiers ajoutés/).first().waitFor({ timeout: 60_000 });
   verifier(true, 'inventaire mis à jour : 2 fichiers ajoutés, le reste gardé');
-  await page.getByRole('button', { name: 'Valider et continuer' }).and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
+  await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
   verifier((await page.locator('.ligne-ranger.afaire').innerText()).includes('1 nouvelle photo à ranger') && /Encore/.test(await page.locator('.barre-validation .alerte').innerText()), 'à faire : la nouvelle photo à ranger (ligne marquée « à faire », rappel dans la barre du bas)');
   await page.getByRole('button', { name: 'Ranger 1 nouvelle photo' }).click();
