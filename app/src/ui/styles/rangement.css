@@ -4,18 +4,19 @@
 
 /* Dossier fait seulement de sous-dossiers : la grille montre leurs photos, avec cette explication au-dessus. */
 .encart-sous-dossiers {
-  margin: 4px 20px 0;
-  padding: 8px 12px;
-  border-radius: 10px;
+  margin: var(--e1) 20px 0;
+  padding: var(--e2) var(--e3);
+  border-radius: var(--r-commande);
   background: var(--accent-doux);
   color: var(--accent-doux-texte);
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* Photos arrivées avec une mise à jour de l'inventaire (D63). */
 .badge.nouveau {
-  background: var(--accent);
-  color: var(--accent-texte);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
 }
 
 .recherche-dossiers .case-nouveautes {
@@ -35,7 +36,7 @@
 .ldt-evenements .ldt-evenement {
   height: 16px;
   line-height: 16px;
-  padding: 0 4px;
+  padding: 0 var(--e1);
   overflow: visible;
   text-overflow: clip;
   font-weight: 600;
@@ -44,12 +45,13 @@
 /* --- Petits dossiers --- */
 
 .titre-petits {
-  margin: 22px 0 8px;
-  font-size: 17px;
+  margin: 22px 0 var(--e2);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .petits-seuls .liste-seuls {
-  margin: 8px 0 0;
+  margin: var(--e2) 0 0;
 }
 
 .ligne-petit,
@@ -58,16 +60,16 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 6px var(--e3);
+  border-radius: var(--r-commande);
   background: var(--surface);
-  box-shadow: var(--ombre-douce);
+  box-shadow: 0 0 0 1px var(--filet);
 }
 
 .ligne-petit .bande-miniatures,
 .petit-decide .bande-miniatures {
   display: flex;
-  gap: 4px;
+  gap: var(--e1);
   padding: 0;
   background: none;
 }
@@ -82,17 +84,16 @@
 
 /* Décision prise : la ligne reste, plus discrète, avec de quoi l'annuler. */
 .petit-decide {
-  opacity: 0.85;
   box-shadow: none;
-  border: 1px dashed var(--bord);
+  border: 1px dashed var(--filet);
 }
 
 .decision-petit {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--e1);
   font-weight: 600;
-  color: var(--ok);
+  color: var(--accent-doux-texte);
 }
 
 .groupe-jour {
@@ -101,9 +102,10 @@
   align-items: center;
   gap: 10px;
   margin-top: 6px;
-  padding: 4px 12px;
+  padding: var(--e1) var(--e3);
   border-left: 3px solid var(--accent);
-  font-size: 14px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* --- Nommage --- */
@@ -121,8 +123,8 @@
 .nom-renomme {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  color: var(--ok);
+  gap: var(--e1);
+  color: var(--accent-doux-texte);
 }
 
 /* Dossier créé par le tri ou à la main, absent du dossier d'origine (D89). */

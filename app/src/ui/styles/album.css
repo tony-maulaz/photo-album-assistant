@@ -2,7 +2,7 @@
 
 /* Couverture, en tête de l'aperçu des pages : une page seule, puis les propositions de l'IA. */
 .page-couverture {
-  box-shadow: inset 10px 0 12px -10px rgb(16 24 40 / 0.18);
+  box-shadow: inset 10px 0 12px -10px var(--pli);
 }
 
 .page-couverture .numero-page {
@@ -15,13 +15,14 @@
   height: 100%;
   margin: 0;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .couvertures-proposees {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--e2);
   max-width: 820px;
 }
 
@@ -32,19 +33,19 @@
 .liste-couvertures {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--e3);
 }
 
 .liste-couvertures figure {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: var(--e1);
   width: 168px;
   margin: 0;
-  padding: 8px;
+  padding: var(--e2);
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-commande);
   background: var(--surface);
 }
 
@@ -53,7 +54,7 @@
 }
 
 .liste-couvertures figcaption {
-  font-size: 13px;
+  font-size: var(--t-petit);
   line-height: 1.35;
 }
 
@@ -67,8 +68,8 @@ input.tres-court.cible-pages {
 }
 
 .doubles-album {
-  margin: 8px 0;
-  color: var(--discret);
+  margin: var(--e2) 0;
+  color: var(--texte-2);
 }
 
 .doubles-album summary {

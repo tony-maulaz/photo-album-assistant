@@ -25,7 +25,8 @@
 .app:has(.barre-validation) .message {
   padding-top: 7px;
   padding-bottom: 7px;
-  font-size: 13.5px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* --- Liste des étapes (en-tête) : l'état tient sur la ligne, la phrase entière est en infobulle --- */
@@ -52,16 +53,17 @@
 
 button.bouton-retour {
   margin: -10px 0 6px -6px;
-  font-size: 14px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* --- Aide : l'essentiel pour commencer --- */
 
 .pour-commencer {
-  margin: 4px 0 26px;
-  padding: 16px 22px 10px;
+  margin: var(--e1) 0 26px;
+  padding: var(--e4) 22px 10px;
   border: 1.5px solid var(--accent);
-  border-radius: var(--rayon-carte);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
@@ -70,7 +72,7 @@ button.bouton-retour {
 }
 
 .pour-commencer li {
-  margin: 4px 0;
+  margin: var(--e1) 0;
 }
 
 /* --- Aides IA : réponses illisibles, à redemander --- */
@@ -79,9 +81,10 @@ button.bouton-retour {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 600;
-  color: var(--attention);
+  color: var(--afaire);
 }
 
 /* --- Raccourcis clavier (touche « ? ») --- */
@@ -93,8 +96,9 @@ button.bouton-retour {
 }
 
 .dialogue.raccourcis h3 {
-  margin: 16px 0 6px;
-  font-size: 14px;
+  margin: var(--e4) 0 6px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .liste-raccourcis {
@@ -104,10 +108,10 @@ button.bouton-retour {
 .liste-raccourcis div {
   display: grid;
   grid-template-columns: 190px 1fr;
-  gap: 12px;
+  gap: var(--e3);
   align-items: baseline;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--bord);
+  padding: var(--e1) 0;
+  border-bottom: 1px solid var(--filet);
 }
 
 .liste-raccourcis dt,
@@ -117,12 +121,13 @@ button.bouton-retour {
 
 .liste-raccourcis kbd {
   font: inherit;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
   padding: 1px 7px;
-  border: 1px solid var(--bord-fort);
+  border: 1px solid var(--filet-fort);
   border-bottom-width: 2px;
-  border-radius: 6px;
-  background: var(--surface-2);
+  border-radius: var(--r-photo);
+  background: var(--neutre-doux);
   white-space: nowrap;
 }

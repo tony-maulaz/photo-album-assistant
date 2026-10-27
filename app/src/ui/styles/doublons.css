@@ -3,22 +3,23 @@
 .onglets-doublons {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-  border-bottom: 1px solid var(--bord-fort);
+  gap: var(--e1);
+  margin-top: var(--e2);
+  border-bottom: 1px solid var(--filet-fort);
 }
 
 .onglet-doublons {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px 10px;
+  gap: var(--e2);
+  padding: var(--e3) var(--e4) 10px;
   border: 0;
   border-bottom: 3px solid transparent;
   border-radius: 0;
   background: none;
-  color: var(--discret);
-  font-size: 15px;
+  color: var(--texte-2);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   font-weight: 600;
 }
 
@@ -34,23 +35,24 @@
 
 .onglets-doublons .compte,
 .sections-doublons .compte {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
-  font-size: 12px;
+  padding: 2px var(--e2);
+  border-radius: var(--r-pastille);
+  background: var(--afaire-doux);
+  color: var(--afaire);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
 }
 
 .onglets-doublons .compte.gris,
 .sections-doublons .compte {
-  background: var(--bord);
-  color: var(--discret);
+  background: var(--filet);
+  color: var(--texte-2);
 }
 
 .onglets-doublons .compte.fini {
   background: var(--accent-doux);
-  color: var(--ok);
+  color: var(--accent-doux-texte);
 }
 
 .encart-onglet {
@@ -58,8 +60,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 32px;
-  margin-top: 16px;
+  gap: var(--e3) var(--e6);
+  margin-top: var(--e4);
 }
 
 .encart-onglet p {
@@ -69,7 +71,7 @@
 
 
 .page-doublons .encart-ia {
-  margin-top: 16px;
+  margin-top: var(--e4);
 }
 
 /*
@@ -81,9 +83,9 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 18px;
-  margin-top: 12px;
-  padding: 10px 16px;
-  border-radius: 14px;
+  margin-top: var(--e3);
+  padding: 10px var(--e4);
+  border-radius: var(--r-objet);
   background: var(--accent-doux);
 }
 
@@ -96,23 +98,24 @@
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--e2);
 }
 
 .etiquette-portee {
   padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  border: 1px solid var(--filet-fort);
+  border-radius: var(--r-pastille);
+  background: var(--surface);
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 700;
 }
 
 .etiquette-portee.section {
   align-self: center;
-  background: var(--encre);
+  background: var(--neutre-doux);
+  color: var(--texte);
 }
 
 /* Action groupée : visible, mais moins forte que « Accepter » d'un groupe, qu'on a vu. */
@@ -130,9 +133,9 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 18px;
-  margin-top: 8px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--bord);
+  margin-top: var(--e2);
+  padding: var(--e3) 0;
+  border-bottom: 1px solid var(--filet);
   background: var(--fond);
 }
 
@@ -144,15 +147,16 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .jauge-doublons {
   width: 140px;
   height: 8px;
   overflow: hidden;
-  border-radius: 4px;
-  background: var(--bord);
+  border-radius: var(--r-photo);
+  background: var(--filet);
 }
 
 .jauge-doublons span {
@@ -162,15 +166,16 @@
 }
 
 .aide-doublons {
-  margin: 8px 0 0;
-  font-size: 13px;
+  margin: var(--e2) 0 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .corps-doublons {
   display: flex;
   align-items: flex-start;
-  gap: 24px;
-  margin-top: 16px;
+  gap: var(--e5);
+  margin-top: var(--e4);
 }
 
 /* Liste des journées et dossiers : elle reste en vue, sous la barre d'outils. */
@@ -181,8 +186,8 @@
   max-height: calc(100vh - 260px);
   overflow-y: auto;
   padding: 10px;
-  border: 1px solid var(--bord);
-  border-radius: 14px;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
@@ -193,24 +198,24 @@
   z-index: 1;
   width: 100%;
   height: 36px;
-  margin-bottom: 4px;
+  margin-bottom: var(--e1);
   border-color: transparent;
-  background: var(--surface-2);
+  background: var(--neutre-doux);
   box-shadow: 0 -10px 0 var(--surface);
 }
 
 .sections-doublons > p {
-  margin: 6px 8px;
-  font-size: 13px;
+  margin: 6px var(--e2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .sections-doublons h2 {
-  margin: 6px 8px 6px;
-  color: var(--discret);
-  font-size: 12px;
+  margin: 6px var(--e2) 6px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .section-doublons {
@@ -218,14 +223,15 @@
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: var(--e2);
+  padding: var(--e2) 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-commande);
   background: none;
   color: var(--texte);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 400;
   text-align: left;
 }
 
@@ -240,12 +246,13 @@
 
 .section-doublons .reste {
   color: var(--accent-doux-texte);
-  font-size: 12px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
 }
 
 .section-doublons .fait {
-  color: var(--ok);
+  color: var(--accent-doux-texte);
   font-weight: 700;
 }
 
@@ -253,22 +260,23 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--e3);
   min-width: 0;
 }
 
 /* En-tête de la section au-dessus de la colonne des groupes : la liste de gauche et la 1re carte commencent à la même hauteur (D100). */
 .tete-section-doublons {
-  margin: 16px 0 0 calc(var(--largeur-panneau, 240px) + 24px);
+  margin: var(--e4) 0 0 calc(var(--largeur-panneau, 240px) + var(--e5));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
+  gap: var(--e2) 14px;
 }
 
 .tete-section-doublons h2 {
   margin: 0;
-  font-size: 21px;
+  font-size: var(--t-section);
+  line-height: var(--lh-section);
 }
 
 .tete-section-doublons .espace {
@@ -278,18 +286,18 @@
 /* Un groupe. */
 .carte-doublons {
   padding: 14px 18px;
-  border: 1px solid var(--bord);
-  border-radius: 16px;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
 .carte-doublons.en-attente {
-  border-color: var(--bord-fort);
+  border-color: var(--filet-fort);
 }
 
 .carte-doublons:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--cible);
+  box-shadow: 0 0 0 3px var(--accent-doux);
 }
 
 .carte-doublons > header,
@@ -297,15 +305,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px 12px;
+  gap: var(--e2) var(--e3);
 }
 
 .carte-doublons > header {
-  margin-bottom: 12px;
+  margin-bottom: var(--e3);
 }
 
 .carte-doublons > footer {
-  margin-top: 12px;
+  margin-top: var(--e3);
 }
 
 .carte-doublons .espace {
@@ -313,7 +321,8 @@
 }
 
 .carte-doublons .heure {
-  font-size: 16px;
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   font-weight: 700;
 }
 
@@ -324,8 +333,9 @@
 .pastille-proposition,
 .pastille-relue {
   padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 13px;
+  border-radius: var(--r-pastille);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 600;
 }
 
@@ -335,35 +345,37 @@
 }
 
 .pastille-relue {
-  color: var(--ok);
+  color: var(--accent-doux-texte);
 }
 
 .carte-doublons.repliee {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 18px;
+  gap: var(--e3);
+  padding: var(--e2) 18px;
   background: var(--fond);
 }
 
 .carte-doublons.repliee .vu {
-  color: var(--ok);
+  color: var(--accent-doux-texte);
   font-weight: 700;
 }
 
 .carte-doublons.repliee .heure {
-  font-size: 15px;
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .carte-doublons.repliee .resume {
   flex: 1;
-  color: var(--discret);
-  font-size: 14px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .scene-doublons {
   margin: -4px 0 10px;
-  color: var(--discret);
+  color: var(--texte-2);
   font-style: italic;
 }
 
@@ -386,7 +398,7 @@
   display: block;
   padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-commande);
   background: none;
   line-height: 0;
 }
@@ -400,8 +412,8 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 10px;
-  background: var(--bord);
+  border-radius: var(--r-commande);
+  background: var(--filet);
 }
 
 .cadre-tuile img {
@@ -409,7 +421,7 @@
 }
 
 .tuile-doublon.gardee .cadre-tuile {
-  outline: 3px solid var(--ok);
+  outline: 3px solid var(--accent);
   outline-offset: 0;
 }
 
@@ -418,19 +430,13 @@
 }
 
 .tuile-doublon.a_ecarter .cadre-tuile {
-  opacity: 0.55;
-  outline: 2px dashed var(--bord-fort);
-}
-
-.tuile-doublon:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 4px;
+  outline: 2px dashed var(--contour);
 }
 
 .etat-photo {
   padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 12px;
+  border-radius: var(--r-pastille);
+  font-size: var(--t-petit);
   font-weight: 700;
   line-height: 1.5;
 }
@@ -442,19 +448,19 @@
 }
 
 .etat-photo.gardee {
-  background: var(--ok);
-  color: #fff;
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
 }
 
 .etat-photo.ecartee {
-  background: var(--encre);
-  color: #fff;
+  background: var(--surface);
+  color: var(--texte-2);
 }
 
 .etat-photo.a_ecarter {
-  border: 1px dashed var(--discret);
+  border: 1px dashed var(--texte-2);
   background: var(--surface);
-  color: var(--texte);
+  color: var(--texte-2);
 }
 
 .etoile-doublon {
@@ -462,10 +468,10 @@
   top: 7px;
   right: 7px;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pastille);
   background: var(--etoile);
-  color: #1b1c1f;
-  font-size: 12px;
+  color: var(--sur-etoile);
+  font-size: var(--t-petit);
   font-weight: 700;
   line-height: 1.5;
 }
@@ -474,8 +480,8 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  color: var(--discret);
-  font-size: 12px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
@@ -487,28 +493,29 @@
 
 /* Avis de l'IA sur une rafale (D102) : à part des mesures de l'application, préfixé « IA : ». */
 .legende-doublon .raison-ia {
-  color: var(--ia-texte);
+  color: var(--texte);
 }
 
 .scene-doublons.avis-ia {
   margin: -4px 0 10px;
   padding: 6px 10px;
-  border-radius: 8px;
-  background: var(--ia-fond);
-  color: var(--ia-texte);
+  border-radius: var(--r-commande);
+  background: var(--neutre-doux);
+  color: var(--texte);
   font-style: normal;
 }
 
 .ia-rafales-en-cours {
-  color: var(--discret);
-  font-size: 13px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* Écart visible avec les autres photos du groupe (D99) : pastille neutre, distincte de Gardée / à écarter. */
 .legende-doublon .remarque-doublon {
   align-self: flex-start;
   padding: 0 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pastille);
   font-weight: 600;
 }
 
@@ -518,20 +525,20 @@
 }
 
 .legende-doublon .remarque-doublon.defaut {
-  background: var(--attention-doux);
-  color: var(--attention);
+  background: var(--afaire-doux);
+  color: var(--afaire);
 }
 
 .legende-doublon .refus,
 .legende-doublon .alerte-legende {
-  color: var(--attention);
+  color: var(--afaire);
   font-style: normal;
   font-weight: 600;
 }
 
 .alerte-doublons {
   margin: 10px 0 0;
-  color: var(--attention);
+  color: var(--afaire);
   font-weight: 600;
 }
 
@@ -539,8 +546,8 @@
 .navigation-groupes {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-left: 16px;
+  gap: var(--e2);
+  margin-left: var(--e4);
 }
 
 .navigation-groupes button,
@@ -549,14 +556,15 @@
 }
 
 .suite-doublons {
-  margin: 8px 0 0;
+  margin: var(--e2) 0 0;
 }
 
 /* Copies dans plusieurs dossiers gardés : sous les groupes à relire de la section (D86). */
 .titre-partout {
   margin: 10px 0 0;
-  color: var(--discret);
-  font-size: 14px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
 }
 
@@ -577,40 +585,43 @@
 /* Dossier parent, quand seuls ses sous-dossiers ont des groupes (D97). */
 .sections-doublons .parent-section {
   padding: 6px 10px 2px;
-  color: var(--discret);
-  font-size: 13px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 /* Comparer en grand : numéro de la touche qui garde ou écarte la photo (D100). */
 .numero-volet {
-  padding: 1px 8px;
-  border: 1px solid var(--bord-fort);
-  border-radius: 6px;
+  padding: 1px var(--e2);
+  border: 1px solid var(--filet-fort);
+  border-radius: var(--r-photo);
   background: var(--surface);
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Choix pas encore validé (D101) : « à garder » en pointillés verts, « Votre choix · pas encore validé ». */
 .tuile-doublon.choisie .cadre-tuile {
-  outline: 3px dashed var(--ok);
+  outline: 3px dashed var(--accent-doux-texte);
   outline-offset: 0;
 }
 
+/* « à garder » se distingue de « à écarter » d'un coup d'œil : vert doux (un état, C-3.2). */
 .etat-photo.choisie {
-  border: 1px dashed var(--ok);
-  background: var(--surface);
-  color: var(--texte);
+  border: 1px dashed var(--accent-doux-texte);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
 }
 
 .pastille-attente {
   padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--attention-doux, var(--accent-doux));
-  color: var(--attention);
-  font-size: 13px;
+  border-radius: var(--r-pastille);
+  background: var(--afaire-doux);
+  color: var(--afaire);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 600;
 }
 
@@ -618,8 +629,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-left: 8px;
-  font-size: 14px;
+  margin-left: var(--e2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* Alerte de « Comparer en grand », dans la ligne de navigation : sans marge haute. */

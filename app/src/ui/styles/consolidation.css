@@ -1,10 +1,10 @@
 /* Étape « Consolidation » (D91) : les réglages et le résultat en tête, puis une proposition à la fois (la liste et sa mise en page viennent de petits.css). */
 
 .reglages-reunion {
-  margin: 12px 0;
-  padding: 12px 16px;
-  border: 1px solid var(--bord);
-  border-radius: 14px;
+  margin: var(--e3) 0;
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
@@ -16,7 +16,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
+  gap: var(--e2) 10px;
   margin-top: 6px;
 }
 
@@ -26,7 +26,8 @@
 
 .reglages-reunion .avances {
   margin: 10px 0 0;
-  font-size: 14px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .reglages-reunion .avances summary {
@@ -36,39 +37,40 @@
 
 .reglages-reunion .avances .case {
   display: block;
-  margin: 8px 0;
+  margin: var(--e2) 0;
 }
 
 .resultat-reglages {
   margin: 10px 0 0;
-  padding: 8px 12px;
-  border-radius: 10px;
+  padding: var(--e2) var(--e3);
+  border-radius: var(--r-commande);
   background: var(--accent-doux);
   color: var(--accent-doux-texte);
   font-weight: 700;
 }
 
 .tete-reunion h2 {
-  margin: 4px 0 2px;
+  margin: var(--e1) 0 2px;
 }
 
 .tete-reunion p {
-  margin: 4px 0;
+  margin: var(--e1) 0;
 }
 
 .sorte-reunion {
   display: inline-block;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pastille);
   background: var(--accent-doux);
   color: var(--accent-doux-texte);
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
 }
 
 .sorte-reunion.voyage {
-  background: var(--ia-fond);
-  color: var(--ia-texte);
+  background: var(--neutre-doux);
+  color: var(--texte);
 }
 
 /* Les dossiers côte à côte, chacun avec ses photos réparties sur sa durée. */
@@ -85,16 +87,16 @@
   gap: 6px;
   padding: 14px;
   border: 1px solid var(--accent);
-  border-radius: 14px;
+  border-radius: var(--r-objet);
   background: var(--surface);
   box-shadow: 0 0 0 2px var(--accent-doux);
 }
 
 .dossier-reunion.retire {
-  border-color: var(--bord);
+  border-color: var(--filet);
   border-style: dashed;
   box-shadow: none;
-  opacity: 0.6;
+  color: var(--texte-2);
 }
 
 .dossier-reunion p {
@@ -104,7 +106,7 @@
 .nom-reunion {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--e2);
   overflow-wrap: anywhere;
 }
 
@@ -112,7 +114,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--e2);
 }
 
 .photos-reunion figure {
@@ -121,13 +123,14 @@
 }
 
 .photos-reunion figcaption {
-  color: var(--discret);
-  font-size: 12px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-variant-numeric: tabular-nums;
 }
 
 .plus-photos {
-  color: var(--discret);
+  color: var(--texte-2);
   font-weight: 700;
 }
 
@@ -135,17 +138,17 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: var(--e4);
   padding: 14px;
-  border: 1px solid var(--bord);
-  border-radius: 14px;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
 .nom-reuni {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--e1);
   font-weight: 600;
 }
 

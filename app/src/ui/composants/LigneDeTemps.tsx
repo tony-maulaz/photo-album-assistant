@@ -65,7 +65,8 @@ export function LigneDeTemps({ ouvrir }: { ouvrir: () => void }) {
     return c >= d1 && c <= d2;
   });
   const largeur = colonnes.length * LARGEUR_JOUR;
-  const dates = etiquettesJours(colonnes);
+  // Au moins 4 colonnes (88 px) entre deux dates : « 21.03.25 » en 14 px en fait près de 60 (C-2.2).
+  const dates = etiquettesJours(colonnes, 4);
   // Chaque événement : sa barre sur ses jours, son nom en entier à la suite (il dépasse la barre),
   // sur une rangée où il ne touche aucun autre nom (« We… », « Ca… » étaient illisibles).
   const places = evts.map((e) => {

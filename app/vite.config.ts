@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: { input: entree },
       target: 'es2023',
+      // CSS : navigateurs cibles (Chrome et Edge ≥ 123), pour que light-dark() reste
+      // natif. Sans cela, Lightning CSS le remplace par des variables calculées une seule
+      // fois sur :root, et les vues sombres (Comparer, tri rapide…) gardent le texte du
+      // thème clair (charte C-3.9 ; vérifié par tests/charte.test.ts et essai_charte).
+      cssTarget: ['chrome123', 'edge123'],
       emptyOutDir: entree === 'album-photos.html',
     },
     oxc: { jsx: { runtime: 'automatic', importSource: 'preact' } },

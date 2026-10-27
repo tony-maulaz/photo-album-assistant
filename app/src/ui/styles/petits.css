@@ -1,14 +1,14 @@
 /* Étape « Petits dossiers » (D90) : la liste à gauche, un petit dossier à la fois entre ses deux voisins dans le temps. */
 
 .bandeau-petits {
-  margin: 12px 0 0;
+  margin: var(--e3) 0 0;
 }
 
 .corps-petits {
   display: flex;
   align-items: flex-start;
-  gap: 24px;
-  margin-top: 16px;
+  gap: var(--e5);
+  margin-top: var(--e4);
 }
 
 .liste-petits {
@@ -18,32 +18,32 @@
   max-height: calc(100vh - 220px);
   overflow-y: auto;
   padding: 10px;
-  border: 1px solid var(--bord);
-  border-radius: 14px;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
 .liste-petits h2 {
-  margin: 6px 8px;
-  color: var(--discret);
-  font-size: 12px;
+  margin: 6px var(--e2);
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .ligne-liste-petit {
   display: flex;
   width: 100%;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--e2);
   padding: 7px 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--r-commande);
   background: none;
   color: var(--texte);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 400;
   text-align: left;
 }
 
@@ -57,16 +57,16 @@
 }
 
 .ligne-liste-petit.fait {
-  color: var(--discret);
+  color: var(--texte-2);
 }
 
 .ligne-liste-petit .etat-petit {
   flex: 0 0 auto;
-  color: var(--discret);
+  color: var(--texte-2);
 }
 
 .ligne-liste-petit.fait .etat-petit {
-  color: var(--ok);
+  color: var(--accent-doux-texte);
   font-weight: 700;
 }
 
@@ -84,7 +84,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--e3);
 }
 
 .tete-petit h2 {
@@ -95,8 +95,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  border-color: var(--ok);
+  gap: var(--e3);
+  border-color: var(--accent-doux-texte);
 }
 
 .decide-petit p {
@@ -107,7 +107,7 @@
 .trio-petit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: var(--e4);
   margin-top: 14px;
   align-items: stretch;
 }
@@ -116,10 +116,10 @@
 .centre-petit {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--e2);
   padding: 14px;
-  border: 1px solid var(--bord);
-  border-radius: 14px;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
   background: var(--surface);
 }
 
@@ -136,11 +136,10 @@
 .cote-petit h3,
 .centre-petit h3 {
   margin: 0;
-  color: var(--discret);
-  font-size: 12px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .ecart-petit {
@@ -161,7 +160,7 @@
 .photos-petit {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--e2);
 }
 
 .photos-petit {
@@ -176,8 +175,9 @@
 
 .bande-voisin figcaption,
 .photos-petit figcaption {
-  color: var(--discret);
-  font-size: 12px;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-variant-numeric: tabular-nums;
 }
 
@@ -195,17 +195,19 @@
 
 .apres-choix {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .choix-centre {
   justify-content: center;
-  margin: 4px 0 0;
+  margin: var(--e1) 0 0;
 }
 
 .aide-petits {
   margin-top: 10px;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* Cas évidents, d'un coup : une ligne par petit dossier, « Retirer » au bout. */
@@ -223,18 +225,18 @@
 .liste-evidents li {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--bord);
+  gap: var(--e3);
+  padding: var(--e2) 0;
+  border-bottom: 1px solid var(--filet);
 }
 
 .liste-evidents li.retire {
-  opacity: 0.45;
+  color: var(--texte-2);
 }
 
 .bande-evident {
   display: flex;
-  gap: 4px;
+  gap: var(--e1);
 }
 
 .texte-evident {
@@ -253,7 +255,7 @@
   display: inline-block;
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: var(--r-photo);
   background: var(--fond);
 }
 

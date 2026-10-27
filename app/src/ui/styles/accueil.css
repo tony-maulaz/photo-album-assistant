@@ -2,14 +2,14 @@
 
 /* Accueil : configuration et clé API facultatives, dites sans alarmer (gris neutre, pas beige). */
 .etat-config .puce-etat.facultatif:not(.ok) {
-  background: var(--surface-2);
+  background: var(--neutre-doux);
   color: var(--texte-2);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 /* Nouveau projet : le dossier de sortie contient déjà un projet. */
 .projet-existant {
-  margin: 4px 0 8px;
+  margin: var(--e1) 0 var(--e2);
 }
 
 .projet-existant p {
@@ -31,7 +31,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin: 8px 0;
+  margin: var(--e2) 0;
   padding: 0;
   list-style: none;
 }
@@ -40,7 +40,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--e1);
   width: 124px;
 }
 
@@ -55,17 +55,18 @@
   width: 116px;
   height: 116px;
   padding: 2px;
-  border-radius: 10px;
-  background: var(--surface-2);
+  border-radius: var(--r-commande);
+  background: var(--neutre-doux);
   cursor: zoom-in;
 }
 
 .captures-proposees label.case {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--e1);
   max-width: 100%;
-  font-size: 12px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .captures-proposees .nom-capture {

@@ -7,18 +7,20 @@
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  padding-bottom: 8px;
+  padding-bottom: var(--e2);
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
-  font-size: 15px;
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   pointer-events: none;
 }
 
 .titre-groupe .discret {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* Colonne en haut à gauche, sous la coche de la sélection : « nouveau », puis les signaux (peu nette…). */
@@ -39,12 +41,13 @@
 }
 
 .pastille-nouveau {
-  font-size: 11px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 700;
   padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-texte);
+  border-radius: var(--r-pastille);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
 }
 
 .legende.plusieurs-lignes {
@@ -74,7 +77,7 @@
   flex-wrap: wrap-reverse;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 4px;
+  gap: var(--e1);
   pointer-events: none;
 }
 
@@ -108,7 +111,8 @@
 }
 
 .page-selection .titre-selection .resume-vue {
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* --- Équilibre : axe des dates, lecture de la barre pointée, liste des sorties sans photo --- */
@@ -124,15 +128,17 @@
 .axe-barres {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 11px;
+  gap: var(--e2);
+  margin-top: var(--e1);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .lecture-barre {
   min-height: 2.6em;
   margin: 6px 0 2px;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   font-weight: 600;
 }
 
@@ -154,7 +160,7 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin-bottom: 4px;
+  margin-bottom: var(--e1);
 }
 
 .sorties-sans-photo li::before {
@@ -192,15 +198,16 @@
 
 .resultat-ia {
   scroll-margin-bottom: 320px;
-  scroll-margin-top: 12px;
-  margin: 8px 0 12px;
+  scroll-margin-top: var(--e3);
+  margin: var(--e2) 0 var(--e3);
 }
 
 .meilleure-ia {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .meilleure-ia p {
@@ -210,15 +217,16 @@
 .remarques {
   margin: 0;
   padding-left: 18px;
-  font-size: 13px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .vignettes-remarque {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
-  margin-top: 4px;
+  gap: var(--e1);
+  margin-top: var(--e1);
 }
 
 .vignette-ia {
@@ -229,9 +237,9 @@
   min-height: 0;
   height: auto;
   padding: 2px;
-  border-radius: 8px;
-  background: var(--surface-3);
-  border: 1px solid var(--bord);
+  border-radius: var(--r-commande);
+  background: var(--table);
+  border: 1px solid var(--filet);
 }
 
 .vignette-ia:hover:not(:disabled) {
@@ -240,16 +248,16 @@
 
 .vignette-ia img {
   display: block;
-  border-radius: 6px;
+  border-radius: var(--r-photo);
 }
 
 /* --- Tri rapide : tout est décidé, fin de la liste --- */
 
 .tri-infos .tout-decide {
-  padding: 2px 12px;
-  border-radius: 999px;
-  background: #1d4d3f;
-  color: #b9f0dc;
+  padding: 2px var(--e3);
+  border-radius: var(--r-pastille);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
 }
 
 .fin-tri {
@@ -259,19 +267,20 @@
   transform: translate(-50%, -50%);
   max-width: min(520px, calc(100vw - 32px));
   padding: 22px 26px;
-  border-radius: 16px;
-  background: rgb(24 25 28 / 0.94);
-  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+  border-radius: var(--r-objet);
+  background: var(--surface);
+  box-shadow: var(--ombre-flottant);
   text-align: center;
 }
 
 .fin-tri strong {
-  font-size: 19px;
+  font-size: var(--t-section);
+  line-height: var(--lh-section);
 }
 
 .fin-tri p {
-  margin: 8px 0 16px;
-  color: #ccc;
+  margin: var(--e2) 0 var(--e4);
+  color: var(--texte-2);
 }
 
 .fin-tri .actions {
@@ -282,20 +291,20 @@
 }
 
 .fin-tri button {
-  background: #2e2f33;
-  color: #f1f1ee;
+  background: var(--neutre-doux);
+  color: var(--texte);
   border-color: transparent;
 }
 
 .fin-tri button.principal {
   background: var(--accent);
-  color: var(--accent-texte);
+  color: var(--sur-accent);
 }
 
 .fin-tri kbd {
-  background: rgb(255 255 255 / 0.12);
+  background: var(--neutre-doux);
   color: inherit;
-  border-color: rgb(255 255 255 / 0.25);
+  border-color: var(--filet-fort);
 }
 
 /* --- Comparateur : le choix actuel lisible sur chaque photo, le bouton du choix allumé --- */
@@ -313,19 +322,19 @@
 }
 
 .comparateur .volet-actions button.actif {
-  background: #444;
-  box-shadow: inset 0 0 0 2px #f1f1ee;
+  background: var(--filet-fort);
+  box-shadow: inset 0 0 0 2px var(--texte);
 }
 
 .comparateur .volet-actions button.actif.a1,
 .comparateur .volet-actions button.actif.a2 {
-  background: #6b5600;
-  color: #ffe58a;
-  box-shadow: inset 0 0 0 2px #ffe58a;
+  background: var(--etoile-doux);
+  color: var(--etoile-texte);
+  box-shadow: inset 0 0 0 2px var(--etoile-texte);
 }
 
 .comparateur .volet-actions button.actif.a0 {
-  background: #5a1d18;
-  color: #ffb3aa;
-  box-shadow: inset 0 0 0 2px #ffb3aa;
+  background: var(--perte-doux);
+  color: var(--perte);
+  box-shadow: inset 0 0 0 2px var(--perte);
 }
