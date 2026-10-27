@@ -6,9 +6,10 @@
 // lieu du tri et la proposition de l'IA (D83) ; l'utilisateur peut aussi
 // écrire le sien.
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { blocCalendrier, evenementsAutour } from '../../lib/ics';
-import { aTraduire, t, tc } from '../../lib/langue';
+import { aTraduire, t } from '../../lib/langue';
+import { cleNom } from '../../lib/noms';
 import { dossiersANommer, estimationNommage, lireNommage, nomsPossibles, normaliserNom, requeteNommage, respecteConvention, type CibleNommage, type NomPropose, type NomsPossibles } from '../../lib/nommage';
 import { combiner, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
@@ -25,6 +26,9 @@ import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs
 
 /** Réglages de l'aide, partagés entre la page et le catalogue. */
 const reglagesNommage = { tous: false, recherche: true };
+
+/** Noms tapés et pas encore appliqués : gardés si l'on quitte la page par la frise ou le menu (D108). */
+const brouillon: { projet?: string; saisies: Record<string, string> } = { saisies: {} };
 
 interface PropositionNom extends NomPropose {
   cle: string;
@@ -116,16 +120,24 @@ enregistrerAide({
   },
 });
 
-/** Renomme plusieurs dossiers ; un nom déjà pris à côté reçoit un suffixe libre. */
-function renommerTous(plan: Plan, noms: [string, string, string?][]): { m: Modification | null; refus: string[] } {
+/**
+ * Renomme plusieurs dossiers. Un nom déjà pris à côté est refusé, comme deux
+ * noms identiques dans le même dossier au sein du lot (le plan ne voit pas
+ * les renommages du lot avant leur application). `refus` : [dossier, nom].
+ */
+function renommerTous(plan: Plan, noms: [string, string, string?][]): { m: Modification | null; refus: [string, string][] } {
   const mods: (Modification | null)[] = [];
-  const refus: string[] = [];
+  const refus: [string, string][] = [];
+  const pris = new Set<string>();
   for (const [id, nom, saisi] of noms) {
+    const cle = `${plan.dossiers.get(id)?.parent}/${cleNom(nom)}`;
     try {
+      if (pris.has(cle)) throw new Error(nom);
       // Le texte tapé (accents, espaces) reste le titre de la section dans l'album.
       mods.push(renommerDossier(plan, id, nom, saisi));
+      pris.add(cle);
     } catch {
-      refus.push(nom);
+      refus.push([id, nom]);
     }
   }
   return { m: combiner(t`Renommer ${pluriel(noms.length - refus.length, 'dossier')}`, ...mods), refus };
@@ -267,41 +279,73 @@ function Ligne({
   );
 }
 
-/** Noms saisis sans « Renommer » au moment de quitter l'étape : les appliquer, les laisser, ou rester. */
-function DialogueNomsEnAttente({ noms, appliquerNoms, ignorer, rester }: { noms: [string, string][]; appliquerNoms: () => void; ignorer: () => void; rester: () => void }) {
+/** Un nom encore dans son champ au moment de quitter l'étape ; `sur` : coché d'office. */
+interface NomAAppliquer {
+  c: CibleNommage;
+  apres: string;
+  sur: boolean;
+}
+
+/**
+ * Noms dans les champs et pas encore appliqués, au moment de quitter l'étape
+ * (D108) : la liste « avant → après », cochés d'office les noms sûrs (tapés,
+ * seul événement du calendrier, IA de confiance 8 ou plus). On renomme les
+ * cochés et on poursuit (rien de coché : on poursuit sans renommer), ou on
+ * reste.
+ */
+function DialogueNomsAAppliquer({
+  noms,
+  revenir,
+  appliquerNoms,
+  ignorer,
+  rester,
+}: {
+  noms: NomAAppliquer[];
+  /** Sortie par « Revenir » : les boutons le disent. */
+  revenir: boolean;
+  appliquerNoms: (choisis: CibleNommage[]) => void;
+  ignorer: () => void;
+  rester: () => void;
+}) {
   const bouton = useRef<HTMLButtonElement>(null);
+  const [coches, setCoches] = useState(() => new Set(noms.filter((x) => x.sur).map((x) => x.c.dossier)));
+  const choisis = noms.filter((x) => coches.has(x.c.dossier)).map((x) => x.c);
   useLayoutEffect(() => bouton.current?.focus(), []);
+  const basculer = (id: string) => {
+    const n = new Set(coches);
+    if (!n.delete(id)) n.add(id);
+    setCoches(n);
+  };
   return (
     <div class="voile" onMouseDown={(e) => e.target === e.currentTarget && rester()}>
       <div
         class="dialogue"
         role="dialog"
         aria-modal="true"
-        aria-label={t`Des noms saisis ne sont pas appliqués`}
+        aria-label={t`Des noms ne sont pas encore appliqués`}
         onKeyDown={(e) => {
           if (e.key === 'Escape') rester();
           e.stopPropagation();
         }}
       >
-        <h2>{t`Des noms saisis ne sont pas appliqués`}</h2>
-        <p>{t`${pluriel(noms.length, 'nom saisi', 'noms saisis')} sans cliquer sur « Renommer » :`}</p>
-        <ul class="liste-courte">
-          {noms.slice(0, 8).map(([avant, apres]) => (
-            <li key={avant}>
-              {avant} → <strong>{apres}</strong>
+        <h2>{t`Des noms ne sont pas encore appliqués`}</h2>
+        <p>{t`Cochez les noms à donner aux dossiers. Ceux marqués « à vérifier » sont des propositions peu sûres : relisez-les.`}</p>
+        <ul class="choix-dossiers">
+          {noms.map((x) => (
+            <li key={x.c.dossier}>
+              <label class="case">
+                <input type="checkbox" checked={coches.has(x.c.dossier)} onChange={() => basculer(x.c.dossier)} /> {x.c.nom} → <strong>{x.apres}</strong>
+                {!x.sur && <span class="discret"> {t`(à vérifier)`}</span>}
+              </label>
             </li>
           ))}
-          {noms.length > 8 && <li>…</li>}
         </ul>
         <div class="actions droite">
           <button type="button" onClick={rester}>
-            {tc('dialogue', 'Annuler')}
+            {t`Rester sur la page`}
           </button>
-          <button type="button" onClick={ignorer}>
-            {t`Ne pas les appliquer`}
-          </button>
-          <button ref={bouton} type="button" class="principal" onClick={appliquerNoms}>
-            {t`Appliquer et continuer`}
+          <button ref={bouton} type="button" class="principal" onClick={() => (choisis.length ? appliquerNoms(choisis) : ignorer())}>
+            {revenir ? (choisis.length ? t`Renommer et revenir` : t`Revenir sans renommer`) : choisis.length ? t`Renommer et continuer` : t`Continuer sans renommer`}
           </button>
         </div>
       </div>
@@ -317,10 +361,12 @@ export function PageNommage() {
   const [recherche, setRecherche] = useState(reglagesNommage.recherche);
   reglagesNommage.tous = tous;
   reglagesNommage.recherche = recherche;
-  const [saisies, setSaisies] = useState<Record<string, string>>({});
+  const [saisies, setSaisies] = useState<Record<string, string>>(() => (brouillon.projet === s.projet.id ? brouillon.saisies : {}));
+  brouillon.projet = s.projet.id;
+  brouillon.saisies = saisies;
   // Dossiers renommés sur cette page, avec leur nom d'avant : ils restent dans le tableau, cochés.
   const [renommes, setRenommes] = useState<Record<string, string>>({});
-  const [sortie, setSortie] = useState<(() => void) | null>(null);
+  const [sortie, setSortie] = useState<{ suite: () => void; noms: NomAAppliquer[]; revenir: boolean } | null>(null);
   const cibles = useMemo(() => {
     const base = dossiersANommer(s.plan, tous);
     const presents = new Set(base.map((c) => c.dossier));
@@ -357,22 +403,40 @@ export function PageNommage() {
   const peuSurs = tousNoms.filter((c) => saisies[c.dossier] === undefined && proposition(c)?.source !== 'calendrier' && (proposition(c)?.confiance ?? 0) < 8);
   // Noms tapés à la main et pas encore appliqués : on ne les perd pas en quittant l'étape.
   const enAttente = cibles.filter((c) => saisies[c.dossier] !== undefined && nouveauNom(c));
+  // Coché d'office dans le récapitulatif : tapé ou choisi, seul événement du calendrier, IA de confiance 8 ou plus.
+  const sur = (c: CibleNommage) => {
+    const pr = proposition(c);
+    return saisies[c.dossier] !== undefined || (pr?.source === 'calendrier' && !!pr.seul) || (pr?.source === 'ia' && (pr.confiance ?? 0) >= 8);
+  };
+  // Onglet fermé avec des noms tapés : le navigateur demande confirmation, tant que la page est ouverte.
+  const attente = enAttente.length > 0;
+  useEffect(() => {
+    if (!attente) return;
+    const retenir = (e: BeforeUnloadEvent) => e.preventDefault();
+    addEventListener('beforeunload', retenir);
+    return () => removeEventListener('beforeunload', retenir);
+  }, [attente]);
 
-  /** Renomme ; un nom déjà pris est signalé. Rend le nombre de dossiers renommés. Le texte tapé (accents, espaces) est gardé pour les titres de l'album. */
-  const renommer = (liste: CibleNommage[]): number => {
+  /**
+   * Renomme ; un nom déjà pris est signalé. Rend le nombre de dossiers renommés. Le texte tapé (accents, espaces) est gardé pour les titres de l'album.
+   * `bilan` : message même pour un seul dossier (renommé depuis le récapitulatif, la page se ferme).
+   */
+  const renommer = (liste: CibleNommage[], bilan = liste.length > 1): number => {
     const noms = liste.map((c): [string, string, string] => [c.dossier, nouveauNom(c), saisi(c)]);
     const r = renommerTous(s.plan, noms);
     appliquer(r.m);
-    const faits = noms.filter(([, nom]) => !r.refus.includes(nom));
+    const refuses = new Set(r.refus.map(([id]) => id));
+    const faits = noms.filter(([id]) => !refuses.has(id));
     const ids = new Set(faits.map(([id]) => id));
     setRenommes({ ...renommes, ...Object.fromEntries(liste.filter((c) => ids.has(c.dossier)).map((c) => [c.dossier, renomme(c) ? renommes[c.dossier] : c.nom])) });
     // Le nom appliqué n'est plus « en attente » ; après Ctrl+Z, le champ retrouve le nom pris d'office.
     setSaisies(Object.fromEntries(Object.entries(saisies).filter(([id]) => !ids.has(id))));
-    if (liste.length === 1) {
+    if (!bilan) {
       if (r.refus.length) notifier('erreur', t`« ${noms[0][1]} » existe déjà à cet endroit.`);
     } else {
       const texte = pluriel(faits.length, 'dossier renommé', 'dossiers renommés');
-      notifier(r.refus.length ? 'erreur' : 'ok', r.refus.length ? t`${texte} ; ${r.refus.length} nom(s) déjà pris : ${r.refus.join(', ')}.` : `${texte}.`, { libelle: t`Annuler`, faire: annuler });
+      const pris = r.refus.map(([, nom]) => nom);
+      notifier(pris.length ? 'erreur' : 'ok', pris.length ? t`${texte} ; ${pris.length} nom(s) déjà pris : ${pris.join(', ')}.` : `${texte}.`, { libelle: t`Annuler`, faire: annuler });
     }
     return faits.length;
   };
@@ -388,9 +452,9 @@ export function PageNommage() {
     if (ok) renommer(tousNoms);
   };
 
-  /** Quitter l'étape (valider ou revenir) : s'il reste des noms tapés, demander quoi en faire. */
-  const quitter = (suite: () => void) => {
-    if (enAttente.length) setSortie(() => suite);
+  /** Quitter l'étape : s'il reste des noms dans les champs (`liste`), demander lesquels appliquer. */
+  const quitter = (suite: () => void, liste: CibleNommage[], revenir = false) => {
+    if (liste.length) setSortie({ suite, revenir, noms: liste.map((c) => ({ c, apres: nouveauNom(c), sur: sur(c) })) });
     else suite();
   };
 
@@ -470,21 +534,27 @@ export function PageNommage() {
       )}
       <BarreValidation
         resume={t`${pluriel(cibles.filter((c) => !renomme(c)).length, 'dossier')} à nommer · ${pluriel(cibles.filter((c) => proposition(c)).length, 'proposition')}`}
-        revenir={() => quitter(() => revenirDe('nommage'))}
-        valider={() => quitter(() => validerEtape('nommage'))}
+        revenir={() => quitter(() => revenirDe('nommage'), enAttente, true)}
+        valider={() => quitter(() => validerEtape('nommage'), tousNoms)}
       />
       {sortie && (
-        <DialogueNomsEnAttente
-          noms={enAttente.map((c) => [c.nom, nouveauNom(c)])}
+        <DialogueNomsAAppliquer
+          noms={sortie.noms}
+          revenir={sortie.revenir}
           rester={() => setSortie(null)}
           ignorer={() => {
             setSortie(null);
-            sortie();
+            sortie.suite();
+            // Les noms tapés écartés ne reviennent pas au retour sur la page.
+            brouillon.saisies = {};
           }}
-          appliquerNoms={() => {
+          appliquerNoms={(choisis) => {
             setSortie(null);
             // Un nom refusé (déjà pris) garde l'utilisateur sur la page, avec le message.
-            if (renommer(enAttente) === enAttente.length) sortie();
+            if (renommer(choisis, true) !== choisis.length) return;
+            sortie.suite();
+            // La page est quittée sans se redessiner : les noms tapés (appliqués ou décochés) ne reviennent pas, même après Ctrl+Z.
+            brouillon.saisies = {};
           }}
         />
       )}

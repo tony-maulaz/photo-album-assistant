@@ -1331,6 +1331,51 @@ Après le rangement, « Ranger autrement… » rouvre les choix (« Ranger à
 nouveau » y passe). Corrigé au passage : « 1ᵉ étape » au lieu de « 1er lieu »
 pour une étape sans nom. Maquette : https://claude.ai/artifact/V14LUpJAEzT1cYQMArq7Zk.
 
+**D108 — Audit général de l'interface, et une ossature commune.**
+L'utilisateur a relevé plusieurs défauts : un bouton d'aide jamais au même
+endroit, une loupe qui bouge, un Nommage décalé, des actions de la Sélection
+en bas de l'écran, pas de recadrage dans la vue en grand, et « Tri rapide »
+ou « Annuler » incompris. 118 captures des treize étapes ont été relues par
+cinq agents (utilisateur sans connaissance, ergonome, visuel, applications
+de référence, critique), puis par un avocat du diable et un contrôle des
+faits. Mesures : l'aide à 4 places avec 2 libellés, la loupe à 3 ou 4, 4
+gabarits de page différents. D'autres défauts plus graves ont été trouvés en
+chemin. Les noms proposés pré-remplis au Nommage n'étaient pas appliqués par
+« Valider et continuer », et rien ne prévenait. L'historique est commun au
+projet : « Annuler » à l'étape 11 peut défaire un renommage de l'étape 9.
+Ctrl+Z ne marche pas dans les vues plein écran. Les règles qui en sortent
+sont dans `docs/GUIDE_UX.md` (codes O, P, A, R, M, V, C), et les agents de
+revue dans `.claude/agents/`. Chaque changement d'interface passe désormais
+par eux, avant et après le code.
+
+Retenu, avec l'accord de l'utilisateur :
+- une **ossature unique** : « ? Aide » toujours en haut à droite de la barre
+  de l'application, dans un panneau qui pousse le contenu ; « Taille » au
+  bout de la barre au-dessus des photos ; « ↶ Annuler : … » à une place fixe,
+  limité à l'étape affichée ; un seul bouton plein ;
+- les actions de la Sélection dans un encadré « N photos choisies », en haut
+  de la colonne de droite ;
+- « Décider une par une » au lieu de « Tri rapide » ;
+- un outil « Recadrer et tourner » partout où une photo est montrée en grand ;
+- à la Consolidation, les propositions d'abord et deux réglages visibles.
+
+Décisions levées ou revues : D49, D53, D55, D62/D74, D69, D80 et une partie
+de D91. Gardées : D54, D98, D101, D107. Les règles d'or 4 (convivialité :
+son but reste, ses moyens peuvent changer) et 8 (seuils calibrés, après
+lecture de ce document) peuvent désormais être revues si l'interface y
+gagne, en le disant avec leur numéro ; les autres restent intouchables.
+
+Premier lot livré : au Nommage, quitter l'étape avec des noms encore dans
+les champs (tapés ou proposés) ouvre un récapitulatif « avant → après » à
+cocher. Sont cochés d'office les noms tapés, le seul événement du calendrier
+qui convient et l'IA de confiance 8 ou plus ; les autres sont marqués « à
+vérifier ». Le bouton dit où l'on va (« Renommer et continuer », « Revenir
+sans renommer »). Deux noms identiques au même endroit dans un même lot sont
+refusés. Les noms tapés restent si l'on part par la frise ou le menu, et le
+navigateur prévient si l'on ferme l'onglet pendant que la page est ouverte.
+Cela complète D69. Reste au lot du Nommage : un seul seuil « à vérifier »
+(le tableau teinte sous 6, le récapitulatif sous 8).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

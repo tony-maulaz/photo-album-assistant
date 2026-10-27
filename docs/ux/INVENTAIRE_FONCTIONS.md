@@ -270,8 +270,7 @@ incohérents**.
 | Écrire un nom ; Entrée = renommer | champ | V/B |
 | Choisir un nom proposé (📅 calendrier, 📍 lieu, ✨ IA) | puces sous le champ | V |
 | Renommer un dossier | bouton « Renommer » par ligne | V |
-| Noms tapés non appliqués en quittant : Appliquer et continuer / Ne pas les appliquer / Annuler | fenêtre | V |
-| Noms **proposés et pré-remplis** non appliqués en quittant | **aucun avertissement** | — |
+| Noms encore dans les champs en quittant (tapés, et proposés à « Valider ») : récapitulatif « avant → après » à cocher, peu sûrs « à vérifier » ; Rester sur la page / Renommer et continuer (ou revenir) / Continuer (ou revenir) sans renommer (D108) | fenêtre | V |
 | Voir les photos d'un dossier en grand | **absent** (miniatures 64 px non cliquables) | — |
 | Taille des photos | **absente** | — |
 | Bouton Annuler | **absent** (notification ou Ctrl+Z) | — |

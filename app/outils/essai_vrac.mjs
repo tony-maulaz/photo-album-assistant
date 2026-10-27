@@ -600,7 +600,18 @@ try {
     verifier(true, 'noms de l’IA de confiance 8 ou plus acceptés en un clic');
   }
   await page.getByRole('button', { name: 'Valider et continuer' }).click();
+  // Noms encore dans les champs (Ko Samui : deux événements) : récapitulatif à cocher avant de quitter, les peu sûrs décochés (D108).
+  const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
+  await recap.waitFor();
+  const cases = recap.getByRole('checkbox');
+  const cochees = await cases.evaluateAll((l) => l.filter((x) => x.checked).length);
+  verifier((await cases.count()) > 0 && cochees === 0 && (await recap.getByText('(à vérifier)').count()) === (await cases.count()), `Nommage : noms proposés restants dans un récapitulatif, décochés d’office (${await cases.count()})`);
+  await capturer(page, 'v5c_nommage_recapitulatif');
+  // Cocher applique le nom en quittant l'étape.
+  await cases.first().check();
+  await recap.getByRole('button', { name: 'Renommer et continuer' }).click();
   await page.getByRole('heading', { name: /Consolidation/ }).waitFor();
+  verifier((await page.getByText('1 dossier renommé.').count()) > 0, 'Nommage : le nom coché dans le récapitulatif est appliqué, avec un message');
   await page.getByRole('button', { name: /Proposer des fusions avec l’IA/ }).click();
   await page.getByText(/propositions? dans/).first().waitFor({ timeout: 60_000 });
   verifier(appelsIA.consolidation > 0, `consolidation IA6 : ${appelsIA.consolidation} répertoire(s) relus`);
@@ -638,6 +649,7 @@ try {
   verifier(PROJET_EN ? appelsIA.enAnglais === appelsIA.total && appelsIA.total > 0 : appelsIA.enAnglais === 0, `réponses de l’IA demandées en anglais : ${appelsIA.enAnglais} appel(s) sur ${appelsIA.total}`);
   verifier(sortie.includes('Photos/BESTOF/0141_best.jpg') && sortie.includes('Photos/janvier/0141_janvier.jpg'), 'dossiers gardés tels quels recopiés à l’identique');
   verifier(sortie.some((p) => /^Photos\/Sortie_Essai_\d+_18\.07\.26\/[^/]+\.jpg$/.test(p)), 'dossiers renommés d’après les noms proposés par l’IA');
+  verifier(sortie.some((p) => p.startsWith('Photos/18_ans_de_Lea_Ko_Samui_18.07.26/')), 'nom coché dans le récapitulatif du Nommage écrit dans la sortie');
 
   // Trier en plusieurs fois (D63) : des photos arrivent dans la source après un premier tri complet.
   const ecrireSortie = async () => {
