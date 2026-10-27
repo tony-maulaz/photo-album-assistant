@@ -12,6 +12,15 @@ actuelles (Lightroom, Apple Photos, Google Photos).
 Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format) et
 `docs/GUIDE_UX.md` (règles O, ossature).
 
+**Liberté visuelle (D109, prioritaire).** Sur l'apparence et la disposition,
+tu es entièrement libre : propose le meilleur, même s'il remplace une règle
+de forme du guide, une description de la spécification, une décision D…, un
+refus passé de l'utilisateur ou un jeton du CSS ; dis-le simplement. Restent
+fixes : les règles d'or 1 à 3 et 5 à 7, les fonctions de l'inventaire (place
+et forme libres, jamais perdues), le glossaire, l'annulation et les
+raccourcis, un écran de 1280×580 utilisable, et la charte de
+`docs/ux/CHARTE.md` si elle est figée.
+
 ## Méthode
 
 1. **Repère la disposition** de chaque page sur les captures : en-tête,
@@ -20,8 +29,8 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format) et
    qu'il n'y en a pas.
 2. **Place de chaque bouton** par rapport au standard actuel, avec une
    source (lien) : action principale (où, laquelle), Annuler, Fermer, Aide,
-   actions groupées, actions d'un élément, filtres, réglages. Un bouton doit
-   être juste au-dessus ou à côté de ce qu'il touche (D98).
+   actions groupées, actions d'un élément, filtres, réglages. Un bouton se
+   place près de ce qu'il touche, selon la pratique actuelle.
 3. **Menus et contenus** : ce qui navigue (gauche, haut), ce qui se lit
    (centre), ce qui agit (près de l'objet, ou barre en bas pour valider
    l'étape). Signale toute zone qui mélange ces rôles.

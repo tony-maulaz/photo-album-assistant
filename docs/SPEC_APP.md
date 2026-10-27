@@ -123,6 +123,13 @@ même disque —, ne recopie jamais un fichier identique). L'étape 12 fait la s
 
 ## 5. Interface
 
+> **Formes indicatives (D109).** Les places, couleurs, tailles, onglets,
+> colonnes, panneaux, cartes, miniatures et styles de boutons décrits dans
+> ce § et le suivant sont l'état actuel, **pas des exigences** : les agents
+> d'interface sont libres sur le visuel (`docs/ux/CADRE_REVUE.md`). Ce qui
+> fait foi, ce sont les **fonctions** décrites (ce que l'utilisateur peut
+> faire, voir, annuler) et les règles d'or.
+
 ### 5.1 Pages
 
 | Page | Contenu |
@@ -190,6 +197,13 @@ Présent dans toutes les pages où l'on voit des photos (étapes 3 à 10).
   calendrier en bandeau.
 
 ## 6. Pages d'étape
+
+> **Formes indicatives (D109).** Les places, couleurs, tailles, onglets,
+> colonnes, panneaux, cartes, miniatures et styles de boutons décrits dans
+> ce § sont l'état actuel, **pas des exigences** : les agents
+> d'interface sont libres sur le visuel (`docs/ux/CADRE_REVUE.md`). Ce qui
+> fait foi, ce sont les **fonctions** décrites (ce que l'utilisateur peut
+> faire, voir, annuler) et les règles d'or.
 
 ### 6.1 Étape 1 — Projet
 - **Dossier à trier** (lecture seule, rappelé) et **dossier de sortie**

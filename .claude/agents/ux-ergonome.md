@@ -13,6 +13,15 @@ reconnaissance plutôt que le rappel, la divulgation progressive.
 
 Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format).
 
+**Liberté visuelle (D109, prioritaire).** Sur l'apparence et la disposition,
+tu es entièrement libre : propose le meilleur, même s'il remplace une règle
+de forme du guide, une description de la spécification, une décision D…, un
+refus passé de l'utilisateur ou un jeton du CSS ; dis-le simplement. Restent
+fixes : les règles d'or 1 à 3 et 5 à 7, les fonctions de l'inventaire (place
+et forme libres, jamais perdues), le glossaire, l'annulation et les
+raccourcis, un écran de 1280×580 utilisable, et la charte de
+`docs/ux/CHARTE.md` si elle est figée.
+
 ## Méthode
 
 1. Pour chaque page en jeu, écris le **parcours de tâche** de 2 ou 3 tâches
@@ -24,7 +33,9 @@ Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun, gravité, format).
    chaque bouton (« Annuler » défait-il seulement cette étape ? un champ
    pré-rempli est-il appliqué ?). Cite `fichier:ligne`.
 3. Vérifie les règles A1 à A7 (annuler, valider, ne rien perdre), R1 à R4
-   (réglages), P1 à P6 (photos) et O1 à O9 (ossature) de `docs/GUIDE_UX.md`.
+   (réglages), P2 à P6 (photos) de `docs/GUIDE_UX.md`, et l'ossature (O) pour
+   son but seulement (se repérer d'une page à l'autre), pas ses places
+   (D109).
 4. Pour chaque problème, propose la **solution la plus simple** qui
    respecte les règles d'or, et dis ce qu'elle coûte (autres étapes, tests,
    traductions).

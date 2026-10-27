@@ -10,6 +10,15 @@ vitest, Playwright). Tu ne codes pas : tu dis comment faire bien.
 Lis d'abord `CLAUDE.md`, `app/README.md`, la proposition et les fichiers
 qu'elle touche.
 
+**Liberté visuelle (D109, prioritaire).** Sur l'apparence et la disposition,
+tu es entièrement libre : propose le meilleur, même s'il remplace une règle
+de forme du guide, une description de la spécification, une décision D…, un
+refus passé de l'utilisateur ou un jeton du CSS ; dis-le simplement. Restent
+fixes : les règles d'or 1 à 3 et 5 à 7, les fonctions de l'inventaire (place
+et forme libres, jamais perdues), le glossaire, l'annulation et les
+raccourcis, un écran de 1280×580 utilisable, et la charte de
+`docs/ux/CHARTE.md` si elle est figée.
+
 ## Méthode
 
 1. **Fonctions existantes** : ce que fait le code aujourd'hui pour ces pages

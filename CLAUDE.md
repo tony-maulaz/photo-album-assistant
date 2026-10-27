@@ -104,6 +104,22 @@ lancement.
   intouchables. La 4 et la 8 peuvent être revues si l'interface y gagne, en
   le disant avec leur numéro : la 4 garde son but (la convivialité), ses
   moyens peuvent changer ; pour la 8, lire `docs/DECISIONS.md` avant.
+- **Liberté visuelle, prioritaire (D109).** Les fonctions sont jugées
+  bonnes ; c'est le visuel qui doit progresser. Pendant la **phase
+  d'exploration du style**, les agents d'interface sont **entièrement
+  libres** sur l'apparence et la disposition (police, tailles, couleurs,
+  boutons, icônes, espacements, densité, place des éléments, ossature des
+  écrans) et passent avant la spécification, les décisions D… (refus et
+  maquettes « validées » de l'utilisateur compris), le guide et le CSS : ce
+  qui existe est un point de départ, pas une limite ; une proposition dit ce
+  qu'elle remplace, même si elle va contre une remarque passée, et
+  l'utilisateur tranche. Restent fixes : les règles d'or 1 à 3 et 5 à 7,
+  chaque fonction de `docs/ux/INVENTAIRE_FONCTIONS.md` (elle peut changer de
+  place ou de forme, pas disparaître), le sens des mots du glossaire,
+  l'annulation et les raccourcis, un écran de 1280×580 utilisable. Quand
+  l'utilisateur aura choisi un style, il sera figé dans `docs/ux/CHARTE.md`
+  et l'agent `gardien-style` le fera respecter, **en priorité** sur les
+  autres agents.
 - **Toute demande d'analyse lance plusieurs agents en parallèle**, chacun
   avec un rôle, avant de rendre une synthèse et une recommandation. Rapports
   écrits dans le scratchpad ; maquette quand plusieurs dispositions sont
@@ -114,8 +130,9 @@ lancement.
   (même pour une petite remarque : mieux vaut cinq agents qu'une page à
   refaire quinze fois). La session qui traite la demande est le
   **manager** : elle lance les agents, fait la synthèse et ne présente à
-  l'utilisateur que le résultat vérifié. Ils appliquent `docs/GUIDE_UX.md`
-  et `docs/ux/CADRE_REVUE.md` :
+  l'utilisateur que le résultat vérifié. Ils partent de
+  `docs/ux/CADRE_REVUE.md` (dont « Liberté visuelle ») et de
+  `docs/GUIDE_UX.md` :
   1. **Demande enregistrée** par `gardien-demandes` dans
      `docs/ux/DEMANDES.md` ; **captures** de l'existant (`node
      app/outils/captures_ux.mjs DOSSIER DOSSIER_CAPTURES`, build figé : ne
@@ -132,7 +149,9 @@ lancement.
        clics), `ux-accessibilite` (lisibilité, contraste, clavier) ;
      - `ux-visuel` (le pointilleux, au pixel), `ux-critique` (défauts,
        inventaire des fonctions), puis `ux-expert` (avis d'ensemble sur le
-       rendu, arbitre entre les avis).
+       rendu, arbitre entre les avis) ;
+     - `gardien-style` (cohérence avec le style figé de
+       `docs/ux/CHARTE.md` ; sans objet tant qu'il est en exploration).
   3. **Proposition** : synthèse, maquette si la disposition change, puis
      `ux-avocat` (avocat du diable), `technique` (fonctions existantes,
      comment implémenter, coût, lenteurs) et `gardien-demandes` (toutes les
@@ -148,8 +167,9 @@ lancement.
 
   Deux niveaux : **tout le jeu** pour une refonte de page ou un changement
   de disposition ; pour une petite correction d'interface, au moins
-  `gardien-demandes`, `ux-novice`, `ux-mise-en-page`, `ux-visuel`, puis
-  `testeur`, `relecture-code` et `ux-controle`.
+  `gardien-demandes`, `ux-novice`, `ux-mise-en-page`, `ux-visuel`,
+  `ux-reference`, `ux-proportions`, `ux-espacements` et `gardien-style`,
+  puis `testeur`, `relecture-code` et `ux-controle`.
 
 ## Conventions
 

@@ -1,6 +1,8 @@
 # Guide UX — règles d'interface de l'application
 
-Ce guide est la référence de toute revue et de tout changement d'interface.
+Ce guide est la référence de toute revue et de tout changement d'interface
+pour les fonctions, les mots et la sécurité ; sur le visuel, voir « Liberté
+visuelle » ci-dessous.
 Il condense l'audit général du 27.10.2026 (D108) : 118 captures réelles, 5
 relecteurs, 60 sources (NN/g, Apple HIG, Fluent 2, GOV.UK, WCAG 2.2,
 Lightroom, Apple Photos, Google Photos, Photo Mechanic, Narrative,
@@ -24,9 +26,20 @@ de l'eau). La 4 (convivialité) garde son but, mais ses moyens peuvent
 changer ; la 8 (seuils et consignes calibrés) peut être revue après lecture
 de `docs/DECISIONS.md`. Dans les deux cas, on le dit avec le numéro.
 
+**Liberté visuelle (D109).** Pendant la phase d'exploration du style, les
+règles de **forme** de ce guide — le schéma et les places de l'ossature
+(O1 à O9), les places de P1, P5, R4, l'échelle V1, la forme de V6, le jeu
+d'icônes de M4 et la forme de M5 — décrivent l'existant ou une cible, **pas
+une limite** : les agents d'interface sont libres et prioritaires sur le
+visuel (`docs/ux/CADRE_REVUE.md`, « Liberté visuelle »). Restent des
+**exigences** : les fonctions et le comportement (A, R1 à R3, M1 à M3, M6,
+P2 à P4, P6 « un clic choisit, un bouton valide », C, E), la lisibilité
+comme critère de qualité (V2 à V5) et un écran de 1280×580 utilisable. Le
+style retenu par l'utilisateur sera figé dans `docs/ux/CHARTE.md`.
+
 Chaque règle est vérifiable sur une capture d'écran ou dans le code. Une
-règle marquée **(cible D108)** décrit l'état visé par la refonte ; tant
-qu'elle n'est pas faite, elle s'applique à tout nouveau code.
+règle marquée **(cible D108)** décrit l'état visé par la refonte : c'est une
+hypothèse de travail, qu'une meilleure proposition remplace.
 
 ---
 

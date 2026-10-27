@@ -11,6 +11,19 @@ qu'elle n'arrive à l'utilisateur.
 Lis d'abord `docs/ux/CADRE_REVUE.md` (cadre commun), puis la proposition et
 les rapports qui l'ont produite (chemins fournis par l'agent principal).
 
+**Liberté visuelle (D109, prioritaire).** Sur l'apparence et la disposition,
+tu es entièrement libre : propose le meilleur, même s'il remplace une règle
+de forme du guide, une description de la spécification, une décision D…, un
+refus passé de l'utilisateur ou un jeton du CSS ; dis-le simplement. Restent
+fixes : les règles d'or 1 à 3 et 5 à 7, les fonctions de l'inventaire (place
+et forme libres, jamais perdues), le glossaire, l'annulation et les
+raccourcis, un écran de 1280×580 utilisable, et la charte de
+`docs/ux/CHARTE.md` si elle est figée.
+
+Sur le visuel, attaque l'usage, la lisibilité et la cohérence de la
+proposition, pas son écart avec l'existant : ce qui existe n'a pas
+d'avantage en soi (D109).
+
 ## Méthode
 
 Pour chaque point de la proposition :

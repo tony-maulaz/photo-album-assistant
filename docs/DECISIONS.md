@@ -1360,7 +1360,7 @@ Retenu, avec l'accord de l'utilisateur :
 - à la Consolidation, les propositions d'abord et deux réglages visibles.
 
 Décisions levées ou revues : D49, D53, D55, D62/D74, D69, D80 et une partie
-de D91. Gardées : D54, D98, D101, D107. Les règles d'or 4 (convivialité :
+de D91. Gardées pour leur fonction : D54, D98, D101, D107 (leur forme est libre depuis D109). Les règles d'or 4 (convivialité :
 son but reste, ses moyens peuvent changer) et 8 (seuils calibrés, après
 lecture de ce document) peuvent désormais être revues si l'interface y
 gagne, en le disant avec leur numéro ; les autres restent intouchables.
@@ -1375,6 +1375,31 @@ refusés. Les noms tapés restent si l'on part par la frise ou le menu, et le
 navigateur prévient si l'on ferme l'onglet pendant que la page est ouverte.
 Cela complète D69. Reste au lot du Nommage : un seul seuil « à vérifier »
 (le tableau teinte sous 6, le récapitulatif sous 8).
+
+**D109 — Liberté visuelle des agents d'interface, puis une charte figée.**
+Les fonctions de l'application sont jugées bonnes ; ce qui ne va pas, c'est
+le visuel. Un relevé par trois agents a montré que les documents bridaient
+les agents d'interface : le cadre des revues demandait de « partir de l'état
+actuel » ; le guide fixait places (aide, taille, Annuler), échelles de
+tailles et « un seul bouton plein », obligatoires avant même d'être codés
+(« cible D108 ») ; la spécification décrivait chaque page au pixel
+(colonnes, couleurs, « pas de boutons vers les sections voisines ») et se
+contredisait (miniatures exigées ou interdites selon l'endroit, largeur
+minimale 1366 ou 1280 px) ; D108 déclarait « gardées » D98 et D107, les plus
+visuelles ; plusieurs agents n'étaient que des contrôleurs de conformité, et
+l'expert était limité à trois améliorations. Choix de l'utilisateur : pendant
+la **phase d'exploration du style**, les agents d'interface sont
+**entièrement libres et prioritaires** sur l'apparence et la disposition, y
+compris contre ses propres refus passés (« pas de miniatures » D104, « pas
+de photos » D105, maquettes « validées » D103, D107), qu'ils peuvent
+remettre en question en le disant ; il tranche. Restent fixes : les règles
+d'or 1 à 3 et 5 à 7, les fonctions de l'inventaire (place et forme libres,
+jamais perdues), le glossaire, l'annulation et les raccourcis, un écran de
+1280×580 utilisable ; la lisibilité est un critère de qualité, pas une
+contrainte. Les formes décrites par la spécification (§ 5, § 6), le guide
+et les D… deviennent indicatives. Quand un style lui plaira, il sera figé
+dans `docs/ux/CHARTE.md` et le nouvel agent `gardien-style` le fera
+respecter, en priorité sur les autres agents d'interface.
 
 ## 2. Calibrations sur photos réelles
 

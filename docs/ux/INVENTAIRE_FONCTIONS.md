@@ -14,8 +14,8 @@ Légende de la colonne « Vu » :
 - **G** geste caché (double-clic, glisser, clic sur une zone qui n'a pas l'air d'un bouton), dit nulle part ou seulement dans la page Aide
 - **T** dans une notification temporaire (disparaît)
 
-Après une refonte, chaque ligne doit rester faisable (au même endroit ou à un endroit
-annoncé). Les sections 16 à 18 donnent les **absences** et les **doublons
+Après une refonte, chaque ligne doit rester faisable et découvrable, à l'endroit le
+meilleur : la colonne « Accès » décrit l'existant, pas une obligation (D109). Les sections 16 à 18 donnent les **absences** et les **doublons
 incohérents**.
 
 ---

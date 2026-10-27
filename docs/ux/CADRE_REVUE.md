@@ -2,18 +2,50 @@
 
 À lire par tout agent de `.claude/agents/` avant de commencer.
 
+## Liberté visuelle (prioritaire, D109)
+
+Les fonctions de l'application sont jugées bonnes ; ce qui doit progresser,
+c'est le **visuel**. Nous sommes en **phase d'exploration du style** : sur
+l'apparence et la disposition, tu es **entièrement libre et prioritaire** —
+police, tailles de texte, couleurs, forme et remplissage des boutons (y
+compris le nombre de boutons pleins), icônes, rayons, ombres, espacements,
+densité, place de chaque élément, ossature d'écran, onglets, colonnes,
+panneaux, miniatures ou non. Les règles de forme de `docs/GUIDE_UX.md`, la
+description des pages dans `docs/SPEC_APP.md`, les décisions D… (y compris
+les refus et les maquettes « validées » de l'utilisateur) et les jetons ou
+commentaires de `style.css` décrivent **l'existant, pas une limite**. Pars de
+la meilleure interface possible pour cet utilisateur, pas de l'état actuel ;
+dis simplement ce que ta proposition remplace (règle, D…), et propose-la même
+si elle va contre une remarque passée de l'utilisateur : c'est lui qui
+tranche.
+
+Restent fixes, parce que ce sont des fonctions ou la sécurité des données :
+les règles d'or 1 à 3 et 5 à 7 de `CLAUDE.md` ; chaque fonction de
+`docs/ux/INVENTAIRE_FONCTIONS.md` (elle peut changer de place ou de forme,
+pas disparaître, et doit rester découvrable) ; le sens des mots du
+glossaire ; l'annulation et les raccourcis clavier ; une page utilisable sur
+un écran de 1280×580. La lisibilité (contrastes, tailles, cibles) est un
+critère de qualité que tu juges, pas une contrainte imposée.
+
+Quand l'utilisateur aura choisi un style, il sera figé dans
+`docs/ux/CHARTE.md` ; l'agent `gardien-style` le fera alors respecter, en
+priorité. Tant que ce fichier dit « phase d'exploration », rien n'est figé.
+
 ## Ce qu'on attend
 
 Une revue **exigeante, précise et concrète**. Pas de généralités (« veiller
-à la cohérence ») : un constat, sa preuve, la règle enfreinte, la correction
-exacte (où, quoi, quel libellé). Mieux vaut cinq agents sérieux une fois que
-quinze refontes ratées.
+à la cohérence ») : un constat, sa preuve, la règle enfreinte **ou
+l'amélioration visée**, la correction exacte (où, quoi, quel libellé). Mieux
+vaut cinq agents sérieux une fois que quinze refontes ratées, et une refonte
+visuelle franche que des retouches.
 
 ## À lire, dans l'ordre
 
 1. `CLAUDE.md` (règles d'or, méthode de travail).
 2. `docs/GUIDE_UX.md` : les règles du projet, citées par leur code (O2, P1,
-   A1, M3…). C'est la grille de lecture.
+   A1, M3…). Grille de lecture pour les fonctions, les mots et la sécurité ;
+   sur le visuel, ses valeurs décrivent l'existant (voir « Liberté
+   visuelle »). `docs/ux/CHARTE.md` : le style figé, s'il y en a un.
 3. `docs/ux/RECHERCHE.md` : bonnes pratiques détaillées et sources
    (règles R1.1 à R13.x, check-list § 14, anti-modèles § 15).
 4. `docs/ux/INVENTAIRE_FONCTIONS.md` : ce que chaque page permet ; aucune
@@ -54,15 +86,17 @@ quinze refontes ratées.
   de chaque bouton, touche, geste, état, message), jamais contre les notes
   du concepteur ou l'inventaire seul : la première maquette D108 en
   perdait 22 en affirmant le contraire.
-- Une proposition qui touche une décision récente (D…) part de son état
-  actuel et cite son numéro pour tout écart.
+- Une proposition part du **meilleur résultat possible**, pas de l'état
+  actuel ; elle cite les décisions (D…) et les règles qu'elle remplace, et
+  garde leur **fonction** (ce qu'elles permettent), pas leur forme.
 
 ## Gravité
 
 - **Bloquant** : l'utilisateur se trompe, perd du travail, ne trouve pas une
   fonction indispensable, ou croit avoir fait ce qui n'est pas fait.
 - **Majeur** : il hésite, cherche, a peur, ou doit défiler pour l'essentiel ;
-  incohérence visible entre pages.
+  incohérence visible entre pages ; page datée, terne ou chargée ;
+  hiérarchie qui ne guide pas l'œil ; on ne voit pas ce qui va avec quoi.
 - **Mineur** : finition (alignement, espacement, libellé perfectible).
 
 ## Format du rapport
@@ -75,6 +109,8 @@ quinze refontes ratées.
 4. Ce qui est bien et doit être gardé.
 5. Règles nouvelles à proposer pour `docs/GUIDE_UX.md` (courtes,
    vérifiables, propres à cette application).
+6. **La meilleure version visuelle**, sans partir de l'existant (schéma
+   coté ou maquette), et ce qu'elle remplace.
 
 Réponse finale à l'agent principal : 20 lignes au plus, les constats les
 plus graves d'abord, avec le chemin du rapport.

@@ -10,10 +10,20 @@ précise.
 
 Lis d'abord `docs/ux/CADRE_REVUE.md` et `docs/GUIDE_UX.md` (règles V et C).
 
+**Liberté visuelle (D109, prioritaire).** Sur l'apparence et la disposition,
+tu es entièrement libre : propose le meilleur, même s'il remplace une règle
+de forme du guide, une description de la spécification, une décision D…, un
+refus passé de l'utilisateur ou un jeton du CSS ; dis-le simplement. Restent
+fixes : les règles d'or 1 à 3 et 5 à 7, les fonctions de l'inventaire (place
+et forme libres, jamais perdues), le glossaire, l'annulation et les
+raccourcis, un écran de 1280×580 utilisable, et la charte de
+`docs/ux/CHARTE.md` si elle est figée.
+
 ## Méthode
 
-1. **Texte** : taille minimale (14 px pour le texte courant, 12 px pour les
-   légendes seulement), contraste 4,5:1 (3:1 pour les grands textes, les
+1. **Texte** : tailles lisibles (repère : 16 px pour le texte courant,
+   12 px au moins pour les légendes ; c'est un critère de qualité, pas une
+   contrainte imposée), contraste 4,5:1 (3:1 pour les grands textes, les
    bordures et les états), mesuré sur les captures et dans le CSS, en thème
    clair et sombre.
 2. **Cibles** : boutons, cases et liens d'au moins 24 px (44 px conseillé

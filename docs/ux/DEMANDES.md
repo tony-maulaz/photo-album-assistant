@@ -22,3 +22,5 @@ Pas de données privées : les remarques sont reformulées sans noms réels.
 | 2026-10-27 | Nommage décalé (traits des lignes) | Nommage | faite : 6ed767d |
 | 2026-10-27 | Bande vide sous les photos quand l'explication est repliée | Organiser, Sélection | faite : e326e9f |
 | 2026-10-27 | Agents de contrôle élargis ; les agents UX travaillent dès qu'une remarque touche l'interface | méthode | faite : agents de `.claude/agents/`, `CLAUDE.md` |
+| 2026-10-27 | Comparer en grand : on ne voit pas quelles infos vont avec quelle photo ; « à garder / à écarter » se voit mal ; bouton « Garder » et pastille « à garder » redondants ; pas de séparation entre les photos | Doublons, Sélection | ouverte : analyse par les agents en cours |
+| 2026-10-27 | Agents d'interface entièrement libres et prioritaires sur le visuel (refus passés compris), puis un style figé gardé par un agent | méthode | faite : D109 (`CLAUDE.md`, `docs/ux/CADRE_REVUE.md`, `docs/ux/CHARTE.md`, `gardien-style`) |
