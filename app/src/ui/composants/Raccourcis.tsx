@@ -21,9 +21,13 @@ function estChampDeSaisie(cible: EventTarget | null): boolean {
   return el.isContentEditable || ['TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
-/** Une fenêtre (dialogue, visionneuse, tri rapide…) a la main sur le clavier. */
-function fenetreOuverte(): boolean {
-  return !!document.querySelector('[role="dialog"]');
+/**
+ * Une fenêtre (dialogue, visionneuse, tri rapide…) a la main sur le clavier ; celles marquées
+ * `data-annulable` (comparateur) laissent passer Ctrl+Z et Ctrl+Y, mais pas « ? » : la liste des
+ * raccourcis s'ouvrirait par-dessus une vue qui écoute encore le clavier.
+ */
+function fenetreOuverte(action: string): boolean {
+  return !!document.querySelector(action === 'raccourcis' ? '[role="dialog"]' : '[role="dialog"]:not([data-annulable])');
 }
 
 /**
@@ -36,7 +40,7 @@ export function installerRaccourcis() {
     'keydown',
     (e) => {
       const action = actionClavier(e);
-      if (!action || e.defaultPrevented || estChampDeSaisie(e.target) || fenetreOuverte()) return;
+      if (!action || e.defaultPrevented || estChampDeSaisie(e.target) || fenetreOuverte(action)) return;
       if (action === 'raccourcis') raccourcisOuverts.value = true;
       else {
         const s = session.value;

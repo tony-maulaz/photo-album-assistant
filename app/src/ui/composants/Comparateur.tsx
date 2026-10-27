@@ -80,6 +80,7 @@ function Volet({
           <img
             src={url}
             alt={f.nom}
+            class={rotation % 180 ? 'quart' : undefined}
             draggable={false}
             style={{ transform: `translate(-50%, -50%) translate(${vue.x}px, ${vue.y}px) scale(${vue.zoom}) rotate(${rotation}deg)` }}
           />
@@ -99,6 +100,10 @@ export interface NavigationGroupes {
   suivant?: () => void;
   /** Accepter la proposition du groupe, puis passer au suivant. */
   accepter?: () => void;
+  /** Libellé chiffré du bouton (« Accepter : garder 1, écarter 2 »), comme sur la carte du groupe. */
+  libelleAccepter?: string;
+  /** Avertissement avant d'accepter (aucune photo gardée : tout le groupe sera mis de côté). */
+  alerte?: string;
   /** Outils du groupe affiché, après la navigation (« Choisir avec l'IA », D102). */
   outils?: ComponentChildren;
 }
@@ -126,6 +131,8 @@ export function Comparateur({
   const [seule, setSeule] = useState<number | null>(null);
   const zone = useRef<HTMLDivElement>(null);
   const n = photos.length;
+  // Touches 1 à 9 : seulement les photos affichées (4 au plus côte à côte, une seule en mode « une à une »).
+  const toucheVisible = (k: number) => (seule === null ? k <= Math.min(4, n) : k === seule + 1);
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
@@ -138,7 +145,7 @@ export function Comparateur({
       else if (e.key === 'ArrowLeft' && seule !== null) setSeule((seule - 1 + n) % n);
       else if ((e.key === 'PageDown' || e.key === 'ArrowRight') && navigation?.suivant) navigation.suivant();
       else if ((e.key === 'PageUp' || e.key === 'ArrowLeft') && navigation?.precedent) navigation.precedent();
-      else if (basculer && /^[1-9]$/.test(e.key) && Number(e.key) <= n && !e.ctrlKey && !e.metaKey) basculer(photos[Number(e.key) - 1]);
+      else if (basculer && /^[1-9]$/.test(e.key) && toucheVisible(Number(e.key)) && !e.ctrlKey && !e.metaKey) basculer(photos[Number(e.key) - 1]);
       else if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey && navigation?.accepter) navigation.accepter();
       else return;
       e.preventDefault();
@@ -183,7 +190,7 @@ export function Comparateur({
   }, []);
 
   return (
-    <div class="comparateur" role="dialog" aria-label={titre}>
+    <div class="comparateur" role="dialog" aria-label={titre} data-annulable>
       <div class="comparateur-tete">
         <h2>{seule === null ? titre : t`Photo ${seule + 1} sur ${n}`}</h2>
         <span class="discret">
@@ -203,10 +210,11 @@ export function Comparateur({
               {t`Groupe suivant ›`}
             </button>
             {navigation.accepter && (
-              <button type="button" class="principal" onClick={navigation.accepter} title={t`Touche A`}>
-                {t`Accepter et groupe suivant`}
+              <button type="button" class="principal" onClick={navigation.accepter} title={t`Touche A, puis groupe suivant`}>
+                {navigation.libelleAccepter ?? t`Accepter et groupe suivant`}
               </button>
             )}
+            {navigation.accepter && navigation.alerte && <span class="alerte-doublons">{navigation.alerte}</span>}
             {navigation.outils}
           </span>
         )}

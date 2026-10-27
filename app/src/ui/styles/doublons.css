@@ -621,3 +621,8 @@
   margin-left: 8px;
   font-size: 14px;
 }
+
+/* Alerte de « Comparer en grand », dans la ligne de navigation : sans marge haute. */
+.navigation-groupes .alerte-doublons {
+  margin: 0;
+}

@@ -370,6 +370,10 @@ try {
   await page.locator('.carte-doublons').first().getByRole('button', { name: 'Comparer en grand' }).click();
   const comparateur = page.locator('.comparateur');
   await comparateur.locator('.numero-volet').first().waitFor();
+  await capturer(page, 'v2c_comparer');
+  await page.evaluate(() => (document.documentElement.dataset.theme = 'dark'));
+  await capturer(page, 'v2d_comparer_sombre');
+  await page.evaluate(() => delete document.documentElement.dataset.theme);
   verifier(
     (await comparateur.locator('.numero-volet').count()) >= 2 && (await comparateur.locator('.chemin-doublon').first().innerText()).length > 0,
     'comparer en grand : un numéro et le dossier sur chaque photo',
@@ -381,6 +385,15 @@ try {
   await page.keyboard.press(String(n));
   await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.choisie').waitFor();
   verifier(n > 0, `comparer en grand : la touche ${n} garde la photo ${n}`);
+  // Ctrl+Z annule aussi dans la vue en grand, sans la fermer ; « Accepter » y porte le même libellé chiffré que la carte.
+  await page.keyboard.press('Control+z');
+  await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.a_ecarter').waitFor();
+  verifier(
+    (await comparateur.count()) === 1 && /^Accepter : garder \d+/.test(await comparateur.locator('.navigation-groupes button.principal').innerText()),
+    'comparer en grand : Ctrl+Z annule sans fermer la vue ; « Accepter : garder N, écarter M » comme sur la carte',
+  );
+  await page.keyboard.press(String(n));
+  await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.choisie').waitFor();
   const texteGroupe = await comparateur.locator('.navigation-groupes .discret').innerText();
   await page.keyboard.press('ArrowRight');
   await page.waitForFunction((avant) => document.querySelector('.comparateur .navigation-groupes .discret')?.textContent !== avant, texteGroupe);

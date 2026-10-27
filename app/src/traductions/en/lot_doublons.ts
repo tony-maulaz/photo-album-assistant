@@ -53,6 +53,7 @@ export const TEXTES: Record<string, string> = {
   'Aucune photo choisie : tout le groupe ira dans « {0} ».': 'No photo chosen: the whole group will go to “{0}”.',
   'Toutes les photos du groupe sont gardées.': 'All the photos of the group are kept.',
   'Touche A': 'Key A',
+  'Touche A, puis groupe suivant': 'Key A, then next group',
   'Touche C': 'Key C',
   'Comparer en grand': 'Compare full size',
   Afficher: 'Show',

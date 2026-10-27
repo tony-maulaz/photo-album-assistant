@@ -476,6 +476,16 @@ function Legende({ g, x, c, avis }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Co
   );
 }
 
+/** « Accepter : garder 1, écarter 2 » : le même sur la carte du groupe et dans « Comparer en grand » (D101). */
+function libelleAccepter(nGarder: number, nEcarter: number): string {
+  return nEcarter ? t`Accepter : garder ${nombre(nGarder)}, écarter ${nombre(nEcarter)}` : t`Accepter : garder ${nombre(nGarder)}`;
+}
+
+/** Alerte quand aucune photo du groupe n'est choisie : « Accepter » mettrait tout de côté. */
+function alerteRienGarde(g: GroupeDoublons): string {
+  return t`Aucune photo choisie : tout le groupe ira dans « ${dossierMisDeCote(raisonDe(g))} ».`;
+}
+
 /** Libellé de l'état d'une photo ; dans un groupe pas encore validé, une photo gardée est « à garder » (D101). */
 function libelleEtat(etat: EtatPhoto, valide: boolean): [classe: EtatPhoto, libelle: string] {
   if (etat === 'gardee' && !valide) return ['choisie', t`à garder`];
@@ -639,11 +649,11 @@ function CarteGroupe({
           <TuileDoublon key={x.m.id} g={g} x={x} c={comparaison} avis={avis} cote={reglages.value.tailleMiniatures} agir={agir} valide={valide} seule={seule} etoile={etoileId} />
         ))}
       </div>
-      {nGarder === 0 && <p class="alerte-doublons">{t`Aucune photo choisie : tout le groupe ira dans « ${dossierMisDeCote(raisonDe(g))} ».`}</p>}
+      {nGarder === 0 && <p class="alerte-doublons">{alerteRienGarde(g)}</p>}
       <footer>
         {!valide && (
           <button type="button" class="principal" data-action="accepter" onClick={() => agirGroupe(accepter(plan, [g]), texteEcartees(nEcarter, raisonDe(g)))} title={t`Touche A`}>
-            {nEcarter ? t`Accepter : garder ${nombre(nGarder)}, écarter ${nombre(nEcarter)}` : t`Accepter : garder ${nombre(nGarder)}`}
+            {libelleAccepter(nGarder, nEcarter)}
           </button>
         )}
         <button type="button" disabled={gardees === photos.length} onClick={() => agirGroupe(garderTout(plan, [g]), t`Toutes les photos du groupe sont gardées.`)}>
@@ -839,6 +849,10 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   const suite = [...liste.slice(iSection + 1), ...liste.slice(0, Math.max(0, iSection))].find((x) => x.aRelire > 0);
   // Le groupe comparé reste ouvert même s'il quitte la liste (relu par une touche, avec « À relire ») (D100).
   const gComparee = visibles[iComparee]?.g ?? groupes.find((g) => g.cle === comparee);
+  // « Accepter » de la vue en grand : le même compte que sur la carte du groupe.
+  const photosComparee = gComparee ? photosDuGroupe(gComparee, fichier) : [];
+  const nGarderComparee = photosComparee.filter((x) => aGarder(x.etat)).length;
+  const nEcarterComparee = photosComparee.filter((x) => x.etat === 'a_ecarter').length;
   const pct = total ? Math.round((relus / total) * 100) : 100;
 
   const photosOnglet = enAttenteOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
@@ -1030,6 +1044,9 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
                   setComparee(visibles[iComparee + 1]?.g.cle ?? null);
                 }
               : undefined,
+            // Le même libellé chiffré et la même alerte que sur la carte du groupe.
+            libelleAccepter: libelleAccepter(nGarderComparee, nEcarterComparee),
+            alerte: nGarderComparee === 0 ? alerteRienGarde(gComparee) : undefined,
             outils: <BoutonIARafales cibles={ciblesIA(s, [gComparee])} libelle={t`Choisir avec l’IA`} />,
           }}
         />

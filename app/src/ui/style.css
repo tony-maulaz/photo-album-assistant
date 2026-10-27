@@ -43,7 +43,9 @@
   color-scheme: light;
 }
 
-:root[data-theme='dark'] {
+/* La vue « Comparer en grand », toujours sombre, prend aussi ces couleurs en thème clair. */
+:root[data-theme='dark'],
+.comparateur {
   --fond: #141518;
   --surface: #1d1f23;
   --surface-2: #26292e;
@@ -2312,6 +2314,7 @@ kbd {
 /* Comparateur */
 
 .comparateur {
+  color-scheme: dark;
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -2392,6 +2395,7 @@ kbd {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  container-type: size;
 }
 
 .volet-image img {
@@ -2402,6 +2406,12 @@ kbd {
   max-height: 100%;
   transform-origin: center;
   user-select: none;
+}
+
+/* Photo tournée d'un quart de tour : ses côtés s'échangent (comme au Tri rapide). */
+.volet-image img.quart {
+  max-width: 100cqh;
+  max-height: 100cqw;
 }
 
 /* Étape 9 */
@@ -2788,7 +2798,7 @@ input.tres-court {
 }
 
 .tri-touches button,
-.comparateur button,
+.comparateur button:not(.principal),
 .visionneuse button:not(.fermer) {
   background: #2e2f33;
   color: #f1f1ee;
@@ -2796,7 +2806,7 @@ input.tres-court {
 }
 
 .tri-touches button:hover:not(:disabled),
-.comparateur button:hover:not(:disabled),
+.comparateur button:not(.principal):hover:not(:disabled),
 .visionneuse button:not(.fermer):hover:not(:disabled) {
   background: #3d3f45;
   border-color: transparent;
