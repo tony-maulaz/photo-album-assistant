@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   acceptablesSansVider,
   accepter,
+  prochainAAccepter,
   aRelire,
   avancementGroupes,
   choisir,
@@ -240,5 +241,21 @@ describe('copies dans plusieurs dossiers gardés : tout un dossier d’un coup (
     new Historique().enregistrer(garderAussi(p, ['Best of/IMG-WA1.jpg']));
     expect(exemplairesEcartesDans(groupes, dansBest, fichiers(p))).toEqual([]);
     expect(p.fichiers.get('Best of/IMG-WA1.jpg')?.statut).toBe('archive');
+  });
+});
+
+describe('bouton plein des Doublons (C-4.1) : le groupe à accepter qui suit le groupe en cours', () => {
+  const liste = ['a', 'b', 'c', 'd'];
+  const id = (x: string) => x;
+  it('le groupe en cours s’il reste à accepter, sinon le suivant, en repartant du début', () => {
+    expect(prochainAAccepter(liste, id, 'b', () => true, () => true)).toBe('b');
+    expect(prochainAAccepter(liste, id, 'b', () => true, (x) => x !== 'b')).toBe('c');
+    expect(prochainAAccepter(liste, id, 'd', () => true, (x) => x === 'a')).toBe('a');
+    expect(prochainAAccepter(liste, id, null, () => true, (x) => x !== 'a')).toBe('b');
+    expect(prochainAAccepter(liste, id, 'c', () => true, () => false)).toBeUndefined();
+  });
+  it('le groupe en cours masqué par le filtre « À accepter » : on part de sa place, pas du premier groupe', () => {
+    // « b » vient d'être accepté : il n'est plus affiché ; « a » et « c » restent à accepter.
+    expect(prochainAAccepter(liste, id, 'b', (x) => x !== 'b', (x) => x !== 'b')).toBe('c');
   });
 });

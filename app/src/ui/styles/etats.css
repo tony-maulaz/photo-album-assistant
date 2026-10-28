@@ -1,0 +1,776 @@
+/* Lot 3 de la charte : l'état de chaque photo écrit dans une bande sous elle
+   (CHARTE C-9), et « Comparer en grand » refait (C-7.5). Chargé en dernier :
+   ces règles remplacent les marques posées sur les photos. */
+
+/* ---------- C-9.1, C-9.2 : la bande d'état, 28 px sous la photo ----------
+   Un état, écrit ; jamais la forme d'un bouton : ni l'aplat vert plein, ni le bord des commandes. */
+.bande-etat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e1);
+  height: 28px;
+  padding: 0 var(--e1);
+  border-radius: 0 0 var(--r-photo) var(--r-photo);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--texte-2);
+}
+
+.bande-etat .icone {
+  flex: none;
+}
+
+/* À garder (choisie, gardée, sauvée) : vert doux, filet vert de 3 px en haut. */
+.bande-etat.garder,
+.bande-etat.gardee,
+.bande-etat.choisie {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+/* À écarter, Pas pour l'album : blanc, sans bord, texte gris. */
+.bande-etat.ecarter,
+.bande-etat.a_ecarter,
+.bande-etat.ecartee,
+.bande-etat.pas {
+  background: var(--surface);
+  color: var(--texte-2);
+}
+
+/* Mis de côté : neutre. */
+.bande-etat.mis {
+  background: var(--neutre-doux);
+  color: var(--texte-2);
+}
+
+/* Dans l'album : ambre clair, filet ambre ; Grande : ambre plein. */
+.bande-etat.album {
+  background: var(--etoile-doux);
+  color: var(--etoile-texte);
+  box-shadow: inset 0 3px 0 var(--etoile);
+}
+
+.bande-etat.grande {
+  background: var(--etoile);
+  color: var(--sur-etoile);
+}
+
+/* À décider : blanc, texte gris, sans graisse. */
+.bande-etat.decider {
+  background: var(--surface);
+  color: var(--texte-2);
+  font-weight: 400;
+}
+
+.bande-etat .etoiles {
+  color: inherit;
+}
+
+/* Marques au bout de la bande : tournée, recadrée, pile (C-9.6). */
+.bande-etat .fin-bande {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+}
+
+.bande-etat .mot-bande {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  flex: none;
+}
+
+/* Sans marque, rien au bout : le mot reste centré. */
+.bande-etat .fin-bande:empty {
+  display: none;
+}
+
+/* Le mot de l'état ne se coupe jamais (C-10.4) : quand la bande manque de place, les marques ↻ ✂ ▣
+   quittent le bout de la bande et passent en tête de la remarque (GrillePhotos, data-serree). */
+.marques-remarque {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  margin-right: var(--e1);
+  vertical-align: -3px;
+}
+
+.marques-remarque .badge,
+.marques-remarque .marque-recadree,
+.marques-remarque .badge-pile {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  transform: none;
+  font-weight: 600;
+}
+
+.marques-remarque button.badge-pile {
+  min-height: 24px;
+  cursor: pointer;
+}
+
+.bande-etat .fin-bande .badge,
+.bande-etat .fin-bande .marque-recadree,
+.bande-etat .fin-bande .badge-pile {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  transform: none;
+}
+
+/* La pile se déplie d'un clic sur sa marque : une cible de 24 px, sans forme de bouton. */
+.bande-etat .fin-bande button.badge-pile {
+  min-height: 24px;
+  padding: 0 var(--e1);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- C-9.6 : la remarque sous la bande, 14 px, deux lignes au plus ---------- */
+.remarque {
+  margin: var(--e1) 0 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  color: var(--texte-2);
+  text-align: left;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.remarque .icone {
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+
+.remarque .ligne-remarque {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remarque .badge {
+  display: inline;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+}
+
+.remarque .signal {
+  padding: 0;
+  background: none;
+  color: var(--afaire);
+}
+
+.remarque strong {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+/* Doublons : la photo (un bouton), sa bande, sa remarque. Le cadre et la bande forment une case. */
+.photo-doublon {
+  gap: 0;
+}
+
+.tuile-doublon .cadre-tuile {
+  border-radius: var(--r-photo) var(--r-photo) 0 0;
+  background: var(--mat);
+}
+
+.tuile-doublon .bande-etat {
+  width: 100%;
+}
+
+.remarque.legende-doublon {
+  display: -webkit-box;
+}
+
+.remarque .etoile-doublon {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+/* Grilles (Sélection, Floues, « Mis de côté ») : le mot centré comme à Doublons et dans Comparer ; avec
+   des marques au bout (C-9.6), le mot au bord de la photo et les marques à droite. */
+.tuile .bande-etat {
+  padding: 0 var(--e2);
+}
+
+/* La remarque a le même bord que le mot de la bande (C-6.4). */
+.tuile:has(.bande-etat) .remarque {
+  padding-inline: var(--e2);
+}
+
+.tuile:has(.bande-etat) .cadre-miniature {
+  border-radius: var(--r-photo) var(--r-photo) 0 0;
+  background: var(--mat);
+}
+
+/* ---------- C-7.5 : « Comparer en grand » ----------
+   Salle sombre (C-3.9) ; barres de 48, 32 et 56 px ; la scène entre les deux. */
+.comparateur:focus {
+  outline: none;
+}
+
+.comparateur-tete {
+  flex: none;
+  height: auto;
+  min-height: 48px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--filet);
+  white-space: nowrap;
+}
+
+/* Le titre passe à la ligne plutôt que d'être coupé (C-7.6, C-10.4). */
+.comparateur-tete h2 {
+  flex: 0 1 auto;
+  min-width: 10ch;
+  margin-left: var(--e1);
+  padding: 2px 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.comparateur-tete h2 .discret {
+  font-weight: 400;
+}
+
+.comparateur-tete .separateur {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 var(--e1);
+  background: var(--filet);
+}
+
+.comparateur-tete .fermer-comparateur,
+.cmp-bas button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  flex: none;
+  padding: 6px 12px;
+}
+
+.comparateur .choix-presentation {
+  flex: none;
+  margin-right: var(--e2);
+}
+
+.comparateur .choix-presentation button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: 6px 12px;
+  background: transparent;
+}
+
+.comparateur .choix-presentation button[aria-checked='true']:not(:disabled) {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Ligne d'information : l'avis de l'IA, la proposition, l'aide IA ; à droite, ce qui rassure. Elle fait
+   32 px et passe à la ligne quand le texte est long : jamais de « … » sur la consigne (C-10.4) ; la scène
+   se recalcule avec sa hauteur réelle. */
+.cmp-ligne {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--e2) var(--e4);
+  min-height: 32px;
+  padding: 2px var(--e5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--filet);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.cmp-ligne .espace {
+  flex: 1 0 0;
+}
+
+.cmp-ligne-texte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--e3);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.cmp-ligne-texte > span {
+  min-width: 0;
+}
+
+.annonce-ligne {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px var(--e4);
+  flex: 0 1 auto;
+}
+
+.cmp-ligne-texte > .bouton-ia,
+.cmp-ligne-texte > .ia-rafales-en-cours {
+  flex: none;
+}
+
+.comparateur .cmp-ligne .bouton-ia {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: 28px;
+  height: 28px;
+  padding: 0 var(--e3);
+}
+
+.avis-ia-ligne .icone {
+  vertical-align: -3px;
+  margin-right: var(--e1);
+}
+
+.cmp-ligne .alerte-doublons {
+  flex: none;
+  margin: 0;
+  color: var(--afaire);
+}
+
+.legende-une .plusieurs-photos {
+  white-space: normal;
+}
+
+.comparateur .plusieurs-photos {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  min-height: 24px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.rien-supprime-vue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  flex: none;
+  color: var(--texte-2);
+}
+
+.rien-supprime-vue .icone {
+  color: var(--accent);
+}
+
+/* La scène : côte à côte, une rangée de cartes de la largeur de leur photo ; une à la fois, la photo, sa
+   légende à droite et la bande des autres photos. */
+.cmp-scene {
+  padding: var(--e4) var(--e5);
+  overflow: hidden;
+}
+
+.cmp-scene.cote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e4);
+}
+
+/* Une rangée de cartes (deux ou trois rangées si « Côte à côte » est choisi pour beaucoup de photos). */
+.cmp-rangee {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--e4);
+  max-width: 100%;
+}
+
+.cmp-carte {
+  margin: 0;
+  padding: var(--e2);
+  border-radius: var(--r-objet);
+  background: var(--neutre-doux);
+  align-items: center;
+}
+
+/* La carte de la photo courante (↑ ↓) : elle reçoit le clavier, son contour se voit ; rien d'autre. */
+.cmp-carte {
+  flex: none;
+}
+
+.cmp-carte:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.legende-comparer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  width: 100%;
+  min-width: 0;
+  padding-top: var(--e2);
+}
+
+/* Sous la carte : la remarque, l'heure, le dossier ; deux lignes au plus (C-9.6), le texte entier dans
+   « Une à la fois » et l'infobulle. */
+.ligne-legende {
+  margin: 0;
+  max-height: 40px;
+  font-size: var(--t-petit);
+  line-height: 20px;
+  color: var(--texte-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+
+.ligne-legende .icone {
+  vertical-align: -2px;
+}
+
+.comparateur .chemin-doublon,
+.comparateur .remarque-doublon.defaut,
+.comparateur .etoile-doublon {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+.comparateur .alerte-legende,
+.comparateur .refus {
+  color: var(--afaire);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* Numéro de la photo : la touche qui la garde ou l'écarte (D100). */
+.numero-volet {
+  display: inline-block;
+  margin-right: var(--e2);
+  padding: 0 6px;
+  border: 1px solid var(--filet-fort);
+  border-radius: var(--r-photo);
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  font-weight: 700;
+}
+
+/* L'état et son choix (C-4.9) : la case allumée est l'état. « À garder » vert doux et filet vert ;
+   « À écarter » neutre et bordé : ils ne se ressemblent jamais (C-9.2). */
+.comparateur .choix-photo {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1.5px solid var(--contour);
+  border-radius: var(--r-commande);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.comparateur .choix-photo button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 37px;
+  padding: 0 var(--e2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--texte-2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.comparateur .choix-photo button + button {
+  border-left: 1.5px solid var(--contour);
+}
+
+.comparateur .choix-photo button:hover:not(:disabled) {
+  background: var(--neutre-doux);
+}
+
+/* Allumé : doux et bordé de 2 px (C-4.9), jamais plein ; un éteint a un texte gris sans graisse. */
+.comparateur .choix-photo button:not(.on) {
+  font-weight: 400;
+}
+
+.comparateur .choix-photo button.on {
+  font-weight: 700;
+}
+
+.comparateur .choix-photo button.on.garder {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  box-shadow: inset 0 0 0 2px var(--accent), inset 0 4px 0 var(--accent);
+}
+
+/* À écarter allumé : neutre, plus clair que la carte en sombre (sinon il se confond avec un éteint). */
+.comparateur .choix-photo button.on.ecarter,
+.comparateur .choix-photo button.on.pas,
+.comparateur .choix-photo button.on.decider {
+  background: light-dark(var(--neutre-doux), var(--filet-fort));
+  color: var(--texte);
+  box-shadow: inset 0 0 0 2px var(--contour);
+}
+
+.comparateur .choix-photo button.on.album,
+.comparateur .choix-photo button.on.grande {
+  background: var(--etoile-doux);
+  color: var(--etoile-texte);
+  box-shadow: inset 0 0 0 2px var(--etoile), inset 0 4px 0 var(--etoile);
+}
+
+/* Quatre choix (Sélection) : une grille de deux colonnes sous la photo. */
+.comparateur .choix-photo:has(> button:nth-child(3)):not(.vertical) {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-self: stretch;
+}
+
+.comparateur .choix-photo:has(> button:nth-child(3)):not(.vertical) button {
+  justify-content: center;
+  border-left: 0;
+}
+
+.comparateur .choix-photo:has(> button:nth-child(3)):not(.vertical) button:nth-child(even) {
+  border-left: 1.5px solid var(--contour);
+}
+
+.comparateur .choix-photo:has(> button:nth-child(3)):not(.vertical) button:nth-child(n + 3) {
+  border-top: 1.5px solid var(--contour);
+}
+
+/* Une à la fois : les choix l'un sous l'autre, dans la légende. */
+.comparateur .choix-photo.vertical {
+  display: grid;
+  align-self: stretch;
+}
+
+.comparateur .choix-photo.vertical button {
+  min-height: 40px;
+  padding: 0 var(--e3);
+}
+
+.comparateur .choix-photo.vertical button + button {
+  border-left: 0;
+  border-top: 1.5px solid var(--contour);
+}
+
+.cmp-scene.une {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px auto;
+  gap: var(--e4);
+}
+
+.cmp-grande {
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Filet de sécurité : la photo ne déborde jamais de sa colonne (elle reste entière, contenue). */
+.cmp-grande .volet-image {
+  max-width: 100%;
+}
+
+.legende-une {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.titre-legende {
+  margin: 0;
+  font-weight: 700;
+}
+
+.outils-photo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+
+.outils-photo button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: 6px 12px;
+}
+
+.infos-une {
+  display: grid;
+  gap: var(--e1);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  color: var(--texte-2);
+  grid-template-columns: minmax(0, 1fr);
+  overflow-wrap: break-word;
+}
+
+/* Bande des autres photos : 1 colonne, 2 quand la hauteur manque ; chacune avec son état écrit. */
+.vignettes-comparateur {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vignettes-comparateur ol {
+  display: grid;
+  gap: var(--e1);
+  align-content: start;
+  min-height: 0;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.comparateur .vignette-comparer {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--e1);
+  border: 0;
+  border-radius: var(--r-commande);
+  background: transparent;
+}
+
+.comparateur .vignette-comparer.affichee {
+  background: var(--neutre-doux);
+  box-shadow: inset 0 0 0 2px var(--texte);
+}
+
+.cadre-vignette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--r-photo) var(--r-photo) 0 0;
+  background: var(--mat);
+}
+
+.cadre-vignette img {
+  display: block;
+}
+
+/* Barre du bas : les groupes, le rappel des flèches, le zoom, « Accepter ». */
+.cmp-bas {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  height: 56px;
+  padding: 0 var(--e5);
+  background: var(--surface);
+  border-top: 1px solid var(--filet);
+  white-space: nowrap;
+}
+
+.cmp-bas .espace {
+  flex: 1;
+}
+
+.touches-comparer {
+  margin-left: var(--e3);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  color: var(--texte-2);
+}
+
+/* Le chemin le plus court en entier (1 à 9, A) quand la barre a la place. */
+.touches-plus {
+  display: none;
+}
+
+@media (min-width: 1420px) {
+  .touches-plus {
+    display: inline;
+  }
+}
+
+.touches-comparer kbd {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+.zoom-comparer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  margin-right: var(--e3);
+}
+
+.cmp-bas button.carre {
+  justify-content: center;
+  width: 40px;
+  padding: 0;
+}
+
+/* Palier « texte agrandi » (C-7.6) : légende de 180 px ; le rappel des flèches reste (C-4.10), les
+   boutons de groupe et « Photo entière » gardent leur icône, leur nom passe dans aria-label et l'infobulle
+   (exception nommée de C-5.2). */
+@media (max-width: 1180px) {
+  .cmp-scene.une {
+    grid-template-columns: minmax(0, 1fr) 180px auto;
+  }
+
+  .cmp-bas .bouton-groupe .mot,
+  .zoom-comparer .mot {
+    display: none;
+  }
+
+  .cmp-bas .bouton-groupe {
+    padding: 6px 8px;
+  }
+
+  .touches-comparer {
+    margin-left: var(--e1);
+  }
+
+  .comparateur-tete,
+  .cmp-ligne,
+  .cmp-bas {
+    padding: 0 var(--e3);
+  }
+}
+
+/* « remarque · heure » : le point seulement s'il y a une remarque. */
+.resume-remarque:not(:empty)::after {
+  content: ' · ';
+}

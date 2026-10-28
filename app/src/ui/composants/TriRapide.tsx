@@ -15,7 +15,7 @@ import { Icone } from './Icones';
 import { useOriginal } from './Comparateur';
 import { useZoom } from './Zoom';
 
-const ETAT = { 0: aTraduire('Pas dans l’album'), 1: aTraduire('★ Dans l’album'), 2: aTraduire('★★ Grande photo') } as const;
+const ETAT = { 0: aTraduire('Pas pour l’album'), 1: aTraduire('★ Dans l’album'), 2: aTraduire('★★ Grande photo') } as const;
 
 export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
   const s = session.value!;

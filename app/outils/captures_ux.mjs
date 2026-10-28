@@ -845,7 +845,8 @@ try {
           barre_action: b('.page-selection .barre-action'),
           tuile_choisie: tuile ? (({ x, y, width, height }) => ({ x: Math.round(x), y: Math.round(y), largeur: Math.round(width), hauteur: Math.round(height) }))(tuile.getBoundingClientRect()) : null,
           outils_droite: b('.page-selection .outils-selection'),
-          rangee_bas: b('.page-selection .rangee-bas'),
+          // Les marques ↻ ✂ ▣ ont quitté la photo pour le bout de la bande d'état (lot 3 de la charte, C-9.6).
+          fin_bande: b('.page-selection .tuile.choisie .bande-etat'),
           barre_validation: b('.barre-validation'),
           viewport: `${innerWidth}x${innerHeight}`,
         };

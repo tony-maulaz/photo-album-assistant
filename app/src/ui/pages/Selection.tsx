@@ -20,7 +20,7 @@ import { DialogueDeplacer } from '../composants/Visionneuse';
 import { annuler, changerAlbum, changerReglages, reglages, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { aTraduire, langue, t } from '../../lib/langue';
-import { jourCourt, nombre, pluriel } from '../format';
+import { dateHeure, jourCourt, nombre, pluriel } from '../format';
 import { ancre, choisirVue, deplacerOuvert, selection, vue, VUE_AUTRES, VUE_MIS_DE_COTE } from '../organiser';
 import {
   avecPiles,
@@ -49,12 +49,54 @@ function estChampDeSaisie(e: KeyboardEvent): boolean {
   return t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName);
 }
 
-/** Choix posé sur la miniature : ★, ★★, ou la croix de « Pas pour l'album » (icône, C-1.4). */
-function Etoiles({ album }: { album: 0 | 1 | 2 }) {
-  return album === 0 ? <Icone nom="croix" taille={16} titre={t`Pas pour l’album`} /> : <>{album === 2 ? '★★' : '★'}</>;
+/** L'état d'une photo, écrit dans la bande sous elle (C-9.2) : ambre pour l'album, blanc pour le reste. */
+function etatAlbum(album: FichierPlan['album']): { classe: string; libelle: ComponentChildren } {
+  if (album === 1)
+    return {
+      classe: 'album',
+      libelle: (
+        <>
+          <span class="etoiles a1">★</span>
+          {t`Dans l’album`}
+        </>
+      ),
+    };
+  if (album === 2)
+    return {
+      classe: 'grande',
+      libelle: (
+        <>
+          <span class="etoiles a2">★★</span>
+          {t`Grande`}
+        </>
+      ),
+    };
+  if (album === 0)
+    return {
+      classe: 'pas',
+      libelle: (
+        <>
+          <Icone nom="croix" taille={16} />
+          {t`Pas pour l’album`}
+        </>
+      ),
+    };
+  return { classe: 'decider', libelle: t`À décider` };
 }
-/** Choix d'une photo en toutes lettres (comparateur), comme dans le tri rapide. */
-const CHOIX_PHOTO = { 0: aTraduire('Pas dans l’album'), 1: aTraduire('★ Dans l’album'), 2: aTraduire('★★ Grande photo') } as const;
+/** Les quatre choix d'une photo, en toutes lettres (Comparer en grand). */
+const CHOIX_PHOTO = [
+  [1, aTraduire('★ Dans l’album')],
+  [2, aTraduire('★★ Grande')],
+  [0, aTraduire('Pas pour l’album')],
+  [undefined, aTraduire('À décider')],
+] as const;
+const CLASSE_CHOIX = { 0: 'pas', 1: 'album', 2: 'grande' } as const;
+
+/** Avancement vers la cible de l'album (outil « Cible » et « Valider et continuer »). */
+function avancementCible(photos: FichierPlan[]) {
+  const s = session.value!;
+  return avancement(photos, { ...s.album, mode: s.album.cible.mode, nombre: s.album.cible.nombre, photosParPage: s.album.photosParPage });
+}
 
 const locale = () => (langue() === 'en' ? 'en-GB' : 'fr-CH');
 
@@ -76,65 +118,82 @@ function coupable(nom: string): ComponentChildren {
   return nom.split(/(?<=[_.-])/).flatMap((morceau, i) => (i ? [<wbr key={i} />, morceau] : [morceau]));
 }
 
-function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: string[]; ouverte: boolean; note?: number; choixIA?: string }) {
+/**
+ * Marques au bout de la bande (C-9.6) : tournée, recadrée, pile de photos semblables. La pile se
+ * déplie d'un clic sur sa marque ; le reste est dans l'infobulle.
+ */
+function MarquesBande({ f, pile, ouverte }: { f: FichierPlan; pile?: string[]; ouverte: boolean }) {
   return (
     <>
-      {note !== undefined && (
-        <span class="badge note-ia" title={t`Appréciation indicative de l’IA : ${note}/10`}>
-          {note}/10
+      {f.rotation ? (
+        <span class="badge rotation" title={t`Tournée de ${f.rotation}° pour l’album (touche R)`}>
+          <Icone nom="tourner" taille={16} titre={t`Tournée`} />
+        </span>
+      ) : null}
+      {f.recadrage ? (
+        <span class="marque-recadree" title={t`Recadrée pour l’album (touche K pour changer)`}>
+          <Icone nom="recadrer" taille={16} titre={t`Recadrée`} />
+        </span>
+      ) : null}
+      {pile && pile[0] === f.id && (
+        <button
+          type="button"
+          class="badge-pile"
+          title={ouverte ? t`Replier la pile` : t`Pile de ${pile.length} photos semblables : cliquer pour la déplier`}
+          aria-expanded={ouverte}
+          onClick={(e) => {
+            e.stopPropagation();
+            const n = new Set(pilesOuvertes.value);
+            if (n.has(pile[0])) n.delete(pile[0]);
+            else n.add(pile[0]);
+            pilesOuvertes.value = n;
+          }}
+        >
+          <Icone nom="pile" taille={16} titre={ouverte ? t`Replier` : t`Déplier`} />
+          {pile.length}
+        </button>
+      )}
+      {pile && pile[0] !== f.id && (
+        <span class="badge-pile dans-pile" title={t`Dans une pile de photos semblables`}>
+          <Icone nom="pile" taille={16} titre={t`Dans une pile`} />
         </span>
       )}
-      {f.album !== undefined && (
-        <span class={`etoiles a${f.album}`}>
-          <Etoiles album={f.album} />
-        </span>
-      )}
-      {/* En bas, une rangée : pile à gauche, rotation et recadrage au milieu, choix de l'IA à droite ; elle passe sur deux lignes plutôt que de se chevaucher. */}
-      <span class="rangee-bas">
-        <span>
-          {pile && pile[0] === f.id && (
-            <button
-              type="button"
-              class="badge-pile"
-              title={ouverte ? t`Replier la pile` : t`Pile de ${pile.length} photos semblables : cliquer pour la déplier`}
-              onClick={(e) => {
-                e.stopPropagation();
-                const n = new Set(pilesOuvertes.value);
-                if (n.has(pile[0])) n.delete(pile[0]);
-                else n.add(pile[0]);
-                pilesOuvertes.value = n;
-              }}
-            >
-              <Icone nom={ouverte ? 'chevronBas' : 'chevronDroite'} taille={14} titre={ouverte ? t`Replier` : t`Déplier`} />
-              {pile.length}
-            </button>
-          )}
-          {pile && pile[0] !== f.id && <span class="badge-pile dans-pile" title={t`Dans une pile de photos semblables`} />}
-        </span>
-        <span>
-          {f.rotation || f.recadrage ? (
-            <span class="badge rotation">
-              {f.rotation ? (
-                <span title={t`Tournée pour l’album (touche R)`}>
-                  <Icone nom="tourner" taille={14} titre={t`Tournée`} /> {f.rotation}°
-                </span>
-              ) : null}
-              {f.recadrage ? (
-                <span title={t`Recadrée pour l’album (touche K pour changer)`}>
-                  <Icone nom="recadrer" taille={14} titre={t`Recadrée`} />
-                </span>
-              ) : null}
+    </>
+  );
+}
+
+/** La remarque sous la bande (C-9.6) : l'heure, les signaux, la note de l'IA ; la description de l'IA en seconde ligne. */
+function RemarqueSelection({ quand, signaux, note, choixIA, description }: { quand: string; signaux: Signal[]; note?: number; choixIA?: string; description?: string }) {
+  return (
+    <>
+      <span class="ligne-remarque">
+        <span class="num">{quand}</span>
+        {signaux.map((x) => (
+          <span key={x}>
+            {' · '}
+            <span class={`signal ${x}`}>{t(LIBELLES_SIGNAUX[x])}</span>
+          </span>
+        ))}
+        {note !== undefined && (
+          <>
+            {' · '}
+            <span class="badge note-ia" title={t`Appréciation indicative de l’IA : ${note}/10`}>
+              <Icone nom="etincelle" taille={14} titre={t`Selon l’IA`} />
+              {note}/10
             </span>
-          ) : null}
-        </span>
-        <span>
-          {choixIA && (
+          </>
+        )}
+        {choixIA && (
+          <>
+            {' · '}
             <span class="badge choix-ia" title={t`Meilleure de sa pile selon l’IA : ${choixIA}`}>
+              <Icone nom="etincelle" taille={14} titre={t`Selon l’IA`} />
               {t`choix IA`}
             </span>
-          )}
-        </span>
+          </>
+        )}
       </span>
+      {description !== undefined && <span class="ligne-remarque description-ia">{description}</span>}
     </>
   );
 }
@@ -142,7 +201,7 @@ function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: st
 function Cible({ photos }: { photos: FichierPlan[] }) {
   const s = session.value!;
   const c = s.album.cible;
-  const a = avancement(photos, { ...s.album, mode: c.mode, nombre: c.nombre, photosParPage: s.album.photosParPage });
+  const a = avancementCible(photos);
   const unite = c.mode === 'pages' ? t`pages` : t`photos`;
   return (
     <section class="outil">
@@ -670,35 +729,22 @@ export function PageSelection() {
             ouvrir: (i) => ouvrirTri(i),
             classe: (f) => (f.album === undefined ? 'a-decider' : f.album === 0 ? 'refusee' : 'retenue'),
             groupes,
-            badges: (f) => (
-              <Badges
-                f={f}
-                pile={pilesDe.get(f.id)}
-                ouverte={pilesOuvertes.value.has(pilesDe.get(f.id)?.[0] ?? '')}
+            // L'état écrit sous chaque photo, ses marques au bout de la bande, une remarque dessous (C-9).
+            etat: (f) => etatAlbum(f.album),
+            finBande: (f) => <MarquesBande f={f} pile={pilesDe.get(f.id)} ouverte={pilesOuvertes.value.has(pilesDe.get(f.id)?.[0] ?? '')} />,
+            telleQuAlbum: true,
+            // « Pas pour l'album » tient dans la bande, même à la plus petite taille (C-10.4).
+            largeurMin: 156,
+            lignesLegende: decrites ? 2 : 1,
+            legende: (f) => (
+              <RemarqueSelection
+                quand={quand(f)}
+                signaux={infos.get(f.id)?.signaux ?? []}
                 note={ia.appreciations[f.id]?.note}
                 choixIA={ia.meilleures[f.id]?.justification}
+                description={decrites ? (ia.etiquettes[f.id]?.description ?? '') : undefined}
               />
             ),
-            pastilles: (f) => {
-              const signaux = infos.get(f.id)?.signaux ?? [];
-              return signaux.length
-                ? signaux.map((x) => (
-                    <span key={x} class={`signal ${x}`} title={t(LIBELLES_SIGNAUX[x])}>
-                      {t(LIBELLES_SIGNAUX[x])}
-                    </span>
-                  ))
-                : null;
-            },
-            lignesLegende: decrites ? 2 : 1,
-            legende: (f) =>
-              decrites ? (
-                <>
-                  <span>{quand(f)}</span>
-                  <span class="description-ia">{ia.etiquettes[f.id]?.description ?? ''}</span>
-                </>
-              ) : (
-                quand(f)
-              ),
             infobulle: (f) => {
               const info = infos.get(f.id);
               return [
@@ -729,7 +775,7 @@ export function PageSelection() {
           </>
         }
         alertes={total.retenues === 0 ? [t`Aucune photo dans l’album`] : []}
-        fini={total.retenues > 0 && (total.aDecider === 0 || avancement(toutes, { ...s.album, mode: s.album.cible.mode, nombre: s.album.cible.nombre, photosParPage: s.album.photosParPage }).pourcent >= 100)}
+        fini={total.retenues > 0 && (total.aDecider === 0 || avancementCible(toutes).pourcent >= 100)}
         revenir={() => revenirDe('selection')}
         valider={() => validerEtape('selection')}
       />
@@ -740,36 +786,59 @@ export function PageSelection() {
         <Comparateur
           photos={comparees}
           fermer={() => (comparaison.value = null)}
-          entete={(f) => (
+          etat={(f) => ({
+            classe: f.album === undefined ? 'decider' : CLASSE_CHOIX[f.album],
+            libelle: t(CHOIX_PHOTO.find(([v]) => v === f.album)![1]),
+            icone: f.album === 0 ? 'croix' : undefined,
+          })}
+          // Le choix allumé est l'état (C-4.9) : quatre choix, en grille sous la photo ou en liste à droite.
+          choix={(f) =>
+            CHOIX_PHOTO.map(([valeur, libelle]) => (
+              <button key={String(valeur)} type="button" class={`${valeur === undefined ? 'decider' : CLASSE_CHOIX[valeur]}${f.album === valeur ? ' on' : ''}`} aria-pressed={f.album === valeur} onClick={() => choisir([f.id], valeur)}>
+                {t(libelle)}
+              </button>
+            ))
+          }
+          // Côte à côte, sous la photo : ses quatre choix seulement ; la ligne d'information dit la photo courante
+          // (date, dossier, avis de l'IA en bref) ; le texte entier est dans « Une à la fois » et l'infobulle.
+          ligne={(f) => {
+            const note = ia.appreciations[f.id]?.note;
+            return (
+              <>
+                <span>
+                  <strong>{t`Photo ${comparees.indexOf(f) + 1}`}</strong>
+                  {' · '}
+                  <span class="num">{dateHeure(f.date)}</span>
+                  {` · ${cheminDossier(plan, f.dossier) || t`Photos`}`}
+                </span>
+                {(note !== undefined || ia.meilleures[f.id]) && (
+                  <span class="avis-ia-ligne">
+                    <Icone nom="etincelle" taille={16} titre={t`Selon l’IA`} />
+                    {[note !== undefined ? t`note ${note}/10` : '', ia.meilleures[f.id] ? t`meilleure de sa pile` : ''].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                <span class="discret">{t`Un clic sur un choix le change ; Ctrl+Z l’annule.`}</span>
+              </>
+            );
+          }}
+          infobulle={(f) => [f.nom, dateHeure(f.date), cheminDossier(plan, f.dossier) || t`Photos`, ...lignesIA(s, f.id)].join('\n')}
+          details={(f) => [f.nom, dateHeure(f.date), cheminDossier(plan, f.dossier) || t`Photos`, ...(infos.get(f.id)?.signaux ?? []).map((x) => t(LIBELLES_SIGNAUX[x])), ...lignesIA(s, f.id)].map((l) => <span key={l}>{l}</span>)}
+          // Recadrer et tourner la copie de l'album, comme dans la grille (D108).
+          outils={(f) => (
             <>
-              {/* Le choix actuel en toutes lettres, sur chaque photo. */}
-              <span class={`choix-actuel a${f.album ?? 'x'}`}>{f.album === undefined ? t`À décider` : t(CHOIX_PHOTO[f.album])}</span>
-              {lignesIA(s, f.id).length > 0 && <span class="texte-ia">{lignesIA(s, f.id).join(' · ')}</span>}
+              <button type="button" onClick={() => tournerPhotos([f.id], 90)} title={t`Tourner d’un quart de tour`}>
+                <Icone nom="tourner" taille={20} />
+                {t`Tourner`}
+              </button>
+              <button type="button" onClick={() => (recadrageOuvert.value = f.id)} title={t`Recadrer ou redresser la copie de l’album`}>
+                <Icone nom="recadrer" taille={20} />
+                {t`Recadrer…`}
+              </button>
             </>
           )}
-          actions={(f) => (
-            <>
-              {(
-                [
-                  [1, '★', t`Dans l’album`],
-                  [2, '★★', t`Grande photo (pleine page)`],
-                  [0, t`Pas pour l’album`, t`Pas pour l’album`],
-                  [undefined, t`À décider`, t`À décider`],
-                ] as const
-              ).map(([valeur, libelle, titre]) => (
-                <button
-                  key={String(valeur)}
-                  type="button"
-                  class={f.album === valeur ? `actif a${valeur ?? 'x'}` : ''}
-                  aria-pressed={f.album === valeur}
-                  title={titre}
-                  onClick={() => choisir([f.id], valeur)}
-                >
-                  {libelle}
-                </button>
-              ))}
-            </>
-          )}
+          // Quatre choix sous la photo (deux rangées, sans ligne de texte), et « Pas pour l'album » entier sous
+          // chaque vignette, en anglais aussi (C-10.4).
+          mesures={{ legendeCote: 88, carteMin: 340, largeurVignetteMin: 180 }}
         />
       )}
     </div>

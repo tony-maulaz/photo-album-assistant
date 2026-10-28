@@ -394,9 +394,9 @@ try {
   );
   await page.keyboard.press(String(n));
   await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.choisie').waitFor();
-  const texteGroupe = await comparateur.locator('.navigation-groupes .discret').innerText();
+  const texteGroupe = await comparateur.locator('.position-groupe').innerText();
   await page.keyboard.press('ArrowRight');
-  await page.waitForFunction((avant) => document.querySelector('.comparateur .navigation-groupes .discret')?.textContent !== avant, texteGroupe);
+  await page.waitForFunction((avant) => document.querySelector('.comparateur .position-groupe')?.textContent !== avant, texteGroupe);
   verifier(true, `comparer en grand : → passe au groupe suivant (${texteGroupe})`);
   await page.keyboard.press('Escape');
   await comparateur.waitFor({ state: 'detached' });
@@ -440,14 +440,14 @@ try {
   const tuilesIA = rafale.locator('.photo-doublon');
   verifier(
     appelsIA.rafales === 1 && (await tuilesIA.nth(1).locator('.etoile-doublon').count()) === 1 && (await tuilesIA.nth(0).locator('.raison-ia').innerText()).includes('yeux fermés'),
-    'IA des rafales : la photo choisie par l’IA porte la ★, sa raison sous chaque photo',
+    'IA des rafales : la photo choisie par l’IA est « Conseillée par l’IA », sa raison sous chaque photo',
   );
   if (await rafale.locator('.pastille-attente').count()) {
     verifier((await rafale.locator('.pastille-attente').innerText()).includes('Choix de l’IA') && (await rafale.locator('.tuile-doublon.choisie').count()) === 1, 'IA des rafales : son choix est posé, à valider');
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Control+z');
     await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
-    verifier((await rafale.locator('.pastille-proposition').innerText()).includes('L’IA préfère la photo ★'), 'IA des rafales : choix annulé, la carte dit que l’IA préfère une autre photo');
+    verifier((await rafale.locator('.pastille-proposition').innerText()).includes('L’IA conseille une autre photo'), 'IA des rafales : choix annulé, la carte dit que l’IA conseille une autre photo');
   }
   await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA/ }).waitFor({ state: 'detached' });
   verifier(true, 'IA des rafales : déjà examinée, la rafale n’est plus proposée (relancer ne repaie pas)');

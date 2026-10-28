@@ -23,23 +23,6 @@
   line-height: var(--lh-petit);
 }
 
-/* Colonne en haut à gauche, sous la coche de la sélection : « nouveau », puis les signaux (peu nette…). */
-.pastilles-gauche {
-  position: absolute;
-  left: 6px;
-  top: 34px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  max-width: calc(100% - 12px);
-  pointer-events: none;
-}
-
-.pastilles-gauche > * {
-  pointer-events: auto;
-}
-
 .pastille-nouveau {
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
@@ -64,37 +47,6 @@
 
 .legende .description-ia {
   color: var(--texte-2);
-}
-
-/* --- Badges du bas de la miniature : une rangée qui passe sur deux lignes plutôt que de se chevaucher --- */
-
-.rangee-bas {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
-  display: flex;
-  flex-wrap: wrap-reverse;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--e1);
-  pointer-events: none;
-}
-
-.rangee-bas > span {
-  display: flex;
-  pointer-events: auto;
-}
-
-.tuile .cadre-miniature .rangee-bas .badge,
-.tuile .cadre-miniature .rangee-bas .badge-pile {
-  position: static;
-  transform: none;
-}
-
-.rangee-bas .badge.rotation {
-  display: inline-flex;
-  gap: 6px;
 }
 
 /* --- Titre de la vue : le résumé passe dessous, le nom se lit en entier --- */
@@ -190,11 +142,6 @@
 
 .sorties-sans-photo li > .discret {
   flex: none;
-}
-
-.comparateur .volet-entete > strong {
-  flex: none;
-  white-space: nowrap;
 }
 
 /* --- Résultats des aides IA : au-dessus des messages en bas à droite --- */
@@ -320,34 +267,3 @@
   border-color: var(--filet-fort);
 }
 
-/* --- Comparateur : le choix actuel lisible sur chaque photo, le bouton du choix allumé --- */
-
-.comparateur .volet-entete > .discret {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.comparateur .volet-entete .choix-actuel {
-  flex: none;
-}
-
-.comparateur .volet-actions button.actif {
-  background: var(--filet-fort);
-  box-shadow: inset 0 0 0 2px var(--texte);
-}
-
-.comparateur .volet-actions button.actif.a1,
-.comparateur .volet-actions button.actif.a2 {
-  background: var(--etoile-doux);
-  color: var(--etoile-texte);
-  box-shadow: inset 0 0 0 2px var(--etoile-texte);
-}
-
-.comparateur .volet-actions button.actif.a0 {
-  background: var(--perte-doux);
-  color: var(--perte);
-  box-shadow: inset 0 0 0 2px var(--perte);
-}

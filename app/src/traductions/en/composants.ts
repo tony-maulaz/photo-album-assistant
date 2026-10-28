@@ -88,19 +88,9 @@ export const TEXTES: Record<string, string> = {
   'Chargement…': 'Loading…',
   Comparer: 'Compare',
   'Photo {0} sur {1}': 'Photo {0} of {1}',
-  '← → : groupe précédent ou suivant · 1, 2, 3… : garder ou écarter la photo de ce numéro · Entrée : une à une · molette : zoom · Échap : fermer':
-    '← →: previous or next group · 1, 2, 3…: keep or set aside the photo with that number · Enter: one by one · wheel: zoom · Esc: close',
   'Touche {0} : garder ou écarter cette photo': 'Key {0}: keep or set aside this photo',
-  'Double-clic ou Entrée : une à une, en grand · molette : zoom · glisser : déplacer · Échap : fermer':
-    'Double-click or Enter: one by one, enlarged · wheel: zoom · drag: move · Esc: close',
-  '← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte':
-    '← →: previous or next photo, same zoom · wheel: zoom · Esc: back to side by side',
-  'Flèche gauche': 'Left arrow',
-  'Flèche droite': 'Right arrow',
   'Côte à côte': 'Side by side',
-  'Taille normale': 'Normal size',
   Fermer: 'Close',
-  '{0} : double-clic ou Entrée pour les voir une à une.': '{0}: double-click or press Enter to see all the photos one by one.',
 
   // Dialogues.tsx
   Accepter: 'Accept',
@@ -220,7 +210,6 @@ export const TEXTES: Record<string, string> = {
   'Ses photos passent dans le dossier choisi. Les plus proches dans le temps sont en tête.': 'Its photos go into the chosen folder. The closest in time come first.',
 
   // TriRapide.tsx
-  'Pas dans l’album': 'Not in the album',
   '★ Dans l’album': '★ In the album',
   '★★ Grande photo': '★★ Large photo',
   'Tri rapide': 'Quick sort',

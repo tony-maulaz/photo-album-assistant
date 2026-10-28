@@ -27,7 +27,20 @@
 //   - « Annuler » et « Rétablir » tiennent sur une ligne de 40 px, même avec le plus
 //     long geste court (sonde), sans déborder ni faire bouger la grille (C-8.2) ;
 //   - toute aide IA porte l'étincelle et son prix, ou « … » (C-4.6) ;
-//   - aucune commande coupée par le bord de l'écran (C-6.2), rien qui défile en largeur (C-7.1).
+//   - aucune commande coupée par le bord de l'écran (C-6.2), rien qui défile en largeur (C-7.1) ;
+//   - rien n'est posé sur une photo : ni pastille, ni étoile, ni marque, ni pseudo-élément écrit (C-9.1) ;
+//   - toute photo qui a un état (Doublons, Floues, Sélection, vignettes de Comparer) a sa bande de 28 px
+//     juste dessous, qui n'a ni l'aplat vert plein ni le bord d'une commande (C-9.1, C-9.2).
+//   - le mot d'une bande d'état n'est jamais coupé, même au plus petit curseur avec ↻ au bout (C-10.4).
+// « Comparer en grand » à 2, 3, 4 et 6 photos (copies exactes ajoutées au dossier), aux deux tailles et au
+// palier « texte agrandi » (1024×464, soit 1280 à 125 %, C-7.6) : présentation calculée (une paire côte à
+// côte), toutes les photos à l'écran, côte à côte jamais sous 220 px de haut (sauf une paire), « Accepter »
+// plein visible, rappel « ↑ ↓ photo · ← → groupe » à toutes les tailles, « Rien n'est supprimé », aucun
+// texte coupé (titre, ligne d'information, bandes, légende ; C-10.4), le clavier dans la vue à l'ouverture,
+// Entrée bascule (aussi après ↓ en côte à côte, sans changer l'état d'aucune photo), « Côte à côte » choisi
+// à la main garde toutes les photos à l'écran (6 photos), ↓ change de photo en « Une à la fois ».
+// Comparer de la Sélection à 3 photos, aux trois tailles : mêmes contrôles, et ↓ puis Entrée ne met
+// aucune photo dans l'album.
 // Sur les pages ordinaires, au clavier (Tab) : chaque arrêt montre le contour
 // noir 2 / jaune 3 / noir 2 (C-9.5).
 //
@@ -50,6 +63,8 @@ const TAILLES = [
   [1440, 900],
   [1280, 580],
 ];
+/** « Comparer en grand » : en plus, le palier « texte agrandi » (C-7.6). */
+const TAILLES_COMPARER = [...TAILLES, [1024, 464]];
 const THEMES = ['light', 'dark'];
 /** Étapes où l'on écarte des photos : la barre du bas dit « Rien n'est supprimé » (C-8.4). */
 const ECARTE = new Set(['floues', 'doublons', 'tri', 'lieux', 'sortie']);
@@ -61,7 +76,9 @@ const MINIMUM_PAGES = 20;
  * - Sélection, sa barre d'action, Décider une par une, la visionneuse : choisir ★ / ★★ / ✕ sur les photos ;
  * - Petits dossiers sans proposition de l'IA : deux dossiers voisins au choix, aucun n'est mis en avant.
  */
-const SANS_PLEIN = new Set(['selection', 'selection-barre-action', 'tri-rapide', 'visionneuse', 'petits-dossiers']);
+const SANS_PLEIN = new Set(['selection', 'selection-barre-action', 'tri-rapide', 'visionneuse', 'petits-dossiers', 'selection-comparer-3']);
+/** Pages dont les photos ont un état : au moins une bande d'état à l'écran (C-9.1). */
+const BANDES = new Set(['floues', 'doublons', 'selection', 'selection-barre-action']);
 
 const photos = readdirSync(PHOTOS).filter((f) => f.endsWith('.jpg') && !f.startsWith('Vacances'));
 
@@ -311,6 +328,61 @@ function mesurer() {
     })
     .map((x) => `${x.tagName.toLowerCase()}.${[...x.classList].join('.')} (${x.scrollWidth} pour ${x.clientWidth})`);
   const pageEnLargeur = document.scrollingElement.scrollWidth > W + 1;
+  // C-9.1 : rien de posé sur une photo visible (élément en position absolue ou fixe avec du texte ou une
+  // icône, ou pseudo-élément écrit, dans le cadre de la photo).
+  const CADRES = '.cadre-miniature, .cadre-tuile, .volet-image, .cadre-vignette, .tri-image, .image-visionneuse';
+  const marques = [];
+  for (const img of document.querySelectorAll(`:is(${CADRES}) :is(img, canvas)`)) {
+    const ri = img.getBoundingClientRect();
+    if (ri.width < 40 || ri.height < 40 || !visible(img)) continue;
+    const cadre = img.closest(CADRES);
+    // Vue plein écran : la photo elle-même (ses commandes sont autour) ; miniature : tout son cadre.
+    const rc = cadre.matches('.tri-image, .image-visionneuse') ? ri : cadre.getBoundingClientRect();
+    const porteur = cadre.closest('.tuile, .photo-doublon, .volet, .vignette-comparer, .tri-rapide, .visionneuse') ?? cadre.parentElement;
+    for (const e of porteur.querySelectorAll('*')) {
+      if (e === img || e === cadre || e.contains(cadre) || cadre === e || img.contains(e)) continue;
+      if (!/^(absolute|fixed)$/.test(getComputedStyle(e).position)) continue;
+      if (!((e.textContent || '').trim() || e.querySelector('svg') || e.tagName.toLowerCase() === 'svg')) continue;
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height || getComputedStyle(e).visibility === 'hidden') continue;
+      if (r.left >= rc.left - 2 && r.right <= rc.right + 2 && r.top >= rc.top - 2 && r.bottom <= rc.bottom + 2) marques.push(`.${[...e.classList].join('.')} « ${nom(e)} »`);
+    }
+    for (const avant of ['::before', '::after']) {
+      const c = getComputedStyle(cadre, avant).content;
+      if (c && !['none', 'normal', '""', "''"].includes(c)) marques.push(`${avant} « ${c} » sur .${[...cadre.classList].join('.')}`);
+    }
+  }
+  // C-9.1, C-9.2 : la bande d'état sous chaque photo qui a un état ; jamais la forme d'un bouton.
+  const verts2 = verts;
+  const bandes = [];
+  const photosEtat = [...document.querySelectorAll('.tuile-doublon .cadre-tuile, .page-selection .tuile .cadre-miniature, .page-floues .tuile .cadre-miniature, .vignette-comparer .cadre-vignette')].filter((c) => {
+    const b = c.getBoundingClientRect();
+    return b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < H;
+  });
+  for (const cadre of photosEtat) {
+    const bande = cadre.nextElementSibling;
+    const ici = `${cadre.closest('[aria-label]')?.getAttribute('aria-label')?.slice(0, 30) ?? cadre.className}`;
+    if (!bande?.matches('.bande-etat')) {
+      bandes.push(`pas de bande sous ${ici}`);
+      continue;
+    }
+    const rb = bande.getBoundingClientRect();
+    const rc = cadre.getBoundingClientRect();
+    const st = getComputedStyle(bande);
+    if (Math.abs(rb.height - 28) > 1) bandes.push(`bande de ${Math.round(rb.height)} px sous ${ici}`);
+    if (rb.top < rc.bottom - 1) bandes.push(`bande posée sur la photo ${ici}`);
+    if (verts2.has(st.backgroundColor)) bandes.push(`bande au vert plein « ${nom(bande)} »`);
+    if (parseFloat(st.borderTopWidth) > 0 && st.borderTopStyle !== 'none') bandes.push(`bande bordée comme une commande « ${nom(bande)} »`);
+    if (!(bande.textContent || '').trim()) bandes.push(`bande sans mot sous ${ici}`);
+  }
+  // C-10.4 : le mot d'une bande n'est jamais coupé (ni « … » ni coupé net), sur toute bande visible.
+  for (const bande of document.querySelectorAll('.bande-etat')) {
+    const b = bande.getBoundingClientRect();
+    if (!b.width || b.bottom < 0 || b.top > H) continue;
+    const mot = bande.querySelector('.mot-bande') ?? bande;
+    const rm = mot.getBoundingClientRect();
+    if (bande.scrollWidth > bande.clientWidth + 1 || mot.scrollWidth > mot.clientWidth + 1 || rm.right > b.right + 1) bandes.push(`mot d’état coupé « ${nom(bande)} » (${bande.scrollWidth} pour ${bande.clientWidth} px)`);
+  }
   return {
     min,
     petits: [...new Set(petits)],
@@ -334,6 +406,63 @@ function mesurer() {
     horsEcran: [...new Set(horsEcran)],
     enLargeur: [...new Set(enLargeur)],
     pageEnLargeur,
+    marques: [...new Set(marques)],
+    bandes: [...new Set(bandes)],
+    photosEtat: photosEtat.length,
+  };
+}
+
+/** « Comparer en grand » ouvert : présentation, photos à l'écran, barres (C-7.5). */
+function mesurerComparer() {
+  const vue = document.querySelector('.comparateur');
+  if (!vue) return null;
+  const H = innerHeight;
+  const W = innerWidth;
+  const dedans = (e) => {
+    const b = e.getBoundingClientRect();
+    return b.width > 0 && b.height > 0 && b.top >= -1 && b.bottom <= H + 1 && b.left >= -1 && b.right <= W + 1;
+  };
+  const scene = vue.querySelector('.volets');
+  const presentation = vue.dataset.presentation ?? '';
+  const images = [...vue.querySelectorAll('.volet-image')].map((x) => x.getBoundingClientRect());
+  const vignettes = [...vue.querySelectorAll('.vignette-comparer')];
+  const ol = vue.querySelector('.vignettes-comparateur ol')?.getBoundingClientRect();
+  const plein = vue.querySelector('button.principal');
+  return {
+    presentation,
+    titre: vue.querySelector('.titre-legende')?.textContent ?? '',
+    volets: vue.querySelectorAll('.volet').length,
+    hauteurs: images.map((b) => Math.round(b.height)),
+    imagesDedans: [...vue.querySelectorAll('.volet-image')].every(dedans),
+    vignettes: vignettes.length,
+    vignettesVisibles: vignettes.filter((v) => {
+      const b = v.getBoundingClientRect();
+      return ol && b.top >= ol.top - 1 && b.bottom <= ol.bottom + 1 && dedans(v);
+    }).length,
+    sceneDebordeLargeur: !!scene && scene.scrollWidth > scene.clientWidth + 1,
+    pleinVisible: !!plein && dedans(plein),
+    rappel: (vue.querySelector('.touches-comparer')?.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    rappelVisible: (() => {
+      const r = vue.querySelector('.touches-comparer');
+      return !!r && getComputedStyle(r).display !== 'none' && dedans(r);
+    })(),
+    rienSupprime: !!vue.querySelector('.rien-supprime-vue .icone'),
+    // État de chaque photo (bandes des cartes ou des vignettes) : ↓ puis Entrée ne doit rien y changer.
+    etats: (presentation === 'une' ? [...vue.querySelectorAll('.vignette-comparer .bande-etat')].map((x) => (x.textContent || '').trim().replace(/^\d+ · /, '')) : [...vue.querySelectorAll('.cmp-carte .choix-photo button.on')].map((x) => (x.textContent || '').trim())).join(' | '),
+    // « Côte à côte » impossible à cette taille (photos trop petites) : le bouton est désactivé, sa raison écrite.
+    coteImpossible: !!vue.querySelector('.choix-presentation button:first-child:disabled'),
+    focusDansLaVue: !!document.activeElement?.closest('.comparateur'),
+    // C-10.4 : aucun texte coupé (« … » ou coupé net) ; la remarque des cartes a droit à 2 lignes.
+    coupes: [...vue.querySelectorAll('.comparateur-tete h2, .cmp-ligne-texte > span, .rien-supprime-vue, .alerte-doublons, .titre-legende, .infos-une > *, .choix-photo button, .touches-comparer, .position-groupe, .plusieurs-photos, .bande-etat')]
+      .filter((x) => {
+        const b = x.getBoundingClientRect();
+        if (!b.width || !b.height || getComputedStyle(x).display === 'none') return false;
+        const parent = x.closest('.legende-une');
+        // La légende de « Une à la fois » défile si elle est plus haute que la scène : rien n'y est perdu.
+        const horsVue = parent ? false : b.bottom > H + 1 || b.right > W + 1;
+        return horsVue || x.scrollWidth > x.clientWidth + 1 || x.scrollHeight > x.clientHeight + 2;
+      })
+      .map((x) => `${x.className || x.tagName.toLowerCase()} « ${(x.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 50)} »`),
   };
 }
 
@@ -405,6 +534,9 @@ try {
         if (m.horsEcran.length) fautes.push(`${ici} : commande coupée par le bord de l’écran (C-6.2) : ${m.horsEcran.slice(0, 5).join(' ; ')}`);
         if (m.enLargeur.length || m.pageEnLargeur) fautes.push(`${ici} : défilement en largeur (C-7.1) : ${[...(m.pageEnLargeur ? ['la page'] : []), ...m.enLargeur].slice(0, 5).join(' ; ')}`);
         if (m.sansRaison.length) fautes.push(`${ici} : bouton désactivé sans sa raison écrite (C-4.7) : ${m.sansRaison.slice(0, 5).join(' ; ')}`);
+        if (m.marques.length) fautes.push(`${ici} : marque posée sur une photo (C-9.1) : ${m.marques.slice(0, 5).join(' ; ')}`);
+        if (m.bandes.length) fautes.push(`${ici} : bande d’état (C-9.1, C-9.2) : ${m.bandes.slice(0, 5).join(' ; ')}`);
+        if (BANDES.has(nomPage) && h >= 900 && !m.photosEtat) fautes.push(`${ici} : aucune photo avec sa bande d’état à l’écran (C-9.1)`);
         if (m.boutonsPetits.length) fautes.push(`${ici} : bouton sous 16 px (C-2.2) : ${m.boutonsPetits.slice(0, 5).join(' ; ')}`);
         if (m.caracteres.length) fautes.push(`${ici} : caractère-icône au lieu d’une icône SVG (C-1.4) : ${m.caracteres.slice(0, 5).join(' ; ')}`);
         if (m.barre && ECARTE.has(m.etape) && !m.bouclier) fautes.push(`${ici} : barre du bas sans « Rien n’est supprimé » et son bouclier (C-8.4)`);
@@ -476,6 +608,9 @@ try {
     const fichiers = [...document.getElementById('remplissage').files];
     for (const f of fichiers) await ecrire(f.name, f);
     await ecrire('copie de 0140.jpg', fichiers.find((f) => f.name.startsWith('0140')));
+    // Groupes de copies de 3, 4 et 6 photos (portrait, paysage) : « Comparer en grand » à 3, 4 et 6 photos.
+    for (const [debut, n] of [['0107', 2], ['0109', 3], ['0181', 5]])
+      for (let i = 1; i <= n; i++) await ecrire(`copie ${i} de ${debut}.jpg`, fichiers.find((f) => f.name.startsWith(debut)));
     await racine.getDirectoryHandle('selecteur_sortie', { create: true });
   });
 
@@ -509,11 +644,88 @@ try {
   await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
   await controler('doublons');
   await clavier('doublons', 30);
-  await page.locator('.carte-doublons').first().getByRole('button', { name: 'Comparer en grand' }).click();
-  await page.locator('.comparateur .numero-volet').first().waitFor();
-  await controler('doublons-comparer');
-  await page.keyboard.press('Escape');
-  await page.locator('.comparateur').waitFor({ state: 'detached' });
+  // « Comparer en grand » à 2, 3, 4 et 6 photos (C-7.5), aux deux tailles : toutes les copies dans une
+  // section (« Grouper par dossier » : elles sont toutes dans le dossier à trier).
+  await page.locator('.outils-doublons select').first().selectOption('dossier');
+  await page.waitForTimeout(500);
+  /** Contrôles de « Comparer en grand » à une taille ; `n` photos, `doublons` : la vue où l'on écarte. */
+  const controlerComparer = async (nomVue, n, [w, h], { doublons }) => {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(400);
+    const c = await page.evaluate(mesurerComparer);
+    const ici = `${nomVue} ${w}×${h}`;
+    if (n === 2 && c.presentation !== 'cote') fautes.push(`${ici} : une paire doit être côte à côte (${c.presentation})`);
+    if (c.presentation === 'cote' && (c.volets !== n || !c.imagesDedans || c.sceneDebordeLargeur)) fautes.push(`${ici} : côte à côte, les ${n} photos ne sont pas toutes à l’écran (${c.volets} volets)`);
+    if (c.presentation === 'cote' && n >= 3 && c.hauteurs.some((x) => x < 219)) fautes.push(`${ici} : côte à côte calculé sous 220 px de haut (${c.hauteurs.join(', ')})`);
+    if (c.presentation === 'une' && (c.vignettes !== n || c.vignettesVisibles !== n || !c.imagesDedans)) fautes.push(`${ici} : une à la fois, ${c.vignettesVisibles} vignettes visibles sur ${n}`);
+    if (doublons && !c.pleinVisible) fautes.push(`${ici} : « Accepter » plein hors de l’écran (C-4.1)`);
+    if (!c.rappelVisible || !(doublons ? /↑ ↓ photo · ← → groupe/ : /↑ ↓ photo/).test(c.rappel)) fautes.push(`${ici} : rappel des flèches absent ou caché (C-4.10) : « ${c.rappel} »`);
+    if (doublons && !c.rienSupprime) fautes.push(`${ici} : « Rien n’est supprimé » absent de la vue où l’on écarte (C-8.4)`);
+    if (!doublons && c.rienSupprime) fautes.push(`${ici} : « Rien n’est supprimé » dans une vue où l’on n’écarte pas (C-8.4)`);
+    if (c.coupes.length) fautes.push(`${ici} : texte coupé (C-10.4) : ${c.coupes.slice(0, 5).join(' ; ')}`);
+    if (!c.focusDansLaVue) fautes.push(`${ici} : le clavier n’est pas dans la vue (il reste sur la page dessous)`);
+    console.log(`${ici} : ${c.presentation}, ${c.presentation === 'cote' ? `photos de ${c.hauteurs.join(', ')} px de haut` : `${c.vignettesVisibles} vignettes visibles`}`);
+    // Entrée bascule ; « Côte à côte » choisi à la main garde toutes les photos à l'écran.
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    const apres = await page.evaluate(mesurerComparer);
+    if (c.coteImpossible) {
+      if (apres.presentation !== 'une') fautes.push(`${ici} : « Côte à côte » désactivé, et pourtant Entrée y passe`);
+      console.log(`${ici} : « Côte à côte » désactivé à cette taille (${n} photos ne tiennent pas), Entrée ne change rien`);
+      return;
+    }
+    if (apres.presentation === c.presentation) fautes.push(`${ici} : Entrée ne bascule pas la présentation`);
+    if (apres.presentation === 'cote' && (apres.volets !== n || !apres.imagesDedans || apres.sceneDebordeLargeur)) fautes.push(`${ici} : « Côte à côte » choisi à la main, des photos sortent de l’écran`);
+    if (apres.coupes.length) fautes.push(`${ici} (après Entrée) : texte coupé (C-10.4) : ${apres.coupes.slice(0, 5).join(' ; ')}`);
+    // Côte à côte : ↓ puis Entrée bascule, sans changer l'état d'aucune photo (le clavier va sur la carte).
+    if (apres.presentation !== 'cote') {
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(400);
+    }
+    const etatsAvant = (await page.evaluate(mesurerComparer)).etats;
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    const piege = await page.evaluate(mesurerComparer);
+    if (piege.presentation !== 'une') fautes.push(`${ici} : côte à côte, ↓ puis Entrée ne bascule pas la présentation (${piege.presentation})`);
+    if (piege.etats !== etatsAvant) fautes.push(`${ici} : côte à côte, ↓ puis Entrée a changé l’état d’une photo (« ${etatsAvant} » → « ${piege.etats} »)`);
+    // Une à la fois : ↓ passe à la photo suivante.
+    const avant = piege.titre;
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(200);
+    if ((await page.evaluate(mesurerComparer)).titre === avant) {
+      // Sur la dernière photo : ↑ revient à l'avant-dernière.
+      await page.keyboard.press('ArrowUp');
+      await page.waitForTimeout(200);
+    }
+    if ((await page.evaluate(mesurerComparer)).titre === avant) fautes.push(`${ici} : ↑ ↓ ne changent pas de photo (« ${avant} »)`);
+  };
+
+  const vusComparer = new Set();
+  const cartes = page.locator('article.carte-doublons');
+  for (let i = 0; i < (await cartes.count()); i++) {
+    const n = await cartes.nth(i).locator('.tuile-doublon').count();
+    if (![2, 3, 4, 6].includes(n) || vusComparer.has(n)) continue;
+    vusComparer.add(n);
+    await cartes.nth(i).getByRole('button', { name: 'Comparer en grand' }).click();
+    await page.locator('.comparateur[data-presentation]').waitFor();
+    await page.waitForFunction(() => [...document.querySelectorAll('.comparateur .volet-image img')].every((x) => x.complete && x.naturalWidth > 0), null, { timeout: 20_000 }).catch(() => undefined);
+    const nomVue = `doublons-comparer-${n}`;
+    await controler(nomVue);
+    for (const taille of TAILLES_COMPARER) {
+      await controlerComparer(nomVue, n, taille, { doublons: true });
+      // Retour à la présentation calculée pour la taille suivante (le choix à la main est gardé par la page : on la quitte).
+      await page.keyboard.press('Escape');
+      await page.locator('.comparateur').waitFor({ state: 'detached' });
+      await cartes.nth(i).getByRole('button', { name: 'Comparer en grand' }).click();
+      await page.locator('.comparateur[data-presentation]').waitFor();
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.keyboard.press('Escape');
+    await page.locator('.comparateur').waitFor({ state: 'detached' });
+  }
+  for (const n of [2, 3, 4, 6]) if (!vusComparer.has(n)) fautes.push(`Comparer en grand : aucun groupe de ${n} photos à essayer`);
   await valider('tri');
   await controler('tri-apercu');
   const copies = page.locator('.copies-avant-tri');
@@ -580,6 +792,58 @@ try {
     });
   }
   await page.keyboard.press('Escape');
+  // Le mot de la bande n'est jamais coupé (C-10.4) : « ✕ Pas pour l'album » et ↻ au bout, au plus petit curseur.
+  {
+    const tuile = page.locator('.page-selection .tuile').nth(0);
+    await tuile.click();
+    await page.keyboard.press('x');
+    await page.keyboard.press('r');
+    await tuile.locator('.bande-etat.pas').waitFor();
+    const curseur = page.locator('label.curseur input[type=range]').first();
+    const taille = await curseur.inputValue();
+    await curseur.fill('100');
+    await page.waitForTimeout(600);
+    for (const [w, h] of TAILLES) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.waitForTimeout(300);
+      const m = await page.evaluate(mesurer);
+      const coupes = m.bandes.filter((x) => x.startsWith('mot d’état coupé'));
+      if (coupes.length) fautes.push(`selection ${w}×${h}, curseur au minimum : ${coupes.slice(0, 3).join(' ; ')}`);
+      const serree = await tuile.evaluate((x) => ({ serree: 'serree' in x.dataset, marque: !!x.querySelector('.marques-remarque .badge.rotation') && getComputedStyle(x.querySelector('.marques-remarque')).display !== 'none' }));
+      if (serree.serree && !serree.marque) fautes.push(`selection ${w}×${h} : la marque ↻ a quitté la bande sans passer dans la remarque (C-9.7)`);
+      console.log(`selection ${w}×${h}, curseur au minimum : ${coupes.length ? 'mot coupé' : 'mot entier'}${serree.serree ? ', ↻ dans la remarque' : ', ↻ au bout de la bande'}`);
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await curseur.fill(taille);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Escape');
+  }
+  // Comparer de la Sélection à 3 photos (C-7.5), aux trois tailles ; ↓ puis Entrée ne met aucune photo dans l'album.
+  {
+    const tuiles = page.locator('.page-selection .tuile');
+    await tuiles.nth(0).click();
+    await tuiles.nth(1).click({ modifiers: ['Control'] });
+    await tuiles.nth(2).click({ modifiers: ['Control'] });
+    const ouvrir = async () => {
+      await page.locator('.barre-action').getByRole('button', { name: 'Comparer', exact: true }).click();
+      await page.locator('.comparateur[data-presentation]').waitFor();
+      await page.waitForFunction(() => [...document.querySelectorAll('.comparateur .volet-image img')].every((x) => x.complete && x.naturalWidth > 0), null, { timeout: 20_000 }).catch(() => undefined);
+    };
+    await ouvrir();
+    await controler('selection-comparer-3');
+    for (const taille of TAILLES_COMPARER) {
+      await controlerComparer('selection-comparer-3', 3, taille, { doublons: false });
+      await page.keyboard.press('Escape');
+      await page.locator('.comparateur').waitFor({ state: 'detached' });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await ouvrir();
+    }
+    await page.keyboard.press('Escape');
+    await page.locator('.comparateur').waitFor({ state: 'detached' });
+    await page.keyboard.press('Escape');
+  }
   // Tri rapide (salle sombre), puis quelques choix et sa fin.
   await page.getByRole('button', { name: 'Tri rapide' }).click();
   await page.locator('.tri-rapide').waitFor();

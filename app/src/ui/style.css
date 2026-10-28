@@ -138,9 +138,7 @@
 
 .message,
 .barre-action,
-.fin-tri,
-.etoiles,
-.signal {
+.fin-tri {
   color-scheme: dark;
 }
 
@@ -2148,27 +2146,15 @@ button.bouton-nouveau.cible {
   border-color: var(--contour);
 }
 
-.tuile.choisie .cadre-miniature {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
+/* C-9.5 : « choisie » = anneau vert de 3 px à l'intérieur de la case, rien d'autre sur la photo ;
+   le focus clavier se dessine dehors, les deux se voient ensemble. */
 .tuile.choisie .cadre-miniature::after {
-  content: '✓';
+  content: '';
   position: absolute;
-  top: 7px;
-  left: 7px;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-commande);
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--accent);
+  pointer-events: none;
 }
 
 .cadre-miniature img {
@@ -2434,26 +2420,6 @@ kbd {
   margin: var(--e2) 0;
 }
 
-.badge.gardee,
-.cadre-miniature .badge.gardee {
-  left: 6px;
-  right: auto;
-  top: 6px;
-  bottom: auto;
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
-}
-
-.badge.ecartee,
-.cadre-miniature .badge.ecartee {
-  left: 6px;
-  right: auto;
-  top: 6px;
-  bottom: auto;
-  background: var(--perte);
-  color: var(--sur-perte);
-}
-
 /* Comparateur */
 
 .comparateur {
@@ -2469,10 +2435,9 @@ kbd {
 
 .comparateur-tete {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--e2) var(--e3);
-  padding: var(--e2) var(--e4);
+  gap: var(--e2);
+  padding: 0 var(--e5);
 }
 
 .comparateur-tete h2 {
@@ -2489,59 +2454,22 @@ kbd {
 .volets {
   flex: 1;
   min-height: 0;
-  display: grid;
-  gap: 6px;
-  padding: 0 6px 6px;
   cursor: grab;
-}
-
-.volets.n1 {
-  grid-template-columns: 1fr;
-}
-
-.plus-de-photos {
-  margin: 0;
-  padding: var(--e1) var(--e4) var(--e2);
-}
-
-.volets.n2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.volets.n3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.volets.n4 {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
 }
 
 .volet {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--table);
-  border-radius: var(--r-commande);
-  overflow: hidden;
-}
-
-.volet-entete,
-.volet-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: var(--e1) 10px;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
 }
 
 .volet-image {
   position: relative;
-  flex: 1;
-  min-height: 0;
+  flex: none;
   overflow: hidden;
   container-type: size;
+  border-radius: var(--r-photo);
+  background: var(--mat);
 }
 
 .volet-image img {
@@ -2824,37 +2752,15 @@ input.tres-court {
   color: var(--afaire);
 }
 
+/* ★ et ★★ : dans la bande d'état, sous la photo (C-9.1), de la couleur de son texte. */
 .etoiles {
-  position: absolute;
-  top: 7px;
-  right: 7px;
   display: inline-flex;
   align-items: center;
-  height: 24px;
-  padding: 0 var(--e2);
-  border-radius: var(--r-commande);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
   font-weight: 700;
-  background: var(--sur-photo-fond);
-  color: var(--etoile);
-}
-
-.etoiles.a0 {
-  color: var(--perte);
-}
-
-.comparateur .etoiles,
-.tri-infos .etoiles {
-  position: static;
 }
 
 .tuile.refusee .cadre-miniature img {
   opacity: 0.4;
-}
-
-.tuile.retenue .cadre-miniature {
-  border-color: color-mix(in srgb, var(--etoile) 80%, transparent);
 }
 
 .badge-pile {
@@ -2986,9 +2892,10 @@ input.tres-court {
   color: var(--etoile-texte);
 }
 
+/* « Pas pour l'album » : rien ne se perd, donc pas de rouge (C-3.4) ; blanc et gris, comme sa bande (C-9.2). */
 .choix-actuel.a0 {
-  background: var(--perte-doux);
-  color: var(--perte);
+  background: var(--surface);
+  color: var(--texte-2);
 }
 
 /* Étape 10 */
@@ -4198,12 +4105,6 @@ details[open] > summary::before {
   }
 }
 
-/* « Fermer » ne rétrécit jamais et reste au bout de la barre de Comparer, même à 1280×580
-   (la barre passe à la ligne plutôt que de le pousser hors de l'écran). */
-.comparateur-tete .fermer-comparateur {
-  flex: 0 0 auto;
-  margin-left: auto;
-}
 
 /* Choix de l'utilisateur sur le lot 1 : les barres de données (jauges, mois, ligne de temps,
    photos dans l'album) sont en vert doux bordé ; seul le bouton d'action reste vert plein (C-3.2).

@@ -7,8 +7,6 @@ export const TEXTES: Record<string, string> = {
   nouveau: 'new',
 
   // Comparateur.tsx
-  'autre photo': 'other photo',
-  'autres photos': 'other photos',
 
   // TriRapide.tsx
   'Tout est décidé': 'Everything is decided',
@@ -32,7 +30,6 @@ export const TEXTES: Record<string, string> = {
   'gardés et nettoyés': 'kept and cleaned',
 
   // Selection.tsx
-  'Tournée pour l’album (touche R)': 'Rotated for the album (R key)',
   '{0} : {1} sur {2} dans l’album': '{0}: {1} of {2} in the album',
   'Équilibre par mois': 'Balance by month',
   'cliquer pour n’afficher que ce jour': 'click to show only this day',
@@ -48,5 +45,4 @@ export const TEXTES: Record<string, string> = {
   'Toutes les arrivées': 'All arrivals',
   'Nouvelles seulement': 'New ones only',
   'Arrivées le {0} ({1})': 'Arrived on {0} ({1})',
-  'Grande photo (pleine page)': 'Large photo (full page)',
 };

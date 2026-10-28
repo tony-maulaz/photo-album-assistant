@@ -120,7 +120,6 @@ export const TEXTES: Record<string, string> = {
   'Ce dossier n’est pas vide.': 'This folder is not empty.',
   dossier: 'folder',
   dossiers: 'folders',
-  'Pas dans l’album': 'Not in the album',
   'Grande photo ★★': 'Large photo ★★',
   'Tourner {0}': 'Rotate {0}',
   'Changer la légende': 'Change the caption',

@@ -168,20 +168,32 @@ export function PageFloues() {
           options={{
             cleVue: voir,
             glisser: false,
-            legende: (f) => (nettete(f) !== undefined ? t`netteté ${nombre(nettete(f)!)}` : t`netteté inconnue`),
-            classe: (f) => (estFloue(f, nettete(f), seuil) ? 'refusee' : ''),
-            badges: (f) => (
+            // L'état écrit sous la photo (C-9.1) ; l'avis de l'IA dans la remarque, son texte entier dans l'infobulle.
+            etat: (f) =>
+              f.flou === 'sauvee'
+                ? { classe: 'garder', libelle: <><Icone nom="coche" taille={16} />{t`Sauvée`}</> }
+                : f.flou === 'ecartee'
+                  ? { classe: 'ecarter', libelle: <><Icone nom="croix" taille={16} />{t`Écartée`}</> }
+                  : estFloue(f, nettete(f), seuil)
+                    ? { classe: 'ecarter', libelle: <><Icone nom="croix" taille={16} />{t`Floue : à écarter`}</> }
+                    : // Une photo nette reste, sans décision : un fait écrit en gris, le vert est pour ce que l'on sauve (C-3.2).
+                      { classe: 'decider', libelle: t`Nette : gardée` },
+            largeurMin: 156,
+            telleQuAlbum: true,
+            legende: (f) => (
               <>
-                {f.flou === 'sauvee' && <span class="badge gardee">{t`sauvée`}</span>}
-                {f.flou === 'ecartee' && <span class="badge ecartee">{t`écartée`}</span>}
-                {f.flou !== 'sauvee' && f.flou !== 'ecartee' && estFloue(f, nettete(f), seuil) && <span class="badge ecartee">{t`floue`}</span>}
+                {nettete(f) !== undefined ? t`netteté ${nombre(nettete(f)!)}` : t`netteté inconnue`}
                 {verdicts[f.id] && (
-                  <span class="badge choix-ia" title={verdicts[f.id].raison}>
-                    {t`IA : ${verdicts[f.id].verdict === 'ratee' ? t`ratée` : verdicts[f.id].verdict === 'flou_voulu' ? t`flou voulu` : t`nette`}`}
+                  <span class="choix-ia">
+                    {' · '}
+                    <Icone nom="etincelle" taille={14} titre={t`Selon l’IA`} />
+                    {verdicts[f.id].verdict === 'ratee' ? t`ratée` : verdicts[f.id].verdict === 'flou_voulu' ? t`flou voulu` : t`nette`}
                   </span>
                 )}
               </>
             ),
+            infobulle: (f) => (verdicts[f.id] ? [t`IA : ${verdicts[f.id].raison}`] : []),
+            classe: (f) => (estFloue(f, nettete(f), seuil) ? 'refusee' : ''),
           }}
         />
       </div>

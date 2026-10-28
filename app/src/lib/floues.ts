@@ -34,13 +34,16 @@ export function estFloue(f: FichierPlan, nettete: number | undefined, seuil: num
  * Applique le seuil : les photos floues vont dans `_mis_de_cote/floues/`, celles
  * qu'un seuil précédent avait écartées et qui ne le sont plus reviennent. Les
  * photos écartées par un ancien script (`_a_supprimer`) ne reviennent que si
- * l'utilisateur les sauve.
+ * l'utilisateur les sauve. « Annuler : … » dit ce qu'il défait : les photos floues écartées la
+ * première fois, la tolérance changée ensuite (des photos déjà écartées pour flou).
  */
 export function appliquerFloues(plan: Plan, nettete: (f: FichierPlan) => number | undefined, seuil: number): Modification | null {
   const aEcarter: string[] = [];
   const aRemettre: string[] = [];
   const marques = new Transaction(plan);
+  let dejaAppliquee = false;
   for (const f of photosConcernees(plan)) {
+    if (f.statut === 'mis_de_cote' && f.flou === 'auto') dejaAppliquee = true;
     const floue = estFloue(f, nettete(f), seuil);
     if (floue && f.statut === 'archive') {
       aEcarter.push(f.id);
@@ -54,7 +57,7 @@ export function appliquerFloues(plan: Plan, nettete: (f: FichierPlan) => number 
     }
   }
   return avecDetail(
-    combiner(t`Changer la tolérance au flou`, marques.terminer(''), aEcarter.length ? mettreDeCote(plan, aEcarter, 'floues') : null, aRemettre.length ? remettre(plan, aRemettre) : null),
+    combiner(dejaAppliquee ? t`Changer la tolérance au flou` : t`Écarter les photos floues`, marques.terminer(''), aEcarter.length ? mettreDeCote(plan, aEcarter, 'floues') : null, aRemettre.length ? remettre(plan, aRemettre) : null),
     t`Photos floues : ${pluriel(aEcarter.length, 'écartée')}, ${pluriel(aRemettre.length, 'remise')}`,
   );
 }

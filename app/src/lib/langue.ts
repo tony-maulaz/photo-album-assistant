@@ -63,15 +63,6 @@ export function t(texte: string | TemplateStringsArray, ...valeurs: unknown[]): 
   return traduit.replace(/\{(\d+)\}/g, (m, i: string) => (Number(i) < valeurs.length ? String(valeurs[Number(i)]) : m));
 }
 
-/**
- * Texte dont la traduction dépend de l'endroit : « Annuler » vaut « Undo » pour
- * une action, mais « Cancel » pour fermer une boîte de dialogue. Clé anglaise :
- * « contexte|texte ».
- */
-export function tc(contexte: string, texte: string): string {
-  return courante === 'en' ? t(`${contexte}|${texte}`) : texte;
-}
-
 /** Marque un texte à traduire là où il est utilisé (`t(libelle)`), par exemple dans une table de libellés. */
 export function aTraduire<T extends string>(texte: T): T {
   return texte;

@@ -694,7 +694,7 @@ export function PageConsolidation() {
       <BarreValidation
         resume={`${
           restants.length === 0
-            ? t`aucune proposition à décider`
+            ? t`Aucune proposition à décider`
             : restants.length === 1
               ? t`1 proposition à décider : ses dossiers restent séparés`
               : t`${nombre(restants.length)} propositions à décider : leurs dossiers restent séparés`

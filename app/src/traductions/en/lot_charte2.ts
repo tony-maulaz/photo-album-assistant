@@ -12,8 +12,6 @@ export const TEXTES: Record<string, string> = {
   // Comparateur.tsx, TriRapide.tsx
   'Groupe précédent': 'Previous group',
   'Groupe suivant': 'Next group',
-  Précédente: 'Previous',
-  Suivante: 'Next',
   'c’est la première': 'this is the first',
   'c’est la dernière': 'this is the last',
   // iaRafales.tsx
@@ -57,8 +55,6 @@ export const TEXTES: Record<string, string> = {
   'Les consignes viennent du script 06, réglé avec Claude Sonnet 4.6 ; les réponses sont mises en cache par modèle. Réglages du script : rafales à moins de 10 min et à une distance de 12 au plus ; scènes locales à une distance de 20 au plus ; vérification par 6 photos au plus.':
     'The instructions come from script 06, tuned with Claude Sonnet 4.6; answers are cached per model. Script settings: bursts less than 10 min apart and at a distance of 12 at most; local scenes at a distance of 20 at most; checks of at most 6 photos.',
   '{0} à accepter': '{0} to accept',
-  'Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible. « Choisir avec l’IA » : l’IA choisit dans chaque rafale et dit pourquoi, vous acceptez.':
-    'Nearly identical photos taken in a row (a few minutes at most), found on this computer (free). The ★ goes to the sharpest; when the photos are equally good, keep the one you prefer. “Sharper”, “darker”… under a photo point out a visible difference. “Choose with AI”: the AI chooses in each burst and says why, you accept.',
   '{0} : toutes leurs photos sont gardées': '{0}: all their photos are kept',
   'groupe pas encore accepté': 'group not accepted yet',
   'groupes pas encore acceptés': 'groups not accepted yet',
@@ -204,15 +200,15 @@ export const TEXTES: Record<string, string> = {
   '{0}, floues, doublons… : comptés ci-dessus, ils iront dans le dossier « {1} » de la sortie.': '{0}, blurry, duplicates…: counted above, they will go into the “{1}” folder of the output.',
   'Écrivez d’abord un nom': 'First write a name',
   'C’est déjà son nom': 'It already has this name',
-  'aucun dossier à nommer': 'no folder to name',
+  'Aucun dossier à nommer': 'No folder to name',
   '1 dossier à nommer : il garde son nom actuel': '1 folder to name: it keeps its current name',
   '{0} dossiers à nommer : ils gardent leur nom actuel': '{0} folders to name: they keep their current names',
-  'aucune proposition à décider': 'no suggestion to decide',
+  'Aucune proposition à décider': 'No suggestion to decide',
   '1 proposition à décider : ses dossiers restent séparés': '1 suggestion to decide: its folders stay separate',
   '{0} propositions à décider : leurs dossiers restent séparés': '{0} suggestions to decide: their folders stay separate',
   'Réunissez deux dossiers avec « Réunir avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom, ou F2, pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.': 'Gather two folders with “Gather with…” next to the title, or by dragging one onto the other; double-click a name, or F2, to rename it. In a folder of several days, each day has its title, with the calendar events; “New folder with this day” takes it out of the folder.',
   'Suppr met de côté : rien n’est supprimé, les éléments vont dans « Mis de côté » ; dans « Mis de côté », Suppr les remet.': 'Del sets aside: nothing is deleted, the items go to “Set aside”; in “Set aside”, Del puts them back.',
-  'aucun petit dossier à décider': 'no small folder to decide',
+  'Aucun petit dossier à décider': 'No small folder to decide',
   '1 petit dossier à décider : il reste tel quel': '1 small folder to decide: it stays as it is',
   '{0} petits dossiers à décider : ils restent tels quels': '{0} small folders to decide: they stay as they are',
   '{0} sur {1} {2}, soit {3} %': '{0} of {1} {2}, that is {3} %',

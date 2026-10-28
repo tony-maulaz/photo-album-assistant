@@ -64,6 +64,23 @@ const TRACES = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  moins: <path d="M5 12h14" />,
+  /** Photo entière (zoom remis à la taille de l'écran). */
+  entier: <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />,
+  /** Présentation « Côte à côte ». */
+  comparer: (
+    <>
+      <rect x="3" y="5" width="7.5" height="14" rx="1.5" />
+      <rect x="13.5" y="5" width="7.5" height="14" rx="1.5" />
+    </>
+  ),
+  /** Présentation « Une à la fois » (la photo et la bande des autres). */
+  une: (
+    <>
+      <rect x="3" y="4" width="13" height="16" rx="1.5" />
+      <path d="M19.5 5v3M19.5 11v2M19.5 16v3" />
+    </>
+  ),
   aide: (
     <>
       <circle cx="12" cy="12" r="9" />

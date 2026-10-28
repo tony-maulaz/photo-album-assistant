@@ -1,8 +1,11 @@
 // Grille de photos virtualisée (SPEC § 5.4) : seules les cases visibles
 // existent. Sélection au clic, Ctrl+clic, Maj+clic et rectangle ; glisser
 // la sélection sur un dossier du panneau. Titres de groupe en option (une
-// journée) ; badge « nouveau » sur les photos arrivées à la dernière mise à
-// jour de l'inventaire (D63).
+// journée) ; « nouveau » devant la légende des photos arrivées à la dernière
+// mise à jour de l'inventaire (D63). Sur les pages où une photo a un état
+// (Sélection, Floues, « Mis de côté »), il est écrit dans une bande de 28 px
+// sous la photo, ses marques (↻ ✂ ▣) au bout, une remarque dessous ; rien
+// n'est posé sur l'image (CHARTE C-9).
 
 import { signal } from '@preact/signals';
 import { dessinerRecadrage, recadrageUtile, tailleRecadree, type Recadrage } from '../../lib/recadrage';
@@ -10,7 +13,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { disposer, elementsVisibles, voisinVertical } from '../../lib/grille';
 import { aTraduire, t } from '../../lib/langue';
-import type { FichierPlan } from '../../lib/plan';
+import { cheminDossier, type FichierPlan } from '../../lib/plan';
 import { arrivees, jourArrivee } from '../../lib/selection';
 import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../../navigateur/miniatures';
 import { changerReglages, reglages, serviceMiniatures, session, versionPlan } from '../etat';
@@ -21,6 +24,9 @@ import { Icone } from './Icones';
 const MARGE = 20;
 const ESPACE = 14;
 const LEGENDE = 22;
+/** Bande d'état sous la photo (C-9.1), puis remarque de 20 px par ligne (C-9.6). */
+const BANDE = 28;
+const LIGNE_REMARQUE = 20;
 /** Hauteur d'un titre de groupe (« Samedi 27 juin 2025 »). */
 const TITRE = 40;
 /** Place libre sous la dernière ligne, pour la barre d'action flottante. */
@@ -123,12 +129,22 @@ function etiquetteGlisse(n: number): HTMLElement {
 /** Photo à amener à l'écran dans la grille affichée (résultat d'une aide IA, « voir ») ; remise à `null` une fois montrée. */
 export const photoAMontrer = signal<string | null>(null);
 
+/** État écrit sous une photo (C-9.2) : la classe de la bande (garder, ecarter, pas, mis, album, grande, decider) et son mot. */
+export interface EtatGrille {
+  classe: string;
+  libelle: ComponentChildren;
+}
+
 export interface OptionsGrille {
-  /** Badges supplémentaires sur la miniature (étoiles, alertes…). */
-  badges?: (f: FichierPlan) => ComponentChildren;
-  /** Pastilles en colonne en haut à gauche, sous le badge « nouveau » (signaux…). */
-  pastilles?: (f: FichierPlan) => ComponentChildren;
-  /** Texte sous la miniature (par défaut : l'heure, ou le nom). */
+  /** État de chaque photo, écrit dans la bande sous elle (C-9.1). */
+  etat?: (f: FichierPlan) => EtatGrille;
+  /** Marques au bout de la bande : tournée, recadrée, pile (C-9.6). */
+  finBande?: (f: FichierPlan) => ComponentChildren;
+  /** La miniature telle qu'elle sera dans l'album : tournée et recadrée (D62). */
+  telleQuAlbum?: boolean;
+  /** Largeur minimale d'une case : le mot de la bande y tient toujours (C-10.4). */
+  largeurMin?: number;
+  /** Texte sous la miniature (par défaut : l'heure, ou le nom) ; avec un état, la remarque sous la bande. */
   legende?: (f: FichierPlan) => ComponentChildren;
   /** Lignes de légende (2 : l'heure et la description de l'IA). */
   lignesLegende?: number;
@@ -153,9 +169,13 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   const [defile, setDefile] = useState(0);
   const [rect, setRect] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   const taille = options.taille ?? reglages.value.tailleMiniatures;
-  const largeurCase = taille + ESPACE;
+  const largeurTuile = Math.max(taille, options.largeurMin ?? 0);
+  const largeurCase = largeurTuile + ESPACE;
   const lignesLegende = options.lignesLegende ?? 1;
-  const hauteurLegende = LEGENDE * lignesLegende;
+  const enMisDeCote = vue.value === VUE_MIS_DE_COTE;
+  // Une bande d'état sous chaque photo : la page dit l'état, ou la vue « Mis de côté » dit pourquoi.
+  const avecBande = !!options.etat || enMisDeCote;
+  const hauteurLegende = avecBande ? BANDE + 4 + LIGNE_REMARQUE * lignesLegende : LEGENDE * lignesLegende;
   const hauteurCase = taille + hauteurLegende + ESPACE;
   const colonnes = Math.max(1, Math.floor((dims.largeur - 2 * MARGE + ESPACE) / largeurCase));
   const groupes = options.groupes;
@@ -164,7 +184,6 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     [elements, colonnes, hauteurCase, groupes],
   );
   const choisis = selection.value;
-  const enMisDeCote = vue.value === VUE_MIS_DE_COTE;
   // Jour de la dernière arrivée de photos (mise à jour de l'inventaire) : ses photos portent le badge « nouveau ».
   const derniere = useMemo(() => {
     const s = session.value;
@@ -179,6 +198,25 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  // Le mot de l'état ne se coupe jamais (C-10.4) : une bande trop étroite pour le mot et ses marques ↻ ✂ ▣
+  // les passe en tête de la remarque (C-9.7). Mesuré après chaque rendu, sur les cases affichées.
+  const [serrees, setSerrees] = useState<Set<string>>(() => new Set());
+  useLayoutEffect(() => {
+    const el = conteneur.current;
+    if (!el) return;
+    const nouvelles = new Set<string>();
+    for (const tuile of el.querySelectorAll<HTMLElement>('.tuile[data-id]')) {
+      const bande = tuile.querySelector<HTMLElement>('.bande-etat');
+      const mot = bande?.querySelector<HTMLElement>('.mot-bande');
+      const marques = tuile.querySelector<HTMLElement>('.bande-etat .fin-bande, .marques-remarque');
+      if (!bande || !mot || !marques || !marques.childElementCount) continue;
+      const style = getComputedStyle(bande);
+      const place = bande.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      if (mot.scrollWidth + marques.scrollWidth + (parseFloat(style.columnGap) || 0) > place + 0.5) nouvelles.add(tuile.dataset.id!);
+    }
+    if (nouvelles.size !== serrees.size || [...nouvelles].some((id) => !serrees.has(id))) setSerrees(nouvelles);
+  });
 
   // Nouvelle vue : on remonte en haut.
   useEffect(() => {
@@ -279,7 +317,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         if (disposition.haut[l] + taille + hauteurLegende <= r.y0) continue;
         for (let i = disposition.premier[l]; i < disposition.premier[l + 1]; i++) {
           const { x } = position(i);
-          if (x < r.x1 && x + taille > r.x0) n.add(elements[i].id);
+          if (x < r.x1 && x + largeurTuile > r.x0) n.add(elements[i].id);
         }
       }
       selection.value = n;
@@ -307,38 +345,60 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     const f = elements[i];
     const { x, y } = position(i);
     const nouveau = !!derniere && !!f.ajout && jourArrivee(f.ajout) === derniere;
-    const pastilles = options.pastilles?.(f);
+    const etat = options.etat?.(f) ?? (enMisDeCote ? { classe: 'mis', libelle: texteRaison(f) } : null);
+    const marques = options.finBande?.(f);
+    const serree = !!marques && serrees.has(f.id);
+    const marqueNouveau = nouveau && (
+      <span class="pastille-nouveau" title={t`Arrivée le ${jourCourt(derniere)}, à la dernière mise à jour de l’inventaire`}>
+        {t`nouveau`}
+      </span>
+    );
+    const texte = options.legende ? options.legende(f) : enMisDeCote ? dateHeure(f.date) : f.date && f.date.length > 10 ? f.date.slice(11, 16) : f.nom;
     cases.push(
       <div
         key={f.id}
+        data-id={f.id}
+        data-serree={serree ? '' : undefined}
         class={`tuile${choisis.has(f.id) ? ' choisie' : ''}${options.classe ? ` ${options.classe(f)}` : ''}`}
-        style={{ left: `${x}px`, top: `${y}px`, width: `${taille}px` }}
+        style={{ left: `${x}px`, top: `${y}px`, width: `${largeurTuile}px` }}
         draggable={options.glisser !== false}
         onClick={(e) => cliquer(e, i)}
         onDblClick={() => (options.ouvrir ? options.ouvrir(i) : (visionneuse.value = i))}
         onDragStart={(e) => commencerGlisse(e, i)}
         onDragEnd={glisse.finir}
-        title={[`${f.nom}`, `${dateHeure(f.date)}${f.origineDate === 'fichier' ? t` (date du fichier)` : ''}`, ...(options.infobulle?.(f) ?? [])].join('\n')}
+        title={[
+          `${f.nom}`,
+          `${dateHeure(f.date)}${f.origineDate === 'fichier' ? t` (date du fichier)` : ''}`,
+          // Le dossier de la photo, sur toute page où elle a un état (choix de l'utilisateur, D96 levée ; C-9.6).
+          ...(avecBande ? [t`Dossier : ${(session.value && cheminDossier(session.value.plan, f.dossier)) || t`Photos`}`] : []),
+          ...(options.infobulle?.(f) ?? []),
+        ].join('\n')}
       >
         <div class="cadre-miniature" style={{ height: `${taille}px` }}>
-          <Miniature f={f} taille={taille} rotation={options.badges ? f.rotation : 0} recadrage={options.badges ? f.recadrage : undefined} />
-          {f.categorie === 'video' && <span class="badge video">{t`vidéo`}</span>}
-          {enMisDeCote && !options.badges && <span class="badge raison">{texteRaison(f)}</span>}
-          {(nouveau || pastilles) && (
-            <span class="pastilles-gauche">
-              {nouveau && (
-                <span class="pastille-nouveau" title={t`Arrivée le ${jourCourt(derniere)}, à la dernière mise à jour de l’inventaire`}>
-                  {t`nouveau`}
-                </span>
-              )}
-              {pastilles}
-            </span>
-          )}
-          {options.badges?.(f)}
+          <Miniature f={f} taille={taille} rotation={options.telleQuAlbum ? f.rotation : 0} recadrage={options.telleQuAlbum ? f.recadrage : undefined} />
         </div>
-        <div class={`legende${lignesLegende > 1 ? ' plusieurs-lignes' : ''}`} style={lignesLegende > 1 ? { height: `${hauteurLegende}px` } : undefined}>
-          {options.legende ? options.legende(f) : enMisDeCote ? dateHeure(f.date) : f.date && f.date.length > 10 ? f.date.slice(11, 16) : f.nom}
-        </div>
+        {avecBande ? (
+          <>
+            {/* L'état écrit, ses marques au bout ; jamais la forme d'un bouton (C-9.2). */}
+            <div class={`etat-photo bande-etat ${etat?.classe ?? 'decider'}`}>
+              <span class="mot-bande">{etat?.libelle}</span>
+              {marques && !serree && <span class="fin-bande">{marques}</span>}
+            </div>
+            <div class="remarque" style={{ WebkitLineClamp: lignesLegende, maxHeight: `${LIGNE_REMARQUE * lignesLegende}px` }}>
+              {/* Les marques, ici quand la bande n'a pas la place pour elles et le mot entier (data-serree). */}
+              {serree && <span class="marques-remarque">{marques}</span>}
+              {marqueNouveau}
+              {marqueNouveau && ' '}
+              {texte}
+            </div>
+          </>
+        ) : (
+          <div class={`legende${lignesLegende > 1 ? ' plusieurs-lignes' : ''}`} style={lignesLegende > 1 ? { height: `${hauteurLegende}px` } : undefined}>
+            {marqueNouveau}
+            {marqueNouveau && ' '}
+            {texte}
+          </div>
+        )}
       </div>,
     );
   }

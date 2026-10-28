@@ -54,7 +54,7 @@ export const TEXTES: Record<string, string> = {
   'Retirer le choix': 'Remove the choice',
   'R (Maj+R)': 'R (Shift+R)',
   'Tourner d’un quart de tour (dans l’autre sens)': 'Rotate a quarter turn (the other way)',
-  'Comparer 2 à 4 photos': 'Compare 2 to 4 photos',
+  'Comparer 2 à 4 photos (↑ ↓ : photo, Entrée : côte à côte ou une à la fois)': 'Compare 2 to 4 photos (↑ ↓: photo, Enter: side by side or one at a time)',
   'Déplacer vers une autre sortie': 'Move to another outing',
   'T ou Entrée': 'T or Enter',
   'Tri rapide, une photo à la fois': 'Quick sort, one photo at a time',

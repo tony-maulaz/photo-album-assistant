@@ -45,6 +45,32 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 - Flèches dans Comparer : **↑ ↓ photo, ← → groupe**, dans la journée ou le
   dossier affiché ; règle fixe, avec le rappel écrit.
 
+## Choix de l'utilisateur (28.10.2026, questions du lot 2)
+
+- Le **bouton plein visible sans défiler**, toujours. Fait dans « Comparer en
+  grand » (barre du bas fixe) ; sur les pages Doublons et Sélection, il
+  demande les bandes fixes du gabarit (C-7.1, C-7.3) : lot 4.
+- Le **prix d'une aide IA** reste recalculé en direct sur le bouton (C-4.6).
+- La police fait **65 Ko** (C-1.1).
+- **« Rien n'est supprimé »** seulement là où l'on écarte des photos (C-8.4).
+
+## Corrections après la revue du lot 3 (28.10.2026), à confirmer par l'utilisateur
+
+- **Côte à côte : la rangée doit tenir, pas chaque photo.** Une carte garde
+  au moins la largeur de son état et de ses choix (240 px, 340 à la
+  Sélection) ; ce minimum compte dans la largeur de la rangée et ne refuse
+  plus une photo étroite (portraits 9:16). Choisi à la main pour beaucoup de
+  photos, le côte à côte passe sur deux ou trois rangées ; si les photos y
+  feraient moins de 80 px de haut, le bouton est désactivé et dit pourquoi.
+- **Le rappel des flèches reste à toutes les tailles** (C-4.10). Au palier
+  « texte agrandi », les boutons de groupe et « Photo entière » gardent leur
+  icône, leur nom passe dans l'infobulle et le lecteur d'écran (exception
+  ajoutée à C-5.2).
+- **« Groupe 2 sur 4 » passe dans le titre de la vue** (comme la maquette) ;
+  la barre du bas dit « Groupe précédent » et « Groupe suivant ».
+- **La présentation choisie à la main** est gardée d'un groupe à l'autre
+  (pour les groupes du même nombre de photos), jusqu'à la fermeture de la vue.
+
 ## Corrections à intégrer avant d'appliquer (contrôleurs du 27.10)
 
 - Le vert porte trop de sens : « ici, choisi, allumé » passe en encre
@@ -64,7 +90,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 
 | N° | Règle | Test |
 |---|---|---|
-| C-1.1 | Une seule police : **Inter 4** variable, embarquée (`inter-sous-ensemble.woff2`, 62 Ko), aucun chargement en ligne | une seule `@font-face` ; aucune URL de police dans le build |
+| C-1.1 | Une seule police : **Inter 4** variable, embarquée (`app/src/ui/police/inter.woff2`, 65 Ko), aucun chargement en ligne | une seule `@font-face` ; aucune URL de police dans le build |
 | C-1.2 | `cv05` et `cv08` activées partout ; zéro ouvert | `font-feature-settings` sur `body` ; aucun « Ø » |
 | C-1.3 | `tabular-nums` sur le nombre seul, ou une pastille courte (prix, compteur) ; jamais sur une phrase | aucun `.num` sur un élément de plus de 20 signes contenant un trait d'union |
 | C-1.4 | ✕ ✦ ▣ ◀ ≤ ≥ sont des **icônes SVG**, jamais des caractères | recherche de ces caractères dans les textes de `app/src` : 0 |
@@ -102,11 +128,11 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-4.3 | Hauteurs : **44** (plein, barre du bas) · 40 (standard) · 36 (pastille) · 28 (frise, bouton IA d'une ligne d'information) ; cible ≥ 24 partout | mesure des boîtes |
 | C-4.4 | Contour : bord 1,5 px `--contour`, rayon 10 | — |
 | C-4.5 | Lien : vert foncé souligné, sans marge intérieure, ≥ 24 px de haut | — |
-| C-4.6 | Aide IA : bouton contour + ✦ + prix (« environ 0,03 CHF ») ; portée écrite. Si le prix dépend d'un réglage : libellé en « … » et prix dans la fenêtre avant de lancer | toute commande qui dépense a ✦ |
+| C-4.6 | Aide IA : bouton contour + ✦ + prix (« environ 0,03 CHF ») ; portée écrite. Si le prix dépend d'un réglage, il est **recalculé en direct sur le bouton** (choix de l'utilisateur, 28.10) ; « … » seulement quand le prix ne peut être estimé qu'au lancement, il est alors dans la fenêtre avant de lancer | toute commande qui dépense a ✦ et un prix (ou « … ») |
 | C-4.7 | Désactivé : bord en pointillé, texte gris, et sa raison écrite à côté ou dans la barre du bas | — |
 | C-4.8 | Filtres d'état = pastilles dans la barre d'outils après « Afficher : », une seule forme sur toutes les pages ; **« Tous » allumé par défaut**. Réglage d'une liste de gauche = liste nommée. Onglets = soulignés, disent ce qui reste. Les trois ne se ressemblent pas | — |
 | C-4.9 | Segmenté : la case allumée est l'état ; allumage doux et bordé (2 px), jamais plein | — |
-| C-4.10 | Touches dans l'infobulle et l'Aide ; dans Comparer, rappel permanent « ↑ ↓ photo · ← → groupe » | — |
+| C-4.10 | Touches dans l'infobulle et l'Aide ; dans Comparer, rappel permanent « ↑ ↓ photo · ← → groupe », **à toutes les tailles** ; au large, le chemin le plus court en entier (« 1–N choisir · A accepter ») | `essai_charte.mjs` : rappel visible à 1440, 1280 et 1024 |
 | C-4.11 | Revenir / Valider et continuer : 140 / 260 px au moins, même place partout | — |
 
 ## C-5 Icônes
@@ -114,7 +140,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | N° | Règle |
 |---|---|
 | C-5.1 | Un seul jeu SVG au trait (1,75, bouts arrondis), 20 px dans les boutons, 16 dans le texte, 14 dans une remarque. Aucun émoji |
-| C-5.2 | Chaque icône a son mot (exceptions nommées pour les lecteurs d'écran : chevron « Replier », − / +) |
+| C-5.2 | Chaque icône a son mot (exceptions nommées pour les lecteurs d'écran : chevron « Replier », − / + ; au palier « texte agrandi » de Comparer, les chevrons de groupe et « Photo entière », leur nom dans l'infobulle et `aria-label`) |
 | C-5.3 | ✦ = IA, toujours avec un prix ou « … » ; ★ = album ; ✓ = garder, fait ; ✕ = écarter, Fermer |
 
 ## C-6 Espacements, rayons, ombres
@@ -136,7 +162,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-7.2 | Barre de l'application : logo et projet · frise · « Étape n sur 13 ▾ » (sans le nom de l'étape) · ✦ IA · Aide · Menu | — |
 | C-7.3 | Gabarit **Photos** : liste 248/232 avec vignettes et état sous la date ; table ; panneau 304/288 seulement s'il porte des actions. **Réduire le panneau ne cache jamais les décisions** (colonne de 224 px) | `selection-replie_*` |
 | C-7.4 | Gabarit **Décisions** : « À faire ici » 440/420, numérotée. Point fait = une ligne + lien ; point en cours = titre, détail, choix, **bouton plein en dernier**, collé en bas de la colonne s'il ne tient pas ; sous 700 px de haut, les points faits se replient en « ✓ N points faits · Revoir ▾ » | Nommage et Tri à 1280 |
-| C-7.5 | Vue **Comparer** : barres 48 / 32 / scène / 56. Présentation calculée (côte à côte si chaque photo y garde ≥ la moitié de sa surface en « Une à la fois », jamais sous 220 px de haut). « Une à la fois » : photo, légende à droite (220 px), bande de vignettes (1 colonne, 2 sous 700 px de haut ; toutes visibles jusqu'à 6). Côte à côte : cartes de la largeur de la photo. Ouverture sur la photo conseillée (IA ou la plus nette), sinon la 1 (choix de l'utilisateur). ↑ ↓ photo, ← → groupe, dans la journée ou le dossier. Quitter : « Fermer » (Échap) | mesures de `systeme.md` § 10 |
+| C-7.5 | Vue **Comparer** : barres 48 / 32 / scène / 56. Présentation calculée (côte à côte si chaque photo y garde ≥ la moitié de sa surface en « Une à la fois », jamais sous 220 px de haut). « Une à la fois » : photo, légende à droite (220 px), bande de vignettes (1 colonne, 2 sous 700 px de haut ; toutes visibles jusqu'à 6). Côte à côte : cartes de la largeur de la photo, au moins celle de l'état et de ses choix (240 px ; 340 à la Sélection) ; c'est la rangée qui doit tenir. Choisi à la main : 2 ou 3 rangées si une ne tient pas, désactivé sous 80 px de haut. Une paire toujours côte à côte. Sous la carte : le choix, puis 2 lignes au plus (remarque, heure, dossier). Ligne d'information et titre passent à la ligne, jamais coupés. Ouverture sur la photo conseillée (IA ou la plus nette), sinon la 1 (choix de l'utilisateur). Le clavier entre dans la vue à l'ouverture et y reste ; ↑ ↓ le posent sur la carte, jamais sur un choix ; Entrée bascule partout sauf sur une commande (Fermer, Accepter…). ↑ ↓ photo, ← → groupe, dans la journée ou le dossier. Quitter : « Fermer » (Échap). Calcul : `app/src/lib/presentationComparer.ts` (proportions lues sur les miniatures, quart de tour compris) | mesures de `systeme.md` § 10 ; `essai_charte.mjs` à 2, 3, 4 et 6 photos (Doublons) et 3 (Sélection), à 1440, 1280 et 1024 ; ↓ puis Entrée ne change aucun état |
 | C-7.6 | Palier « texte agrandi » (moins de 1180 px de large, soit 1280 à 125 %) : frise et nom du projet masqués, barre d'outils sur 2 lignes, en-têtes qui passent à la ligne ; rien ne défile en largeur | fenêtre de 1024×464 |
 
 ## C-8 Places fixes
@@ -146,7 +172,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-8.1 | Aide puis Menu, en haut à droite, avec leur mot ; avant eux « ✦ IA : x sur y CHF » |
 | C-8.2 | « Annuler : *ce qu'il défait* » et « Rétablir » : en-tête d'étape (barre du haut dans Comparer). Le libellé reste entier à toutes les tailles |
 | C-8.3 | « Taille − + » au bout de la barre d'outils ; minimum : rangée de 120 px, case de 96 px |
-| C-8.4 | **« Rien n'est supprimé… »** avec le bouclier : ligne 2 de la barre du bas sur toutes les pages, et ligne d'information de toute vue plein écran où l'on écarte (Comparer, Décider une par une) |
+| C-8.4 | **« Rien n'est supprimé… »** avec le bouclier, **seulement là où l'on écarte des photos** (choix de l'utilisateur, 28.10) : ligne 2 de la barre du bas des étapes Floues, Doublons, Tri, Lieux et sorties, Sortie ; ligne d'information de « Comparer en grand » des Doublons |
 | C-8.5 | Ligne 1 de la barre du bas : ce que devient ce qui reste (« 12 groupes pas encore acceptés : toutes leurs photos sont gardées ») |
 | C-8.6 | Rien ne flotte : le retour se lit à la place du geste et dans « Annuler : … » ; une erreur reste jusqu'à un clic |
 
@@ -169,7 +195,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-10.1 | Un verbe par portée : **Accepter** (un groupe, un nom, un rangement), **Valider et continuer** (l'étape) ; « Fermer » pour quitter une vue | aucun « valid » hors du bouton d'étape |
 | C-10.2 | **Un état, un mot**, sur toute la page et dans la vue en grand : « à accepter » / « pas encore acceptés » | — |
 | C-10.3 | Un compteur dit de quoi il parle ; pas de parenthèses ; les compteurs exclusifs s'additionnent, sinon « dont » | somme des pastilles = total |
-| C-10.4 | Jamais de « … » de coupure sur la consigne, la bande, la remarque (sauf au-delà de 2 lignes) ou Annuler | contrôle « texte coupé » : 0 |
+| C-10.4 | Jamais de « … » de coupure sur la consigne, la bande, la remarque (sauf au-delà de 2 lignes) ou Annuler | contrôle « texte coupé » : 0 (`essai_charte.mjs` : bandes de toutes les pages, au plus petit curseur avec ↻ ; titre, ligne d'information, légende et vignettes de Comparer à 1440, 1280 et 1024) |
 | C-10.5 | Un libellé ne change pas avec la largeur ; on gagne la place ailleurs (menu « Plus ▾ », marges) | — |
 | C-10.6 | « environ » plutôt que « ≈ » ; aucun « Ø » | — |
 

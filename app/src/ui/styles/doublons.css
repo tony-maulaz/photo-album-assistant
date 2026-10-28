@@ -391,7 +391,9 @@
   gap: 6px;
 }
 
-/* Une photo : un bouton ; un clic la garde ou l'écarte. Gardée : bordure verte ; écartée : pâle ; « à écarter » : pâle, pointillés. */
+
+/* Une photo : un bouton ; un clic la choisit. Son état est écrit dans la bande dessous (C-9.1) : aucune
+   bordure ni pastille sur l'image ; une photo écartée (groupe accepté) est pâlie (C-9.3). */
 .tuile-doublon {
   position: relative;
   display: block;
@@ -419,60 +421,8 @@
   display: block;
 }
 
-.tuile-doublon.gardee .cadre-tuile {
-  outline: 3px solid var(--accent);
-  outline-offset: 0;
-}
-
 .tuile-doublon.ecartee .cadre-tuile {
   opacity: 0.4;
-}
-
-.tuile-doublon.a_ecarter .cadre-tuile {
-  outline: 2px dashed var(--contour);
-}
-
-.etat-photo {
-  padding: 2px 9px;
-  border-radius: var(--r-pastille);
-  font-size: var(--t-petit);
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-.tuile-doublon .etat-photo {
-  position: absolute;
-  top: 7px;
-  left: 7px;
-}
-
-.etat-photo.gardee {
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
-}
-
-.etat-photo.ecartee {
-  background: var(--surface);
-  color: var(--texte-2);
-}
-
-.etat-photo.a_ecarter {
-  border: 1px dashed var(--texte-2);
-  background: var(--surface);
-  color: var(--texte-2);
-}
-
-.etoile-doublon {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  padding: 2px 7px;
-  border-radius: var(--r-pastille);
-  background: var(--etoile);
-  color: var(--sur-etoile);
-  font-size: var(--t-petit);
-  font-weight: 700;
-  line-height: 1.5;
 }
 
 .legende-doublon {
@@ -510,22 +460,10 @@
   line-height: var(--lh-petit);
 }
 
-/* Écart visible avec les autres photos du groupe (D99) : pastille neutre, distincte de Gardée / à écarter. */
-.legende-doublon .remarque-doublon {
-  align-self: flex-start;
-  padding: 0 7px;
-  border-radius: var(--r-pastille);
-  font-weight: 600;
-}
-
-.legende-doublon .remarque-doublon.qualite {
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
-}
-
+/* Écart visible avec les autres photos du groupe (D99) : un mot dans la remarque, sans pastille (C-9.6). */
 .legende-doublon .remarque-doublon.defaut {
-  background: var(--afaire-doux);
   color: var(--afaire);
+  font-weight: 600;
 }
 
 .legende-doublon .refus,
@@ -539,20 +477,6 @@
   margin: 10px 0 0;
   color: var(--afaire);
   font-weight: 600;
-}
-
-/* Comparateur : passer d'un groupe à l'autre. */
-.navigation-groupes {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--e2);
-  margin-left: var(--e4);
-}
-
-.navigation-groupes button,
-.navigation-groupes span {
-  white-space: nowrap;
 }
 
 .suite-doublons {
@@ -592,29 +516,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Comparer en grand : numéro de la touche qui garde ou écarte la photo (D100). */
-.numero-volet {
-  padding: 1px var(--e2);
-  border: 1px solid var(--filet-fort);
-  border-radius: var(--r-photo);
-  background: var(--surface);
-  font: inherit;
-  font-weight: 700;
-}
-
-/* Choix pas encore validé (D101) : « à garder » en pointillés verts, « Votre choix · pas encore validé ». */
-.tuile-doublon.choisie .cadre-tuile {
-  outline: 3px dashed var(--accent-doux-texte);
-  outline-offset: 0;
-}
-
-/* « à garder » se distingue de « à écarter » d'un coup d'œil : vert doux (un état, C-3.2). */
-.etat-photo.choisie {
-  border: 1px dashed var(--accent-doux-texte);
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
-}
-
 .pastille-attente {
   padding: 3px 10px;
   border-radius: var(--r-pastille);
@@ -632,9 +533,4 @@
   margin-left: var(--e2);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
-}
-
-/* Alerte de « Comparer en grand », dans la ligne de navigation : sans marge haute. */
-.navigation-groupes .alerte-doublons {
-  margin: 0;
 }

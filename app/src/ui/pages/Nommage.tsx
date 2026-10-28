@@ -541,7 +541,7 @@ export function PageNommage() {
       <BarreValidation
         resume={`${(() => {
           const reste = cibles.filter((c) => !renomme(c)).length;
-          return reste === 0 ? t`aucun dossier à nommer` : reste === 1 ? t`1 dossier à nommer : il garde son nom actuel` : t`${nombre(reste)} dossiers à nommer : ils gardent leur nom actuel`;
+          return reste === 0 ? t`Aucun dossier à nommer` : reste === 1 ? t`1 dossier à nommer : il garde son nom actuel` : t`${nombre(reste)} dossiers à nommer : ils gardent leur nom actuel`;
         })()} · ${pluriel(cibles.filter((c) => proposition(c)).length, 'proposition')}`}
         revenir={() => quitter(() => revenirDe('nommage'), enAttente, true)}
         valider={() => quitter(() => validerEtape('nommage'), tousNoms)}

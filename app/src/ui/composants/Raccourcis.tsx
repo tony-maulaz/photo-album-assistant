@@ -94,7 +94,7 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     L('← →', aTraduire('Passer d’une photo du groupe à l’autre')),
     LT(aTraduire('Espace'), aTraduire('Garder ou écarter la photo')),
     L('A', aTraduire('Accepter la proposition du groupe')),
-    L('C', aTraduire('Comparer le groupe en grand (Page préc. / Page suiv. : autre groupe)')),
+    L('C', aTraduire('Comparer le groupe en grand (↑ ↓ : photo, ← → : autre groupe, Entrée : côte à côte ou une à la fois)')),
     LT(aTraduire('N et P'), aTraduire('Journée (ou dossier) suivante, précédente')),
   ],
   selection: [
@@ -105,7 +105,7 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     LT(aTraduire('Suppr'), aTraduire('Retirer le choix')),
     LT(aTraduire('R (Maj+R)'), aTraduire('Tourner d’un quart de tour (dans l’autre sens)')),
     L('K', aTraduire('Recadrer la photo')),
-    L('C', aTraduire('Comparer 2 à 4 photos')),
+    L('C', aTraduire('Comparer 2 à 4 photos (↑ ↓ : photo, Entrée : côte à côte ou une à la fois)')),
     L('M', aTraduire('Déplacer vers une autre sortie')),
     LT(aTraduire('T ou Entrée'), aTraduire('Tri rapide, une photo à la fois')),
     L('Ctrl+A', aTraduire('Tout sélectionner')),

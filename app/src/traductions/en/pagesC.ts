@@ -238,7 +238,6 @@ export const TEXTES: Record<string, string> = {
   'Selon le curseur': 'Follow the slider',
   'netteté {0}': 'sharpness {0}',
   'netteté inconnue': 'sharpness unknown',
-  sauvée: 'kept',
   écartée: 'set aside',
   floue: 'blurry',
   'IA : {0}': 'AI: {0}',

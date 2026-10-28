@@ -47,9 +47,6 @@ export function textesMarques(src: string): string[] {
       if (f === 't' || f === 'aTraduire') {
         const texte = litteral(args[0]);
         if (texte !== null) textes.push(texte);
-      } else if (f === 'tc') {
-        const [contexte, texte] = [litteral(args[0]), litteral(args[1])];
-        if (contexte !== null && texte !== null) textes.push(`${contexte}|${texte}`);
       } else if (f === 'pluriel') {
         const un = litteral(args[1]);
         if (un !== null) textes.push(un, args[2] ? (litteral(args[2]) ?? '') : `${un}s`);
@@ -68,11 +65,10 @@ describe('traductions anglaises', () => {
 
   it('lit les textes marqués', () => {
     // Les commentaires sont ignorés : t`Pas ici`.
-    expect(textesMarques("// t`Pas ici`\nt`Valider`; x = t`${a} photos sur ${b}`; t('Un'); tc('dialogue', 'Annuler'); pluriel(f(a, b), 'photo floue'); pluriel(n, 'lieu', 'lieux'); aTraduire('Deux'); y = /['\"]/")).toEqual([
+    expect(textesMarques("// t`Pas ici`\nt`Valider`; x = t`${a} photos sur ${b}`; t('Un'); pluriel(f(a, b), 'photo floue'); pluriel(n, 'lieu', 'lieux'); aTraduire('Deux'); y = /['\"]/")).toEqual([
       'Valider',
       '{0} photos sur {1}',
       'Un',
-      'dialogue|Annuler',
       'photo floue',
       'photo floues',
       'lieu',

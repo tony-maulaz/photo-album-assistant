@@ -48,6 +48,12 @@ describe('photos floues (étape 3)', () => {
     expect(p.fichiers.get('limite')!.statut).toBe('mis_de_cote');
   });
 
+  it('« Annuler » dit ce qu’il défait : les photos floues écartées, puis la tolérance changée', () => {
+    const p = plan();
+    expect(appliquerFloues(p, nettete, 60)!.libelle).toBe('Écarter les photos floues');
+    expect(appliquerFloues(p, nettete, 100)!.libelle).toBe('Changer la tolérance au flou');
+  });
+
   it('sauver et écarter à la main l’emportent sur le seuil', () => {
     const p = plan();
     deciderFlou(p, ['floue', 'ancienne'], 'sauvee');

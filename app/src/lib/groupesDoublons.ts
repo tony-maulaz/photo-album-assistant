@@ -327,3 +327,14 @@ export function groupesScenes(lots: Record<string, { propositions: Proposition[]
   }
   return resultat;
 }
+
+/**
+ * Le groupe dont « Accepter » est le bouton plein (C-4.1) : le groupe en cours s'il reste à accepter, sinon
+ * le suivant à accepter dans la liste (en repartant du début), en partant de la place du groupe en cours même
+ * s'il n'est plus affiché (accepté, avec le filtre « À accepter ») ; sans groupe en cours, le premier.
+ */
+export function prochainAAccepter<T>(liste: T[], cle: (x: T) => string, enCours: string | null | undefined, affiche: (x: T) => boolean, aAccepter: (x: T) => boolean): T | undefined {
+  const i = enCours ? liste.findIndex((x) => cle(x) === enCours) : -1;
+  const depart = Math.max(0, i);
+  return [...liste.slice(depart), ...liste.slice(0, depart)].find((x) => affiche(x) && aAccepter(x));
+}

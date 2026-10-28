@@ -595,7 +595,7 @@ export function PagePetitsDossiers() {
       <BarreValidation
         resume={`${
           restants.length === 0
-            ? t`aucun petit dossier à décider`
+            ? t`Aucun petit dossier à décider`
             : restants.length === 1
               ? t`1 petit dossier à décider : il reste tel quel`
               : t`${nombre(restants.length)} petits dossiers à décider : ils restent tels quels`
