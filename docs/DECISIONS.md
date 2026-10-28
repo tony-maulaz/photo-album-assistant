@@ -1432,6 +1432,32 @@ sans changer la disposition) : couleurs, tailles, police embarquée,
 contour du clavier, essai qui contrôle la charte et test qui refuse les
 couleurs et tailles écrites en dur.
 
+**D111 — Lot 4 de la charte : le même cadre sur toutes les pages.** Après
+une proposition dessinée, relue par douze agents, corrigée en quatre tours et
+contrôlée par l'avocat, la technique, le novice, le gardien des demandes et
+le gardien du style, l'utilisateur accepte les sept choix recommandés :
+(1) les points d'accord des relecteurs : « Réunir des dossiers » et
+« Décider une par une », numéro de chaque photo de rafale au début de sa
+bande d'état (rien posé sur l'image, C-9.1 intacte), Copies exactes montrées
+une fois avec une ligne par exemplaire, liste de gauche en menu sur petit
+écran, « Rien n'est supprimé » plus court, page entière qui défile sous
+440 px de haut ; (2) pas de bouton plein dans « Décider une par une » ni la
+visionneuse (les choix font avancer) ; (3) à Doublons, le bouton plein suit
+le dernier geste (clic sur place, sans défilement ; ou groupe regardé après
+la molette), A et C visent ce groupe, garde de 0,5 s après « Accepter », le
+bouton nomme la photo gardée (« garder la 4, écarter 5 autres ») ; (4) Suppr
+veut dire partout « ne pas garder ici, sans rien perdre », Retour arrière
+« à décider » ; (5) à moins de 1440 px de large, l'aide ne s'ouvre plus
+seule, son bouton porte « à lire » ; (6) Annuler défait le dernier geste de
+l'étape affichée, et dit où est le dernier changement s'il est ailleurs ;
+(7) recadrer et tourner dans les vues en grand là où la photo est dans
+l'album ou peut y entrer. Dispositions : bandes fixes en haut et en bas,
+seule la zone de contenu défile, bouton plein toujours visible, Aide,
+Annuler et Taille à la même place sur les 13 étapes. Code page par page
+(essais d'abord, puis Sélection, Doublons, Recadreur, arrêt pour un essai
+sur de vraies photos), environ 16 jours. Proposition complète hors dépôt
+(maquettes, mesures, revues).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
