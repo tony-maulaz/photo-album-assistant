@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changerTraitement,
   cheminDossier,
   contenu,
   creerDossier,
@@ -10,6 +11,7 @@ import {
   fusionnerDossiers,
   Historique,
   mettreDeCote,
+  noterAlbum,
   periodeDe,
   RACINE,
   recadrer,
@@ -278,5 +280,58 @@ describe('enchaîner des opérations', () => {
       ]),
     ).toThrow();
     expect(p.dossiers.get(id)!.nom).toBe('A');
+  });
+});
+
+describe('« Annuler : ce qu’il défait » (C-8.2, C-10.3)', () => {
+  /** Le libellé lu sur le bouton : un verbe et un nombre, sans nom ni parenthèse, assez court pour une ligne. */
+  const court = (libelle: string | undefined) => {
+    expect(libelle).toBeTruthy();
+    expect(libelle).not.toMatch(/[«»()]/);
+    expect(libelle!.length).toBeLessThanOrEqual(34);
+    expect(libelle).toMatch(/^[A-ZÀ-Ý]/);
+  };
+
+  it('garde le geste court sur le bouton et les noms dans le détail, même avec un très long nom', () => {
+    const plan = exemple();
+    const h = new Historique();
+    const long = 'Voyage_Thaïlande_Mu_Ko_Ang_Thong_et_Ko_Samui_12-28.02.25';
+    const { id, modification } = creerDossier(plan, long);
+    h.enregistrer(modification);
+    court(h.prochaineAnnulation);
+    expect(h.detailAnnulation).toContain(long);
+    const ids = [...plan.fichiers.values()].filter((f) => f.categorie === 'photo').slice(0, 3).map((f) => f.id);
+    h.enregistrer(deplacerFichiers(plan, ids, id));
+    court(h.prochaineAnnulation);
+    expect(h.prochaineAnnulation).toBe('Déplacer 3 éléments');
+    expect(h.detailAnnulation).toContain(long);
+    h.enregistrer(renommerDossier(plan, id, `${long}_bis`));
+    court(h.prochaineAnnulation);
+    const autre = creerDossier(plan, 'Autre_dossier_au_nom_assez_long_lui_aussi');
+    h.enregistrer(autre.modification);
+    h.enregistrer(deplacerFichiers(plan, ids.slice(0, 1), autre.id));
+    h.enregistrer(fusionnerDossiers(plan, autre.id, id));
+    court(h.prochaineAnnulation);
+    expect(h.detailAnnulation).toMatch(/« .+ » dans « .+ »/);
+  });
+
+  it('dit un geste, pas un état : traitement des dossiers, album, recadrage', () => {
+    const plan = exemple();
+    const sous = [...plan.dossiers.values()].filter((d) => d.parent !== null);
+    const photo = [...plan.fichiers.values()].find((f) => f.categorie === 'photo')!;
+    for (const m of [
+      changerTraitement(plan, [sous[0].id], 'trier'),
+      changerTraitement(plan, [sous[1].id], 'garder'),
+      noterAlbum(plan, [photo.id], 1),
+      noterAlbum(plan, [photo.id], 2),
+      noterAlbum(plan, [photo.id], 0),
+      noterAlbum(plan, [photo.id], undefined),
+      recadrer(plan, photo.id, { x: 0.1, y: 0.1, l: 0.8, h: 0.8, angle: 0 }),
+    ]) {
+      expect(m).not.toBeNull();
+      court(m!.libelle);
+      // Un verbe à l'infinitif en tête : « Trier 1 dossier », « Mettre 1 photo dans l’album »…
+      expect(m!.libelle).toMatch(/^\p{Lu}\p{Ll}+(er|ir|re)\b/u);
+    }
   });
 });

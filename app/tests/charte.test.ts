@@ -165,3 +165,72 @@ describe('charte : échelles fermées dans les CSS de app/src/ui', () => {
     expect(TOUTES.filter((d) => /var\(--ia\b/.test(d.valeur)).map(lieu)).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Lot 2 : icônes et mots dans le code de l'interface (C-1.4, C-5, C-10)
+// ---------------------------------------------------------------------------
+
+const SRC = join(__dirname, '..', 'src');
+
+/** Fichiers .ts et .tsx de l'interface, de la logique et des traductions (la page d'essais exceptée). */
+function sources(dossier: string): string[] {
+  return readdirSync(dossier).flatMap((nom) => {
+    const chemin = join(dossier, nom);
+    if (statSync(chemin).isDirectory()) return nom === 'proto' || nom === 'consignes' ? [] : sources(chemin);
+    return /\.tsx?$/.test(nom) ? [chemin] : [];
+  });
+}
+
+/** Le code sans ses commentaires (// et /* … *\/, JSX compris), lignes gardées. */
+function sansCommentaires(texte: string): string {
+  return texte.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+}
+
+/**
+ * Caractères qui servaient d'icônes : ce sont des icônes SVG (Icones.tsx). Les flèches
+ * ← → ↑ ↓ (touches du clavier), ★ (album, C-5.3) et ✓ (fait) sont dans la police et restent
+ * des caractères. Aussi « ≈ » et « Ø » (C-10.6), et tout émoji.
+ */
+const CARACTERES_ICONES = /[✕✖✗✘✦✧✨▣◀▶►◄▾▸▴▹▿◂◆◇○●☰⌫✂✎✏↻↺⟳≤≥≈Ø⇄⧉↔⚠ℹ‹›]|\p{Extended_Pictographic}/u;
+/** Caractères gardés malgré `Extended_Pictographic` : ils sont dans la police Inter. */
+const DANS_LA_POLICE = new Set(['★', '✓', '™', '©', '®', '↔']);
+
+describe('charte : icônes et mots dans app/src', () => {
+  const fichiers = sources(SRC);
+
+  it('aucun caractère-icône ni émoji dans les textes (C-1.4, C-5.1, C-10.6)', () => {
+    const fautes: string[] = [];
+    for (const f of fichiers) {
+      sansCommentaires(readFileSync(f, 'utf8'))
+        .split('\n')
+        .forEach((ligne, i) => {
+          for (const c of ligne) if (CARACTERES_ICONES.test(c) && !(DANS_LA_POLICE.has(c) && c !== '↔')) fautes.push(`${relative(SRC, f)}:${i + 1} « ${c} »`);
+        });
+    }
+    expect(fautes).toEqual([]);
+  });
+
+  it('les icônes ont un trait de 1,75 et trois tailles : 20, 16, 14 (C-5.1)', () => {
+    const icones = readFileSync(join(UI, 'composants', 'Icones.tsx'), 'utf8');
+    expect(icones).toMatch(/stroke-width=\{1\.75\}/);
+    expect(icones).toMatch(/export type TailleIcone = 14 \| 16 \| 20;/);
+  });
+
+  it('« valider » ne sert qu’à l’étape (C-10.1) : les groupes, les noms et les rangements s’acceptent', () => {
+    // Textes français marqués (t`…`, aTraduire('…'), pluriel(n, '…')) qui disent « valider » pour autre chose
+    // que l'étape. Restent permis : « Valider et continuer », l'étape validée (frise, liste des étapes),
+    // « validez d'abord l'étape… », et l'adjectif « valide » (une sauvegarde, une latitude).
+    const ETAPE = /Valider et continuer|étapes? validées?|^validée$|[Vv]alidez d’abord (?:l’étape|les lieux)|\b(?:in)?valides?\b/;
+    const fautes: string[] = [];
+    for (const f of fichiers.filter((x) => !x.includes('traductions'))) {
+      const texte = sansCommentaires(readFileSync(f, 'utf8'));
+      for (const m of texte.matchAll(/\bt`([^`]*)`|aTraduire\('([^']*)'\)|pluriel\([^,]+,\s*'([^']*)'(?:,\s*'([^']*)')?/g)) {
+        for (const brut of m.slice(1)) {
+          const s = (brut ?? '').replace(/\$\{[^}]*\}/g, '');
+          if (/[Vv]alid/.test(s) && !ETAPE.test(s)) fautes.push(`${relative(SRC, f)} : ${s.slice(0, 80)}`);
+        }
+      }
+    }
+    expect(fautes).toEqual([]);
+  });
+});
