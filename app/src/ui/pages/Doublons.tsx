@@ -1165,8 +1165,10 @@ function ComparerGroupe({
       photos={photos.map((x) => x.f)}
       fermer={fermer}
       gardee={gardee}
-      // Ouverture sur la photo conseillée : l'IA, ou la plus nette (même quand une autre est proposée) ; sinon la 1.
-      conseillee={conseil?.id ?? comparaison.plusNette}
+      // Ouverture sur la photo conseillée : l'IA, ou la plus nette (même quand une autre est proposée) ;
+      // sinon la première « À garder », sinon la 1.
+      conseillee={conseil?.id ?? comparaison.plusNette ?? photos.find((x) => aGarder(x.etat))?.f.id}
+      suivre={avis?.meilleure}
       etat={(f) => {
         const [classe, libelle] = libelleEtat(de(f).etat, valide);
         return { classe, libelle, icone: aGarder(de(f).etat) ? 'coche' : 'croix' };

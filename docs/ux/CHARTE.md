@@ -41,7 +41,9 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
   sera écarté (« dont N où vous n'avez rien choisi »).
 - Pas de ★ à Doublons : la photo conseillée se dit en mots (« ✦ Conseillée
   par l'IA », « La plus nette ») ; Comparer s'ouvre sur cette photo, sinon
-  sur la première (choix de Tony du 27.10).
+  sur la première « À garder », sinon la première (choix de Tony du 27.10,
+  précisé le 28.10). Après « Choisir avec l'IA », la vue passe sur la photo
+  choisie par l'IA (28.10).
 - Flèches dans Comparer : **↑ ↓ photo, ← → groupe**, dans la journée ou le
   dossier affiché ; règle fixe, avec le rappel écrit.
 
@@ -65,7 +67,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 - **Le rappel des flèches reste à toutes les tailles** (C-4.10). Au palier
   « texte agrandi », les boutons de groupe et « Photo entière » gardent leur
   icône, leur nom passe dans l'infobulle et le lecteur d'écran (exception
-  ajoutée à C-5.2).
+  ajoutée à C-5.2, acceptée par Tony le 28.10).
 - **« Groupe 2 sur 4 » passe dans le titre de la vue** (comme la maquette) ;
   la barre du bas dit « Groupe précédent » et « Groupe suivant ».
 - **La présentation choisie à la main** est gardée d'un groupe à l'autre
@@ -140,7 +142,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | N° | Règle |
 |---|---|
 | C-5.1 | Un seul jeu SVG au trait (1,75, bouts arrondis), 20 px dans les boutons, 16 dans le texte, 14 dans une remarque. Aucun émoji |
-| C-5.2 | Chaque icône a son mot (exceptions nommées pour les lecteurs d'écran : chevron « Replier », − / + ; au palier « texte agrandi » de Comparer, les chevrons de groupe et « Photo entière », leur nom dans l'infobulle et `aria-label`) |
+| C-5.2 | Chaque icône a son mot (exceptions nommées pour les lecteurs d'écran : chevron « Replier », − / + ; au palier « texte agrandi » de Comparer, les chevrons de groupe et « Photo entière », leur nom dans l'infobulle et `aria-label`, accepté par l'utilisateur le 28.10) |
 | C-5.3 | ✦ = IA, toujours avec un prix ou « … » ; ★ = album ; ✓ = garder, fait ; ✕ = écarter, Fermer |
 
 ## C-6 Espacements, rayons, ombres
@@ -162,7 +164,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-7.2 | Barre de l'application : logo et projet · frise · « Étape n sur 13 ▾ » (sans le nom de l'étape) · ✦ IA · Aide · Menu | — |
 | C-7.3 | Gabarit **Photos** : liste 248/232 avec vignettes et état sous la date ; table ; panneau 304/288 seulement s'il porte des actions. **Réduire le panneau ne cache jamais les décisions** (colonne de 224 px) | `selection-replie_*` |
 | C-7.4 | Gabarit **Décisions** : « À faire ici » 440/420, numérotée. Point fait = une ligne + lien ; point en cours = titre, détail, choix, **bouton plein en dernier**, collé en bas de la colonne s'il ne tient pas ; sous 700 px de haut, les points faits se replient en « ✓ N points faits · Revoir ▾ » | Nommage et Tri à 1280 |
-| C-7.5 | Vue **Comparer** : barres 48 / 32 / scène / 56. Présentation calculée (côte à côte si chaque photo y garde ≥ la moitié de sa surface en « Une à la fois », jamais sous 220 px de haut). « Une à la fois » : photo, légende à droite (220 px), bande de vignettes (1 colonne, 2 sous 700 px de haut ; toutes visibles jusqu'à 6). Côte à côte : cartes de la largeur de la photo, au moins celle de l'état et de ses choix (240 px ; 340 à la Sélection) ; c'est la rangée qui doit tenir. Choisi à la main : 2 ou 3 rangées si une ne tient pas, désactivé sous 80 px de haut. Une paire toujours côte à côte. Sous la carte : le choix, puis 2 lignes au plus (remarque, heure, dossier). Ligne d'information et titre passent à la ligne, jamais coupés. Ouverture sur la photo conseillée (IA ou la plus nette), sinon la 1 (choix de l'utilisateur). Le clavier entre dans la vue à l'ouverture et y reste ; ↑ ↓ le posent sur la carte, jamais sur un choix ; Entrée bascule partout sauf sur une commande (Fermer, Accepter…). ↑ ↓ photo, ← → groupe, dans la journée ou le dossier. Quitter : « Fermer » (Échap). Calcul : `app/src/lib/presentationComparer.ts` (proportions lues sur les miniatures, quart de tour compris) | mesures de `systeme.md` § 10 ; `essai_charte.mjs` à 2, 3, 4 et 6 photos (Doublons) et 3 (Sélection), à 1440, 1280 et 1024 ; ↓ puis Entrée ne change aucun état |
+| C-7.5 | Vue **Comparer** : barres 48 / 32 / scène / 56. Présentation calculée (côte à côte si chaque photo y garde ≥ la moitié de sa surface en « Une à la fois », jamais sous 220 px de haut). « Une à la fois » : photo, légende à droite (220 px), bande de vignettes (1 colonne, 2 sous 700 px de haut ; toutes visibles jusqu'à 6). Côte à côte : cartes de la largeur de la photo, au moins celle de l'état et de ses choix (240 px ; 340 à la Sélection) ; c'est la rangée qui doit tenir. Choisi à la main : 2 ou 3 rangées si une ne tient pas, désactivé sous 80 px de haut. Une paire toujours côte à côte. Sous la carte : le choix, puis 2 lignes au plus (remarque, heure, dossier). Ligne d'information et titre passent à la ligne, jamais coupés. Ouverture sur la photo conseillée (IA ou la plus nette), sinon la première « À garder », sinon la 1 ; la réponse de « Choisir avec l'IA » y fait passer (choix de l'utilisateur). Le clavier entre dans la vue à l'ouverture et y reste ; ↑ ↓ le posent sur la carte, jamais sur un choix ; Entrée bascule partout sauf sur une commande (Fermer, Accepter…). ↑ ↓ photo, ← → groupe, dans la journée ou le dossier. Quitter : « Fermer » (Échap). Calcul : `app/src/lib/presentationComparer.ts` (proportions lues sur les miniatures, quart de tour compris) | mesures de `systeme.md` § 10 ; `essai_charte.mjs` à 2, 3, 4 et 6 photos (Doublons) et 3 (Sélection), à 1440, 1280 et 1024 ; ↓ puis Entrée ne change aucun état |
 | C-7.6 | Palier « texte agrandi » (moins de 1180 px de large, soit 1280 à 125 %) : frise et nom du projet masqués, barre d'outils sur 2 lignes, en-têtes qui passent à la ligne ; rien ne défile en largeur | fenêtre de 1024×464 |
 
 ## C-8 Places fixes
@@ -181,8 +183,8 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | N° | Règle | Test |
 |---|---|---|
 | C-9.1 | **Un seul signal d'état, écrit dans une bande de 28 px sous la photo** ; rien sur l'image | aucun élément positionné sur une photo |
-| C-9.2 | **Une bande n'a jamais la forme d'un bouton** : À garder = vert doux + filet vert de 3 px en haut ; À écarter / Pas pour l'album = blanc sans bord, texte gris ; Dans l'album = ambre clair + filet ambre ; Grande = ambre plein ; À décider = blanc, texte gris | aucune bande au fond `--accent` ni au bord `--contour` |
-| C-9.3 | **Aucune photo pâlie avant une décision de l'utilisateur** (groupe accepté, « Pas pour l'album ») | — |
+| C-9.2 | **Une bande n'a jamais la forme d'un bouton** : À garder = vert doux + filet vert de 3 px en haut ; À écarter / Pas pour l'album = blanc sans bord, texte gris ; Dans l'album = ambre clair + filet ambre ; Grande = ambre plein ; À décider = blanc, texte gris. Exception à Floues (utilisateur, 28.10) : « Nette : gardée » en gris, pour ne pas couvrir la page de vert | aucune bande au fond `--accent` ni au bord `--contour` |
+| C-9.3 | **Aucune photo pâlie avant une décision de l'utilisateur** (groupe accepté, « Pas pour l'album ») ; exception à Floues (utilisateur, 28.10) : les photos sous le seuil sont pâlies, le réglage de tolérance est la décision | — |
 | C-9.4 | Groupe pas encore accepté : pastille brune « à accepter » | — |
 | C-9.5 | **Choisie** = anneau vert de 3 px dedans ; **focus** = noir 2 / jaune 3 / noir 2 dehors, `:focus-visible` seulement ; les deux se voient ensemble | capture Sélection |
 | C-9.6 | Remarque sous la bande : 14 px, 2 lignes au plus, ✦ pour ce qui vient de l'IA ; Sélection : heure · signal · ✦ note ; marques ↻ ✂ ▣ au bout de la bande ; le texte entier, l'heure et le dossier sont dans l'infobulle et dans Comparer | — |

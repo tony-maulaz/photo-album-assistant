@@ -149,6 +149,7 @@ export function Comparateur({
   details,
   outils,
   conseillee,
+  suivre,
   ligne,
   plusieurs,
   rienSupprime,
@@ -178,6 +179,8 @@ export function Comparateur({
   outils?: (f: FichierPlan) => ComponentChildren;
   /** Photo affichée à l'ouverture : la conseillée (IA, ou la plus nette), sinon la première. */
   conseillee?: string;
+  /** Choix de l'IA : quand il arrive ou change, la vue passe sur cette photo. */
+  suivre?: string;
   /** Ligne d'information : la proposition, l'avis de l'IA et son aide ; ou ce qu'on sait de la photo courante. Elle passe à la ligne, jamais coupée (C-10.4). */
   ligne?: ComponentChildren | ((f: FichierPlan) => ComponentChildren);
   /** « Garder plusieurs photos » : sur la ligne d'information côte à côte, sous le choix en « Une à la fois ». */
@@ -258,6 +261,13 @@ export function Comparateur({
     // Côte à côte : le clavier passe sur la carte de cette photo, jamais sur un de ses choix (Entrée y garde son sens).
     if (presentation === 'cote') setTimeout(() => zone.current?.querySelector<HTMLElement>(`figure[data-numero="${j + 1}"]`)?.focus(), 0);
   };
+
+  // « Choisir avec l'IA » : la vue passe sur la photo choisie, une fois la réponse arrivée.
+  const suiviAvant = useRef(suivre);
+  useEffect(() => {
+    if (suivre && suivre !== suiviAvant.current && ids.includes(suivre)) allerPhoto(ids.indexOf(suivre));
+    suiviAvant.current = suivre;
+  }, [suivre]);
   const zoomer = (facteur: number) => setVue((v) => {
     const zoom = Math.min(10, Math.max(1, v.zoom * facteur));
     return zoom === 1 ? VUE_ENTIERE : { zoom, x: (v.x * zoom) / v.zoom, y: (v.y * zoom) / v.zoom };

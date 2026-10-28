@@ -431,6 +431,9 @@ function mesurerComparer() {
   return {
     presentation,
     titre: vue.querySelector('.titre-legende')?.textContent ?? '',
+    // L'état de la photo affichée (côte à côte : la carte courante), et s'il y a une photo « À garder ».
+    etatCourante: ((presentation === 'une' ? vue.querySelector('.vignette-comparer.affichee .bande-etat') : vue.querySelector('.cmp-carte.courante .choix-photo button.on'))?.textContent ?? '').trim().replace(/^\d+ · /, ''),
+    unAGarder: [...vue.querySelectorAll('.vignette-comparer .bande-etat, .cmp-carte .choix-photo button.on')].some((x) => /À garder/.test(x.textContent ?? '')),
     volets: vue.querySelectorAll('.volet').length,
     hauteurs: images.map((b) => Math.round(b.height)),
     imagesDedans: [...vue.querySelectorAll('.volet-image')].every(dedans),
@@ -708,10 +711,25 @@ try {
     const n = await cartes.nth(i).locator('.tuile-doublon').count();
     if (![2, 3, 4, 6].includes(n) || vusComparer.has(n)) continue;
     vusComparer.add(n);
+    // La paire : la photo 2 « À garder », la 1 « À écarter » ; rouverte, la vue doit s'ouvrir sur la 2.
+    if (n === 2) {
+      await cartes.nth(i).getByRole('button', { name: 'Comparer en grand' }).click();
+      await page.locator('.comparateur[data-presentation]').waitFor();
+      await page.waitForTimeout(300);
+      await page.locator('.cmp-carte[data-numero="2"] .choix-photo button', { hasText: 'À garder' }).click();
+      const un = page.locator('.cmp-carte[data-numero="1"] .choix-photo button', { hasText: 'À écarter' });
+      if (!/\bon\b/.test((await un.getAttribute('class')) ?? '')) await un.click();
+      await page.keyboard.press('Escape');
+      await page.locator('.comparateur').waitFor({ state: 'detached' });
+    }
     await cartes.nth(i).getByRole('button', { name: 'Comparer en grand' }).click();
     await page.locator('.comparateur[data-presentation]').waitFor();
     await page.waitForFunction(() => [...document.querySelectorAll('.comparateur .volet-image img')].every((x) => x.complete && x.naturalWidth > 0), null, { timeout: 20_000 }).catch(() => undefined);
     const nomVue = `doublons-comparer-${n}`;
+    // Ouverture (C-7.5) : sans photo conseillée, sur la première « À garder ».
+    const ouverture = await page.evaluate(mesurerComparer);
+    if (n === 2) console.log(`${nomVue} : ouverture sur « ${ouverture.etatCourante} », états ${ouverture.etats}`);
+    if (ouverture.unAGarder && !/À garder/.test(ouverture.etatCourante)) fautes.push(`${nomVue} : la vue s’ouvre sur une photo « ${ouverture.etatCourante} » alors qu’une autre est « À garder »`);
     await controler(nomVue);
     for (const taille of TAILLES_COMPARER) {
       await controlerComparer(nomVue, n, taille, { doublons: true });
