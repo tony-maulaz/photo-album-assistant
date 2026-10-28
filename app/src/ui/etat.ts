@@ -256,7 +256,7 @@ export function annuler() {
   const m = s?.historique.annuler(s.plan);
   if (m) {
     apresChangement();
-    notifier('info', t`Annulé : ${m.libelle}`);
+    notifier('info', t`Annulé : ${m.detail ?? m.libelle}`);
   }
 }
 
@@ -265,7 +265,7 @@ export function retablir() {
   const m = s?.historique.retablir(s.plan);
   if (m) {
     apresChangement();
-    notifier('info', t`Rétabli : ${m.libelle}`);
+    notifier('info', t`Rétabli : ${m.detail ?? m.libelle}`);
   }
 }
 

@@ -33,11 +33,9 @@ export const TEXTES: Record<string, string> = {
   propositions: 'suggestions',
   '— rangées avec les photos du même jour ; l’IA peut proposer un meilleur dossier':
     '— put with the photos of the same day; the AI can suggest a better folder',
-  'Ranger {0} groupes de photos sans GPS': 'Move {0} groups of photos without GPS',
   'groupe rangé': 'group moved',
   'groupes rangés': 'groups moved',
   Annuler: 'Undo',
-  'dialogue|Annuler': 'Cancel',
   'Accepter les {0} propositions sûres (confiance 8 ou plus)': 'Accept the {0} reliable suggestions (confidence 8 or more)',
   photo: 'photo',
   photos: 'photos',
@@ -97,9 +95,7 @@ export const TEXTES: Record<string, string> = {
     'Double-click or Enter: one by one, enlarged · wheel: zoom · drag: move · Esc: close',
   '← → : photo précédente ou suivante, même zoom · molette : zoom · Échap : revenir au côte à côte':
     '← →: previous or next photo, same zoom · wheel: zoom · Esc: back to side by side',
-  'Photo précédente': 'Previous photo',
   'Flèche gauche': 'Left arrow',
-  'Photo suivante': 'Next photo',
   'Flèche droite': 'Right arrow',
   'Côte à côte': 'Side by side',
   'Taille normale': 'Normal size',
@@ -107,7 +103,7 @@ export const TEXTES: Record<string, string> = {
   '{0} : double-clic ou Entrée pour les voir une à une.': '{0}: double-click or press Enter to see all the photos one by one.',
 
   // Dialogues.tsx
-  Valider: 'Confirm',
+  Accepter: 'Accept',
   Confirmer: 'Confirm',
 
   // DossierDepart.tsx
@@ -166,7 +162,6 @@ export const TEXTES: Record<string, string> = {
   doublon: 'duplicate',
   'doublon exact': 'exact duplicate',
   écartée: 'set aside',
-  '▶ vidéo': '▶ video',
   'aperçu indisponible': 'no preview',
   élément: 'item',
   éléments: 'items',
@@ -208,13 +203,6 @@ export const TEXTES: Record<string, string> = {
   'Petit dossier : moins de {0} photos': 'Small folder: fewer than {0} photos',
   petit: 'small',
   vide: 'empty',
-  'Fusionner les dossiers ?': 'Merge the folders?',
-  'Les {0} photos et vidéos de « {1} » (avec ses sous-dossiers) passent dans « {2} », puis « {3} » disparaît. Ctrl+Z annule.':
-    'The {0} photos and videos of “{1}” (with its subfolders) move into “{2}”, then “{3}” disappears. Ctrl+Z undoes.',
-  Fusionner: 'Merge',
-  '« {0} » fusionné dans « {1} ».': '“{0}” merged into “{1}”.',
-  'Ce qui est écarté va dans « {0} » : rien n’est supprimé':
-    'What is set aside goes to “{0}”: nothing is deleted',
   'Mis de côté': 'Set aside',
   'Ni photo ni vidéo : copiés dans « {0} » avec leur chemin d’origine':
     'Neither photos nor videos: copied to “{0}” with their original path',
@@ -225,21 +213,11 @@ export const TEXTES: Record<string, string> = {
   'Chercher un dossier': 'Search for a folder',
   'Présentation des dossiers': 'Folder display',
   'Par période': 'By period',
-  'Seulement les dossiers avec une alerte (sans date, nom en double, même sortie ?…)': 'Only folders with a warning (no date, duplicate name, same outing?…)',
-  'Seulement les alertes': 'Only warnings',
-  'Nouveau dossier, dans le dossier affiché (des photos déposées ici partent dans un dossier voisin)':
-    'New folder, inside the folder shown (photos dropped here go to a neighbouring folder)',
   'Nouveau dossier': 'New folder',
-  'Renommer (F2 ou double-clic sur le dossier)': 'Rename (F2 or double-click on the folder)',
   Renommer: 'Rename',
-  'Supprimer (vide)': 'Delete (empty)',
   // Fusionner avec… et calendrier sous le nom d'un dossier (D94).
-  'Fusionner avec…': 'Merge with…',
   'Mettre ses photos dans un autre dossier (ou glisser ce dossier sur un autre, à gauche)': 'Put its photos into another folder (or drag this folder onto another, on the left)',
-  'Fusionner avec un autre dossier': 'Merge with another folder',
-  'Fusionner « {0} » avec…': 'Merge “{0}” with…',
   'Ses photos passent dans le dossier choisi. Les plus proches dans le temps sont en tête.': 'Its photos go into the chosen folder. The closest in time come first.',
-  '↑ ↓ pour choisir, Entrée pour fusionner, Échap pour fermer.': '↑ ↓ to choose, Enter to merge, Esc to close.',
 
   // TriRapide.tsx
   'Pas dans l’album': 'Not in the album',
@@ -305,7 +283,7 @@ export const TEXTES: Record<string, string> = {
   'Redresser : {0}°': 'Straighten: {0}°',
   '{0} × {1} pixels': '{0} × {1} pixels',
   'Tout reprendre': 'Start over',
-  'Valider le recadrage': 'Apply the crop',
+  'Accepter le recadrage': 'Accept the crop',
 
   // BandeauSource.tsx (D63)
   'nouveau fichier': 'new file',

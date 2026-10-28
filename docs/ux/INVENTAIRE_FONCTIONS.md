@@ -29,7 +29,7 @@ incohérents**.
 | Aller à une étape | clic sur un des 13 rectangles de la frise ; état et nom seulement en infobulle | I/B | Cadre.tsx:76-87 |
 | Liste des étapes avec leur état | « Étape n sur 13 · Nom ▾ » → menu déroulant | V | Cadre.tsx:89-111 |
 | Budget IA dépensé | pastille à anneau « IA x / y CHF », détail en infobulle ; **pas cliquable** (l'infobulle renvoie au Journal) | V/B | Cadre.tsx:185-192 |
-| Menu ☰ : Fonctions IA, Configuration, Réglages, Journal (projet ouvert), Aide, Fermer le projet | icône ☰ | I | Cadre.tsx:117-164 |
+| Menu (icône et mot « Menu ») : Fonctions IA, Configuration, Réglages, Journal (projet ouvert), Aide, Fermer le projet | bouton « Menu » | I | Cadre.tsx:117-164 |
 | Annuler la dernière modification | Ctrl+Z (pages d'étape seulement, **pas quand une fenêtre est ouverte**) | C | Raccourcis.tsx:391-413 |
 | Rétablir | Ctrl+Y ou Ctrl+Maj+Z (mêmes limites) | C | idem |
 | Liste des raccourcis | touche « ? » ; **aucun bouton** ne l'ouvre (seule la page Aide le dit) | C | Raccourcis.tsx:397, 484 |
@@ -154,7 +154,7 @@ incohérents**.
 | Tolérance au flou (plus tolérant ↔ plus strict), valeur en infobulle | curseur | V/B |
 | Revenir au réglage conseillé | lien (grisé s'il l'est déjà) | V |
 | Voir toutes les photos / seulement celles qui seront écartées | liste | V |
-| Annuler (historique **global**, toutes étapes) | bouton « Annuler », infobulle « Ctrl+Z » seulement | V/B |
+| Annuler (historique **global**, toutes étapes) ; Rétablir | « Annuler : *le geste* » (verbe et nombre, une ligne ; le geste avec ses noms en infobulle) et « Rétablir », dans l'en-tête de l'étape (lot 2 de la charte) | V/C |
 | Faire juger les cas limites par l'IA (IA1), suivre son avis | bouton IA + bouton « Suivre l'avis… » | V |
 | Sélectionner : clic, Ctrl+clic, Maj+clic, rectangle, flèches | souris/clavier | G/C |
 | Sauver / Écarter / Selon le curseur / désélectionner | barre noire flottante en bas, touches S, X ou Suppr, Échap | V/C |
@@ -171,19 +171,19 @@ incohérents**.
 | Onglets Copies exactes / Rafales / Même scène (IA) / Mis de côté, avec compteur | onglets | V |
 | Tout l'onglet (copies) : Accepter les N propositions, Garder tous les exemplaires | rangée « Tout l'onglet » | V |
 | Tout l'onglet (rafales) : Choisir avec l'IA dans N rafales (IA16) | rangée | V |
-| Afficher À valider / Validés / Tous | bouton segmenté | V |
+| Afficher À accepter / Acceptés / Tous | bouton segmenté | V |
 | Grouper par journée / mois / dossier | liste | V |
 | Taille des photos | loupe dans la barre de filtres (y = 510 à 1440×900) | I |
 | Classer par heure / plus grands groupes d'abord | liste | V |
 | Liste de gauche : choisir une journée ou un dossier, ✓ ou nombre restant, chercher un dossier (Entrée = premier trouvé) | liste | V |
 | Élargir la liste de gauche, double-clic = largeur d'origine | poignée sur le bord | G/B |
-| Section : Choisir avec l'IA de cette journée, Valider les N groupes de cette journée | en-tête de section, étiquette de portée | V |
+| Section : Choisir avec l'IA de cette journée, Accepter les N groupes de cette journée | en-tête de section, étiquette de portée | V |
 | Groupe : clic sur une photo = la choisir (seule dans une rafale), Ctrl+clic = en plus | clic | V (expliqué en petit gris) |
 | Groupe : Accepter (A), Tout garder, Tout écarter, Comparer en grand (C), Replier, Garder plusieurs photos (case) | pied de carte | V |
 | Groupe validé replié : Revoir | lien | V |
-| Suite à valider : X › / Aller à la suite à valider | bouton | V |
+| Suite à accepter : X › / Aller à la suite à accepter | bouton | V |
 | Clavier : J/K ou ↓↑ groupe, ← → photo, Espace choisir, A accepter, C comparer, N/P journée suivante/précédente | clavier (dit en petit gris sous les filtres) | C |
-| Comparateur : groupe précédent/suivant (← → ou Page préc./suiv.), Accepter et groupe suivant (A), 1 à 9 = garder/écarter la photo n, Entrée = une à une, Côte à côte, Taille normale (0), molette, glisser, Fermer (Échap), Garder / Écarter / Garder celle-ci sous chaque photo, Choisir avec l'IA | fenêtre | V/C |
+| Comparateur : groupe précédent/suivant (← → ou Page préc./suiv.), Accepter et groupe suivant (A), 1 à 9 = garder/écarter la photo n, Entrée = une à une, Côte à côte, Taille normale (0, bouton affiché seulement après un zoom), molette, glisser, Fermer (Échap), Garder / Écarter / Garder celle-ci sous chaque photo, Choisir avec l'IA | fenêtre | V/C |
 | Même scène : Prudent / Strict, Analyser avec l'IA (coût dans le bouton), Arrêter | encart | V |
 | Réglages avancés IA : modèle, redemander les réponses illisibles | replié | V |
 | Mis de côté : Grouper, taille, Tout remettre (N), clic = remettre / écarter de nouveau | onglet | V |
@@ -197,13 +197,13 @@ incohérents**.
 | Taille des photos (×0,6) | loupe à droite du titre | I |
 | Maison : Changer (→ page Configuration, sans retour) / L'indiquer… | liste « À faire » | V |
 | Copies en double : Voir (→ étape Doublons), Mettre de côté | liste « À faire » | V |
-| Captures d'écran : Voir (fenêtre : cocher, agrandir, voir toutes, ranger / garder), Mettre à part | liste « À faire » + Fenetre | V |
+| Captures d'écran : Voir (fenêtre : cocher, agrandir, voir toutes, ranger / garder), Ranger dans leur dossier | liste « À faire » + Fenetre | V |
 | Endroits fréquents : Les nommer… (fenêtre : nom, Enregistrer, « C'est notre maison », « Pas maintenant », voir toutes les photos) | liste + Fenetre | V |
 | Choix du rangement (listes avec effet chiffré), Ranger les photos | liste « À faire » | V |
 | Après rangement : Ranger autrement…, Ranger avec ce réglage, Revenir au réglage actuel, Ranger à nouveau, Tout ranger à nouveau, Ranger N nouvelles photos | liste | V |
 | Photos sans position : Demander à l'IA… (fenêtre : IA2, accepter les sûres, « déplacer » une à une) | liste + Fenetre | V |
 | Arrêter la recherche des noms de lieux | bouton pendant le calcul | V |
-| Résultat : onglets Tout / Voyages / Sorties / À la maison / Mis à part, Voir les lieux | colonne de droite | V |
+| Résultat : onglets Tout / Voyages / Sorties / À la maison / Autres (captures, sans date, vidéos seules), Voir les lieux | colonne de droite | V |
 | Valider (grisé avant rangement, l'alerte dit quoi faire) | barre du bas | V |
 
 ## 12. Étape 7 « Lieux et sorties »
@@ -220,8 +220,8 @@ incohérents**.
 | Panneau : déplier/replier | ▸ ▾ | I |
 | Ouvrir un dossier | clic sur la ligne | V |
 | Renommer un dossier | double-clic sur la ligne, F2, ou crayon à côté du titre (la saisie se fait **dans le panneau**, pas au titre) | G/C/I |
-| Fusionner deux dossiers | glisser un dossier sur un autre (confirmation), ou « Fusionner avec… » (fenêtre de choix, ↑↓ Entrée) | G/V |
-| Supprimer un dossier vide | « Supprimer (vide) » | V |
+| Réunir deux dossiers | glisser un dossier sur un autre (confirmation), ou « Réunir avec… » (fenêtre de choix, ↑↓ Entrée) | G/V |
+| Retirer un dossier vide | « Retirer ce dossier vide » | V |
 | Déplacer des photos | glisser sur un dossier du panneau ; « Déplacer… » ou M (fenêtre avec recherche et « + Créer le dossier ») ; touches 1 à 9 ou puces « 1 » « 2 » (derniers dossiers) | G/V/C |
 | Mettre de côté / remettre | « Mettre de côté » / « Remettre », Suppr ou Retour arrière ; glisser sur « Mis de côté » | V/C/G |
 | Nouveau dossier avec les photos choisies | « Nouveau dossier » (barre) | V |
@@ -230,7 +230,7 @@ incohérents**.
 | Toute la journée / Toute l'heure de la dernière photo cliquée | barre | V |
 | Sélection : clic, Ctrl, Maj, rectangle, flèches (+Maj), Ctrl+A, Échap | souris/clavier | G/C |
 | Chemin du dossier : remonter à un parent | liens au-dessus du titre | V |
-| Annuler (l'infobulle nomme l'action) / Rétablir (icône seule) | barre de la vue | V/I |
+| « Annuler : *le geste* » (infobulle : le geste avec ses noms) / « Rétablir » (icône et mot) | barre de la vue | V/I |
 | Taille des photos | loupe dans la barre de la vue (absente en ligne de temps et Autres fichiers) | I |
 | Vue Photos / Ligne de temps ; clic sur une barre = ouvrir le dossier | bascule | V |
 | Mis de côté, Autres fichiers | lignes spéciales du panneau | V |
@@ -247,7 +247,7 @@ incohérents**.
 | Petits dossiers à moins d'1 h et 10 km : les voir (fenêtre : Retirer / Remettre, Mettre les N avec leur dossier, Fermer) | bouton plein | V |
 | Accepter les propositions sûres de l'IA (8/10 et plus) | bouton | V |
 | Choisir un petit dossier | liste « Dans l'ordre du temps » | V |
-| Mettre avec le dossier d'avant / d'après | boutons ◀ ▶, touches ← → | V/C |
+| Mettre avec le dossier d'avant / d'après | boutons « Mettre avec ce dossier » avec chevrons SVG, touches ← → | V/C |
 | Garder seul | bouton, touche G ; « Annuler » dans la notification (**pas** Ctrl+Z) | V/C/T |
 | Le renommer « … » (nom proposé par l'IA) | bouton | V |
 | Autre dossier… | lien → fenêtre de choix (recherche, ↑↓ Entrée, Annuler) | V |
@@ -304,11 +304,11 @@ incohérents**.
 | Fonction | Accès | Vu |
 |---|---|---|
 | Explication : « Replier » en haut à droite, puis « Aide » coincé entre la loupe et la colonne de droite | 2 places | V |
-| Tri rapide (plein écran, une photo à la fois) | bouton plein « Tri rapide », T ou Entrée, **double-clic sur une photo** | V/C/G |
-| Annuler (historique global, infobulle « Ctrl+Z » seulement) | bouton | V/B |
-| Rétablir | Ctrl+Y seulement (pas de bouton, contrairement à l'étape 7) | C |
+| Tri rapide (plein écran, une photo à la fois) | bouton contour « Tri rapide » (ligne du titre), T ou Entrée, **double-clic sur une photo** | V/C/G |
+| Annuler (historique global) : « Annuler : *le geste* », infobulle avec les noms | bouton | V/C |
+| Rétablir | bouton « Rétablir » à côté d'« Annuler », Ctrl+Y | V/C |
 | Taille des photos | loupe dans la barre de la vue (x = 958) | I |
-| Filtrer : Toutes / À décider / Retenues / ★★ Grandes / Pas pour l'album (avec compteurs), Nouvelles | pastilles | V |
+| Filtrer : Toutes / À décider / Dans l'album / ★★ Grandes / Pas pour l'album (avec compteurs), Nouvelles | pastilles | V |
 | Empiler les photos semblables ; déplier une pile | pastille ; badge ▸ N sur la photo | V/I |
 | Rechercher dans les descriptions de l'IA (après IA8) | champ | V |
 | Filtres secondaires : jour, arrivée, appareil, indicateurs, tri (date, netteté, appréciation), personnes, type, défauts | « Filtres ▾ » | V |
@@ -316,7 +316,7 @@ incohérents**.
 | Choisir une sortie | panneau de gauche (clic = filtre) | V |
 | Sélectionner : clic, Ctrl, Maj, rectangle, flèches, Ctrl+A, Échap | souris/clavier | G/C |
 | ★ Dans l'album / ★★ Grande / Pas pour l'album / À décider | barre noire flottante en bas ; Espace ou 1, 2, X, Suppr ou Retour arrière | V/C |
-| Tourner d'un quart de tour (Maj : l'autre sens) | ↻ (icône) ; R / Maj+R | I/C |
+| Tourner d'un quart de tour (Maj : l'autre sens) | bouton « Tourner » (icône SVG et mot) ; R / Maj+R | I/C |
 | Recadrer… (une seule photo) | barre flottante ; K | V/C |
 | Comparer (2 à 4 photos) | barre flottante ; C | V/C |
 | Déplacer… vers une autre sortie | barre flottante ; M | V/C |
@@ -331,7 +331,7 @@ incohérents**.
 | Tri rapide : recadrer (K), déplacer (M), comparer (C), **annuler (Ctrl+Z)** | **absents** (touches avalées) | — |
 | **Comparateur** : ★ / ★★ / ✕ Pas pour l'album / À décider sous chaque photo, double-clic ou Entrée = une à une, ← →, Côte à côte, Taille normale (0), molette, glisser, Fermer (Échap) | fenêtre | V/C |
 | Comparateur : tourner, recadrer | **absents** | — |
-| **Recadreur** : glisser le cadre, tirer un coin, Libre / 3:2 / 4:3 / Carré, En portrait / En paysage, Redresser (curseur) + 0°, Tout reprendre, Annuler (= fermer sans recadrer), Valider le recadrage (Entrée), Échap | fenêtre plein écran | V/C/G |
+| **Recadreur** : glisser le cadre, tirer un coin, Libre / 3:2 / 4:3 / Carré, En portrait / En paysage, Redresser (curseur) + 0°, Tout reprendre, Fermer sans recadrer, Accepter le recadrage (Entrée), Échap | fenêtre plein écran | V/C/G |
 | Voir une photo en grand **sans** la trier | **absent** (le double-clic ouvre le Tri rapide) | — |
 
 ## 17. Étape 12 « Album »
@@ -373,8 +373,8 @@ incohérents**.
 |---|---|---|
 | **Recadrer / redresser** | Sélection : barre flottante (1 photo) et touche K | Tri rapide (vue en grand), Comparateur, Album (qui sait tourner), visionneuse des autres étapes |
 | **Tourner** | Sélection (↻, R), Tri rapide (R), Album (« Tourner ») | Comparateur, visionneuse de l'étape 7 ; la grille de l'étape 7 n'affiche même pas la rotation décidée à l'étape 11 (`GrillePhotos.tsx:318` : rotation seulement si la page passe des badges) |
-| **Bouton Annuler** | Floues, Lieux, Sélection | Doublons, Petits dossiers, Nommage, Consolidation, Album, Tri (notification ou Ctrl+Z seulement) |
-| **Bouton Rétablir** | Lieux (icône) | Floues, Sélection, partout ailleurs |
+| **Bouton « Annuler : … »** | Floues (en-tête d'étape), Lieux, Sélection | Doublons, Petits dossiers, Nommage, Consolidation, Album, Tri (notification ou Ctrl+Z seulement) |
+| **Bouton Rétablir** | Floues, Lieux, Sélection (icône et mot) | partout ailleurs (Ctrl+Y) |
 | **Ctrl+Z** | pages d'étape | Tri rapide, Comparateur, Recadreur, Fenetre (rien ne se passe) |
 | **Voir en grand** | Dossiers, Floues, Lieux, Petits (centre), Consolidation, captures | Sélection (le double-clic ouvre le Tri rapide), Nommage, Album, Doublons (seulement « Comparer en grand ») |
 | **Boutons dans la vue en grand** | Tri rapide (8 boutons) | Visionneuse (aucun : M, Suppr seulement au clavier) |
@@ -399,8 +399,8 @@ incohérents**.
 | **Vue en grand** | Visionneuse (aucun bouton, M/Suppr) ; Tri rapide (boutons de choix, R) ; Comparateur « une à une » ; « Comparer en grand » (Doublons) | quatre visionneuses, quatre jeux de touches |
 | **Explication** | `TeteEtape` (bouton dans le titre) ; `EnteteEtape` + `BoutonAide` (7, 11) | deux mécanismes, deux places |
 | **« Pas dans l'album »** | « Pas pour l'album » (barre, filtres, comparateur), « pas dans l'album » (Tri rapide), « Pas dans l'album » (en-tête du Tri rapide), « Retirer de l'album » (Album), « ✕ » (badge) | 5 libellés pour le même état |
-| **Écarter** | « Écarter » (Floues, va dans _mis_de_cote), « Mettre de côté » (Lieux), « Tout écarter » (Doublons), « Mettre à part » (captures, dossier à part, pas mis de côté), « Pas pour l'album » (reste dans l'archive) | sens voisins, conséquences différentes |
-| **Fermer** | « Fermer » (Fenetre, Comparateur), « × » (Visionneuse), « Échap fermer » (Tri rapide), « Annuler » (Recadreur), « Fermer le tri rapide » / « Terminer » | — |
+| **Écarter** | « Écarter » (Floues, va dans _mis_de_cote), « Mettre de côté » (Lieux), « Tout écarter » (Doublons), « Ranger dans leur dossier » (captures, leur propre dossier, pas mis de côté), « Pas pour l'album » (reste dans l'archive) | sens voisins, conséquences différentes |
+| **Fermer** | « Fermer » (Fenetre, Comparateur), « × » (Visionneuse), « Échap fermer » (Tri rapide), « Fermer sans recadrer » (Recadreur), « Fermer le tri rapide » / « Terminer » | — |
 | **Valider** | « Valider et continuer », « Continuer » (étape 1), « Créer le projet », « Créer / mettre à jour la sortie », « Vérifier à nouveau », « Accepter », « Réunir », « Ranger ensemble », « Renommer », « Valider le recadrage » | acceptable, mais le bouton du bas change de sens à l'étape 13 |
 | **Clic sur une photo** | Doublons : **décide** (choisie à garder) ; Floues, Lieux, Sélection : sélectionne seulement ; Dossiers, Petits, Consolidation : ouvre en grand ; Album : ouvre le panneau | même geste, quatre effets |
 | **Double-clic sur une photo** | visionneuse (Floues, Lieux) ; Tri rapide (Sélection) ; rien (Doublons) | — |

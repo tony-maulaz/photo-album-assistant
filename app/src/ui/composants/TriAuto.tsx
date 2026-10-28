@@ -16,7 +16,7 @@ import { acceptablesSansVider, accepter, aEcarter, copiesEnAttente, groupesCopie
 import { rangerCaptures } from '../../lib/inventaire';
 import { t } from '../../lib/langue';
 import { gardeSaPlace, RACINE, resumes, traitementDe, type DossierPlan, type FichierPlan, type Plan } from '../../lib/plan';
-import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
+import { nomsSortie } from '../../lib/sortie';
 import { compteSortes, type ResultatTri as Resultat } from '../../lib/resultatTri';
 import { appliquerTri, arborescenceComplete, decouper, elementsATrier, optionsDuProjet, pointsANommer, type DossierPropose, type OptionsTri } from '../../lib/tri';
 import { ETAPE } from '../../navigateur/projet';
@@ -125,7 +125,7 @@ function Ligne({ etat, titre, detail, boutons, dessous, classe = '' }: { etat: E
   return (
     <li class={`ligne-afaire ${etat} ${classe}`}>
       <span class="puce-afaire" role="img" title={etiquette} aria-label={etiquette}>
-        {etat === 'fait' && <Icone nom="coche" taille={13} epaisseur={3} />}
+        {etat === 'fait' && <Icone nom="coche" taille={14} />}
       </span>
       <div class="texte-afaire">
         <strong>
@@ -203,7 +203,7 @@ export function useApercuTri(e: EtatTri, o: OptionsTri): ApercuTri {
 }
 
 /** Réglages du tri choisis à l'écran, différents de ceux du dernier rangement ? */
-const memesReglages = (a: OptionsTri, b: OptionsTri) => a.etapes === b.etapes && a.distanceVoyageKm === b.distanceVoyageKm && a.maison === b.maison;
+export const memesReglages = (a: OptionsTri, b: OptionsTri) => a.etapes === b.etapes && a.distanceVoyageKm === b.distanceVoyageKm && a.maison === b.maison;
 
 export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: OptionsTri; setO: Dispatch<StateUpdater<OptionsTri>>; ap: ApercuTri; apercu: Resultat; actuel: Resultat | null }) {
   const s = session.value!;
@@ -285,8 +285,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
     notifier(
       'ok',
       e.range
-        ? t`${pluriel(nb, 'copie mise', 'copies mises')} de côté dans « ${dossierMisDeCote('doublons_exacts')} ». Rangez à nouveau : des dossiers ont pu se vider.`
-        : t`${pluriel(nb, 'copie mise', 'copies mises')} de côté dans « ${dossierMisDeCote('doublons_exacts')} ».`,
+        ? t`${pluriel(nb, 'copie mise', 'copies mises')} dans « Mis de côté ». Rangez à nouveau : des dossiers ont pu se vider.`
+        : t`${pluriel(nb, 'copie mise', 'copies mises')} dans « Mis de côté ».`,
       { libelle: t`Annuler`, faire: annuler },
     );
   };
@@ -354,7 +354,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
       {change && avant && (
         <div class="ecart-reglage">
           <span>{ecartTexte}</span>
-          <button type="button" class="principal" onClick={() => void calculer()}>
+          <button type="button" class={premier === null || premier === 'ranger' ? 'principal' : 'contour'} onClick={() => void calculer()}>
             {t`Ranger avec ce réglage`}
           </button>
           <button type="button" class="contour" onClick={() => setO(enregistres)}>
@@ -414,8 +414,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
             titre={pluriel(e.nCopies, 'photo en double', 'photos en double')}
             detail={
               e.range
-                ? t`Copies exactes d’une photo déjà gardée : le tri les a rangées une seconde fois. Rien n’est supprimé : elles vont dans « ${nomsSortie().misDeCote} ». Rangez à nouveau ensuite.`
-                : t`Copies exactes d’une photo déjà gardée. Rien n’est supprimé : elles vont dans « ${nomsSortie().misDeCote} ».`
+                ? t`Copies exactes d’une photo déjà gardée : le tri les a rangées une seconde fois. Rien n’est supprimé : elles vont dans « Mis de côté ». Rangez à nouveau ensuite.`
+                : t`Copies exactes d’une photo déjà gardée. Rien n’est supprimé : elles vont dans « Mis de côté ».`
             }
             boutons={
               <>
@@ -442,7 +442,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
                   {t`Voir`}
                 </button>
                 <button type="button" class={style('captures')} onClick={() => appliquer(rangerCaptures(s.plan, e.captures.map((f) => f.id)))}>
-                  {t`Mettre à part`}
+                  {t`Ranger dans leur dossier`}
                 </button>
               </>
             }
@@ -451,7 +451,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           e.capturesRangees > 0 && (
             <Ligne
               etat="fait"
-              titre={t`${pluriel(e.capturesRangees, 'capture d’écran mise', 'captures d’écran mises')} à part`}
+              titre={t`${pluriel(e.capturesRangees, 'capture d’écran rangée', 'captures d’écran rangées')} dans leur dossier`}
               detail={t`Dans « ${nomsSortie().captures} », hors de l’album.`}
               boutons={
                 e.range && (
@@ -535,7 +535,9 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
             titre={pluriel(nSansGps, 'photo sans position', 'photos sans position')}
             detail={t`Sans GPS, elles sont rangées avec les photos prises juste avant ou après. Une aide IA peut proposer mieux ; son coût est affiché avant de la lancer.`}
             boutons={
-              <button type="button" class="petit" onClick={() => setFenetre('gps')}>
+              // Aide IA dont le prix dépend de ce qu'on choisit : « … », le prix est dans la fenêtre avant de lancer (C-4.6).
+              <button type="button" class="petit bouton-ia" onClick={() => setFenetre('gps')}>
+                <Icone nom="etincelle" taille={20} />
                 {t`Demander à l’IA…`}
               </button>
             }

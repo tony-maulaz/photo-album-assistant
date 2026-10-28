@@ -6,7 +6,7 @@
 import { normaliser, recadrageUtile, tournerRecadrage, type Recadrage } from './recadrage';
 import { pluriel } from '../ui/format';
 import type { Categorie } from './fichiers';
-import { aTraduire, t } from './langue';
+import { t } from './langue';
 import { cleNom, nomLibre, verifierNomDossier } from './noms';
 
 /** Dossier racine : `Photos/` dans la sortie. */
@@ -303,7 +303,13 @@ function nomsPris(plan: Plan, dossier: string, sauf: Set<string>): Set<string> {
 type Etat<T> = [string, T | null][];
 
 export interface Modification {
+  /**
+   * Le geste, court (un verbe et un nombre, sans nom ni parenthèse) : il est lu
+   * sur le bouton « Annuler : … » (C-8.2), qui garde ainsi une ligne.
+   */
   libelle: string;
+  /** Le même geste avec les noms (« … vers « Vacances » ») : infobulle d'« Annuler » et messages. */
+  detail?: string;
   avant: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
   apres: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
 }
@@ -340,10 +346,11 @@ export class Transaction {
     this.plan.fichiers.delete(id);
   }
 
-  terminer(libelle: string): Modification | null {
+  terminer(libelle: string, detail?: string): Modification | null {
     if (!this.avantD.size && !this.avantF.size) return null;
     return {
       libelle,
+      ...(detail ? { detail } : {}),
       avant: { dossiers: [...this.avantD], fichiers: [...this.avantF], prochainId: this.prochainIdAvant },
       apres: {
         dossiers: [...this.avantD.keys()].map((id) => [id, this.plan.dossiers.get(id) ?? null]),
@@ -404,6 +411,11 @@ export class Historique {
   get prochaineAnnulation(): string | undefined {
     return this.passe.at(-1)?.libelle;
   }
+  /** Le dernier geste avec ses noms (infobulle d'« Annuler »). */
+  get detailAnnulation(): string | undefined {
+    const m = this.passe.at(-1);
+    return m && (m.detail ?? m.libelle);
+  }
 }
 
 function dossierExistant(plan: Plan, id: string): DossierPlan {
@@ -434,7 +446,7 @@ export function deplacerFichiers(plan: Plan, ids: string[], cible: string): Modi
   const d = dossierExistant(plan, cible);
   const tx = new Transaction(plan);
   ranger(plan, tx, ids, cible);
-  return tx.terminer(t`Déplacer ${pluriel(ids.length, 'élément')} vers « ${d.nom} »`);
+  return tx.terminer(t`Déplacer ${pluriel(ids.length, 'élément')}`, t`Déplacer ${pluriel(ids.length, 'élément')} vers « ${d.nom} »`);
 }
 
 export function mettreDeCote(plan: Plan, ids: string[], raison: RaisonMiseDeCote = 'autres'): Modification | null {
@@ -475,7 +487,7 @@ export function creerDossier(plan: Plan, nom: string, parent = RACINE): { id: st
   const tx = new Transaction(plan);
   const id = `n${plan.prochainId++}`;
   tx.dossier({ id, nom: propre, parent, origine: 'cree' });
-  return { id, modification: tx.terminer(t`Créer le dossier « ${propre} »`)! };
+  return { id, modification: tx.terminer(t`Créer 1 dossier`, t`Créer le dossier « ${propre} »`)! };
 }
 
 /**
@@ -495,7 +507,7 @@ export function renommerDossier(plan: Plan, id: string, nom: string, saisi?: str
   const tx = new Transaction(plan);
   const { nomSaisi: _ancien, ...reste } = d;
   tx.dossier({ ...reste, nom: propre, ...(texte ? { nomSaisi: texte } : {}) });
-  return tx.terminer(t`Renommer « ${d.nom} » en « ${propre} »`);
+  return tx.terminer(t`Renommer 1 dossier`, t`Renommer « ${d.nom} » en « ${propre} »`);
 }
 
 /**
@@ -526,7 +538,7 @@ export function fusionnerDossiers(plan: Plan, source: string, cible: string): Mo
     tx.supprimerDossier(de);
   };
   fusionner(source, cible);
-  return tx.terminer(t`Fusionner « ${s.nom} » dans « ${c.nom} »`);
+  return tx.terminer(t`Réunir 2 dossiers`, t`Réunir « ${s.nom} » dans « ${c.nom} »`);
 }
 
 /** Déplace un dossier (avec son contenu) dans `parent` ; refusé si un frère porte déjà son nom. */
@@ -539,7 +551,7 @@ export function deplacerDossier(plan: Plan, id: string, parent: string): Modific
   verifierFrere(plan, parent, d.nom, id);
   const tx = new Transaction(plan);
   tx.dossier({ ...d, parent });
-  return tx.terminer(t`Mettre « ${d.nom} » dans « ${p.nom} »`);
+  return tx.terminer(t`Déplacer 1 dossier`, t`Mettre « ${d.nom} » dans « ${p.nom} »`);
 }
 
 /** Supprime un dossier vide (sans fichier, même mis de côté, ni sous-dossier). */
@@ -550,7 +562,7 @@ export function supprimerDossierVide(plan: Plan, id: string): Modification | nul
   if ([...plan.fichiers.values()].some((f) => f.dossier === id && f.categorie !== 'autre')) throw new ErreurPlan(t`Ce dossier n’est pas vide.`);
   const tx = new Transaction(plan);
   tx.supprimerDossier(id);
-  return tx.terminer(t`Supprimer le dossier vide « ${d.nom} »`);
+  return tx.terminer(t`Retirer 1 dossier vide`, t`Retirer le dossier vide « ${d.nom} »`);
 }
 
 /**
@@ -572,6 +584,12 @@ export function enchainer(plan: Plan, libelle: string, etapes: (() => Modificati
     throw err;
   }
   return combiner(libelle, ...faites);
+}
+
+/** Donne à une modification son geste avec les noms (voir `Modification.detail`). */
+export function avecDetail(m: Modification | null, detail: string): Modification | null {
+  if (m) m.detail = detail;
+  return m;
 }
 
 /** Réunit des modifications successives en une seule (un seul Ctrl+Z). */
@@ -619,8 +637,10 @@ export function changerTraitement(plan: Plan, ids: string[], traitement: Traitem
     const d = plan.dossiers.get(id);
     if (d && d.parent !== null && d.traitement !== traitement) tx.dossier({ ...d, traitement });
   }
-  const libelles = { trier: aTraduire('À trier'), nettoyer: aTraduire('Garder et nettoyer'), garder: aTraduire('Ne pas toucher'), ignorer: aTraduire('Ne pas toucher') } as const;
-  return tx.terminer(`${t(libelles[traitement])} (${pluriel(ids.length, 'dossier')})`);
+  // Les gestes de l'étape « Dossiers » (« Trier », « Garder, nettoyer », « Ne pas toucher ») dits par un verbe.
+  const n = pluriel(ids.length, 'dossier');
+  const libelle = traitement === 'trier' ? t`Trier ${n}` : traitement === 'nettoyer' ? t`Garder et nettoyer ${n}` : ids.length > 1 ? t`Laisser ${n} tels quels` : t`Laisser ${n} tel quel`;
+  return tx.terminer(libelle);
 }
 
 // ---------------------------------------------------------------------------
@@ -636,8 +656,10 @@ export function noterAlbum(plan: Plan, ids: string[], valeur: 0 | 1 | 2 | undefi
     const { album: _ancien, ...reste } = f;
     tx.fichier(valeur === undefined ? reste : { ...reste, album: valeur });
   }
-  const libelle = valeur === undefined ? t`Remettre à décider` : valeur === 0 ? t`Pas dans l’album` : valeur === 1 ? t`Dans l’album ★` : t`Grande photo ★★`;
-  return tx.terminer(`${libelle} (${ids.length})`);
+  const n = pluriel(ids.length, 'photo');
+  const libelle =
+    valeur === undefined ? t`Remettre ${n} à décider` : valeur === 0 ? t`Mettre ${n} hors de l’album` : valeur === 1 ? t`Mettre ${n} dans l’album` : t`Mettre ${n} en grand`;
+  return tx.terminer(libelle);
 }
 
 /**
@@ -664,7 +686,7 @@ export function recadrer(plan: Plan, id: string, recadrage: Recadrage | undefine
   const { recadrage: _ancien, ...reste } = f;
   const tx = new Transaction(plan);
   tx.fichier(recadrageUtile(recadrage) ? { ...reste, recadrage: normaliser(recadrage) } : reste);
-  return tx.terminer(recadrageUtile(recadrage) ? t`Recadrer ${f.nom}` : t`Enlever le recadrage de ${f.nom}`);
+  return recadrageUtile(recadrage) ? tx.terminer(t`Recadrer 1 photo`, t`Recadrer ${f.nom}`) : tx.terminer(t`Enlever 1 recadrage`, t`Enlever le recadrage de ${f.nom}`);
 }
 
 export function changerLegende(plan: Plan, id: string, legende: string): Modification | null {

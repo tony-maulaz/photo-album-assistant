@@ -4,7 +4,7 @@
 
 import { createPortal } from 'preact/compat';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { t, tc } from '../../lib/langue';
+import { t } from '../../lib/langue';
 import { recadrer, type FichierPlan } from '../../lib/plan';
 import { ANGLE_MAX, auFormat, cadre, dessinerRecadrage, FORMATS, normaliser, RECADRAGE_COMPLET, type Recadrage } from '../../lib/recadrage';
 import { appliquer, session, texteErreur } from '../etat';
@@ -165,8 +165,8 @@ export function Recadreur({ f, fermer }: { f: FichierPlan; fermer: () => void })
         <label class="redresser">
           {t`Redresser : ${nombre(r.angle, 1)}°`}
           <input type="range" min={-ANGLE_MAX} max={ANGLE_MAX} step="0.1" value={r.angle} onInput={(e) => setR({ ...r, angle: Number(e.currentTarget.value) })} />
-          <button type="button" class="lien" disabled={r.angle === 0} onClick={() => setR({ ...r, angle: 0 })}>
-            0°
+          <button type="button" class="lien" disabled={r.angle === 0} data-raison={r.angle === 0 ? 'libelle' : undefined} onClick={() => setR({ ...r, angle: 0 })}>
+            {r.angle === 0 ? t`déjà droite` : t`remettre à 0°`}
           </button>
         </label>
         {pixels && <span class="discret">{t`${nombre(pixels.l)} × ${nombre(pixels.h)} pixels`}</span>}
@@ -176,11 +176,12 @@ export function Recadreur({ f, fermer }: { f: FichierPlan; fermer: () => void })
           {t`Tout reprendre`}
         </button>
         <span class="espace" />
+        {/* Quitter une vue : « Fermer » (C-10.1), qui dit ce qu'il laisse ; « Annuler » ne sert qu'à défaire un geste. */}
         <button type="button" onClick={fermer}>
-          {tc('dialogue', 'Annuler')}
+          {t`Fermer sans recadrer`}
         </button>
-        <button type="button" class="principal" disabled={!image} onClick={valider}>
-          {t`Valider le recadrage`}
+        <button type="button" class="principal" disabled={!image} data-raison={image ? undefined : 'libelle'} onClick={valider}>
+          {image ? t`Accepter le recadrage` : t`Chargement de la photo…`}
         </button>
       </div>
     </div>,

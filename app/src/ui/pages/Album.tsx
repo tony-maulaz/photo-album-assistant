@@ -8,6 +8,7 @@ import { cibleEnPages, conseilCible, doublesAlbum, ordreAlbum, paginer, photosAl
 import { changerLegende, combiner, noterAlbum, periodeDe, tourner, type FichierPlan } from '../../lib/plan';
 import { titreAlbum, titreDossier } from '../../navigateur/album';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { Icone } from '../composants/Icones';
 import { demander } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { allerEtape, annuler, appliquer, changerAlbum, notifier, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
@@ -40,7 +41,11 @@ function MiniaturePage({ f, grande, seule, choisie, choisir }: { f: FichierPlan;
   return (
     <button type="button" class={`photo-page${grande ? ' grande' : ''}${choisie ? ' choisie' : ''}`} onClick={choisir} title={f.legende ? t`Légende : ${f.legende}` : f.nom}>
       <Miniature f={f} taille={grande || seule ? 208 : 100} rotation={f.rotation} recadrage={f.recadrage} />
-      {f.legende && <span class="a-legende" title={f.legende}>✎</span>}
+      {f.legende && (
+        <span class="a-legende" title={f.legende}>
+          <Icone nom="crayon" taille={14} titre={t`Légende`} />
+        </span>
+      )}
     </button>
   );
 }
@@ -60,8 +65,8 @@ function Couverture({ ouvrir }: { ouvrir: (id: string) => void }) {
     <section class="section-album couverture-album">
       <header class="entete-section">
         <div class="ligne-titre">
-          <span class="numero-section" aria-hidden="true">
-            ◆
+          <span class="numero-section">
+            <Icone nom="couverture" taille={16} titre={t`Couverture`} />
           </span>
           <input
             class="titre-section"
@@ -100,8 +105,15 @@ function Couverture({ ouvrir }: { ouvrir: (id: string) => void }) {
                   <figure key={c.id} class={config.couverture === c.id ? 'choisie' : ''}>
                     <Miniature f={p} taille={120} rotation={p.rotation} recadrage={p.recadrage} />
                     <figcaption>{c.raison}</figcaption>
-                    <button type="button" class="lien" disabled={config.couverture === c.id} onClick={() => changerAlbum({ couverture: c.id })}>
-                      {config.couverture === c.id ? t`couverture choisie ✓` : t`choisir comme couverture`}
+                    <button type="button" class="lien" disabled={config.couverture === c.id} data-raison={config.couverture === c.id ? 'libelle' : undefined} onClick={() => changerAlbum({ couverture: c.id })}>
+                      {config.couverture === c.id ? (
+                        <>
+                          <Icone nom="coche" taille={16} />
+                          {t`Couverture choisie`}
+                        </>
+                      ) : (
+                        t`Choisir comme couverture`
+                      )}
                     </button>
                   </figure>
                 );
@@ -317,7 +329,8 @@ function PanneauPhoto({ f, fermer }: { f: FichierPlan; fermer: () => void }) {
             </button>
           )}
           <button type="button" onClick={() => appliquer(tourner(s.plan, [f.id], 90))}>
-            ↻ {t`Tourner`}
+            <Icone nom="tourner" taille={20} />
+            {t`Tourner`}
           </button>
           <button type="button" onClick={() => changerAlbum({ couverture: config.couverture === f.id ? undefined : f.id })}>
             {config.couverture === f.id ? t`Ne plus en faire la couverture` : t`Choisir comme couverture`}
@@ -366,7 +379,7 @@ function TableauTextes({ secs, ordre }: { secs: Section[]; ordre: FichierPlan[] 
         <button
           type="button"
           onClick={() => {
-            appliquer(combiner(t`Reprendre ${aReprendre.length} légendes proposées`, ...aReprendre.map((f) => changerLegende(s.plan, f.id, proposees.get(f.id)!))));
+            appliquer(combiner(t`Reprendre ${pluriel(aReprendre.length, 'légende proposée', 'légendes proposées')}`, ...aReprendre.map((f) => changerLegende(s.plan, f.id, proposees.get(f.id)!))));
             notifier('ok', t`${aReprendre.length} légende(s) reprise(s) : modifiez-les à volonté.`, { libelle: t`Annuler`, faire: annuler });
           }}
         >
@@ -556,6 +569,7 @@ export function PageAlbum() {
         revenir={() => revenirDe('album')}
         valider={() => validerEtape('album')}
         validerActif={ordre.length > 0}
+        raisonInactif={t`Aucune photo dans l’album.`}
       />
     </div>
   );

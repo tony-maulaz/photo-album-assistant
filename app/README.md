@@ -46,10 +46,14 @@ Node 24 (fichier `.nvmrc`) : `source ~/.nvm/nvm.sh && nvm use`, puis :
   **fichier construit** (le build peut récrire le CSS), 21 pages de l'accueil à
   la Sortie (vues sombres comprises : Comparer, tri rapide, recadrage,
   visionneuse), à 1440×900 et 1280×580, en clair et en sombre : aucun texte
-  sous 14 px, contrastes ≥ 4,5:1, Inter seule, désactivés en pointillé, vert
-  plein sur les seuls boutons d'action, contour du clavier à chaque Tab ;
-  `light-dark()` intact dans le build ; signale (sans échouer) les écrans à
-  plus d'un bouton plein.
+  sous 14 px, boutons à 16 px, contrastes ≥ 4,5:1, Inter seule, désactivés en
+  pointillé et avec leur raison écrite (`data-raison="libelle"` ou
+  `aria-describedby`), un seul bouton plein par écran (« Valider et
+  continuer » plein seulement une fois l'étape finie, `data-fini`), vert plein
+  sur les seuls boutons d'action, aucun caractère-icône ni émoji dans les
+  textes, « Rien n'est supprimé » dans la barre du bas des étapes où l'on
+  écarte, contour du clavier à chaque Tab ; `light-dark()` intact dans le
+  build ; signale (sans échouer) les écrans sans bouton plein.
 - `node outils/essai_echelle.mjs DOSSIER [CAPTURES]` : même parcours sur un
   vrai dossier trié (copié dans le stockage du navigateur), avec les durées ;
   `VRAC=1` pour tout retrier par lieux.
@@ -64,15 +68,18 @@ Node 24 (fichier `.nvmrc`) : `source ~/.nvm/nvm.sh && nvm use`, puis :
 
 ## Police
 
-`src/ui/police/inter.woff2` : sous-ensemble d'Inter 4.0 variable (axes
+`src/ui/police/inter.woff2` : sous-ensemble d'Inter 4.0 variable (65 Ko ; axes
 `opsz` 14-32 et `wght` 100-900 ; fonctions `cv05`, `cv08`, `tnum`, `case`,
-`calt`, `locl`, `ccmp`), latin de base et Latin-1, ponctuation générale,
-flèches, `−`, `★`, `✓`, espace fine U+202F. Pas de paquet fontsource : celui
+`calt`, `locl`, `ccmp`), latin de base, Latin-1 et **latin étendu A** (noms de
+lieux et de personnes : Kraków, Dvořák, Łódź ; plus ș ț roumains), ponctuation
+générale, flèches, `−`, `★`, `✓`, espace fine U+202F. Les autres signes (✕ ✦ ▾…)
+ne sont jamais des caractères : ce sont les icônes SVG de
+`src/ui/composants/Icones.tsx` (C-1.4). Pas de paquet fontsource : celui
 d'Inter perd `cv05` et `cv08`. Pour le refaire depuis `InterVariable.woff2`
-(https://github.com/rsms/inter, version 4.0) :
+(https://github.com/rsms/inter, version 4.0 ; `pip install fonttools brotli`) :
 
 ```sh
-pyftsubset InterVariable.woff2 --flavor=woff2 --output-file=src/ui/police/inter.woff2 \
-  --unicodes="U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-205F,U+20AC,U+2122,U+2190-2193,U+2212,U+2605,U+2713" \
+python3 -m fontTools.subset InterVariable.woff2 --flavor=woff2 --output-file=src/ui/police/inter.woff2 \
+  --unicodes="U+0020-007E,U+00A0-017F,U+0218-021B,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-205F,U+20AC,U+2122,U+2190-2193,U+2212,U+2605,U+2713" \
   --layout-features="calt,case,ccmp,cv05,cv08,locl,tnum"
 ```

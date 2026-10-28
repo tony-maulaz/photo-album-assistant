@@ -13,9 +13,21 @@
 //   - aucune police autre qu'Inter (C-1.1), et Inter bien chargée ;
 //   - tout bouton désactivé a un bord en pointillé (C-4.7) ;
 //   - le vert plein (fond --accent) n'est que sur un bouton d'action (C-3.2 ;
-//     les barres de données, à trancher, sont comptées à part) ;
-//   - un seul bouton plein visible (C-4.1) : signalé sans échouer tant que
-//     la disposition est provisoire (C-7, C-8 : lots suivants).
+//     les barres de données sont comptées à part) ;
+//   - un seul bouton plein visible (C-4.1), et sur une page d'étape exactement
+//     un dans toute la page ou la vue ouverte (aucun seulement sur les pages de
+//     SANS_PLEIN) ; « Valider et continuer » n'est plein qu'une fois l'étape
+//     finie (data-fini) ;
+//   - tout bouton désactivé dit pourquoi (C-4.7) : son libellé le dit
+//     (data-raison="libelle"), ou aria-describedby mène à un texte visible ;
+//   - le texte des boutons fait 16 px (C-2.2), les liens exceptés ;
+//   - aucun caractère-icône (✕ ✦ ▾ ▸ ◀ ↻ ✂ ≤ ≈ …) ni émoji dans les textes (C-1.4) ;
+//   - la barre du bas des étapes où l'on écarte dit « Rien n'est supprimé » (C-8.4) ;
+//   - les parties repliables montrent le chevron SVG, pas le triangle du navigateur (C-5.1) ;
+//   - « Annuler » et « Rétablir » tiennent sur une ligne de 40 px, même avec le plus
+//     long geste court (sonde), sans déborder ni faire bouger la grille (C-8.2) ;
+//   - toute aide IA porte l'étincelle et son prix, ou « … » (C-4.6) ;
+//   - aucune commande coupée par le bord de l'écran (C-6.2), rien qui défile en largeur (C-7.1).
 // Sur les pages ordinaires, au clavier (Tab) : chaque arrêt montre le contour
 // noir 2 / jaune 3 / noir 2 (C-9.5).
 //
@@ -39,8 +51,17 @@ const TAILLES = [
   [1280, 580],
 ];
 const THEMES = ['light', 'dark'];
+/** Étapes où l'on écarte des photos : la barre du bas dit « Rien n'est supprimé » (C-8.4). */
+const ECARTE = new Set(['floues', 'doublons', 'tri', 'lieux', 'sortie']);
 /** Pages contrôlées au moins : sinon le parcours s'est arrêté trop tôt. */
 const MINIMUM_PAGES = 20;
+/**
+ * Pages d'étape sans bouton plein permis (C-4.1), à faire trancher par l'utilisateur
+ * (« au plus un plein ; aucun quand la prochaine action est un geste ou un choix sans préférence ») :
+ * - Sélection, sa barre d'action, Décider une par une, la visionneuse : choisir ★ / ★★ / ✕ sur les photos ;
+ * - Petits dossiers sans proposition de l'IA : deux dossiers voisins au choix, aucun n'est mis en avant.
+ */
+const SANS_PLEIN = new Set(['selection', 'selection-barre-action', 'tri-rapide', 'visionneuse', 'petits-dossiers']);
 
 const photos = readdirSync(PHOTOS).filter((f) => f.endsWith('.jpg') && !f.startsWith('Vacances'));
 
@@ -167,33 +188,153 @@ function mesurer() {
   };
   // Vert plein (C-3.2), repéré par le fond calculé et non par la classe : la valeur de
   // --accent dans les deux thèmes (une vue sombre prend la valeur sombre).
-  const sonde = (theme) => {
+  // Le survol (--accent-survol) compte aussi : la souris reste souvent sur le dernier bouton cliqué.
+  const sonde = (theme, jeton = '--accent') => {
     const d = document.createElement('div');
-    d.style.cssText = `color-scheme:${theme};background:var(--accent);position:fixed;width:1px;height:1px`;
+    d.style.cssText = `color-scheme:${theme};background:var(${jeton});position:fixed;width:1px;height:1px`;
     document.body.appendChild(d);
     const c = getComputedStyle(d).backgroundColor;
     d.remove();
     return c;
   };
-  const verts = new Set([sonde('light'), sonde('dark')]);
+  const verts = new Set([sonde('light'), sonde('dark'), sonde('light', '--accent-survol'), sonde('dark', '--accent-survol')]);
   // Barres de données (jauges, barres de mois, ligne de temps, frise) : à trancher (C-3.2), comptées à part.
   const DONNEES = '.jauge, .barre-mois, .ldt-barre, .avancement, .pastille.retenues, .bandeau, .barre-jour, .poignee-panneau, .budget';
   const pleins = [];
   const vertsAilleurs = [];
+  let validerPleinPasFini = '';
   for (const x of document.querySelectorAll('body *')) {
     if (!verts.has(getComputedStyle(x).backgroundColor) || !visible(x)) continue;
     if (x.closest(DONNEES)) continue;
     if (x.matches('button, .faux-bouton, [role="button"]')) {
       if (!x.disabled) pleins.push(nom(x) || x.className);
+      if (x.dataset.action === 'valider' && x.dataset.fini === 'non') validerPleinPasFini = nom(x);
     } else vertsAilleurs.push(`${x.tagName.toLowerCase()}.${[...x.classList].join('.')} « ${nom(x)} »`);
   }
+  // C-4.7 : un bouton désactivé dit pourquoi, dans son libellé ou dans un texte visible relié.
+  const sansRaison = [...document.querySelectorAll('button:disabled')]
+    .filter((x) => visible(x) && !x.closest('.bandeau'))
+    .filter((x) => {
+      if (x.dataset.raison === 'libelle') return false;
+      const ids = (x.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+      return !ids.some((id) => {
+        const r = document.getElementById(id);
+        return r && (r.textContent || '').trim() && r.getBoundingClientRect().width > 0;
+      });
+    })
+    .map((x) => `« ${nom(x) || x.title || x.className} »`);
+  // C-2.2 : texte des boutons à 16 px (les liens suivent le texte qui les entoure ; une photo n'a pas de libellé).
+  const boutonsPetits = [...document.querySelectorAll('button')]
+    .filter((x) => visible(x) && !x.matches('.lien') && !x.closest('.bandeau, .ldt-barre') && !x.matches('.ldt-barre') && !x.querySelector('img, canvas, .cadre-tuile, .sans-miniature') && (x.textContent || '').trim())
+    .filter((x) => parseFloat(getComputedStyle(x).fontSize) < 16)
+    .map((x) => `${getComputedStyle(x).fontSize} « ${nom(x)} »`);
+  // C-1.4 : aucun caractère-icône ni émoji dans les textes affichés.
+  const ICONES = /[✕✖✗✘✦✧✨▣◀▶►◄▾▸▴▹▿◂◆◇○●☰⌫✂✎✏↻↺⟳≤≥≈Ø⇄⧉↔⚠ℹ‹›]|(?![★✓™©®])\p{Extended_Pictographic}/u;
+  const caracteres = [];
+  const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = marche.nextNode(); n; n = marche.nextNode()) {
+    // « × » seul (une croix de fermeture) ; « 1 920 × 1 080 pixels » reste permis.
+    const m = n.textContent.match(ICONES) ?? (n.textContent.trim() === '×' ? ['×'] : null);
+    if (m && n.parentElement && !n.parentElement.closest('script, style')) caracteres.push(`« ${m[0]} » dans « ${n.textContent.trim().slice(0, 40)} »`);
+  }
+  for (const x of document.querySelectorAll('[title], [aria-label], [placeholder]')) {
+    for (const a of ['title', 'aria-label', 'placeholder']) {
+      const m = (x.getAttribute(a) || '').match(ICONES);
+      if (m) caracteres.push(`« ${m[0]} » dans ${a}=« ${x.getAttribute(a).slice(0, 40)} »`);
+    }
+  }
+  // C-8.4 : la ligne « Rien n'est supprimé » dans la barre du bas, là où l'on écarte.
+  const etape = document.querySelector('main[data-etape]')?.dataset.etape ?? (document.querySelector('.page-organiser:not(.page-selection)') ? 'lieux' : '');
+  const bouclier = !!document.querySelector('.barre-validation .rien-supprime .icone');
   // C-4.7 : un bouton désactivé a un bord en pointillé (un lien désactivé, aucun bord).
   const desactives = [...document.querySelectorAll('button:disabled:not(.lien)')]
     .filter((x) => visible(x) && !x.closest('.bandeau'))
     .filter((x) => getComputedStyle(x).borderTopStyle !== 'dashed')
     .map((x) => `« ${nom(x) || x.title || x.className} »`);
   const inter = [...document.fonts].some((f) => f.family.replace(/["']/g, '') === 'Inter' && f.status === 'loaded');
-  return { min, petits: [...new Set(petits)], polices: [...polices], faibles: [...new Set(faibles)], pleins, vertsAilleurs: [...new Set(vertsAilleurs)], desactives: [...new Set(desactives)], inter };
+  // C-4.1 vérifié sur toute la page (et non seulement à l'écran) : les boutons pleins hors barres de données.
+  // Une vue plein écran ou une fenêtre ouverte est « l'écran » : seuls ses boutons comptent.
+  const vueDessus = [...document.querySelectorAll('.comparateur, .recadreur, .tri-rapide, .visionneuse, [role="dialog"]')].at(-1) ?? document;
+  const tousPleins = [...vueDessus.querySelectorAll('button:not(:disabled), .faux-bouton')]
+    .filter((x) => verts.has(getComputedStyle(x).backgroundColor) && !x.closest(DONNEES))
+    .filter((x) => {
+      const b = x.getBoundingClientRect();
+      return b.width > 0 && b.height > 0 && getComputedStyle(x).visibility !== 'hidden';
+    })
+    .map((x) => nom(x) || x.className);
+  // C-5.1 : le triangle d'une partie repliable est le chevron SVG, pas le marqueur du navigateur.
+  const marqueurs = [...document.querySelectorAll('summary')]
+    .filter((x) => visible(x))
+    .filter((x) => {
+      const s = getComputedStyle(x);
+      const avant = getComputedStyle(x, '::before');
+      return (s.display === 'list-item' && s.listStyleType !== 'none') || !avant.maskImage?.includes('svg');
+    })
+    .map((x) => `« ${nom(x)} »`);
+  // C-8.2, C-10.4 : « Annuler : … » sur une ligne de 40 px, entier (rien ne déborde du bouton).
+  const annulers = [...document.querySelectorAll('button.bouton-annuler, button.bouton-retablir')]
+    .filter((x) => visible(x))
+    .filter((x) => Math.abs(x.getBoundingClientRect().height - 40) > 1 || x.scrollWidth > x.clientWidth + 1)
+    .map((x) => `${Math.round(x.getBoundingClientRect().width)}×${Math.round(x.getBoundingClientRect().height)} « ${nom(x)} »`);
+  // C-4.6 : une aide IA porte l'étincelle et son prix, ou « … » quand le prix est dans la fenêtre.
+  const aidesIA = [...document.querySelectorAll('button')]
+    .filter((x) => visible(x) && !x.matches('.lien'))
+    .filter((x) => !x.matches('[role="tab"], .onglet-doublons'))
+    .filter((x) => x.matches('.bouton-ia') || /\bIA\b|\bl’IA\b/.test(x.textContent || ''))
+    .filter((x) => !x.querySelector('[data-icone="etincelle"]') || !/CHF|…|gratuit|rien à faire|en cours|déjà fait/.test(x.textContent || ''))
+    .map((x) => `« ${nom(x)} »`);
+  // C-6.2, C-7.1 : aucune commande coupée par le bord de l'écran, aucune colonne qui défile en largeur.
+  const horsEcran = [...document.querySelectorAll('button, [role="tab"], a')]
+    .filter((x) => {
+      const b = x.getBoundingClientRect();
+      if (!b.width || !b.height || b.bottom <= 0 || b.top >= H || getComputedStyle(x).visibility === 'hidden') return false;
+      if (x.closest('.bande-miniatures, .vignettes-lieu, .bandeau, .liste-couvertures, .bande-comparateur, .vignettes-comparateur')) return false;
+      return b.right > W + 0.5 || b.left < -0.5;
+    })
+    .map((x) => `« ${nom(x) || x.className} »`);
+  // Une commande d'une barre (en-tête de vue, barre du bas, en-tête de Comparer) ne déborde pas de sa barre
+  // sur la colonne voisine (barre d'outils qui ne passe pas à la ligne).
+  for (const barre of document.querySelectorAll('.tete-vue, .tete-etape, .barre-validation, .comparateur-tete, .barre-action')) {
+    const bb = barre.getBoundingClientRect();
+    if (!bb.width || !bb.height) continue;
+    for (const x of barre.querySelectorAll('button, label, input, select')) {
+      const b = x.getBoundingClientRect();
+      if (b.width && b.height && (b.right > bb.right + 1 || b.left < bb.left - 1)) horsEcran.push(`« ${nom(x) || x.className} » déborde de .${[...barre.classList].join('.')}`);
+    }
+  }
+  const enLargeur = [...document.querySelectorAll('body *')]
+    .filter((x) => {
+      const s = getComputedStyle(x);
+      if (!/(auto|scroll)/.test(s.overflowX) || x.closest('.bande-miniatures, .bandeau, .ligne-de-temps, .barres-jours, .vignettes-lieu')) return false;
+      const b = x.getBoundingClientRect();
+      return b.width > 0 && b.height > 0 && x.scrollWidth > x.clientWidth + 1;
+    })
+    .map((x) => `${x.tagName.toLowerCase()}.${[...x.classList].join('.')} (${x.scrollWidth} pour ${x.clientWidth})`);
+  const pageEnLargeur = document.scrollingElement.scrollWidth > W + 1;
+  return {
+    min,
+    petits: [...new Set(petits)],
+    polices: [...polices],
+    faibles: [...new Set(faibles)],
+    pleins,
+    validerPleinPasFini,
+    vertsAilleurs: [...new Set(vertsAilleurs)],
+    desactives: [...new Set(desactives)],
+    sansRaison: [...new Set(sansRaison)],
+    boutonsPetits: [...new Set(boutonsPetits)],
+    caracteres: [...new Set(caracteres)],
+    etape,
+    barre: !!document.querySelector('.barre-validation'),
+    bouclier,
+    inter,
+    tousPleins,
+    marqueurs,
+    annulers,
+    aidesIA,
+    horsEcran: [...new Set(horsEcran)],
+    enLargeur: [...new Set(enLargeur)],
+    pageEnLargeur,
+  };
 }
 
 /** L'élément qui a le focus montre-t-il noir 2 / jaune 3 / noir 2 (C-9.5) ? */
@@ -250,8 +391,39 @@ try {
         if (!m.inter) fautes.push(`${ici} : Inter n’est pas chargée`);
         if (m.desactives.length) fautes.push(`${ici} : bouton désactivé sans pointillé (C-4.7) : ${m.desactives.slice(0, 5).join(' ; ')}`);
         if (m.vertsAilleurs.length) fautes.push(`${ici} : vert plein hors d’un bouton d’action (C-3.2) : ${m.vertsAilleurs.slice(0, 5).join(' ; ')}`);
-        if (m.pleins.length > 1) signalements.push(`${ici} : ${m.pleins.length} boutons pleins (${m.pleins.join(' | ')})`);
-        console.log(`${m.petits.length || m.faibles.length || autres.length || m.desactives.length || m.vertsAilleurs.length ? '✗' : '✓'} ${ici} : plus petit texte ${m.min} px, ${m.faibles.length} contraste(s) faible(s), ${m.pleins.length} plein(s)`);
+        const avant = fautes.length;
+        if (m.pleins.length > 1) fautes.push(`${ici} : ${m.pleins.length} boutons pleins, un seul permis (C-4.1) : ${m.pleins.join(' | ')}`);
+        if (m.validerPleinPasFini) fautes.push(`${ici} : « ${m.validerPleinPasFini} » plein alors que l’étape n’est pas finie (C-4.1)`);
+        // C-4.1 vérifié : sur une page d'étape, exactement un bouton plein dans toute la page ;
+        // aucun seulement là où la prochaine action est un geste sur les photos (liste écrite, à faire trancher).
+        if (m.barre && m.tousPleins.length > 1) fautes.push(`${ici} : ${m.tousPleins.length} boutons pleins dans la page, un seul permis (C-4.1) : ${m.tousPleins.join(' | ')}`);
+        if (m.barre && !m.tousPleins.length && !SANS_PLEIN.has(nomPage)) fautes.push(`${ici} : aucun bouton plein sur une page d’étape (C-4.1)`);
+        if (!m.pleins.length) signalements.push(`${ici} : aucun bouton plein à l’écran${m.tousPleins.length ? ` (« ${m.tousPleins[0]} » plus bas)` : ''}`);
+        if (m.marqueurs.length) fautes.push(`${ici} : triangle du navigateur au lieu du chevron SVG (C-5.1) : ${m.marqueurs.slice(0, 5).join(' ; ')}`);
+        if (m.annulers.length) fautes.push(`${ici} : « Annuler » ou « Rétablir » hors de sa ligne de 40 px, ou coupé (C-8.2) : ${m.annulers.join(' ; ')}`);
+        if (m.aidesIA.length) fautes.push(`${ici} : aide IA sans étincelle ou sans prix (C-4.6) : ${m.aidesIA.slice(0, 5).join(' ; ')}`);
+        if (m.horsEcran.length) fautes.push(`${ici} : commande coupée par le bord de l’écran (C-6.2) : ${m.horsEcran.slice(0, 5).join(' ; ')}`);
+        if (m.enLargeur.length || m.pageEnLargeur) fautes.push(`${ici} : défilement en largeur (C-7.1) : ${[...(m.pageEnLargeur ? ['la page'] : []), ...m.enLargeur].slice(0, 5).join(' ; ')}`);
+        if (m.sansRaison.length) fautes.push(`${ici} : bouton désactivé sans sa raison écrite (C-4.7) : ${m.sansRaison.slice(0, 5).join(' ; ')}`);
+        if (m.boutonsPetits.length) fautes.push(`${ici} : bouton sous 16 px (C-2.2) : ${m.boutonsPetits.slice(0, 5).join(' ; ')}`);
+        if (m.caracteres.length) fautes.push(`${ici} : caractère-icône au lieu d’une icône SVG (C-1.4) : ${m.caracteres.slice(0, 5).join(' ; ')}`);
+        if (m.barre && ECARTE.has(m.etape) && !m.bouclier) fautes.push(`${ici} : barre du bas sans « Rien n’est supprimé » et son bouclier (C-8.4)`);
+        console.log(`${m.petits.length || m.faibles.length || autres.length || m.desactives.length || m.vertsAilleurs.length || fautes.length > avant ? '✗' : '✓'} ${ici} : plus petit texte ${m.min} px, ${m.faibles.length} contraste(s) faible(s), ${m.pleins.length} plein(s)`);
+        // C-8.2 : avec le plus long geste court possible, « Annuler » garde sa ligne de 40 px et la barre ne bouge pas.
+        const sonde = await page.evaluate((libelle) => {
+          const texte = document.querySelector('.bouton-annuler .texte-annuler');
+          if (!texte) return null;
+          const bouton = texte.closest('button');
+          const avant = [texte.textContent, bouton.getBoundingClientRect(), document.querySelector('.grille-photos, .grille-floues')?.getBoundingClientRect().top];
+          texte.textContent = libelle;
+          const b = bouton.getBoundingClientRect();
+          const grille = document.querySelector('.grille-photos, .grille-floues')?.getBoundingClientRect().top;
+          const r = { h: Math.round(b.height), deborde: bouton.scrollWidth > bouton.clientWidth + 1, dehors: b.right > innerWidth, bouge: grille !== undefined && Math.abs(grille - avant[2]) > 0.5 };
+          texte.textContent = avant[0];
+          return r;
+        }, 'Annuler : remettre 1 234 photos à décider');
+        if (sonde && (sonde.h !== 40 || sonde.deborde || sonde.dehors || sonde.bouge))
+          fautes.push(`${ici} : « Annuler » avec un long geste : ${sonde.h} px de haut${sonde.deborde ? ', texte qui déborde' : ''}${sonde.dehors ? ', hors de l’écran' : ''}${sonde.bouge ? ', la grille bouge' : ''} (C-8.2)`);
         if (CAPTURES) await page.screenshot({ path: join(CAPTURES, `${nomPage}_${w}_${theme}.png`) });
       }
     }
@@ -404,7 +576,7 @@ try {
     if (!tiers.includes('gradient')) fautes.push('recadreur : les lignes des tiers ne sont plus dessinées');
     await page.keyboard.press('Escape');
     await page.locator('.recadreur').waitFor({ state: 'detached', timeout: 5000 }).catch(async () => {
-      await page.locator('.recadreur').getByRole('button', { name: /^(Annuler|Fermer)$/ }).last().click();
+      await page.locator('.recadreur').getByRole('button', { name: /^(Annuler|Fermer|Fermer sans recadrer)$/ }).last().click();
     });
   }
   await page.keyboard.press('Escape');
@@ -434,7 +606,7 @@ try {
 console.log(`\nPages contrôlées (${controlees.length}) : ${controlees.join(', ')} ; ${arrets} arrêts au clavier`);
 fautes.unshift(...fautesBuild);
 if (signalements.length) {
-  console.log(`\nÀ revoir avec la disposition (C-4.1, lots suivants ; n'échoue pas) :`);
+  console.log(`\nÀ revoir (n'échoue pas) :`);
   for (const s of signalements) console.log(`  • ${s}`);
 }
 if (erreurs.length) fautes.push(`erreurs de la console : ${[...new Set(erreurs)].slice(0, 5).join(' ; ')}`);

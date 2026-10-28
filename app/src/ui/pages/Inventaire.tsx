@@ -10,6 +10,7 @@ import type { Progression } from '../../navigateur/inventaire';
 import { ETAPE, nomEtape, type CodeEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
 import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
+import { Icone } from '../composants/Icones';
 import { confirmer } from '../composants/Dialogues';
 import { ProgressionAnalyse } from '../composants/Analyse';
 import { copiesProposees, useCopiesExactes } from '../copiesExactes';
@@ -50,7 +51,10 @@ function AVerifier() {
   ].filter((x): x is string => !!x);
   return (
     <div class="encart a-verifier">
-      {enCours ? <ProgressionAnalyse /> : <p class="ok">{t`✓ Analyse des photos terminée.`}</p>}
+      {enCours ? <ProgressionAnalyse /> : <p class="ok">
+          <Icone nom="coche" taille={16} />
+          {t`Analyse des photos terminée.`}
+        </p>}
       {points.length > 0 && (
         <ul>
           {points.map((x) => (
@@ -332,7 +336,7 @@ export function PageInventaire() {
         {source.aLaRacine > 0 && <li>{t`${pluriel(source.aLaRacine, 'élément')} directement à la racine du dossier (pas dans un sous-dossier).`}</li>}
         {source.petitsDossiers > 0 && <li>{t`${pluriel(source.petitsDossiers, 'petit dossier', 'petits dossiers')} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.`}</li>}
         {misDeCote.length > 0 && (
-          <li>{t`${pluriel(misDeCote.length, 'élément mis de côté', 'éléments mis de côté')} (floues, doublons…) : comptés ci-dessus, ils iront dans « ${nomsSortie().misDeCote} ».`}</li>
+          <li>{t`${pluriel(misDeCote.length, 'élément mis de côté', 'éléments mis de côté')}, floues, doublons… : comptés ci-dessus, ils iront dans le dossier « ${nomsSortie().misDeCote} » de la sortie.`}</li>
         )}
         {inv.ignores.length > 0 && <li>{t`${pluriel(inv.ignores.length, 'fichier ignoré', 'fichiers ignorés')} : l’état d’un ancien projet (dossier « .album »).`}</li>}
         <li>{t`Les fichiers système masqués par le navigateur (comme « Thumbs.db ») ne sont pas vus : Windows les recrée.`}</li>
@@ -355,6 +359,7 @@ export function PageInventaire() {
         valider={() => validerEtape('inventaire')}
         // Les étapes suivantes ont besoin de l'analyse : on attend qu'elle soit finie.
         validerActif={!analyseEnCours.value && !analyseAFaire(s)}
+        raisonInactif={t`Attendez la fin de l’analyse des photos.`}
       />
     </div>
   );

@@ -174,7 +174,7 @@ export function SansGps() {
         <button
           type="button"
           onClick={() => {
-            appliquer(enchainer(s.plan, t`Ranger ${surs.length} groupes de photos sans GPS`, surs.map((p) => () => deplacer(p))));
+            appliquer(enchainer(s.plan, t`Ranger ${pluriel(surs.length, 'groupe')} sans GPS`, surs.map((p) => () => deplacer(p))));
             notifier('ok', `${pluriel(surs.length, 'groupe rangé', 'groupes rangés')}.`, { libelle: t`Annuler`, faire: annuler });
           }}
         >

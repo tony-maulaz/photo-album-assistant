@@ -384,7 +384,7 @@ try {
   await page.keyboard.press(' ');
   await page.waitForTimeout(200);
   const retenuesTexte = await page.locator('.barre-validation .resume').innerText();
-  verifier(/photos retenues/.test(retenuesTexte) && retenuesTexte.includes('0 à décider'), `Espace : toutes retenues (${retenuesTexte})`);
+  verifier(/photos dans l’album/.test(retenuesTexte) && retenuesTexte.includes('aucune photo à décider'), `Espace : toutes dans l’album (${retenuesTexte})`);
   await page.locator('.page-selection .tuile').nth(0).click();
   await page.keyboard.press('2');
   await page.locator('.page-selection .tuile').nth(4).click();
@@ -403,9 +403,9 @@ try {
   await page.locator('.recadreur').getByRole('radio', { name: 'Carré' }).click();
   await page.locator('.recadreur input[type=range]').fill('3');
   await capturer(page, '12b_recadrage');
-  await page.getByRole('button', { name: 'Valider le recadrage' }).click();
+  await page.getByRole('button', { name: 'Accepter le recadrage' }).click();
   await page.locator('.page-selection .tuile').nth(3).locator('.miniature-recadree').waitFor({ timeout: 20_000 });
-  verifier((await page.locator('.page-selection .tuile').nth(3).getByText('✂').count()) === 1, 'touche K : photo recadrée en carré et redressée, miniature recadrée');
+  verifier((await page.locator('.page-selection .tuile').nth(3).locator('[aria-label="Recadrée"]').count()) === 1, 'touche K : photo recadrée en carré et redressée, miniature recadrée');
   await page.keyboard.press('t');
   await page.locator('.tri-rapide').waitFor();
   await page.locator('.tri-rapide img').waitFor({ timeout: 20_000 });
@@ -414,7 +414,7 @@ try {
   await page.keyboard.press('Escape');
 
   // Aides IA de la sélection : étiquettes (API simulée), puis recherche locale.
-  await page.getByRole('button', { name: /Étiqueter les photos avec l’IA/ }).click();
+  await page.getByRole('button', { name: /Étiqueter les photos/ }).click();
   await page.getByText(/photos? étiquetées?/).first().waitFor({ timeout: 60_000 });
   verifier(appels.etiquettes > 0, `étiquetage IA8 : ${appels.etiquettes} appel(s)`);
   const avantRecherche = await page.locator('.page-selection .tuile').count();
@@ -447,24 +447,24 @@ try {
     `panneau « Par taille » : ${tailles.length} dossiers à plat, les plus petits d’abord, le dossier parent sous le nom`,
   );
   await page.locator('.options-panneau select').selectOption('arbre');
-  await page.locator('.page-selection .barre-outils .curseur input').fill('500');
+  await page.locator('.page-selection .tete-vue .curseur input').fill('500');
   await page.waitForTimeout(300);
   const largeur = await page.locator('.page-selection .tuile').first().evaluate((e) => e.getBoundingClientRect().width);
   verifier(largeur >= 480, `zoom des miniatures jusqu’à 600 px (case de ${Math.round(largeur)} px)`);
-  await page.locator('.page-selection .barre-outils .curseur input').fill('160');
+  await page.locator('.page-selection .tete-vue .curseur input').fill('160');
   const infobulle = await page.locator('.page-selection .tuile').first().getAttribute('title');
   verifier(infobulle.includes('« '), `infobulle avec la description de l’IA : ${infobulle.split('\n').slice(2).join(' / ')}`);
 
-  await page.getByRole('button', { name: /Apprécier les photos avec l’IA/ }).click();
+  await page.getByRole('button', { name: /Apprécier les photos/ }).click();
   await page.getByText(/photos? appréciées?/).first().waitFor({ timeout: 60_000 });
   verifier((await page.locator('.badge.note-ia').count()) > 0, `appréciation IA9 (${appels.appreciation} appel(s)) : notes sur les miniatures`);
   await page.locator('.page-selection .tuile').nth(0).click();
   await page.locator('.page-selection .tuile').nth(2).click({ modifiers: ['Control'] });
-  await page.getByRole('button', { name: /Meilleure de la sélection/ }).click();
+  await page.getByRole('button', { name: /Trouver la meilleure/ }).click();
   await page.getByText(/L’IA préfère/).first().waitFor({ timeout: 60_000 });
   verifier((await page.locator('.badge.choix-ia').count()) === 1, 'meilleure de la pile IA10 : badge « choix IA »');
   await page.locator('.page-selection .ligne-dossier', { has: page.locator('.nom-dossier', { hasText: /^VS_Max$/ }) }).click();
-  await page.getByRole('button', { name: /Contrôler la sélection de cette sortie/ }).click();
+  await page.getByRole('button', { name: /Contrôler cette sortie/ }).click();
   await page.getByText(/remarques? sur la sélection/).first().waitFor({ timeout: 60_000 });
   verifier((await page.locator('.remarques li').count()) > 0, 'contrôle de la sélection IA11 : remarques affichées');
 
@@ -527,7 +527,7 @@ try {
   let fichiers = await listerSortie();
   verifier(fichiers.includes('Album/0000_Couverture.jpg'), 'couverture copiée en tête de Album/');
   let album = fichiers.filter((p) => p.startsWith('Album/') && p.endsWith('.jpg') && !p.startsWith('Album/0000_'));
-  const attendues = Number(/(\d+) photos? retenues?/.exec(retenuesTexte)[1]) - 1;
+  const attendues = Number(/(\d+) photos? dans l’album/.exec(retenuesTexte)[1]) - 1;
   verifier(album.length === attendues, `Album/ contient les ${attendues} photos retenues`);
   verifier(album.every((p, i) => p.startsWith(`Album/${String(i + 1).padStart(4, '0')}_`)), 'numérotation continue 0001, 0002…');
   // La copie recadrée est carrée, et garde la date et l'appareil de l'original (EXIF).

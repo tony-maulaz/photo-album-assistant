@@ -98,7 +98,6 @@ export const TEXTES: Record<string, string> = {
   'photos prises': 'photos taken',
   'Ces {0} dans un nouveau dossier, à côté de « {1} »': 'These {0} in a new folder, next to “{1}”',
   'Nouveau dossier avec cette journée': 'New folder with this day',
-  'Annuler : {0} (Ctrl+Z)': 'Undo: {0} (Ctrl+Z)',
   Annuler: 'Undo',
   'Rétablir (Ctrl+Y)': 'Redo (Ctrl+Y)',
   Rétablir: 'Redo',
@@ -120,7 +119,6 @@ export const TEXTES: Record<string, string> = {
   'Sélectionner toute l’heure de la dernière photo cliquée': 'Select the whole hour of the last photo clicked',
   'Toute l’heure': 'Whole hour',
   'Vers « {0} » (touche {1})': 'To “{0}” (key {1})',
-  'Tout désélectionner (Échap)': 'Deselect all (Esc)',
   'Tout désélectionner': 'Deselect all',
   'Ces fichiers ne sont ni des photos ni des vidéos. Ils seront copiés dans « {0} », avec leur chemin d’origine.':
     'These files are neither photos nor videos. They will be copied to “{0}”, with their original path.',
@@ -212,18 +210,13 @@ export const TEXTES: Record<string, string> = {
   'Confiance de l’IA, de 1 à 10': 'AI confidence, from 1 to 10',
   'Conf.': 'Conf.',
   Justification: 'Reason',
-  '{0} à nommer · {1}': '{0} to name · {1}',
   proposition: 'suggestion',
   propositions: 'suggestions',
 
   // Floues.tsx
-  '{0} : elles iront dans « {1} » (rien n’est supprimé).':
-    '{0}: they will go to “{1}” (nothing is deleted).',
   'photo écartée': 'photo set aside',
   'photos écartées': 'photos set aside',
   'Photos floues': 'Blurry photos',
-  'Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « {0} ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.':
-    'The photos are ordered from least sharp to sharpest. Set the tolerance: photos below the threshold will be set aside in “{0}”. Keep the ones you like anyway (intended blur, movement), set aside a sharp photo that did not turn out well.',
   'il faut mesurer la netteté de chaque photo.': 'the sharpness of each photo has to be measured.',
   'Seuil de netteté : {0} (conseillé : {1})': 'Sharpness threshold: {0} (recommended: {1})',
   'Plus tolérant': 'More tolerant',

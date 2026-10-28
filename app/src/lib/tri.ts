@@ -12,7 +12,7 @@ import type { LieuConnu } from './config';
 import { evenementDesPhotos, evenementsUtiles, joursEvenement, type EvenementCalendrier } from './ics';
 import { t } from './langue';
 import { cleNom, nomAscii } from './noms';
-import { combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type InfoTri, type Modification, type Plan } from './plan';
+import { avecDetail, combiner, deplacerFichiers, RACINE, Transaction, type DossierPlan, type InfoTri, type Modification, type Plan } from './plan';
 import { nomsSortie } from './sortie';
 
 /**
@@ -910,7 +910,7 @@ export function appliquerTri(plan: Plan, dossiers: DossierPropose[], idsATrier: 
     }
   }
   modifications.push(nettoyage.terminer('Supprimer les dossiers vides'));
-  return combiner(t`Trier par lieux et sorties`, ...modifications);
+  return avecDetail(combiner(t`Ranger les photos`, ...modifications), t`Trier par lieux et sorties`);
 }
 
 /**

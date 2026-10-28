@@ -78,7 +78,5 @@ export const TEXTES: Record<string, string> = {
     'Follow the steps in order. At the top of each page, an explanation says what to do; when everything suits you, click “Confirm and continue”, at the bottom right.',
   'Rien ne presse : vos photos d’origine ne sont jamais modifiées, Ctrl+Z annule la dernière modification, et vous pouvez fermer l’onglet à tout moment.':
     'No rush: your original photos are never changed, Ctrl+Z undoes the last change, and you can close the tab at any time.',
-  'Les aides IA (boutons ✦) sont facultatives : elles affichent leur prix avant de partir et demandent une clé API (menu ☰, Réglages).':
-    'The AI helpers (✦ buttons) are optional: they show their price before being sent and need an API key (☰ menu, Settings).',
   'Touche « ? » (hors d’un champ de saisie) : la liste des raccourcis clavier.': '“?” key (outside a text field): the list of keyboard shortcuts.',
 };

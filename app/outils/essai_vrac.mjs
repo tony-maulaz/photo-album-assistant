@@ -284,7 +284,7 @@ try {
   // Onglets (D71) : on arrive sur les copies exactes ; un exemplaire gardé par emplacement, l'utilisateur peut changer (D61).
   await page.locator('.onglet-doublons.actif', { hasText: 'Copies exactes' }).waitFor({ timeout: 60_000 });
   await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
-  verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à valider'), 'onglets : on arrive sur « Copies exactes », 2 groupes à valider');
+  verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à accepter'), 'onglets : on arrive sur « Copies exactes », 2 groupes à valider');
   const copie0140 = page.locator('.tuile-doublon[aria-label^="copie de 0140.jpg"]');
   verifier((await copie0140.getAttribute('class')).includes('a_ecarter'), 'copies exactes : la copie du vrac est proposée à l’écart (« à écarter »)');
   const carte0141 = page.locator('.carte-doublons', { hasText: '0141' });
@@ -299,7 +299,7 @@ try {
   await copie0140.click();
   // Un clic choisit (« à garder »), sans rien valider : le groupe reste à valider (D101).
   await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('choisie'));
-  verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à valider') && (await page.locator('.pastille-attente').count()) === 1, 'un clic choisit sans valider : « Votre choix · pas encore validé », toujours 2 à valider');
+  verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à accepter') && (await page.locator('.pastille-attente').count()) === 1, 'un clic choisit sans valider : « Votre choix · pas encore validé », toujours 2 à valider');
   await page.keyboard.press('Control+z');
   await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
   verifier(true, 'un clic garde une copie proposée à l’écart ; Ctrl+Z annule');
@@ -308,13 +308,13 @@ try {
   verifier(
     (await page.locator('.encart-onglet button').count()) === 0 &&
       ordreBlocs.join(',') === 'encart-onglet,rangee-onglet,outils-doublons' &&
-      (await page.locator('.outils-doublons button', { hasText: 'Accepter' }).count()) === 0 &&
-      (await page.locator('.rangee-onglet').innerText()).includes('Validés : 0 sur 2'),
+      (await page.locator('.outils-doublons button', { hasText: /^Accepter/ }).count()) === 0 &&
+      (await page.locator('.rangee-onglet').innerText()).includes('Acceptés : 0 sur 2'),
     `boutons de tout l’onglet dans leur rangée, entre l’explication et les filtres : ${ordreBlocs.join(', ')}`,
   );
   const cartes = await page.locator('.carte-doublons').count();
   await page.locator('.rangee-onglet').getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
-  await page.locator('.onglet-doublons.actif', { hasText: '✓ 2' }).waitFor();
+  await page.locator('.onglet-doublons.actif .compte.fini', { hasText: '2' }).waitFor();
   verifier(
     (await page.locator('.carte-doublons').count()) === cartes - 2,
     'copies exactes écartées : avec « À valider », les groupes acceptés s’en vont (D100)',
@@ -364,9 +364,9 @@ try {
   // Copies remises « à écarter » (Ctrl+Z) : le tri automatique proposera de les écarter d'abord (D85).
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
-  await page.locator('.onglet-doublons.actif', { hasText: '2 à valider' }).waitFor();
+  await page.locator('.onglet-doublons.actif', { hasText: '2 à accepter' }).waitFor();
   // Comparer en grand : le dossier de chaque photo, 1, 2… gardent ou écartent, ← → d'un groupe à l'autre (D100).
-  await page.getByRole('radio', { name: 'À valider' }).click();
+  await page.getByRole('radio', { name: 'À accepter' }).click();
   await page.locator('.carte-doublons').first().getByRole('button', { name: 'Comparer en grand' }).click();
   const comparateur = page.locator('.comparateur');
   await comparateur.locator('.numero-volet').first().waitFor();
@@ -402,7 +402,7 @@ try {
   await comparateur.waitFor({ state: 'detached' });
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
-  await page.locator('.onglet-doublons.actif', { hasText: '2 à valider' }).waitFor();
+  await page.locator('.onglet-doublons.actif', { hasText: '2 à accepter' }).waitFor();
   // « À valider » : un groupe accepté s'en va ; « Annuler » le fait revenir.
   const aRelire = await page.locator('.carte-doublons').count();
   await page.locator('.carte-doublons').first().locator('[data-action="accepter"]').click();
@@ -463,8 +463,8 @@ try {
   verifier((await page.locator('.fenetre[role=dialog]').innerText()).includes('Captures d’écran trouvées'), 'les captures s’ouvrent dans une fenêtre');
   await page.keyboard.press('Escape');
   await page.locator('.fenetre').waitFor({ state: 'detached' });
-  await captures.getByRole('button', { name: 'Mettre à part' }).click();
-  await page.getByText('1 capture d’écran mise à part').waitFor();
+  await captures.getByRole('button', { name: 'Ranger dans leur dossier' }).click();
+  await page.getByText('1 capture d’écran rangée dans leur dossier').waitFor();
   verifier(true, `capture d’écran rangée dans ${N.captures}, la ligne passe à ✓`);
   const copies = page.locator('.copies-avant-tri');
   verifier((await copies.innerText()).includes('2 photos en double'), 'à faire : les 2 copies pas encore écartées sont signalées');
@@ -491,8 +491,8 @@ try {
   verifier(lignesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout') && (await page.locator('.resultat-tri .tete-resultat').innerText()).includes('étape suivante'), `résultat : ${lignesTri} lignes dans l’onglet « Tout »`);
   verifier((await page.locator('.colonnes-tri > .resultat-tri').count()) === 1 && (await page.getByRole('button', { name: 'Afficher les dossiers →' }).count()) === 0, 'les dossiers à droite de la page, sans changer d’étape (D105)');
   await capturer(page, 'v3_tri');
-  await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Mis à part' }).click();
-  verifier((await page.locator('.mis-a-part').innerText()).includes('Captures d’écran'), 'onglet « Mis à part » : la capture d’écran');
+  await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Autres' }).click();
+  verifier((await page.locator('.mis-a-part').innerText()).includes('Captures d’écran'), 'onglet « Autres » : la capture d’écran');
   await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Tout' }).click();
   const avant = requetesNominatim.length;
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger autrement…' }).click();
@@ -548,14 +548,14 @@ try {
   await page.locator('.titre-groupe .evenement-jour').first().click();
   verifier((await page.locator('.tuile.choisie').count()) === (await page.locator('.tuile').count()), 'un clic sur l’événement sélectionne ses photos');
   verifier((await page.getByRole('button', { name: 'Scinder par jour' }).count()) === 0, '« Scinder par jour » n’existe plus (D94)');
-  // Fusionner avec… : les dossiers les plus proches dans le temps d'abord, les dossiers techniques en dernier.
-  await page.getByRole('button', { name: 'Fusionner avec…' }).click();
+  // Réunir avec… : les dossiers les plus proches dans le temps d'abord, les dossiers techniques en dernier.
+  await page.getByRole('button', { name: 'Réunir avec…' }).click();
   const choixFusion = await page.locator('.choix-dossiers li').allInnerTexts();
   await capturer(page, 'v3e_fusionner');
   await page.keyboard.press('Escape');
   verifier(
     choixFusion.length > 3 && /^Mu_Ko_Ang_Thong|^Kanchanaburi/.test(choixFusion[0]) && !choixFusion.slice(0, 3).some((c) => c.startsWith(N.captures)) && (await page.locator('.dialogue.deplacer').count()) === 0,
-    `fusionner avec… : ${choixFusion.slice(0, 3).join(' | ')}`,
+    `réunir avec… : ${choixFusion.slice(0, 3).join(' | ')}`,
   );
 
   // Étapes 8 à 10 (IA simulée).

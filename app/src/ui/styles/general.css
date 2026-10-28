@@ -8,14 +8,14 @@
 }
 
 /*
- * Pages d'étape : au milieu de la barre de validation, entre le résumé et les
- * boutons « Revenir » / « Valider et continuer » (les boutons des pages sont
- * sur les côtés). Plusieurs messages à la fois s'empilent au-dessus, au milieu.
+ * Pages d'étape : au-dessus de la barre de validation, au milieu : ni sur ses
+ * deux lignes (« Rien n'est supprimé », C-8.4) ni sur ses boutons. La hauteur de
+ * la barre est posée par `BarreValidation`. Plusieurs messages s'empilent.
  */
 .app:has(.barre-validation) .messages {
   left: 50%;
   right: auto;
-  bottom: 9px;
+  bottom: calc(var(--haut-barre-validation) + var(--e2));
   transform: translateX(-50%);
   align-items: center;
   width: max-content;
@@ -53,8 +53,8 @@
 
 button.bouton-retour {
   margin: -10px 0 6px -6px;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 /* --- Aide : l'essentiel pour commencer --- */

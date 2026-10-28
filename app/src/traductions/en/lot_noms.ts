@@ -2,8 +2,6 @@
 // Nommage.tsx : les noms possibles de chaque dossier (calendrier, lieu, IA) et le nom du calendrier pour tous.
 
 export const TEXTES: Record<string, string> = {
-  'Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Sous chaque nom, un clic choisit : 📅 un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »), 📍 le lieu, ou ✨ la proposition de l’IA, qui regarde quelques photos, le lieu, le calendrier et le contexte du projet. Vous pouvez aussi écrire le vôtre : vous gardez le dernier mot.':
-    'Give each folder a meaningful name, following the pattern “Theme_Place_DD.MM.YY” (Birthday_Lea_26.01.25). Under each name, one click picks: 📅 a calendar event during which the photos were taken (“18 ans de Lea”), 📍 the place, or ✨ the AI’s suggestion, which looks at a few photos, the place, the calendar and the project context. You can also type your own: you have the final say.',
   // Puces sous le champ
   'Noms possibles': 'Possible names',
   'Calendrier : « {0} », pendant {1} % des photos': 'Calendar: “{0}”, during {1}% of the photos',

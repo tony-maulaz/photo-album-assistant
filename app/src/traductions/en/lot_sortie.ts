@@ -34,7 +34,6 @@ export const TEXTES: Record<string, string> = {
   '{0} fichiers de « Album » n’ont pas été écrits par l’application et occupent des places prévues : ils ne sont pas touchés. Déplacez-les pour que l’album soit complet.':
     '{0} files in “Album” were not written by the application and take places planned for the album: they are not touched. Move them so that the album is complete.',
   '{0} de l’album, et les textes ({1})': '{0} from the album, and the texts ({1})',
-  '{0} écarté (rien n’est supprimé)': '{0} set aside (nothing is deleted)',
 
   // Sortie.tsx : bilan, accords au singulier
   ' (arrivé ou modifié depuis l’inventaire) : il n’est pas dans la sortie. Ne supprimez pas le dossier d’origine.':

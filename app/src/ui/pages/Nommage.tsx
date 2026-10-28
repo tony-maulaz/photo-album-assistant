@@ -15,10 +15,10 @@ import { combiner, renommerDossier, type FichierPlan, type Modification, type Pl
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { enParallele } from '../../navigateur/workers';
-import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
-import { Icone } from '../composants/Icones';
+import { Icone, type NomIcone } from '../composants/Icones';
 import { annuler, appliquer, contexteExecution, evenements, notifier, revenirDe, session, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
 import { jourCourt, nombre, pluriel } from '../format';
@@ -150,15 +150,15 @@ function renommerTous(plan: Plan, noms: [string, string, string?][]): { m: Modif
  * puces qui donneraient le même dossier n'en font qu'une.
  */
 function NomsAuChoix({ n, p, propre, saisir }: { n?: NomsPossibles; p?: PropositionNom; propre: string; saisir: (v: string) => void }) {
-  const puces: { nom: string; icone: string; titre: string }[] = [];
+  const puces: { nom: string; icone: NomIcone; mot: string; titre: string }[] = [];
   for (const k of n?.calendrier ?? []) {
     const titre = t`Calendrier : « ${k.titre} », pendant ${pourcent(k.part)} % des photos`;
-    puces.push({ nom: k.nom, icone: '📅', titre: k.long ? `${titre} ${t`(titre long : jamais pris d’office)`}` : titre });
+    puces.push({ nom: k.nom, icone: 'calendrier', mot: t`calendrier`, titre: k.long ? `${titre} ${t`(titre long : jamais pris d’office)`}` : titre });
   }
-  if (n?.lieu) puces.push({ nom: n.lieu, icone: '📍', titre: t`Lieu des photos` });
+  if (n?.lieu) puces.push({ nom: n.lieu, icone: 'lieu', mot: t`lieu`, titre: t`Lieu des photos` });
   if (n?.ia) {
     const confiance = typeof p?.confiance === 'number' ? p.confiance : null;
-    puces.push({ nom: n.ia, icone: '✨', titre: confiance === null ? t`Proposition de l’IA` : t`Proposition de l’IA, confiance ${confiance} sur 10` });
+    puces.push({ nom: n.ia, icone: 'etincelle', mot: t`IA`, titre: confiance === null ? t`Proposition de l’IA` : t`Proposition de l’IA, confiance ${confiance} sur 10` });
   }
   const vus = new Set<string>();
   const uniques = puces.filter((x) => {
@@ -172,8 +172,8 @@ function NomsAuChoix({ n, p, propre, saisir }: { n?: NomsPossibles; p?: Proposit
     <div class="noms-possibles" role="group" aria-label={t`Noms possibles`}>
       {uniques.map((x) => (
         <button key={x.nom} type="button" class="nom-possible" aria-pressed={normaliserNom(x.nom) === propre} title={x.titre} onClick={() => saisir(x.nom)}>
-          <span class="icone-nom" aria-hidden="true">
-            {x.icone}
+          <span class="icone-nom">
+            <Icone nom={x.icone} taille={16} titre={x.mot} />
           </span>
           <span class="texte-nom">{x.nom}</span>
         </button>
@@ -256,7 +256,7 @@ function Ligne({
         <NomsAuChoix n={n} p={p} propre={propre} saisir={saisir} />
       </td>
       <td class="n" title={choisie?.source === 'calendrier' ? t`D’après le calendrier` : t`Confiance de l’IA, de 1 à 10`}>
-        {choisie?.source === 'calendrier' ? <span aria-hidden="true">📅</span> : (choisie?.confiance ?? '')}
+        {choisie?.source === 'calendrier' ? <Icone nom="calendrier" taille={16} titre={t`calendrier`} /> : (choisie?.confiance ?? '')}
       </td>
       <td class="justification">
         {p?.activite && <strong>{p.activite}. </strong>}
@@ -271,9 +271,13 @@ function Ligne({
         {!k.length && evts.length > 0 && <div class="evenements">{t`Calendrier : ${evts.slice(0, 3).map((e) => e.titre).join(' · ')}`}</div>}
       </td>
       <td>
-        <button type="button" disabled={!propre || propre === c.nom} onClick={renommer}>
+        {/* Désactivé, le bouton garde son nom et sa raison est écrite dessous (C-4.7). */}
+        <button type="button" disabled={!propre || propre === c.nom} aria-describedby={!propre || propre === c.nom ? `raison-renommer-${c.dossier}` : undefined} onClick={renommer}>
           {t`Renommer`}
         </button>
+        <div>
+          <RaisonDesactivee id={`raison-renommer-${c.dossier}`} raison={!propre ? t`Écrivez d’abord un nom` : propre === c.nom && t`C’est déjà son nom`} />
+        </div>
       </td>
     </tr>
   );
@@ -461,7 +465,9 @@ export function PageNommage() {
   return (
     <div class="page large avec-barre page-nommage">
       <TeteEtape numero={ETAPE.nommage} titre={t`Nommage`} cle="nommage">
-        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Sous chaque nom, un clic choisit : 📅 un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »), 📍 le lieu, ou ✨ la proposition de l’IA, qui regarde quelques photos, le lieu, le calendrier et le contexte du projet. Vous pouvez aussi écrire le vôtre : vous gardez le dernier mot.`}
+        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Sous chaque nom, un clic choisit :`} <Icone nom="calendrier" taille={16} />{' '}
+        {t`un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »),`} <Icone nom="lieu" taille={16} /> {t`le lieu, ou`} <Icone nom="etincelle" taille={16} />{' '}
+        {t`la proposition de l’IA, qui regarde quelques photos, le lieu, le calendrier et le contexte du projet. Vous pouvez aussi écrire le vôtre : vous gardez le dernier mot.`}
       </TeteEtape>
       <div class="reglages-etape ligne">
         <label class="case">
@@ -533,9 +539,14 @@ export function PageNommage() {
         </table>
       )}
       <BarreValidation
-        resume={t`${pluriel(cibles.filter((c) => !renomme(c)).length, 'dossier')} à nommer · ${pluriel(cibles.filter((c) => proposition(c)).length, 'proposition')}`}
+        resume={`${(() => {
+          const reste = cibles.filter((c) => !renomme(c)).length;
+          return reste === 0 ? t`aucun dossier à nommer` : reste === 1 ? t`1 dossier à nommer : il garde son nom actuel` : t`${nombre(reste)} dossiers à nommer : ils gardent leur nom actuel`;
+        })()} · ${pluriel(cibles.filter((c) => proposition(c)).length, 'proposition')}`}
         revenir={() => quitter(() => revenirDe('nommage'), enAttente, true)}
         valider={() => quitter(() => validerEtape('nommage'), tousNoms)}
+        // Plein quand aucun lot de noms n'attend d'être accepté (C-4.1).
+        fini={!surs.length && !duCalendrier.length}
       />
       {sortie && (
         <DialogueNomsAAppliquer

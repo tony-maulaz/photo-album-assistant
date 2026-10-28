@@ -79,7 +79,6 @@ export const TEXTES: Record<string, string> = {
   remises: 'put back',
   Sauver: 'Keep',
   Écarter: 'Set aside',
-  'Revenir au seuil': 'Back to the slider',
 
   // indicateurs.ts : signaux des photos
   'peu nette': 'not sharp',
@@ -116,17 +115,12 @@ export const TEXTES: Record<string, string> = {
   'Renommer « {0} » en « {1} »': 'Rename “{0}” to “{1}”',
   'Le dossier Photos ne peut pas être fusionné dans un autre.': 'The Photos folder cannot be merged into another one.',
   'Impossible de fusionner un dossier dans un de ses sous-dossiers.': 'A folder cannot be merged into one of its own subfolders.',
-  'Fusionner « {0} » dans « {1} »': 'Merge “{0}” into “{1}”',
   'Le dossier Photos ne peut pas être supprimé.': 'The Photos folder cannot be deleted.',
   'Ce dossier contient des sous-dossiers.': 'This folder contains subfolders.',
   'Ce dossier n’est pas vide.': 'This folder is not empty.',
-  'Supprimer le dossier vide « {0} »': 'Delete the empty folder “{0}”',
-  'À trier': 'To sort',
   dossier: 'folder',
   dossiers: 'folders',
-  'Remettre à décider': 'Back to undecided',
   'Pas dans l’album': 'Not in the album',
-  'Dans l’album ★': 'In the album ★',
   'Grande photo ★★': 'Large photo ★★',
   'Tourner {0}': 'Rotate {0}',
   'Changer la légende': 'Change the caption',
@@ -205,7 +199,6 @@ export const TEXTES: Record<string, string> = {
   'Trier par lieux et sorties': 'Sort by places and outings',
 
   // plan.ts : choix par sous-dossier (étape « Dossiers », D61)
-  'Garder et nettoyer': 'Keep and clean',
   'Ne pas toucher': 'Leave as is',
 
   // plan.ts : recadrage (D62)

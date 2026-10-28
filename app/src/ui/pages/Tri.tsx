@@ -15,7 +15,7 @@ import { ETAPE } from '../../navigateur/projet';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
 import { CurseurTaille } from '../composants/GrillePhotos';
 import { ResultatTri } from '../composants/ResultatTri';
-import { dossiersProposes, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
+import { dossiersProposes, memesReglages, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { pluriel } from '../format';
 
@@ -63,6 +63,10 @@ function PageTriVrac() {
         revenir={() => revenirDe('tri')}
         valider={() => validerEtape('tri')}
         validerActif={e.range}
+        raisonInactif={t`Rangez d’abord les photos.`}
+        // Plein une fois rien à faire sur la page (C-4.1) : avant, le plein est sur la prochaine chose à faire.
+        fini={e.range && !restants.length && memesReglages(o, optionsDuProjet(s.projet.tri))}
+        ecarte
       />
     </div>
   );

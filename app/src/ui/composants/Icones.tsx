@@ -1,4 +1,8 @@
-// Petites icônes au trait (24 × 24), dessinées en SVG : aucune bibliothèque ni police d'icônes.
+// Icônes au trait (24 × 24), dessinées en SVG : aucune bibliothèque ni police d'icônes.
+// Charte C-1.4 et C-5 : un seul jeu, trait de 1,75 aux bouts arrondis ; 20 px dans
+// un bouton, 16 dans le texte, 14 dans une remarque. Jamais un caractère (✕ ✦ ▾…)
+// ni un émoji à la place d'une icône (tests/charte.test.ts) ; chaque icône a son
+// mot à côté, ou un nom pour les lecteurs d'écran (`titre`).
 
 const TRACES = {
   photo: (
@@ -98,11 +102,82 @@ const TRACES = {
       <path d="M20 20l-3.5-3.5" />
     </>
   ),
+  /** « Rien n'est supprimé » (C-8.4). */
+  bouclier: (
+    <>
+      <path d="M12 3 4.5 6v5.5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5V6z" />
+      <path d="m8.8 12 2.3 2.3 4.3-4.6" />
+    </>
+  ),
+  chevronBas: <path d="m6 9 6 6 6-6" />,
+  chevronHaut: <path d="m6 15 6-6 6 6" />,
+  chevronDroite: <path d="m9 6 6 6-6 6" />,
+  chevronGauche: <path d="m15 6-6 6 6 6" />,
+  /** « Valider et continuer », « Suite ». */
+  fleche: <path d="M5 12h14M13 6l6 6-6 6" />,
+  /** Quart de tour (↻). */
+  tourner: (
+    <>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+      <path d="M4 4v4.5h4.5" />
+    </>
+  ),
+  /** Recadrée (✂). */
+  recadrer: (
+    <>
+      <path d="M7 3v14h14" />
+      <path d="M3 7h14v14" />
+    </>
+  ),
+  /** Vidéo (▶). */
+  lecture: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="m10 9 5 3-5 3z" />
+    </>
+  ),
+  /** Pas encore fait (○). */
+  cercle: <circle cx="12" cy="12" r="7.5" />,
+  /** Pile de photos semblables. */
+  pile: (
+    <>
+      <rect x="3" y="8" width="13" height="12" rx="1.5" />
+      <path d="M7 5h12.5a1.5 1.5 0 0 1 1.5 1.5V16" />
+    </>
+  ),
+  /** Touche « Retour arrière » (⌫). */
+  effacer: (
+    <>
+      <path d="M8.5 5H20a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8.5L3 12z" />
+      <path d="m11 9 6 6M17 9l-6 6" />
+    </>
+  ),
+  /** Lieu (📍), comme « sortie ». */
+  lieu: (
+    <>
+      <path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </>
+  ),
+  /** Couverture de l'album (◆). */
+  couverture: (
+    <>
+      <rect x="5" y="3" width="14" height="18" rx="1.5" />
+      <path d="M9 3v18" />
+    </>
+  ),
 } as const;
 
 export type NomIcone = keyof typeof TRACES;
 
-export function Icone({ nom, taille = 18, epaisseur = 2 }: { nom: NomIcone; taille?: number; epaisseur?: number }) {
+/** 20 dans un bouton, 16 dans le texte, 14 dans une remarque (C-5.1). */
+export type TailleIcone = 14 | 16 | 20;
+
+/**
+ * Une icône ; `titre` la nomme pour les lecteurs d'écran quand aucun mot ne
+ * l'accompagne (sinon elle est cachée : le mot suffit).
+ */
+export function Icone({ nom, taille = 20, titre }: { nom: NomIcone; taille?: TailleIcone; titre?: string }) {
   return (
     <svg
       width={taille}
@@ -110,11 +185,14 @@ export function Icone({ nom, taille = 18, epaisseur = 2 }: { nom: NomIcone; tail
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width={epaisseur}
+      stroke-width={1.75}
       stroke-linecap="round"
       stroke-linejoin="round"
-      aria-hidden="true"
+      aria-hidden={titre ? undefined : 'true'}
+      role={titre ? 'img' : undefined}
+      aria-label={titre}
       class="icone"
+      data-icone={nom}
     >
       {TRACES[nom]}
     </svg>

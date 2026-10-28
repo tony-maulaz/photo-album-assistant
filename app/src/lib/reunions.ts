@@ -8,7 +8,7 @@ import { principal, type DossierInfo } from './consolidation';
 import { noterRattachement, ressortirFragment, type FragmentRattache } from './fragments';
 import { t } from './langue';
 import { cleNom } from './noms';
-import { creerDossier, deplacerDossier, enchainer, enfants, fusionnerDossiers, RACINE, renommerDossier, supprimerDossierVide, Transaction, type Modification, type Plan } from './plan';
+import { avecDetail, creerDossier, deplacerDossier, enchainer, enfants, fusionnerDossiers, RACINE, renommerDossier, supprimerDossierVide, Transaction, type Modification, type Plan } from './plan';
 import { nomDossierLibre } from './tri';
 import { pluriel } from '../ui/format';
 
@@ -65,12 +65,12 @@ export function reunirEnUn(plan: Plan, cle: string, dossiers: DossierInfo[], nom
     avecVoisins: false,
   }));
   const nomAvant = plan.dossiers.get(cible)?.nom;
-  const modification = enchainer(plan, t`Réunir ${pluriel(dossiers.length, 'dossier')} dans « ${nom} »`, [
+  const modification = avecDetail(enchainer(plan, t`Réunir ${pluriel(dossiers.length, 'dossier')}`, [
     // Les plus profonds d'abord : chacun est vide de sous-dossiers quand il est versé.
     ...[...sous].reverse().map((id) => () => fusionnerDossiers(plan, id, cible)),
     ...sources.map((d) => () => fusionnerDossiers(plan, d.id, cible)),
     () => renommerDossier(plan, cible, nom),
-  ]);
+  ]), t`Réunir ${pluriel(dossiers.length, 'dossier')} dans « ${nom} »`);
   const dates = dossiers.flatMap((d) => [d.du, d.au]).filter((x): x is string => !!x).sort();
   return {
     modification,
@@ -81,14 +81,14 @@ export function reunirEnUn(plan: Plan, cle: string, dossiers: DossierInfo[], nom
 /** Range des dossiers ensemble dans un nouveau dossier de voyage (dans `parent`), chacun y devenant une étape. */
 export function rangerEnVoyage(plan: Plan, cle: string, dossiers: DossierInfo[], parent: string, nom: string): { modification: Modification | null; reunion: Reunion } {
   let cree = '';
-  const modification = enchainer(plan, t`Ranger ${pluriel(dossiers.length, 'dossier')} dans « ${nom} »`, [
+  const modification = avecDetail(enchainer(plan, t`Ranger ${pluriel(dossiers.length, 'dossier')} en voyage`, [
     () => {
       const r = creerDossier(plan, nom, parent);
       cree = r.id;
       return r.modification;
     },
     ...dossiers.map((d) => () => deplacerDossier(plan, d.id, cree)),
-  ]);
+  ]), t`Ranger ${pluriel(dossiers.length, 'dossier')} dans « ${nom} »`);
   const dates = dossiers.flatMap((d) => [d.du, d.au]).filter((x): x is string => !!x).sort();
   return {
     modification,
@@ -110,7 +110,7 @@ export function reunionEnPlace(plan: Plan, r: Reunion): boolean {
  * disparaît. `null` s'il n'y a plus rien à défaire.
  */
 export function defaireReunion(plan: Plan, r: Reunion): Modification | null {
-  return enchainer(plan, t`Défaire « ${r.nom} »`, [
+  return avecDetail(enchainer(plan, t`Défaire 1 réunion`, [
     ...r.ranges.filter((x) => plan.dossiers.get(x.id)?.parent === r.cible).map((x) => () => deplacerDossier(plan, x.id, plan.dossiers.has(x.parent) ? x.parent : RACINE)),
     () => {
       if (r.choix !== 'etapes' || !plan.dossiers.has(r.cible) || enfants(plan, r.cible).length || [...plan.fichiers.values()].some((f) => f.dossier === r.cible)) return null;
@@ -122,7 +122,7 @@ export function defaireReunion(plan: Plan, r: Reunion): Modification | null {
     ...(r.aplatis?.length ? r.verses.map((v) => () => remettreSousDossier(plan, v)) : []),
     // Puis les sous-dossiers vidés, de haut en bas (leur parent est revenu), même vides.
     ...(r.aplatis ?? []).map((a) => () => remettreSousDossier(plan, a)),
-  ]);
+  ]), t`Défaire « ${r.nom} »`);
 }
 
 /** Remet un sous-dossier vidé par « un seul dossier » à sa place, avec ses photos encore dans la cible ; `null` s'il est déjà là. */
@@ -136,5 +136,5 @@ function remettreSousDossier(plan: Plan, a: FragmentRattache): Modification | nu
     const f = plan.fichiers.get(id);
     if (f?.dossier === a.cible) tx.fichier({ ...f, dossier: a.dossier.id, nom });
   }
-  return tx.terminer(t`Remettre « ${a.dossier.nom} »`);
+  return tx.terminer(t`Ressortir 1 dossier`, t`Remettre « ${a.dossier.nom} »`);
 }

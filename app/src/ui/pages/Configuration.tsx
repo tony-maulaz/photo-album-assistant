@@ -12,7 +12,7 @@ import { ModifieAilleurs } from '../../navigateur/configuration';
 import { choisirFichier } from '../../navigateur/dossiers';
 import { lireExif } from '../../navigateur/exif';
 import { rechercher } from '../../navigateur/nominatim';
-import { TeteEtape } from '../composants/Cadre';
+import { RaisonDesactivee, TeteEtape } from '../composants/Cadre';
 import { confirmer } from '../composants/Dialogues';
 import { chargerEvenements, configuration, notifier, reglages, session, texteErreur } from '../etat';
 import { chargerConfiguration, choisirDossierConfig, configVide, creerDossierConfig } from '../projets';
@@ -316,6 +316,7 @@ export function PageConfiguration() {
                 <button
                   type="button"
                   disabled={!coordonnees}
+                  aria-describedby={coordonnees ? undefined : 'raison-ajouter-lieu'}
                   onClick={() =>
                     modifier((b) => {
                       const nom = `Lieu ${b.lieux_connus.length + 1}`;
@@ -326,9 +327,10 @@ export function PageConfiguration() {
                 >
                   {t`Ajouter ce lieu`}
                 </button>
+                <RaisonDesactivee id="raison-ajouter-lieu" raison={!colle.trim() && t`Collez d’abord des coordonnées.`} />
               </div>
               {colle.trim() && !coordonnees && (
-                <p class="attention">
+                <p class="attention" id="raison-ajouter-lieu">
                   {lienCourt(colle) ? (
                     t`Ce lien court ne contient pas la position (l’application n’a pas le droit de l’ouvrir sur internet). Ouvrez-le dans le navigateur, puis copiez l’adresse complète de la barre d’adresse (elle contient « @46.8,6.6 ») ; ou, dans Google Maps, faites un clic droit sur le lieu et cliquez sur les coordonnées pour les copier.`
                   ) : (
@@ -341,14 +343,20 @@ export function PageConfiguration() {
                   {t`Ajouter depuis une photo…`}
                 </button>
                 <input placeholder={t`Rechercher une adresse (rue, ville)`} value={adresse} onInput={(e) => setAdresse(e.currentTarget.value)} onKeyDown={(e) => e.key === 'Enter' && void chercherAdresse()} />
-                <button type="button" disabled={!adresse.trim()} onClick={() => void chercherAdresse()} title={t`Recherche sur OpenStreetMap (Nominatim)`}>
+                <button type="button" disabled={!adresse.trim()} aria-describedby={adresse.trim() ? undefined : 'raison-adresse'} onClick={() => void chercherAdresse()} title={t`Recherche sur OpenStreetMap (Nominatim)`}>
                   {t`Rechercher`}
                 </button>
+                <RaisonDesactivee id="raison-adresse" raison={!adresse.trim() && t`Écrivez d’abord une adresse.`} />
                 <button type="button" onClick={() => void importerCsv()}>
                   {t`Importer lieux_connus.csv…`}
                 </button>
-                <button type="button" disabled={!brouillon.lieux_connus.length} onClick={() => telecharger('lieux_connus.csv', ecrireCsvLieux(brouillon.lieux_connus))}>
-                  {t`Exporter en CSV`}
+                <button
+                  type="button"
+                  disabled={!brouillon.lieux_connus.length}
+                  data-raison={brouillon.lieux_connus.length ? undefined : 'libelle'}
+                  onClick={() => telecharger('lieux_connus.csv', ecrireCsvLieux(brouillon.lieux_connus))}
+                >
+                  {brouillon.lieux_connus.length ? t`Exporter en CSV` : t`Aucun lieu à exporter`}
                 </button>
               </div>
               {resultats && (
@@ -416,8 +424,8 @@ export function PageConfiguration() {
           {onglet === 'calendriers' && <OngletCalendriers config={brouillon} modifier={modifier} ajouter={() => void ajouterCalendrier()} />}
 
           <div class="actions">
-            <button type="button" class="principal" disabled={!modifie} onClick={() => void enregistrer()}>
-              {t`Enregistrer`}
+            <button type="button" class="principal" disabled={!modifie} data-raison={modifie ? undefined : 'libelle'} onClick={() => void enregistrer()}>
+              {modifie ? t`Enregistrer` : t`Rien à enregistrer`}
             </button>
             {modifie && (
               <button type="button" onClick={() => setBrouillon(structuredClone(c!.lecture!.config!))}>

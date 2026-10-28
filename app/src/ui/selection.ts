@@ -48,7 +48,7 @@ export const pilesOuvertes = signal<ReadonlySet<string>>(new Set());
 /** Tri rapide plein écran : liste figée à l'ouverture et position. */
 export const triRapide = signal<{ ids: string[]; index: number } | null>(null);
 export const comparaison = signal<string[] | null>(null);
-/** Photo préférée par l'IA au dernier lancement de « Meilleure de la sélection » (IA10), montrée dans le panneau. */
+/** Photo préférée par l'IA au dernier lancement de « Trouver la meilleure » (IA10), montrée dans le panneau. */
 export const derniereMeilleure = signal<string | null>(null);
 
 /** Sélectionne des photos et amène la première à l'écran dans la grille (résultats des aides IA). */

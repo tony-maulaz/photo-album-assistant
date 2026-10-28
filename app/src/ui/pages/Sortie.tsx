@@ -248,7 +248,7 @@ export function PageSortie() {
           </tr>
           <tr>
             <td>{nomsSortie().misDeCote}/</td>
-            <td>{deCote.n > 1 ? t`${pluriel(deCote.n, 'élément')} écartés (rien n’est supprimé)` : t`${pluriel(deCote.n, 'élément')} écarté (rien n’est supprimé)`}</td>
+            <td>{deCote.n > 1 ? t`« Mis de côté » : ${pluriel(deCote.n, 'élément')} écartés, rien n’est supprimé` : t`« Mis de côté » : ${pluriel(deCote.n, 'élément')} écarté, rien n’est supprimé`}</td>
             <td class="n">{taille(deCote.octets)}</td>
           </tr>
           <tr>
@@ -434,7 +434,7 @@ export function PageSortie() {
               {t`Ouvrir le rapport`}
             </button>
             {b.manquants.length > disparus.length && (
-              <button type="button" class="principal" onClick={() => void lancer()}>
+              <button type="button" onClick={() => void lancer()}>
                 {t`Réessayer`}
               </button>
             )}
@@ -454,6 +454,8 @@ export function PageSortie() {
               : t`Créer / mettre à jour la sortie`
         }
         validerActif={!progres && !!apercu}
+        raisonInactif={progres ? t`Écriture en cours.` : t`Calcul de ce qui sera écrit…`}
+        ecarte
       />
     </div>
   );

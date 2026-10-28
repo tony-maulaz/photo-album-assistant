@@ -62,7 +62,7 @@ export function PageReprendre() {
       <ul class="liste-autorisations">
         {liste.map((a, i) => (
           <li key={i} class={accordees.has(i) ? 'ok' : ''}>
-            <span>{accordees.has(i) ? '✓' : '○'}</span> {a.libelle}
+            <Icone nom={accordees.has(i) ? 'coche' : 'cercle'} taille={16} titre={accordees.has(i) ? t`autorisé` : t`pas encore autorisé`} /> {a.libelle}
             {!accordees.has(i) && restantes[0]?.i !== i && (
               <button type="button" onClick={() => void autoriser([i])}>
                 {t`Autoriser`}
@@ -226,7 +226,7 @@ export function PageAccueil() {
       <section class="cartes-entree">
         <button type="button" class="carte-entree" onClick={() => void commencer('vrac')()}>
           <span class="icone-carte">
-            <Icone nom="dossierPlus" taille={26} epaisseur={1.8} />
+            <Icone nom="dossierPlus" taille={20} />
           </span>
           <strong>{t`Trier un nouveau dossier`}</strong>
           <span class="texte-carte">
@@ -236,7 +236,7 @@ export function PageAccueil() {
         </button>
         <button type="button" class="carte-entree" onClick={() => void commencer('deja_trie')()}>
           <span class="icone-carte chaude">
-            <Icone nom="dossierCoche" taille={26} epaisseur={1.8} />
+            <Icone nom="dossierCoche" taille={20} />
           </span>
           <strong>{t`Ouvrir un dossier déjà trié`}</strong>
           <span class="texte-carte">

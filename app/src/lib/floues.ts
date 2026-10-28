@@ -6,7 +6,7 @@
 import { pluriel } from '../ui/format';
 import { t } from './langue';
 import { ressembleACapture } from './inventaire';
-import { combiner, mettreDeCote, nePasToucher, remettre, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
+import { avecDetail, combiner, mettreDeCote, nePasToucher, remettre, Transaction, type FichierPlan, type Modification, type Plan } from './plan';
 
 /** Seuil calibré du script 01 (variance du Laplacien à 1024 px). */
 export const SEUIL_FLOU = 60;
@@ -53,11 +53,9 @@ export function appliquerFloues(plan: Plan, nettete: (f: FichierPlan) => number 
       }
     }
   }
-  return combiner(
+  return avecDetail(
+    combiner(t`Changer la tolérance au flou`, marques.terminer(''), aEcarter.length ? mettreDeCote(plan, aEcarter, 'floues') : null, aRemettre.length ? remettre(plan, aRemettre) : null),
     t`Photos floues : ${pluriel(aEcarter.length, 'écartée')}, ${pluriel(aRemettre.length, 'remise')}`,
-    marques.terminer(''),
-    aEcarter.length ? mettreDeCote(plan, aEcarter, 'floues') : null,
-    aRemettre.length ? remettre(plan, aRemettre) : null,
   );
 }
 
@@ -77,7 +75,8 @@ export function deciderFlou(plan: Plan, ids: string[], decision: 'sauvee' | 'eca
     const { flou: _f, ...reste } = f;
     tx.fichier(voulu ? { ...reste, flou: voulu } : reste);
   }
-  return tx.terminer(decision === 'sauvee' ? t`Sauver` : decision === 'ecartee' ? t`Écarter` : t`Revenir au seuil`);
+  const n = pluriel(ids.length, 'photo');
+  return tx.terminer(decision === 'sauvee' ? t`Sauver ${n}` : decision === 'ecartee' ? t`Écarter ${n}` : t`Remettre ${n} selon le curseur`);
 }
 
 /** Nombre de photos écartées au seuil donné (compteur en direct du curseur). */

@@ -8,7 +8,7 @@
 
 import { signal } from '@preact/signals';
 import { estNomDeSortie } from '../../lib/sortie';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks';
 import {
   avecIA,
   clePaire,
@@ -41,7 +41,8 @@ import { defaireReunion, rangerEnVoyage, reunionEnPlace, reunirEnUn, type Reunio
 import { estDossierMois } from '../../lib/tri';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
-import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
+import { Icone } from '../composants/Icones';
 import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
 import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, configuration, contexteExecution, evenements, notifier, page, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
@@ -275,15 +276,20 @@ function titreSorte(p: Proposition): string {
 const TEXTE_HEURES: Record<number, string> = { 1: aTraduire('1 h'), 3: aTraduire('3 h'), 6: aTraduire('6 h'), 12: aTraduire('la journée') };
 const TEXTE_JOURS: Record<number, string> = { 3: aTraduire('3 jours'), 4: aTraduire('4 jours'), 7: aTraduire('1 semaine'), 14: aTraduire('2 semaines') };
 
-function Crans({ valeurs, valeur, texte, changer, libelle, inactif }: { valeurs: readonly number[]; valeur: number; texte: (v: number) => string; changer: (v: number) => void; libelle: string; inactif?: boolean }) {
+/** Crans d'un réglage ; `inactif` : la raison écrite à côté (C-4.7). */
+function Crans({ valeurs, valeur, texte, changer, libelle, inactif }: { valeurs: readonly number[]; valeur: number; texte: (v: number) => string; changer: (v: number) => void; libelle: string; inactif?: string }) {
+  const id = useId();
   return (
-    <div class="choix-segmente choix-tri" role="radiogroup" aria-label={libelle}>
-      {valeurs.map((v) => (
-        <button key={v} type="button" role="radio" aria-checked={valeur === v} disabled={inactif} onClick={() => changer(v)}>
-          {texte(v)}
-        </button>
-      ))}
-    </div>
+    <>
+      <div class="choix-segmente choix-tri" role="radiogroup" aria-label={libelle}>
+        {valeurs.map((v) => (
+          <button key={v} type="button" role="radio" aria-checked={valeur === v} disabled={!!inactif} aria-describedby={inactif ? id : undefined} onClick={() => changer(v)}>
+            {texte(v)}
+          </button>
+        ))}
+      </div>
+      <RaisonDesactivee id={id} raison={inactif} />
+    </>
   );
 }
 
@@ -304,7 +310,7 @@ function Reglages({ r, changer, resume, sansMaison, refusees, reproposer }: { r:
           <label class="case">
             <input type="checkbox" checked={r.voyages} onChange={(e) => changer({ voyages: e.currentTarget.checked })} /> <strong>{t`Les week-ends et petits voyages, jusqu’à…`}</strong>
           </label>
-          <Crans valeurs={CRANS_JOURS_VOYAGE} valeur={r.joursVoyage} texte={(v) => t(TEXTE_JOURS[v])} changer={(joursVoyage) => changer({ joursVoyage })} libelle={t`Durée d’un petit voyage`} inactif={!r.voyages} />
+          <Crans valeurs={CRANS_JOURS_VOYAGE} valeur={r.joursVoyage} texte={(v) => t(TEXTE_JOURS[v])} changer={(joursVoyage) => changer({ joursVoyage })} libelle={t`Durée d’un petit voyage`} inactif={r.voyages ? undefined : t`Cochez la case pour choisir la durée.`} />
           <p class="aide-option">
             {t`Des dossiers à plus de ${DISTANCE_MAISON_KM} km de la maison, sur des jours qui se suivent, sans photo prise à la maison entre-temps. Vous choisirez d’en faire un seul dossier, ou un dossier de voyage avec une étape par dossier.`}
             {sansMaison && (
@@ -363,7 +369,8 @@ function CarteProposition({ p, nomParent, reunir, refuser }: { p: Proposition; n
         <p class="discret">{raison(p)}</p>
         {p.ia && (
           <p class="proposition-ia">
-            {t`✨ L’IA propose de les réunir dans « ${p.ia.cible} »`} : {p.ia.raison}
+            <Icone nom="etincelle" taille={16} />
+            {t`L’IA propose de les réunir dans « ${p.ia.cible} »`} : {p.ia.raison}
           </p>
         )}
       </header>
@@ -415,10 +422,12 @@ function CarteProposition({ p, nomParent, reunir, refuser }: { p: Proposition; n
           {choix === 'etapes' ? t`Nom du dossier de voyage` : t`Nom du dossier réuni`}
           <input class="large" value={nom} onInput={(e) => setNomTape(e.currentTarget.value)} />
         </label>
-        <p class="discret apres-choix">
+        <p class="discret apres-choix" id="raison-reunir">
           {gardes.length < 2
             ? t`Cochez au moins deux dossiers.`
-            : choix === 'etapes'
+            : !nom.trim()
+              ? t`Donnez d’abord un nom au dossier.`
+              : choix === 'etapes'
               ? t`Un dossier « ${nom} » est créé ; les ${nombre(gardes.length)} dossiers y deviennent des étapes, avec leurs photos.`
               : t`Les ${nombre(gardes.length)} dossiers deviennent un seul dossier « ${nom} » (${pluriel(photos, 'photo')}).`}
         </p>
@@ -427,7 +436,7 @@ function CarteProposition({ p, nomParent, reunir, refuser }: { p: Proposition; n
             {p.sorte === 'sortie' ? t`Pas la même sortie` : p.voyageEntier ? t`Garder les étapes` : t`Pas un même voyage`}
           </button>
           <span class="espace" />
-          <button type="button" class="principal" disabled={gardes.length < 2 || !nom.trim()} onClick={() => reunir(gardes, choix, nom.trim(), p.dossiers.filter((d) => retires.has(d.id)))}>
+          <button type="button" class="principal" disabled={gardes.length < 2 || !nom.trim()} aria-describedby={gardes.length < 2 || !nom.trim() ? 'raison-reunir' : undefined} onClick={() => reunir(gardes, choix, nom.trim(), p.dossiers.filter((d) => retires.has(d.id)))}>
             {choix === 'etapes' ? t`Ranger ensemble` : t`Réunir ${pluriel(gardes.length, 'dossier')}`}
           </button>
         </div>
@@ -613,8 +622,8 @@ export function PageConsolidation() {
               const fait = !aDecider(e);
               return (
                 <button key={e.cle} type="button" class={`ligne-liste-petit${e.cle === courant?.cle ? ' choisie' : ''}${fait ? ' fait' : ''}`} aria-current={e.cle === courant?.cle ? 'true' : undefined} onClick={() => (choisi.value = e.cle)}>
-                  <span class="etat-petit" aria-hidden="true">
-                    {e.reunion ? '✓' : e.refus ? '✗' : '○'}
+                  <span class="etat-petit">
+                    <Icone nom={e.reunion ? 'coche' : e.refus ? 'croix' : 'cercle'} taille={16} titre={e.reunion ? t`réunis` : e.refus ? t`laissés séparés` : t`à décider`} />
                   </span>
                   <span class="nom-liste-petit">
                     <span class="discret">{e.du ? jourCourt(e.du) : ''}</span> {e.libelle}
@@ -635,7 +644,10 @@ export function PageConsolidation() {
             ) : courant?.renommage ? (
               <div class="encart">
                 <p>
-                  <span class="proposition-ia">{t`✨ L’IA propose de renommer « ${dossierDe(s, courant.renommage.dossier)?.nom ?? ''} » en « ${courant.renommage.nom} »`}</span>
+                  <span class="proposition-ia">
+                    <Icone nom="etincelle" taille={16} />
+                    {t`L’IA propose de renommer « ${dossierDe(s, courant.renommage.dossier)?.nom ?? ''} » en « ${courant.renommage.nom} »`}
+                  </span>
                 </p>
                 <p class="discret">{courant.renommage.raison}</p>
                 <div class="photos-reunion">
@@ -658,7 +670,7 @@ export function PageConsolidation() {
             ) : courant?.reunion ? (
               <div class="encart decide-petit">
                 <p>
-                  ✓ {courant.reunion.choix === 'etapes' ? t`Rangés ensemble dans « ${courant.reunion.nom} » :` : t`Réunis dans « ${courant.reunion.nom} » :`} {courant.reunion.noms.join(t` et `)}.
+                  <Icone nom="coche" taille={16} /> {courant.reunion.choix === 'etapes' ? t`Rangés ensemble dans « ${courant.reunion.nom} » :` : t`Réunis dans « ${courant.reunion.nom} » :`} {courant.reunion.noms.join(t` et `)}.
                 </p>
                 <button type="button" onClick={() => defaire(courant.reunion!)}>
                   {t`Défaire`}
@@ -667,7 +679,7 @@ export function PageConsolidation() {
             ) : courant?.refus ? (
               <div class="encart decide-petit">
                 <p>
-                  ✗ {courant.refus.sorte === 'sortie' ? t`Pas la même sortie :` : t`Pas un même voyage :`} {courant.refus.noms.join(t` et `)}.
+                  <Icone nom="croix" taille={16} /> {courant.refus.sorte === 'sortie' ? t`Pas la même sortie :` : t`Pas un même voyage :`} {courant.refus.noms.join(t` et `)}.
                 </p>
                 <button type="button" onClick={() => annulerRefus(courant.refus!)}>
                   {t`Annuler ce choix`}
@@ -680,7 +692,14 @@ export function PageConsolidation() {
         </div>
       )}
       <BarreValidation
-        resume={t`${nombre(restants.length)} à décider · ${pluriel(reunions.length, 'réunion', 'réunions')} · ${pluriel(refus.length, 'refusée', 'refusées')}`}
+        resume={`${
+          restants.length === 0
+            ? t`aucune proposition à décider`
+            : restants.length === 1
+              ? t`1 proposition à décider : ses dossiers restent séparés`
+              : t`${nombre(restants.length)} propositions à décider : leurs dossiers restent séparés`
+        } · ${pluriel(reunions.length, 'réunion', 'réunions')} · ${pluriel(refus.length, 'refusée', 'refusées')}`}
+        fini={restants.length === 0}
         revenir={() => revenirDe('consolidation')}
         valider={() => validerEtape('consolidation')}
       />

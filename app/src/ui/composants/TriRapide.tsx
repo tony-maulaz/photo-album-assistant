@@ -11,6 +11,7 @@ import { session, versionPlan } from '../etat';
 import { dateHeure, nombre, pluriel } from '../format';
 import { choisir, triRapide, tournerPhotos, type InfoPhoto } from '../selection';
 import { lignesIA } from '../pages/AidesPhotos';
+import { Icone } from './Icones';
 import { useOriginal } from './Comparateur';
 import { useZoom } from './Zoom';
 
@@ -115,7 +116,10 @@ export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
           </span>
         ))}
         <span class="espace" />
-        {reste ? <strong>{t`Reste à décider : ${nombre(reste)}`}</strong> : <strong class="tout-decide">✓ {t`Tout est décidé`}</strong>}
+        {reste ? <strong>{t`Reste à décider : ${nombre(reste)}`}</strong> : <strong class="tout-decide">
+            <Icone nom="coche" taille={16} />
+            {t`Tout est décidé`}
+          </strong>}
       </div>
       {fin && (
         <div class="fin-tri" role="status">
@@ -134,7 +138,10 @@ export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
             </>
           ) : (
             <>
-              <strong>✓ {t`Tout est décidé`}</strong>
+              <strong class="tout-decide">
+                <Icone nom="coche" taille={20} />
+                {t`Tout est décidé`}
+              </strong>
               <p>{t`Chaque photo de cette liste a son choix : ★, ★★ ou pas pour l’album.`}</p>
               <div class="actions">
                 <button type="button" class="principal" onClick={() => (triRapide.value = null)}>
@@ -166,16 +173,19 @@ export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
           <kbd>X</kbd> {t`pas dans l’album`}
         </button>
         <button type="button" onClick={() => choisir([f.id], undefined)}>
-          <kbd>⌫</kbd> {t`à décider`}
+          <kbd>
+            <Icone nom="effacer" taille={16} titre={t`Retour arrière`} />
+          </kbd>{' '}
+          {t`à décider`}
         </button>
         <button type="button" onClick={() => tournerPhotos([f.id], 90)}>
           <kbd>R</kbd> {t`tourner`}
         </button>
-        <button type="button" onClick={() => aller(index - 1)} disabled={index === 0}>
-          <kbd>←</kbd> {t`précédente`}
+        <button type="button" onClick={() => aller(index - 1)} disabled={index === 0} data-raison={index === 0 ? 'libelle' : undefined}>
+          <kbd>←</kbd> {index === 0 ? t`c’est la première` : t`précédente`}
         </button>
-        <button type="button" onClick={suivante} disabled={fin}>
-          <kbd>→</kbd> {t`suivante`}
+        <button type="button" onClick={suivante} disabled={fin} data-raison={fin ? 'libelle' : undefined}>
+          <kbd>→</kbd> {fin ? t`c’est la dernière` : t`suivante`}
         </button>
         <button type="button" onClick={() => (triRapide.value = null)}>
           <kbd>{t`Échap`}</kbd> {t`fermer`}

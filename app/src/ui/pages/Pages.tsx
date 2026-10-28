@@ -7,7 +7,8 @@ import { client, expliquerErreur } from '../../navigateur/claude';
 import { cleApi, cleMasquee, cleMemorisee, enregistrerCleApi, oublierCleApi } from '../../navigateur/cle';
 import type { Reglages } from '../../navigateur/reglages';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
-import { TeteEtape } from '../composants/Cadre';
+import { RaisonDesactivee, TeteEtape } from '../composants/Cadre';
+import { Icone } from '../composants/Icones';
 import { aTraduire, langue, t } from '../../lib/langue';
 import { ChoixLangue } from '../composants/ChoixLangue';
 import { ReglageDossierDepart } from '../composants/DossierDepart';
@@ -78,6 +79,7 @@ export function PageReglages() {
           type="button"
           class="principal"
           disabled={!cle.trim()}
+          aria-describedby={cle.trim() ? undefined : 'raison-cle'}
           onClick={() => {
             enregistrerCleApi(cle.trim(), souvenir);
             setCle('');
@@ -91,14 +93,15 @@ export function PageReglages() {
         <button
           type="button"
           disabled={!actuelle}
+          aria-describedby={actuelle ? undefined : 'raison-cle'}
           onClick={async () => {
             setTest(t`Test en cours…`);
             try {
               let n = 0;
               for await (const _ of client().models.list()) n++;
-              setTest(t`✓ La clé fonctionne (${n} modèles accessibles).`);
+              setTest(t`La clé fonctionne (${n} modèles accessibles).`);
             } catch (err) {
-              setTest(`✗ ${expliquerErreur(err)}`);
+              setTest(t`Échec : ${expliquerErreur(err)}`);
             }
           }}
         >
@@ -107,6 +110,7 @@ export function PageReglages() {
         <button
           type="button"
           disabled={!actuelle}
+          aria-describedby={actuelle ? undefined : 'raison-cle'}
           onClick={() => {
             oublierCleApi();
             setTest(null);
@@ -115,6 +119,10 @@ export function PageReglages() {
         >
           {t`Oublier la clé`}
         </button>
+        <RaisonDesactivee
+          id="raison-cle"
+          raison={!actuelle ? (cle.trim() ? t`Aucune clé enregistrée : enregistrez-la pour la tester.` : t`Saisissez d’abord votre clé.`) : !cle.trim() && t`Saisissez une nouvelle clé pour l’enregistrer.`}
+        />
       </div>
       {test && <p>{test}</p>}
 
@@ -373,7 +381,10 @@ export function PageAide() {
           <li>{t`À l’accueil, choisissez « Trier un nouveau dossier » (ou « Ouvrir un dossier déjà trié ») : indiquez le dossier de photos, puis un dossier vide où le résultat sera écrit.`}</li>
           <li>{t`Suivez les étapes dans l’ordre. En haut de chaque page, une explication dit quoi faire ; quand tout vous convient, cliquez sur « Valider et continuer », en bas à droite.`}</li>
           <li>{t`Rien ne presse : vos photos d’origine ne sont jamais modifiées, Ctrl+Z annule la dernière modification, et vous pouvez fermer l’onglet à tout moment.`}</li>
-          <li>{t`Les aides IA (boutons ✦) sont facultatives : elles affichent leur prix avant de partir et demandent une clé API (menu ☰, Réglages).`}</li>
+          <li>
+            {t`Les aides IA (boutons marqués`} <Icone nom="etincelle" taille={16} titre={t`étincelle`} />
+            {t`) sont facultatives : elles affichent leur prix avant de partir et demandent une clé API (« Menu », puis « Réglages »).`}
+          </li>
         </ol>
         <p class="discret">{t`Touche « ? » (hors d’un champ de saisie) : la liste des raccourcis clavier.`}</p>
       </section>
@@ -416,11 +427,11 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.floues)}</strong>
-          {t` : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».`}
+          {t` : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider et continuer ».`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.doublons)}</strong>
-          {t` : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » valide le groupe.`}
+          {t` : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » écarte les autres.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
@@ -469,9 +480,9 @@ export function PageAide() {
         <li>
           {t`Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.`}
         </li>
-        <li>{t`Fusionnez deux dossiers avec « Fusionner avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom (ou F2) pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.`}</li>
+        <li>{t`Réunissez deux dossiers avec « Réunir avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom, ou F2, pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.`}</li>
         <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).`}</li>
-        <li>{t`Suppr met de côté (rien n’est supprimé : les éléments iront dans « ${nomsSortie().misDeCote} ») ; dans « Mis de côté », Suppr les remet.`}</li>
+        <li>{t`Suppr met de côté : rien n’est supprimé, les éléments vont dans « Mis de côté » ; dans « Mis de côté », Suppr les remet.`}</li>
         <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>
         <li>{t`Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.`}</li>
       </ul>

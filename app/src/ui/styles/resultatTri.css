@@ -234,7 +234,7 @@
 }
 
 .ranger-tri button {
-  min-height: 46px;
+  min-height: var(--h-plein);
   padding: 0 22px;
 }
 
@@ -248,10 +248,10 @@
 }
 
 button.petit {
-  min-height: 34px;
+  min-height: var(--h-btn);
   padding: var(--e1) var(--e3);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .apercu-tri-chiffres {
@@ -312,14 +312,15 @@ button.petit {
 }
 
 .resultat-tri .onglets-doublons {
-  flex-wrap: nowrap;
+  /* Cinq onglets à 16 px dans une colonne étroite : à la ligne plutôt que coupés (C-6.2, C-7.1). */
+  flex-wrap: wrap;
   gap: 0;
 }
 
 .resultat-tri .onglet-doublons {
-  padding: 10px 10px var(--e2);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  padding: 10px var(--e2) var(--e2);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   white-space: nowrap;
 }
 
@@ -643,9 +644,7 @@ button.petit {
   }
 }
 
-/* Un seul bouton plein par écran (D107) : les autres actions en contour, comme aux Doublons (D98). */
+/* Un seul bouton plein par écran (C-4.1) : les autres actions en contour (C-4.4). */
 .page-tri button.contour {
-  border-color: var(--accent);
-  color: var(--accent-doux-texte);
   font-weight: 600;
 }

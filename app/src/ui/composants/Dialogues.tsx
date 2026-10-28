@@ -4,7 +4,7 @@
 import { signal } from '@preact/signals';
 import type { ComponentChildren } from 'preact';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { t, tc } from '../../lib/langue';
+import { t } from '../../lib/langue';
 
 interface Demande {
   id: number;
@@ -83,11 +83,11 @@ function Boite({ d }: { d: Demande }) {
         )}
         <div class="actions droite">
           <button type="button" onClick={() => fermer(null)}>
-            {/* « Annuler » ferme ici la boîte sans rien faire : « Cancel », et non « Undo » comme ailleurs. */}
-            {tc('dialogue', 'Annuler')}
+            {/* Fermer la boîte sans rien changer (glossaire) ; « Annuler » ne sert qu'à défaire un geste. */}
+            {t`Ne rien faire`}
           </button>
           <button ref={bouton} type="button" class={d.danger ? 'danger' : 'principal'} disabled={!!d.saisie && (!!erreur || !valeur.trim())} onClick={valider}>
-            {d.bouton ?? (d.saisie ? t`Valider` : t`Confirmer`)}
+            {d.bouton ?? (d.saisie ? t`Accepter` : t`Confirmer`)}
           </button>
         </div>
       </div>

@@ -118,10 +118,9 @@
   color: var(--texte);
 }
 
-/* Action groupée : visible, mais moins forte que « Accepter » d'un groupe, qu'on a vu. */
+/* Action groupée : un contour comme les autres (C-4.4) ; le plein reste à la prochaine action utile (C-4.1). */
 .page-doublons button.contour {
-  border-color: var(--accent);
-  color: var(--accent-doux-texte);
+  font-weight: 600;
 }
 
 /* Afficher, Grouper, taille, Classer : la vue seulement, sur une ligne, toujours visible en haut au défilement. */
@@ -229,8 +228,8 @@
   border-radius: var(--r-commande);
   background: none;
   color: var(--texte);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   font-weight: 400;
   text-align: left;
 }
@@ -545,6 +544,7 @@
 /* Comparateur : passer d'un groupe à l'autre. */
 .navigation-groupes {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--e2);
   margin-left: var(--e4);

@@ -15,6 +15,7 @@ import { distanceM, lieuxFrequents, type LieuFrequent } from '../../lib/tri';
 import { configuration, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { dateHeure, nombre, pluriel } from '../format';
 import { ChoixConfiguration } from './ChoixConfiguration';
+import { RaisonDesactivee } from './Cadre';
 import { Fenetre } from './Dialogues';
 import { Miniature } from './GrillePhotos';
 
@@ -174,9 +175,11 @@ export function LieuxFrequents({ fermer }: { fermer: () => void }) {
                     onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })}
                     onKeyDown={(e) => e.key === 'Enter' && (nom.trim() || estDomicile) && void enregistrer(l.lat, l.lon, cle)}
                   />
-                  <button type="button" class="principal" disabled={!nom.trim() && !estDomicile} onClick={() => void enregistrer(l.lat, l.lon, cle)}>
+                  {/* Contour : une ligne par endroit, aucun ne prend le seul bouton plein (C-4.1) ; désactivé, il garde son nom et sa raison est écrite à côté (C-4.7). */}
+                  <button type="button" disabled={!nom.trim() && !estDomicile} aria-describedby={!nom.trim() && !estDomicile ? `raison-lieu-${cle}` : undefined} onClick={() => void enregistrer(l.lat, l.lon, cle)}>
                     {t`Enregistrer`}
                   </button>
+                  <RaisonDesactivee id={`raison-lieu-${cle}`} raison={!nom.trim() && !estDomicile && t`Donnez-lui d’abord un nom`} />
                 </div>
                 {sansDomicile && (
                   <label class="case" title={t`La maison sert à reconnaître les voyages et les sorties.`}>

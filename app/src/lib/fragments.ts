@@ -403,5 +403,5 @@ export function ressortirFragment(plan: Plan, r: FragmentRattache): Modification
   tx.dossier({ ...r.dossier, parent, nom: nomDossierLibre(r.dossier.nom, pris) });
   for (const { id, nom } of fichiers) tx.fichier({ ...plan.fichiers.get(id)!, dossier: r.dossier.id, nom });
   for (const id of sous) tx.dossier({ ...plan.dossiers.get(id)!, parent: r.dossier.id });
-  return tx.terminer(t`Ressortir « ${r.dossier.nom} » de « ${r.cibleNom} »`);
+  return tx.terminer(t`Ressortir 1 dossier`, t`Ressortir « ${r.dossier.nom} » de « ${r.cibleNom} »`);
 }

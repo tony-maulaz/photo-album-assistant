@@ -33,7 +33,8 @@ function useDeroulant(): [boolean, (v?: boolean) => void, RefObject<HTMLDivEleme
   return [ouvert, (v) => setOuvert(v ?? !ouvert), zone];
 }
 
-const SYMBOLES = { validee: '✓', en_cours: '', a_faire: '', a_revoir: '!' } as const;
+// Étape faite : la coche en icône SVG (C-1.4, C-5.3), avec son mot (« validée ») dans l'infobulle et le résumé.
+const SYMBOLES = { validee: <Icone nom="coche" taille={14} />, en_cours: '', a_faire: '', a_revoir: '!' } as const;
 const LIBELLES = { validee: aTraduire('validée'), en_cours: aTraduire('en cours'), a_faire: aTraduire('à faire'), a_revoir: aTraduire('à revoir') } as const;
 
 /**
@@ -93,8 +94,8 @@ function Avancement() {
           </>
         ) : (
           t`Étapes`
-        )}{' '}
-        ▾
+        )}
+        <Icone nom="chevronBas" taille={16} />
       </button>
       {ouvert && (
         <ul class="liste-etapes" role="menu" aria-label={t`Étapes`}>
@@ -113,7 +114,7 @@ function Avancement() {
   );
 }
 
-/** Menu ☰ : les pages consultées de temps en temps, et fermer le projet. */
+/** Menu (trois traits) : les pages consultées de temps en temps, et fermer le projet. */
 function MenuPrincipal() {
   const s = session.value;
   const p = page.value;
@@ -131,8 +132,9 @@ function MenuPrincipal() {
   ];
   return (
     <div class="menu-principal" ref={zone}>
-      <button type="button" class="bouton-icone bouton-menu" aria-label={t`Menu`} aria-haspopup="menu" aria-expanded={ouvert} onClick={() => basculer()} title={t`Menu`}>
+      <button type="button" class="bouton-menu" aria-haspopup="menu" aria-expanded={ouvert} onClick={() => basculer()}>
         <Icone nom="menu" taille={20} />
+        {t`Menu`}
       </button>
       {ouvert && (
         <div class="menu-deroulant" role="menu" aria-label={t`Menu`}>
@@ -202,7 +204,7 @@ export function Messages() {
       {messages.value.map((m) => (
         <div key={m.id} class={`message ${m.type}`}>
           <span class="pastille-message">
-            <Icone nom={m.type === 'ok' ? 'coche' : m.type === 'erreur' ? 'alerte' : 'info'} taille={14} epaisseur={2.6} />
+            <Icone nom={m.type === 'ok' ? 'coche' : m.type === 'erreur' ? 'alerte' : 'info'} taille={14} titre={m.type === 'ok' ? t`Fait` : m.type === 'erreur' ? t`Erreur` : t`Information`} />
           </span>
           <span class="texte-message">{m.texte}</span>
           {m.action && (
@@ -240,7 +242,79 @@ export function TeteEtape({ numero, titre, cle, outils, children }: { numero?: n
   );
 }
 
-/** Barre de validation fixée en bas (§ 5.2) : résumé chiffré, alertes, Revenir, Valider et continuer. */
+/**
+ * « Annuler : ce qu'il défait » (C-8.2) : le dernier geste, court (un verbe et
+ * un nombre), sur une ligne de 40 px et une largeur fixe : la barre ne bouge
+ * pas sous la souris quand le geste change ; le geste avec ses noms est dans
+ * l'infobulle. Sans rien à annuler, il le dit (C-4.7).
+ */
+export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string }; annuler: () => void }) {
+  const quoi = historique.prochaineAnnulation;
+  if (!historique.peutAnnuler)
+    return (
+      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={t`Annuler (Ctrl+Z)`}>
+        <Icone nom="annuler" taille={20} />
+        <span class="texte-annuler">{t`Rien à annuler`}</span>
+      </button>
+    );
+  const detail = historique.detailAnnulation ?? quoi;
+  return (
+    <button type="button" class="bouton-annuler" onClick={annuler} title={detail ? t`Annuler : ${minusculeInitiale(detail)} (Ctrl+Z)` : t`Annuler (Ctrl+Z)`}>
+      <Icone nom="annuler" taille={20} />
+      <span class="texte-annuler">{quoi ? t`Annuler : ${minusculeInitiale(quoi)}` : t`Annuler`}</span>
+    </button>
+  );
+}
+
+/** « Rétablir » (Ctrl+Y), à côté d'« Annuler ». */
+export function BoutonRetablir({ peutRetablir, retablir }: { peutRetablir: boolean; retablir: () => void }) {
+  return (
+    <button type="button" class="bouton-retablir" disabled={!peutRetablir} data-raison={peutRetablir ? undefined : 'libelle'} onClick={retablir} title={t`Rétablir (Ctrl+Y)`}>
+      <Icone nom="retablir" taille={20} />
+      {peutRetablir ? t`Rétablir` : t`Rien à rétablir`}
+    </button>
+  );
+}
+
+/** « Annuler : … » et « Rétablir », toujours ensemble et sans passer à la ligne entre eux (C-8.2). */
+export function AnnulerRetablir({
+  historique,
+  annuler,
+  retablir,
+}: {
+  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string };
+  annuler: () => void;
+  retablir: () => void;
+}) {
+  return (
+    <span class="annuler-retablir">
+      <BoutonAnnuler historique={historique} annuler={annuler} />
+      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} />
+    </span>
+  );
+}
+
+/** « Déplacer 3 photos » → « déplacer 3 photos » (sauf un sigle : « IA… »). */
+function minusculeInitiale(texte: string): string {
+  return texte.length > 1 && texte[1] === texte[1].toLowerCase() ? texte[0].toLowerCase() + texte.slice(1) : texte;
+}
+
+/** Raison écrite d'une commande désactivée (C-4.7), reliée au bouton par `aria-describedby`. */
+export function RaisonDesactivee({ id, raison }: { id: string; raison: string | false | null | undefined }) {
+  return raison ? (
+    <span id={id} class="raison-desactivee">
+      {raison}
+    </span>
+  ) : null;
+}
+
+/**
+ * Barre de validation fixée en bas (§ 5.2, C-8.4, C-8.5) : ligne 1, ce que
+ * devient ce qui reste ; ligne 2, « Rien n'est supprimé » sur les étapes où
+ * l'on écarte ; puis Revenir et Valider et continuer. Ce dernier n'est plein
+ * qu'une fois l'étape finie (C-4.1) : avant, la prochaine action utile est
+ * ailleurs sur la page ; désactivé, sa raison est écrite (C-4.7).
+ */
 export function BarreValidation({
   resume,
   alertes = [],
@@ -248,33 +322,83 @@ export function BarreValidation({
   valider,
   libelleValider = t`Valider et continuer`,
   validerActif = true,
+  raisonInactif,
+  fini = true,
+  ecarte = false,
 }: {
+  /** Ligne 1 : ce que devient ce qui reste (« 12 groupes pas encore acceptés : toutes leurs photos sont gardées »). */
   resume: ComponentChildren;
   alertes?: string[];
   revenir?: () => void;
   valider?: () => void;
   libelleValider?: string;
   validerActif?: boolean;
+  /** Pourquoi « Valider et continuer » est désactivé, écrit dans la barre. */
+  raisonInactif?: string;
+  /** L'étape est finie : « Valider et continuer » devient le bouton plein (C-4.1). */
+  fini?: boolean;
+  /** On écarte des photos sur cette étape : ligne 2 « Rien n'est supprimé » (C-8.4). */
+  ecarte?: boolean;
 }) {
+  const raison = valider && !validerActif ? (raisonInactif ?? '') : '';
+  // Sa hauteur, lue par les messages passagers : ils se posent au-dessus d'elle, jamais sur la ligne
+  // « Rien n'est supprimé » ni sur un bouton (C-8.4).
+  const barre = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = barre.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const racine = document.documentElement;
+    const noter = () => racine.style.setProperty('--haut-barre-validation', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    noter();
+    const obs = new ResizeObserver(noter);
+    obs.observe(el);
+    return () => {
+      obs.disconnect();
+      racine.style.removeProperty('--haut-barre-validation');
+    };
+  }, []);
   return (
-    <footer class="barre-validation">
-      <div class="resume">{resume}</div>
-      <div class="alertes">
-        {alertes.map((a) => (
-          <span key={a} class="alerte">
-            {a}
-          </span>
-        ))}
+    <footer class="barre-validation" ref={barre}>
+      <div class="resume">
+        {/* Les alertes et la raison d'un « Valider » désactivé suivent la ligne 1 : la ligne 2 garde toute la largeur. */}
+        <p class="l1">
+          <span class="texte-l1">{resume}</span>
+          {(alertes.length > 0 || raison) && (
+            <span class="alertes">
+              {alertes.map((a) => (
+                <span key={a} class="alerte">
+                  {a}
+                </span>
+              ))}
+              <RaisonDesactivee id="raison-valider" raison={raison} />
+            </span>
+          )}
+        </p>
+        {ecarte && (
+          <p class="l2 rien-supprime">
+            <Icone nom="bouclier" taille={16} />
+            {t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}
+          </p>
+        )}
       </div>
       <div class="actions">
         {revenir && (
-          <button type="button" data-action="revenir" onClick={revenir}>
+          <button type="button" class="bouton-revenir" data-action="revenir" onClick={revenir}>
             {t`Revenir`}
           </button>
         )}
         {valider && (
-          <button type="button" class="principal" data-action="valider" disabled={!validerActif} onClick={valider}>
+          <button
+            type="button"
+            class={`bouton-valider ${fini && validerActif ? 'principal' : 'contour'}`}
+            data-action="valider"
+            data-fini={fini ? 'oui' : 'non'}
+            disabled={!validerActif}
+            aria-describedby={raison ? 'raison-valider' : undefined}
+            onClick={valider}
+          >
             {libelleValider}
+            <Icone nom="fleche" taille={20} />
           </button>
         )}
       </div>

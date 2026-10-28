@@ -6,6 +6,7 @@
 // suivant ; les cas évidents se règlent d'un coup après vérification ; l'aide
 // IA est facultative. Rien n'est rattaché sans un clic.
 
+import type { ComponentChildren } from 'preact';
 import { signal } from '@preact/signals';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { DossierInfo } from '../../lib/consolidation';
@@ -26,14 +27,15 @@ import {
   type FragmentRattache,
   type Voisin,
 } from '../../lib/fragments';
-import { aTraduire, t, tc } from '../../lib/langue';
-import { enchainer, fusionnerDossiers, renommerDossier, type FichierPlan } from '../../lib/plan';
+import { aTraduire, t } from '../../lib/langue';
+import { avecDetail, enchainer, fusionnerDossiers, renommerDossier, type FichierPlan } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { enParallele } from '../../navigateur/workers';
-import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
 import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
+import { Icone } from '../composants/Icones';
 import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, contexteExecution, notifier, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { jourCourt, nombre, nomJour, pluriel } from '../format';
@@ -112,11 +114,16 @@ function rattachesDe(s: Session): Record<string, FragmentRattache> {
   return s.aides.get<Record<string, FragmentRattache>>('fragments_rattaches') ?? {};
 }
 
+/** Nom de dossier qui passe à la ligne après un « _ », jamais au milieu d'un mot ni d'une date. */
+function coupableAuxTraits(nom: string): ComponentChildren {
+  return nom.split(/(?<=_)/).flatMap((morceau, i) => (i ? [<wbr key={i} />, morceau] : [morceau]));
+}
+
 /** Rattache des petits dossiers (une seule opération, Ctrl+Z annule) et note chacun pour pouvoir le ressortir. */
 function rattacher(s: Session, paires: { f: Fragment; cible: string }[], libelle: string, ok: string): boolean {
   const notes = paires.map(({ f, cible }) => noterRattachement(s.plan, f.dossier, cible, f.voisins.length > 0)).filter((r): r is FragmentRattache => !!r);
   try {
-    appliquer(enchainer(s.plan, libelle, paires.map(({ f, cible }) => () => fusionnerDossiers(s.plan, f.dossier.id, cible))));
+    appliquer(avecDetail(enchainer(s.plan, t`Ranger ${pluriel(paires.length, 'petit dossier', 'petits dossiers')}`, paires.map(({ f, cible }) => () => fusionnerDossiers(s.plan, f.dossier.id, cible))), libelle));
   } catch (err) {
     notifier('erreur', texteErreur(err));
     return false;
@@ -236,7 +243,7 @@ function ChoixRattachement({ f, fermer, fait }: { f: Fragment; fermer: () => voi
         </ul>
         <div class="actions droite">
           <button type="button" onClick={fermer}>
-            {tc('dialogue', 'Annuler')}
+            {t`Fermer`}
           </button>
         </div>
       </div>
@@ -298,7 +305,8 @@ function DialogueEvidents({ liste, fermer, fait }: { liste: { f: Fragment; v: Vo
           <button type="button" onClick={fermer}>
             {t`Fermer`}
           </button>
-          <button type="button" class="principal" disabled={!gardes.length} onClick={appliquerTout}>
+          <RaisonDesactivee id="raison-evidents" raison={!gardes.length && t`Tous sont retirés : remettez-en un.`} />
+          <button type="button" class="principal" disabled={!gardes.length} aria-describedby={gardes.length ? undefined : 'raison-evidents'} onClick={appliquerTout}>
             {gardes.length === 1 ? t`Mettre ce petit dossier avec son dossier` : t`Mettre les ${nombre(gardes.length)} avec leur dossier`}
           </button>
         </div>
@@ -311,7 +319,7 @@ function DialogueEvidents({ liste, fermer, fait }: { liste: { f: Fragment; v: Vo
 // Un petit dossier entre ses deux voisins
 // ---------------------------------------------------------------------------
 
-function Cote({ f, v, ia, mettre }: { f: Fragment; v: Voisin; ia?: DecisionIA3; mettre: () => void }) {
+function Cote({ f, v, ia, mettre, plein }: { f: Fragment; v: Voisin; ia?: DecisionIA3; mettre: () => void; plein: boolean }) {
   const n = f.dossier.photos.length;
   const propose = !!ia?.absorber && ia.cible === v.dossier.id;
   const parent = v.chemin.includes('/') ? v.chemin.slice(0, v.chemin.lastIndexOf('/')) : '';
@@ -339,12 +347,15 @@ function Cote({ f, v, ia, mettre }: { f: Fragment; v: Voisin; ia?: DecisionIA3; 
       </div>
       {propose && (
         <p class="proposition-ia">
-          {t`✨ L’IA propose ce dossier`}
+          <Icone nom="etincelle" taille={16} />
+          {t`L’IA propose ce dossier`}
           {ia.confiance !== null ? t` (sûre à ${ia.confiance} sur 10)` : ''} : {ia.raison}
         </p>
       )}
-      <button type="button" class={propose ? 'principal' : ''} onClick={mettre} title={v.cote === 'avant' ? t`Touche ←` : t`Touche →`}>
-        {v.cote === 'avant' ? t`◀ Mettre avec ce dossier` : t`Mettre avec ce dossier ▶`}
+      <button type="button" class={propose && plein ? 'principal' : ''} onClick={mettre} title={v.cote === 'avant' ? t`Touche ←` : t`Touche →`}>
+        {v.cote === 'avant' && <Icone nom="chevronGauche" taille={20} />}
+        {t`Mettre avec ce dossier`}
+        {v.cote !== 'avant' && <Icone nom="chevronDroite" taille={20} />}
       </button>
       <p class="discret apres-choix">
         {n === 1
@@ -474,11 +485,11 @@ export function PagePetitsDossiers() {
               const fait = !aDecider(e);
               return (
                 <button key={e.cle} type="button" class={`ligne-liste-petit${e.cle === courant?.cle ? ' choisie' : ''}${fait ? ' fait' : ''}`} aria-current={e.cle === courant?.cle ? 'true' : undefined} onClick={() => (choisi.value = e.cle)}>
-                  <span class="etat-petit" aria-hidden="true">
-                    {fait ? '✓' : '○'}
+                  <span class="etat-petit">
+                    <Icone nom={fait ? 'coche' : 'cercle'} taille={16} titre={fait ? t`décidé` : t`à décider`} />
                   </span>
                   <span class="nom-liste-petit">
-                    <span class="discret">{e.du ? jourCourt(e.du) : ''}</span> {e.nom}
+                    <span class="discret">{e.du ? jourCourt(e.du) : ''}</span> {coupableAuxTraits(e.nom)}
                   </span>
                 </button>
               );
@@ -512,7 +523,7 @@ export function PagePetitsDossiers() {
                 )}
                 <div class="trio-petit">
                   {courant.f.voisins.find((v) => v.cote === 'avant') ? (
-                    <Cote f={courant.f} v={courant.f.voisins.find((v) => v.cote === 'avant')!} ia={decisions[courant.f.dossier.id]} mettre={() => mettre(courant.f!, courant.f!.voisins.find((v) => v.cote === 'avant')!)} />
+                    <Cote plein={!listeEvidents.length} f={courant.f} v={courant.f.voisins.find((v) => v.cote === 'avant')!} ia={decisions[courant.f.dossier.id]} mettre={() => mettre(courant.f!, courant.f!.voisins.find((v) => v.cote === 'avant')!)} />
                   ) : (
                     <section class="cote-petit vide">
                       <h3>{t`Juste avant`}</h3>
@@ -533,13 +544,14 @@ export function PagePetitsDossiers() {
                     </div>
                     {decisions[courant.f.dossier.id] && !decisions[courant.f.dossier.id].absorber && (
                       <p class="proposition-ia a-part">
-                        {t`✨ L’IA propose de le garder seul`}
+                        <Icone nom="etincelle" taille={16} />
+                        {t`L’IA propose de le garder seul`}
                         {decisions[courant.f.dossier.id].nomPropose ? t`, sous le nom « ${decisions[courant.f.dossier.id].nomPropose!} »` : ''} : {decisions[courant.f.dossier.id].raison}
                       </p>
                     )}
                     <p class="actions choix-centre">
-                      <button type="button" onClick={() => garder(courant.f!.dossier.id, true)} disabled={gardes.has(courant.f.dossier.id)} title={t`Touche G`}>
-                        {t`Garder seul`}
+                      <button type="button" onClick={() => garder(courant.f!.dossier.id, true)} disabled={gardes.has(courant.f.dossier.id)} data-raison={gardes.has(courant.f.dossier.id) ? 'libelle' : undefined} title={t`Touche G`}>
+                        {gardes.has(courant.f.dossier.id) ? t`Déjà gardé seul` : t`Garder seul`}
                       </button>
                       {decisions[courant.f.dossier.id]?.nomPropose && !decisions[courant.f.dossier.id].absorber && (
                         <button
@@ -562,7 +574,7 @@ export function PagePetitsDossiers() {
                     </p>
                   </section>
                   {courant.f.voisins.find((v) => v.cote === 'apres') ? (
-                    <Cote f={courant.f} v={courant.f.voisins.find((v) => v.cote === 'apres')!} ia={decisions[courant.f.dossier.id]} mettre={() => mettre(courant.f!, courant.f!.voisins.find((v) => v.cote === 'apres')!)} />
+                    <Cote plein={!listeEvidents.length} f={courant.f} v={courant.f.voisins.find((v) => v.cote === 'apres')!} ia={decisions[courant.f.dossier.id]} mettre={() => mettre(courant.f!, courant.f!.voisins.find((v) => v.cote === 'apres')!)} />
                   ) : (
                     <section class="cote-petit vide">
                       <h3>{t`Juste après`}</h3>
@@ -581,7 +593,14 @@ export function PagePetitsDossiers() {
       {autre && <ChoixRattachement f={autre} fermer={() => setAutre(null)} fait={suivant} />}
       {evidents && <DialogueEvidents liste={listeEvidents} fermer={() => setEvidents(false)} fait={suivant} />}
       <BarreValidation
-        resume={t`${nombre(restants.length)} à décider · ${pluriel(nbRattaches, 'rangé', 'rangés')} · ${pluriel(nbGardes, 'gardé seul', 'gardés seuls')}`}
+        resume={`${
+          restants.length === 0
+            ? t`aucun petit dossier à décider`
+            : restants.length === 1
+              ? t`1 petit dossier à décider : il reste tel quel`
+              : t`${nombre(restants.length)} petits dossiers à décider : ils restent tels quels`
+        } · ${pluriel(nbRattaches, 'rangé', 'rangés')} · ${pluriel(nbGardes, 'gardé seul', 'gardés seuls')}`}
+        fini={restants.length === 0}
         revenir={() => revenirDe('petits')}
         valider={() => validerEtape('petits')}
       />

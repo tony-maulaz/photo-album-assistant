@@ -2,13 +2,14 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { aTraduire, t } from '../../lib/langue';
-import { cheminDossier, creerDossier, combiner, deplacerFichiers, type FichierPlan } from '../../lib/plan';
+import { avecDetail, cheminDossier, creerDossier, combiner, deplacerFichiers, type FichierPlan } from '../../lib/plan';
 import { verifierNomDossier } from '../../lib/noms';
 import { appliquer, notifier, session, texteErreur, versionPlan } from '../etat';
 import { dateHeure, pluriel, taille as tailleTexte } from '../format';
 import { deplacerOuvert, deplacerVers, recents, recentsValides, selection, simplifier, visionneuse } from '../organiser';
 import { lignesIA } from '../pages/AidesPhotos';
 import { useZoom } from './Zoom';
+import { Icone } from './Icones';
 
 const ORIGINES: Record<string, string> = { exif: aTraduire('appareil (EXIF)'), nom: aTraduire('nom du fichier'), video: aTraduire('données de la vidéo'), fichier: aTraduire('date du fichier (incertaine)') };
 
@@ -98,8 +99,10 @@ export function Visionneuse({ elements, rangement = true }: { elements: FichierP
         <span class="discret">{t`source : ${f.id}`}</span>
         <span class="aide-touches">{rangement ? t`← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer` : t`← → pour naviguer · Échap pour fermer`}</span>
       </div>
-      <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} aria-label={t`Fermer`}>
-        ×
+      {/* Quitter la vue : « Fermer », la croix SVG avec son mot (C-5.2, C-5.3). */}
+      <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} title={t`Échap`}>
+        <Icone nom="croix" taille={20} />
+        {t`Fermer`}
       </button>
     </div>
   );
@@ -137,7 +140,7 @@ export function DialogueDeplacer() {
     else {
       try {
         const { id, modification } = creerDossier(s.plan, o.chemin);
-        appliquer(combiner(t`Nouveau dossier « ${o.chemin} »`, modification, deplacerFichiers(s.plan, ids, id)));
+        appliquer(avecDetail(combiner(t`Créer 1 dossier`, modification, deplacerFichiers(s.plan, ids, id)), t`Nouveau dossier « ${o.chemin} »`));
         recents.value = [id, ...recents.value].slice(0, 9);
         selection.value = new Set();
         notifier('ok', t`Dossier « ${o.chemin} » créé avec ${ids.length} élément(s).`);

@@ -8,7 +8,7 @@ import { cheminDossier, contenu, resumes, RACINE, type DossierPlan, type Fichier
 import { premierDossierAvecPhotos } from '../../lib/rangement';
 import { nomPourJournee } from '../../lib/nommage';
 import { groupesParJour } from '../../lib/selection';
-import { BarreValidation } from '../composants/Cadre';
+import { BarreValidation, AnnulerRetablir, RaisonDesactivee } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
 import { Icone } from '../composants/Icones';
 import { GrillePhotos } from '../composants/GrillePhotos';
@@ -253,15 +253,11 @@ export function PageOrganiser() {
           {!enMisDeCote && !enAutres && <ActionsDossier />}
           <span class="espace" />
           <div class="barre-outils">
-            <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
-              {t`Annuler`}
-            </button>
-            <button type="button" class="bouton-icone" disabled={!s.historique.peutRetablir} onClick={retablir} title={t`Rétablir (Ctrl+Y)`} aria-label={t`Rétablir`}>
-              <Icone nom="retablir" taille={17} />
-            </button>
+            <AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />
             {!temps && !enAutres && (
               <label class="curseur" title={t`Taille des miniatures`}>
                 <Icone nom="loupe" taille={16} />
+                <span>{t`Taille`}</span>
                 <input
                   type="range"
                   min="100"
@@ -293,12 +289,13 @@ export function PageOrganiser() {
                 {t`Mettre de côté`}
               </button>
             )}
-            <button type="button" disabled={!ancre.value} onClick={() => memePeriode(10)} title={t`Sélectionner toute la journée de la dernière photo cliquée`}>
+            <button type="button" disabled={!ancre.value} aria-describedby={ancre.value ? undefined : 'raison-periode'} onClick={() => memePeriode(10)} title={t`Sélectionner toute la journée de la dernière photo cliquée`}>
               {t`Toute la journée`}
             </button>
-            <button type="button" disabled={!ancre.value} onClick={() => memePeriode(13)} title={t`Sélectionner toute l’heure de la dernière photo cliquée`}>
+            <button type="button" disabled={!ancre.value} aria-describedby={ancre.value ? undefined : 'raison-periode'} onClick={() => memePeriode(13)} title={t`Sélectionner toute l’heure de la dernière photo cliquée`}>
               {t`Toute l’heure`}
             </button>
+            <RaisonDesactivee id="raison-periode" raison={!ancre.value && t`Cliquez d’abord une photo.`} />
             {recentsValides()
               .slice(0, 2)
               .map((id, i) => (
@@ -306,8 +303,9 @@ export function PageOrganiser() {
                   <span class="touche">{i + 1}</span> {plan.dossiers.get(id)!.parent === null ? 'Photos' : plan.dossiers.get(id)!.nom}
                 </button>
               ))}
-            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Tout désélectionner (Échap)`} aria-label={t`Tout désélectionner`}>
+            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Échap`}>
               <Icone nom="croix" taille={16} />
+              {t`Tout désélectionner`}
             </button>
           </div>
         )}
@@ -347,6 +345,8 @@ export function PageOrganiser() {
             {misDeCote ? t` · ${nombre(misDeCote)} mis de côté` : ''}
           </>
         }
+        ecarte
+        fini={arborescencePrete}
         alertes={alertes}
         revenir={() => revenirDe('lieux')}
         // Dossier en vrac : petits dossiers, nommage, consolidation ; dossier déjà trié : la sélection directement.

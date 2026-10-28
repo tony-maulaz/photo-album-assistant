@@ -867,7 +867,7 @@ try {
       await etat('43_etape11_selection_recadreur', 'Étape 11 Sélection : recadrage ouvert (bouton « Recadrer… » de la barre d’actions, touche K)');
       await page.keyboard.press('Escape');
       await attendre(500);
-      const fermer = page.getByRole('button', { name: /^(Annuler|Fermer)$/ }).last();
+      const fermer = page.getByRole('button', { name: /^(Annuler|Fermer|Fermer sans recadrer)$/ }).last();
       if (await page.locator('canvas').count()) await fermer.click().catch(() => undefined);
     }
     // Vue en grand : double-clic sur une photo (ouvre le Tri rapide sur cette photo).

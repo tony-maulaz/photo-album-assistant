@@ -1,5 +1,5 @@
 // IA16 — choisir dans les rafales avec l'IA (D102), depuis l'étape
-// « Doublons » : toutes les rafales à valider, celles de la section affichée,
+// « Doublons » : toutes les rafales à accepter, celles de la section affichée,
 // ou une seule depuis « Comparer en grand ». Le choix de l'IA s'applique comme
 // un clic de l'utilisateur, en une seule modification annulable, et seulement
 // sur les rafales qu'il n'a pas touchées ; la ★ du groupe (sa clé) ne change pas.
@@ -9,13 +9,14 @@ import { estimerDemandes, type DemandeIA, type PhotoIA } from '../lib/aidesSelec
 import { aRelire, choisir, choixEnAttente, groupeVisible, photosDuGroupe, type GroupeDoublons } from '../lib/groupesDoublons';
 import { avisValable, demandeRafale, lireRafale, rafaleDemandable, signatureRafale, type AvisRafale } from '../lib/iaRafales';
 import { t } from '../lib/langue';
-import { combiner } from '../lib/plan';
+import { avecDetail, combiner } from '../lib/plan';
 import { modele as infoModele } from '../lib/tarifs';
 import { cleAnalyse } from '../navigateur/analyses';
 import { cleApi } from '../navigateur/cle';
 import { executerDemande } from '../navigateur/executeur';
 import { enParallele } from '../navigateur/workers';
 import { confirmer } from './composants/Dialogues';
+import { Icone } from './composants/Icones';
 import { annuler, appliquer, contexteExecution, journal, notifier, page, reglages, session, texteErreur, versionIA, versionPlan, type Session } from './etat';
 import { nombre, pluriel } from './format';
 import { essai, texteCout, texteEchecs, type BilanEchecs } from './pages/AidesIA';
@@ -134,7 +135,7 @@ export async function choisirAvecIA(s: Session, cibles: GroupeDoublons[]): Promi
     choisies++;
     return choisir(plan, g, a.meilleure, true);
   });
-  const m = combiner(t`Choix de l’IA dans ${pluriel(choisies, 'rafale')}`, ...modifications);
+  const m = avecDetail(combiner(t`Suivre l’IA pour ${pluriel(choisies, 'rafale')}`, ...modifications), t`Choix de l’IA dans ${pluriel(choisies, 'rafale')}`);
   if (m) appliquer(m);
   versionPlan.value++;
   const examinees = cibles.filter((g) => avisDe(s, g)).length;
@@ -143,7 +144,7 @@ export async function choisirAvecIA(s: Session, cibles: GroupeDoublons[]): Promi
   const suite = tropDeMonde ? t` ${pluriel(tropDeMonde, 'rafale', 'rafales')} avec trop de monde : à vous de choisir.` : '';
   notifier(
     bilan.echecs ? 'erreur' : 'ok',
-    t`L’IA a examiné ${pluriel(examinees, 'rafale')} : sa photo est choisie, à valider.${suite}${texteEchecs(bilan)}`,
+    t`L’IA a examiné ${pluriel(examinees, 'rafale')} : sa photo est choisie, à accepter.${suite}${texteEchecs(bilan)}`,
     m ? { libelle: t`Annuler`, faire: annuler } : undefined,
   );
 }
@@ -165,8 +166,12 @@ export function BoutonIARafales({ cibles, libelle }: { cibles: GroupeDoublons[];
     );
   if (!cibles.length) return null;
   return (
-    <button type="button" class="contour" onClick={() => void choisirAvecIA(s, cibles)} title={t`L’IA choisit la meilleure photo de chaque rafale (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous validez.`}>
-      {libelle} · {texteCout(estimationIA(s, cibles))}
+    <button type="button" class="bouton-ia" onClick={() => void choisirAvecIA(s, cibles)} title={t`L’IA choisit la meilleure photo de chaque rafale (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous acceptez.`}>
+      <Icone nom="etincelle" taille={20} />
+      <span>
+        {libelle}
+        <span class="cout-aide"> — {texteCout(estimationIA(s, cibles))}</span>
+      </span>
     </button>
   );
 }

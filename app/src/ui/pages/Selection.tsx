@@ -8,7 +8,7 @@ import { LIBELLES_DEFAUTS, LIBELLES_PERSONNES, LIBELLES_TYPES } from '../../lib/
 import { LIBELLES_SIGNAUX, type Signal } from '../../lib/indicateurs';
 import { cheminDossier, RACINE, type FichierPlan } from '../../lib/plan';
 import { arrivees, avancement, copiesRetenues, equilibre, groupesParJour, periodesEquilibre, redondances, type GroupeJour, type Periode } from '../../lib/selection';
-import { BarreValidation } from '../composants/Cadre';
+import { BarreValidation, AnnulerRetablir, RaisonDesactivee } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
 import { Comparateur } from '../composants/Comparateur';
 import { EncartAnalyse } from '../composants/Analyse';
@@ -49,7 +49,10 @@ function estChampDeSaisie(e: KeyboardEvent): boolean {
   return t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName);
 }
 
-const ETOILES = { 1: '★', 2: '★★', 0: '✕' } as const;
+/** Choix posé sur la miniature : ★, ★★, ou la croix de « Pas pour l'album » (icône, C-1.4). */
+function Etoiles({ album }: { album: 0 | 1 | 2 }) {
+  return album === 0 ? <Icone nom="croix" taille={16} titre={t`Pas pour l’album`} /> : <>{album === 2 ? '★★' : '★'}</>;
+}
 /** Choix d'une photo en toutes lettres (comparateur), comme dans le tri rapide. */
 const CHOIX_PHOTO = { 0: aTraduire('Pas dans l’album'), 1: aTraduire('★ Dans l’album'), 2: aTraduire('★★ Grande photo') } as const;
 
@@ -81,7 +84,11 @@ function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: st
           {note}/10
         </span>
       )}
-      {f.album !== undefined && <span class={`etoiles a${f.album}`}>{ETOILES[f.album]}</span>}
+      {f.album !== undefined && (
+        <span class={`etoiles a${f.album}`}>
+          <Etoiles album={f.album} />
+        </span>
+      )}
       {/* En bas, une rangée : pile à gauche, rotation et recadrage au milieu, choix de l'IA à droite ; elle passe sur deux lignes plutôt que de se chevaucher. */}
       <span class="rangee-bas">
         <span>
@@ -98,7 +105,8 @@ function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: st
                 pilesOuvertes.value = n;
               }}
             >
-              {ouverte ? '▾' : '▸'} {pile.length}
+              <Icone nom={ouverte ? 'chevronBas' : 'chevronDroite'} taille={14} titre={ouverte ? t`Replier` : t`Déplier`} />
+              {pile.length}
             </button>
           )}
           {pile && pile[0] !== f.id && <span class="badge-pile dans-pile" title={t`Dans une pile de photos semblables`} />}
@@ -106,8 +114,16 @@ function Badges({ f, pile, ouverte, note, choixIA }: { f: FichierPlan; pile?: st
         <span>
           {f.rotation || f.recadrage ? (
             <span class="badge rotation">
-              {f.rotation ? <span title={t`Tournée pour l’album (touche R)`}>↻ {f.rotation}°</span> : null}
-              {f.recadrage ? <span title={t`Recadrée pour l’album (touche K pour changer)`}>✂</span> : null}
+              {f.rotation ? (
+                <span title={t`Tournée pour l’album (touche R)`}>
+                  <Icone nom="tourner" taille={14} titre={t`Tournée`} /> {f.rotation}°
+                </span>
+              ) : null}
+              {f.recadrage ? (
+                <span title={t`Recadrée pour l’album (touche K pour changer)`}>
+                  <Icone nom="recadrer" taille={14} titre={t`Recadrée`} />
+                </span>
+              ) : null}
             </span>
           ) : null}
         </span>
@@ -160,8 +176,8 @@ function Cible({ photos }: { photos: FichierPlan[] }) {
         <div class={`rempli${a.pourcent > 105 ? ' trop' : ''}`} style={{ width: `${Math.min(100, a.pourcent)}%` }} />
       </div>
       <p class="discret">
-        {t`${nombre(a.valeur)} / ${nombre(c.nombre)} ${unite} (${nombre(a.pourcent)} %)`} · {pluriel(a.retenues, 'photo retenue', 'photos retenues')}
-        {a.grandes ? t`, dont ${nombre(a.grandes)} ★★` : ''} · {t`${nombre(a.aDecider)} à décider`}
+        {t`${nombre(a.valeur)} sur ${nombre(c.nombre)} ${unite}, soit ${nombre(a.pourcent)} %`} · {pluriel(a.retenues, 'photo dans l’album', 'photos dans l’album')}
+        {a.grandes ? t`, dont ${pluriel(a.grandes, 'grande ★★', 'grandes ★★')}` : ''} · {t`${nombre(a.aDecider)} à décider`}
       </p>
     </section>
   );
@@ -184,7 +200,7 @@ function Equilibre({ photos }: { photos: FichierPlan[] }) {
       <h3>{unite === 'jour' ? t`Équilibre par jour` : t`Équilibre par mois`}</h3>
       {periodes.length > 0 && (
         <>
-          <div class="barres-jours" role="group" aria-label={unite === 'jour' ? t`Photos retenues par jour` : t`Photos retenues par mois`}>
+          <div class="barres-jours" role="group" aria-label={unite === 'jour' ? t`Photos dans l’album, par jour` : t`Photos dans l’album, par mois`}>
             {periodes.map((p) => (
               <button
                 type="button"
@@ -212,7 +228,7 @@ function Equilibre({ photos }: { photos: FichierPlan[] }) {
         </>
       )}
       <p class="discret legende-barres">
-        <span class="pastille dispo" /> {t`disponibles`} <span class="pastille retenues" /> {t`retenues`}
+        <span class="pastille dispo" /> {t`disponibles`} <span class="pastille retenues" /> {t`dans l’album`}
       </p>
       {sansRien.length > 0 && (
         <div class="alertes-outil">
@@ -261,7 +277,7 @@ function Redondances({ photos, infos }: { photos: FichierPlan[]; infos: Map<stri
           const f = s.plan.fichiers.get(g[0])!;
           return (
             <li key={g[0]}>
-              {t`${nombre(g.length)} photos retenues très semblables (${s.plan.dossiers.get(f.dossier)?.nom ?? ''}, ${f.date?.slice(11, 16) ?? ''})`}{' '}
+              {t`${nombre(g.length)} photos très semblables dans l’album : ${s.plan.dossiers.get(f.dossier)?.nom ?? ''}, ${f.date?.slice(11, 16) ?? ''}`}{' '}
               <button type="button" class="lien" onClick={() => (comparaison.value = g.slice(0, 4))}>
                 {t`comparer`}
               </button>
@@ -278,7 +294,7 @@ function Redondances({ photos, infos }: { photos: FichierPlan[]; infos: Map<stri
 const CHOIX: [Filtres['etoiles'], string, ((f: FichierPlan) => boolean) | null][] = [
   ['toutes', aTraduire('Toutes'), null],
   ['a_decider', aTraduire('À décider'), (f) => f.album === undefined],
-  ['retenues', aTraduire('Retenues'), (f) => (f.album ?? 0) >= 1],
+  ['retenues', aTraduire('Dans l’album'), (f) => (f.album ?? 0) >= 1],
   ['grandes', aTraduire('★★ Grandes'), (f) => f.album === 2],
   ['non', aTraduire('Pas pour l’album'), (f) => f.album === 0],
 ];
@@ -347,10 +363,11 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
           title={t`Recherche dans les descriptions de l’IA (sur cet ordinateur, sans nouvel appel)`}
         />
       )}
-      <button type="button" class="lien" aria-expanded={voirPlus} disabled={secondaires > 0} onClick={() => setDeplie(!deplie)}>
-        {t`Filtres`}
-        {secondaires > 0 ? ` (${secondaires})` : ''} {voirPlus ? '▴' : '▾'}
+      <button type="button" class="lien" aria-expanded={voirPlus} disabled={secondaires > 0} aria-describedby={secondaires > 0 ? 'raison-filtres' : undefined} onClick={() => setDeplie(!deplie)}>
+        {secondaires > 0 ? t`Filtres : ${pluriel(secondaires, 'actif')}` : t`Filtres`}
+        <Icone nom={voirPlus ? 'chevronHaut' : 'chevronBas'} taille={16} />
       </button>
+      <RaisonDesactivee id="raison-filtres" raison={secondaires > 0 && t`Effacez-les pour replier.`} />
       {actif && (
         <button type="button" class="lien" onClick={() => (filtres.value = FILTRES_DEFAUT)}>
           {t`Effacer les filtres`}
@@ -580,15 +597,17 @@ export function PageSelection() {
             </span>
           </div>
           <span class="espace" />
-          <div class="barre-outils">
-            <button type="button" class="principal" disabled={!elements.length} onClick={() => ouvrirTri()} title={t`Touche T`}>
-              {t`Tri rapide`}
-            </button>
-            <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
-              {t`Annuler`}
+          {/* Sur la ligne du titre : « Tri rapide », la taille et l'aide (C-8.1, C-8.3 provisoires) ; la barre
+              d'outils garde la ligne suivante pour « Annuler : … » et « Rétablir » seuls : un geste au libellé
+              plus long ne la fait jamais passer à la ligne (C-8.2). */}
+          <span class="outils-titre">
+            {/* Un seul bouton plein (C-4.1) : « Tri rapide » est un outil, en contour. */}
+            <button type="button" disabled={!elements.length} data-raison={elements.length ? undefined : 'libelle'} onClick={() => ouvrirTri()} title={t`Touche T`}>
+              {elements.length ? t`Tri rapide` : t`Tri rapide : aucune photo ici`}
             </button>
             <label class="curseur" title={t`Taille des photos (jusqu’à 600 px)`}>
               <Icone nom="loupe" taille={16} />
+              <span>{t`Taille`}</span>
               <input
                 type="range"
                 min="100"
@@ -598,8 +617,11 @@ export function PageSelection() {
                 onInput={(e) => changerReglages({ ...reglages.value, tailleMiniatures: Number(e.currentTarget.value) })}
               />
             </label>
+            <BoutonAide cle="selection" libelle={t`Aide`} />
+          </span>
+          <div class="barre-outils">
+            <AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />
           </div>
-          <BoutonAide cle="selection" libelle={t`Aide`} />
         </div>
         <EncartAnalyse photos={toutes} pourquoi={t`les indicateurs (netteté, exposition), les piles et les alertes de redondance en ont besoin.`} />
         <BarreFiltres photos={dansVue} infos={infos} ia={ia} />
@@ -618,8 +640,9 @@ export function PageSelection() {
             <button type="button" onClick={() => choisir([...choisis], undefined)} title={t`Retour arrière`}>
               {t`À décider`}
             </button>
-            <button type="button" onClick={() => tournerPhotos([...choisis], 90)} title={t`Tourner d’un quart de tour (touche R ; Maj+R : dans l’autre sens)`} aria-label={t`Tourner`}>
-              ↻
+            <button type="button" onClick={() => tournerPhotos([...choisis], 90)} title={t`Tourner d’un quart de tour (touche R ; Maj+R : dans l’autre sens)`}>
+              <Icone nom="tourner" taille={20} />
+              {t`Tourner`}
             </button>
             {choisis.size === 1 && (
               <button type="button" onClick={() => (recadrageOuvert.value = [...choisis][0])} title={t`Recadrer ou redresser la copie de l’album (touche K)`}>
@@ -634,8 +657,9 @@ export function PageSelection() {
             <button type="button" onClick={() => (deplacerOuvert.value = true)} title={t`Touche M`}>
               {t`Déplacer…`}
             </button>
-            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Tout désélectionner (Échap)`} aria-label={t`Tout désélectionner`}>
+            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Échap`}>
               <Icone nom="croix" taille={16} />
+              {t`Tout désélectionner`}
             </button>
           </div>
         )}
@@ -695,10 +719,17 @@ export function PageSelection() {
       <BarreValidation
         resume={
           <>
-            {pluriel(total.retenues, 'photo retenue', 'photos retenues')} ({nombre(total.grandes)} ★★) · {t`${nombre(total.aDecider)} à décider`}
+            {pluriel(total.retenues, 'photo dans l’album', 'photos dans l’album')}
+            {total.grandes ? t`, dont ${pluriel(total.grandes, 'grande ★★', 'grandes ★★')}` : ''} ·{' '}
+            {total.aDecider === 0
+              ? t`aucune photo à décider`
+              : total.aDecider === 1
+                ? t`1 photo à décider : elle reste rangée, hors de l’album`
+                : t`${nombre(total.aDecider)} photos à décider : elles restent rangées, hors de l’album`}
           </>
         }
-        alertes={total.retenues === 0 ? [t`Aucune photo retenue pour l’album`] : []}
+        alertes={total.retenues === 0 ? [t`Aucune photo dans l’album`] : []}
+        fini={total.retenues > 0 && (total.aDecider === 0 || avancement(toutes, { ...s.album, mode: s.album.cible.mode, nombre: s.album.cible.nombre, photosParPage: s.album.photosParPage }).pourcent >= 100)}
         revenir={() => revenirDe('selection')}
         valider={() => validerEtape('selection')}
       />
@@ -722,7 +753,7 @@ export function PageSelection() {
                 [
                   [1, '★', t`Dans l’album`],
                   [2, '★★', t`Grande photo (pleine page)`],
-                  [0, `✕ ${t`Pas pour l’album`}`, t`Pas pour l’album`],
+                  [0, t`Pas pour l’album`, t`Pas pour l’album`],
                   [undefined, t`À décider`, t`À décider`],
                 ] as const
               ).map(([valeur, libelle, titre]) => (

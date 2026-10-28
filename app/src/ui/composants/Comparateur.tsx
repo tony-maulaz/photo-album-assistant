@@ -7,6 +7,7 @@
 // photo de ce numéro.
 
 import type { ComponentChildren } from 'preact';
+import { Icone } from './Icones';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
@@ -202,12 +203,17 @@ export function Comparateur({
         </span>
         {navigation && (
           <span class="navigation-groupes">
-            <button type="button" disabled={!navigation.precedent} onClick={navigation.precedent} title={t`Flèche gauche`}>
-              {t`‹ Groupe précédent`}
+            {/* Désactivé, le bouton garde son nom ; sa raison est le texte à côté, « Groupe 1 sur 5 » (C-4.7). */}
+            <button type="button" disabled={!navigation.precedent} aria-describedby={navigation.precedent ? undefined : 'position-groupe'} onClick={navigation.precedent} title={t`Flèche gauche`}>
+              <Icone nom="chevronGauche" taille={20} />
+              {t`Groupe précédent`}
             </button>
-            <span class="discret">{navigation.texte}</span>
-            <button type="button" disabled={!navigation.suivant} onClick={navigation.suivant} title={t`Flèche droite`}>
-              {t`Groupe suivant ›`}
+            <span class="discret" id="position-groupe">
+              {navigation.texte}
+            </span>
+            <button type="button" disabled={!navigation.suivant} aria-describedby={navigation.suivant ? undefined : 'position-groupe'} onClick={navigation.suivant} title={t`Flèche droite`}>
+              {t`Groupe suivant`}
+              <Icone nom="chevronDroite" taille={20} />
             </button>
             {navigation.accepter && (
               <button type="button" class="principal" onClick={navigation.accepter} title={t`Touche A, puis groupe suivant`}>
@@ -221,20 +227,25 @@ export function Comparateur({
         <span class="espace" />
         {seule !== null && (
           <>
-            <button type="button" onClick={() => setSeule((seule - 1 + n) % n)} aria-label={t`Photo précédente`} title={t`Flèche gauche`}>
-              ←
+            <button type="button" onClick={() => setSeule((seule - 1 + n) % n)} title={t`Flèche gauche`}>
+              <Icone nom="chevronGauche" taille={20} />
+              {t`Précédente`}
             </button>
-            <button type="button" onClick={() => setSeule((seule + 1) % n)} aria-label={t`Photo suivante`} title={t`Flèche droite`}>
-              →
+            <button type="button" onClick={() => setSeule((seule + 1) % n)} title={t`Flèche droite`}>
+              {t`Suivante`}
+              <Icone nom="chevronDroite" taille={20} />
             </button>
             <button type="button" onClick={() => setSeule(null)}>
               {t`Côte à côte`}
             </button>
           </>
         )}
-        <button type="button" onClick={() => setVue({ zoom: 1, x: 0, y: 0 })} disabled={vue.zoom === 1}>
-          {t`Taille normale`}
-        </button>
+        {/* Seulement quand on a zoomé : sans zoom, il n'y a rien à remettre (et la barre garde « Fermer » à l'écran). */}
+        {vue.zoom !== 1 && (
+          <button type="button" onClick={() => setVue({ zoom: 1, x: 0, y: 0 })}>
+            {t`Taille normale`}
+          </button>
+        )}
         <button type="button" class="fermer-comparateur" onClick={fermer}>
           {t`Fermer`}
         </button>

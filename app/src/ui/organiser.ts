@@ -4,6 +4,7 @@
 import { nomsSortie } from '../lib/sortie';
 import { signal } from '@preact/signals';
 import {
+  avecDetail,
   combiner,
   contenu,
   creerDossier,
@@ -155,7 +156,7 @@ export async function nouveauDossierAvec(ids: string[], parent = RACINE, nomProp
   if (!nom) return;
   try {
     const { id, modification } = creerDossier(s.plan, nom, parent);
-    appliquer(combiner(t`Nouveau dossier « ${nom} »`, modification, ids.length ? deplacerFichiers(s.plan, ids, id) : null));
+    appliquer(avecDetail(combiner(t`Créer 1 dossier`, modification, ids.length ? deplacerFichiers(s.plan, ids, id) : null), t`Nouveau dossier « ${nom} »`));
     noterRecent(id);
     selection.value = new Set();
     deplies.value = new Set([...deplies.value, parent]);

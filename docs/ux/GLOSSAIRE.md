@@ -23,6 +23,8 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | Mis de côté | Ce qui est écarté du rangement mais gardé (`_mis_de_cote/`) ; rien n'est supprimé | Set aside | mis à part, exclu, archive, supprimé, poubelle |
 | écarter | Mettre de côté | set aside | supprimer, jeter, retirer |
 | Autres fichiers | Ce qui n'est ni photo ni vidéo, recopié tel quel | Other files | divers |
+| Autres (onglet du Tri) | Les photos rangées hors des voyages, sorties et dossiers de la maison : captures d'écran (leur propre dossier), photos sans date, vidéos seules | Others | mis à part (sens de « Mis de côté ») |
+| Ranger dans leur dossier | Mettre les captures d'écran dans leur propre dossier, hors de l'album ; rien n'est mis de côté | Put in their folder | mettre à part |
 | journée | Les photos d'une même date, regroupées pour la relecture | day | jour (seul, ambigu avec la date) |
 | voyage | Plusieurs jours loin du domicile, un dossier par voyage | trip | séjour, vacances |
 | domicile, maison | Le lieu de résidence, d'après la configuration | home | adresse |
@@ -43,7 +45,7 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | Petits dossiers | Étape 8 : rattacher les dossiers de quelques photos | Small folders | dossiers orphelins |
 | Nommage | Étape 9 : donner un nom parlant aux dossiers | Naming | renommage (c'est l'action) |
 | Consolidation **(à résoudre)** | Étape 10 : réunir les dossiers d'une même sortie ou d'un même voyage ; terme interne (M2) | Consolidation | fusion (dans l'interface : « réunir ») |
-| réunir | Mettre deux dossiers ou plus en un seul | gather | fusionner, empiler, consolider |
+| réunir, « Réunir avec… » | Mettre deux dossiers ou plus en un seul (Lieux : « Réunir avec… », glisser un dossier sur un autre ; Consolidation) | gather, Gather with… | fusionner, empiler, consolider |
 | Sélection | Étape 11 : choisir les photos de l'album | Selection | tri (autre sens) |
 | Album | Étape 12 : la mise en page du livre photo | Album | livre, ifolor (marque) |
 | Création de la sortie **(à résoudre)** | Étape 13 : écrire le dossier de sortie et le bilan | Creating the output | export, synchronisation |
@@ -68,15 +70,19 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 
 | Mot | Sens | Anglais | À éviter |
 |---|---|---|---|
-| Valider et continuer | Accepter l'étape et passer à la suivante | Confirm and continue | Suivant, OK |
+| Valider et continuer | Accepter l'étape et passer à la suivante ; le seul emploi de « valider » (C-10.1). Plein seulement une fois l'étape finie (C-4.1) | Confirm and continue | Suivant, OK ; « valider » pour un groupe, un nom, un recadrage |
 | Revenir | Retourner à l'étape précédente, ou à la page d'avant | Back | Retour (sauf « ← Retour à l'étape n »), Précédent |
-| Annuler | Défaire le dernier geste (Ctrl+Z), et seulement cela (A4) | Undo | pour fermer une fenêtre |
-| Rétablir | Refaire ce qu'« Annuler » a défait | Redo | Refaire |
-| Fermer, Ne rien faire, Rester sur la page | Quitter une fenêtre sans rien changer | Close, Do nothing, Stay on the page | Annuler |
-| Accepter | Valider une proposition (un groupe, un nom) | Accept | OK, appliquer |
+| Annuler : *ce qu'il défait* | Défaire le dernier geste (Ctrl+Z), et seulement cela (A4) ; le bouton dit le geste, un verbe et un nombre sans nom ni parenthèse (« Annuler : déplacer 3 éléments », « Annuler : mettre 2 photos dans l'album »), le geste avec ses noms dans l'infobulle ; « Rien à annuler » sinon (C-8.2) | Undo: … / Nothing to undo | pour fermer une fenêtre ; un état (« Annuler : dans l'album ★ ») |
+| Rétablir | Refaire ce qu'« Annuler » a défait (Ctrl+Y), à côté d'« Annuler » ; « Rien à rétablir » sinon | Redo / Nothing to redo | Refaire |
+| Fermer, Ne rien faire, Rester sur la page | Quitter une fenêtre sans rien changer ; « Fermer sans recadrer » quand la vue laisse un réglage en cours | Close, Do nothing, Stay on the page, Close without cropping | Annuler |
+| Accepter | Appliquer un choix ou une proposition : un groupe de doublons, un nom, un rangement, un recadrage (C-10.1) | Accept | valider (réservé à l'étape), OK, appliquer |
+| à accepter, pas encore accepté(s) | L'état d'un groupe de doublons dont le choix n'est pas encore appliqué (un état, un mot : C-10.2) ; filtres « À accepter · Acceptés · Tous » | to accept, not accepted yet | à valider, à relire, validé |
+| Rien n'est supprimé | La phrase de la barre du bas, avec le bouclier, sur les étapes où l'on écarte : « Rien n'est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d'origine ne bougent pas. » (C-8.4) | Nothing is deleted | supprimé, effacé |
+| environ | Un prix ou une durée estimés (« environ 0,03 CHF », « moins de 0,01 CHF ») | about | ≈, ~ |
 | Ignorer | Écarter une proposition pour de bon, sans toucher aux photos | Ignore | refuser, supprimer |
 | Aide | Le panneau d'explication de l'étape (O2) | Help | Replier, Aide et outils (deux libellés à réunir) |
 | Taille | Le réglage de la taille des miniatures (O3) | Size | zoom, loupe |
-| aide IA | Une fonction facultative qui envoie des photos à l'IA, coût affiché avant | AI helper | automatique (rien n'est automatique) |
+| aide IA | Une fonction facultative qui envoie des photos à l'IA, coût affiché avant ; un bouton contour marqué de l'étincelle, avec son prix écrit dessus (C-4.6) | AI helper | automatique (rien n'est automatique) |
+| Menu | Le menu de l'en-tête (Fonctions IA, Configuration, Réglages, Journal, Aide), écrit en toutes lettres à côté de son icône | Menu | ☰ seul |
 | à vérifier | Une proposition peu sûre, à relire | to check | confiance basse, Conf. |
 | nouveau | Arrivé avec la mise à jour de l'inventaire | new | créé (pour un dossier du tri) |

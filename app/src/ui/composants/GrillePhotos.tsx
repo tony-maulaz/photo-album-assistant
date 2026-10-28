@@ -43,6 +43,7 @@ export function CurseurTaille() {
   return (
     <label class="curseur" title={t`Taille des photos (jusqu’à 600 px)`}>
       <Icone nom="loupe" taille={16} />
+      <span>{t`Taille`}</span>
       <input
         type="range"
         min="100"
@@ -81,7 +82,12 @@ export function Miniature({ f, taille, rotation = 0, recadrage }: { f: FichierPl
 
   if (url && recadrageUtile(recadrage)) return <MiniatureRecadree url={url} taille={taille} rotation={rotation} recadrage={recadrage} />;
   if (url) return <img src={url} alt="" draggable={false} style={{ maxWidth: `${taille}px`, maxHeight: `${taille}px`, ...(rotation ? { transform: `rotate(${rotation}deg)` } : {}) }} />;
-  return <div class={`sans-miniature${url === undefined ? ' chargement' : ''}`}>{f.categorie === 'video' ? t`▶ vidéo` : url === null ? t`aperçu indisponible` : ''}</div>;
+  return <div class={`sans-miniature${url === undefined ? ' chargement' : ''}`}>{f.categorie === 'video' ? (
+        <>
+          <Icone nom="lecture" taille={20} />
+          {t`vidéo`}
+        </>
+      ) : url === null ? t`aperçu indisponible` : ''}</div>;
 }
 
 /** La miniature dessinée avec le recadrage, par le même calcul que la copie de l'album. */

@@ -34,7 +34,6 @@ import {
 import { aTraduire, t } from '../../lib/langue';
 import { comparerPhotos, LIBELLES_REMARQUES, type Comparaison, type Remarque } from '../../lib/comparerPhotos';
 import { cheminDossier, comparerNoms, dossierSource, ecarterDoublons, garderAussi, RACINE, traitementDe, type FichierPlan, type InfoDoublon, type Modification, type Plan } from '../../lib/plan';
-import { dossierMisDeCote, nomsSortie } from '../../lib/sortie';
 import { MODELES } from '../../lib/tarifs';
 import { cleApi } from '../../navigateur/cle';
 import { analyserDoublons, estimerDoublons, lotsDoublons, type EtatDoublons } from '../../navigateur/doublons';
@@ -43,10 +42,11 @@ import { cleMiniature } from '../../navigateur/miniatures';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { analyseEnCours, lancerAnalyseDossier, rafalesAChercher } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
-import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreProgression, BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
 import { Comparateur } from '../composants/Comparateur';
 import { confirmer } from '../composants/Dialogues';
 import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
+import { Icone } from '../composants/Icones';
 import { redimensionner, styleLargeurPanneau } from '../composants/PanneauDossiers';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { useCopiesExactes } from '../copiesExactes';
@@ -107,7 +107,7 @@ enregistrerAide({
   id: 'IA16',
   nom: aTraduire('Choisir dans les rafales (IA)'),
   etape: ETAPE.doublons,
-  description: aTraduire('Dans chaque rafale pas encore validée, l’IA choisit la meilleure photo (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous validez.'),
+  description: aTraduire('Dans chaque rafale pas encore acceptée, l’IA choisit la meilleure photo (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous acceptez.'),
   envoi: aTraduire('les photos de chaque rafale en 1568 px, 6 au plus'),
   web: false,
   usage: 'rapide',
@@ -147,9 +147,9 @@ function nomRacine(vrac: boolean): string {
   return vrac ? t`Photos à trier` : t`Photos (racine)`;
 }
 
-/** « 2 photos écartées → « _mis_de_cote/doublons » ». */
-function texteEcartees(n: number, raison: 'doublons' | 'doublons_exacts'): string {
-  return t`${pluriel(n, 'photo écartée', 'photos écartées')} → « ${dossierMisDeCote(raison)} »`;
+/** « 2 photos écartées : dans « Mis de côté » » (le mot de la barre du bas, C-10.2 ; le dossier technique est dans l'infobulle de « Mis de côté »). */
+function texteEcartees(n: number, _raison: 'doublons' | 'doublons_exacts'): string {
+  return t`${pluriel(n, 'photo écartée', 'photos écartées')} : dans « Mis de côté »`;
 }
 
 // ---------------------------------------------------------------------------
@@ -296,12 +296,12 @@ function ListeSections({ liste, choisie, choisir, avancement = true }: { liste: 
                   {!avancement ? (
                     <span class="compte">{nombre(x.total)}</span>
                   ) : x.aRelire ? (
-                    <span class="reste" title={t`groupes à valider`}>
+                    <span class="reste" title={t`groupes à accepter`}>
                       {nombre(x.aRelire)}
                     </span>
                   ) : (
-                    <span class="fait" title={t`tout est validé`}>
-                      ✓
+                    <span class="fait" title={t`tout est accepté`}>
+                      <Icone nom="coche" taille={16} />
                     </span>
                   )}
                 </button>,
@@ -482,11 +482,11 @@ function libelleAccepter(nGarder: number, nEcarter: number): string {
 }
 
 /** Alerte quand aucune photo du groupe n'est choisie : « Accepter » mettrait tout de côté. */
-function alerteRienGarde(g: GroupeDoublons): string {
-  return t`Aucune photo choisie : tout le groupe ira dans « ${dossierMisDeCote(raisonDe(g))} ».`;
+function alerteRienGarde(_g: GroupeDoublons): string {
+  return t`Aucune photo choisie : tout le groupe ira dans « Mis de côté ».`;
 }
 
-/** Libellé de l'état d'une photo ; dans un groupe pas encore validé, une photo gardée est « à garder » (D101). */
+/** Libellé de l'état d'une photo ; dans un groupe pas encore accepté, une photo gardée est « à garder » (D101). */
 function libelleEtat(etat: EtatPhoto, valide: boolean): [classe: EtatPhoto, libelle: string] {
   if (etat === 'gardee' && !valide) return ['choisie', t`à garder`];
   return [etat, etat === 'gardee' ? t`Gardée` : etat === 'ecartee' ? t`Écartée` : etat === 'choisie' ? t`à garder` : t`à écarter`];
@@ -558,9 +558,12 @@ function CarteGroupe({
   ordonner = (p) => p,
   plusieurs,
   changerPlusieurs,
+  prochaine = false,
 }: {
   g: GroupeDoublons;
   ouverte: boolean;
+  /** Le premier groupe à accepter de la liste : son « Accepter » est le bouton plein de l'écran (C-4.1). */
+  prochaine?: boolean;
   /** « Garder plusieurs photos » cochée à la main pour ce groupe (le temps de la page). */
   plusieurs: boolean;
   changerPlusieurs: (oui: boolean) => void;
@@ -608,7 +611,7 @@ function CarteGroupe({
     return (
       <div class="carte-doublons repliee" data-cle={g.cle}>
         <span class="vu" aria-hidden="true">
-          ✓
+          <Icone nom="coche" taille={16} />
         </span>
         <span class="heure">{heure}</span>
         <span class="resume">
@@ -628,13 +631,16 @@ function CarteGroupe({
         {!copie && <span class="discret">{lieuDe(s, etoile)}</span>}
         <span class="espace" />
         {touche ? (
-          <span class="pastille-attente">{choixIA ? t`Choix de l’IA · pas encore validé` : t`Votre choix · pas encore validé`}</span>
+          <span class="pastille-attente">{choixIA ? t`Choix de l’IA · pas encore accepté` : t`Votre choix · pas encore accepté`}</span>
         ) : !valide ? (
           <span class="pastille-proposition">{texteProposition(g, enAttente, comparaison, avis)}</span>
         ) : g.sorte === 'dossiers' && !ecartees ? (
           <span class="pastille-relue">{t`Gardée dans chaque dossier`}</span>
         ) : (
-          <span class="pastille-relue">{t`✓ Validé`}</span>
+          <span class="pastille-relue">
+            <Icone nom="coche" taille={14} />
+            {t`Accepté`}
+          </span>
         )}
       </header>
       {g.sorte === 'ia' && g.scene && <p class="scene-doublons">{g.scene}</p>}
@@ -652,15 +658,16 @@ function CarteGroupe({
       {nGarder === 0 && <p class="alerte-doublons">{alerteRienGarde(g)}</p>}
       <footer>
         {!valide && (
-          <button type="button" class="principal" data-action="accepter" onClick={() => agirGroupe(accepter(plan, [g]), texteEcartees(nEcarter, raisonDe(g)))} title={t`Touche A`}>
+          <button type="button" class={prochaine ? 'principal' : 'contour'} data-action="accepter" onClick={() => agirGroupe(accepter(plan, [g]), texteEcartees(nEcarter, raisonDe(g)))} title={t`Touche A`}>
             {libelleAccepter(nGarder, nEcarter)}
           </button>
         )}
-        <button type="button" disabled={gardees === photos.length} onClick={() => agirGroupe(garderTout(plan, [g]), t`Toutes les photos du groupe sont gardées.`)}>
-          {t`Tout garder`}
+        {/* Désactivés, ils disent pourquoi dans leur libellé (C-4.7). */}
+        <button type="button" disabled={gardees === photos.length} data-raison={gardees === photos.length ? 'libelle' : undefined} onClick={() => agirGroupe(garderTout(plan, [g]), t`Toutes les photos du groupe sont gardées.`)}>
+          {gardees === photos.length ? t`Tout est gardé` : t`Tout garder`}
         </button>
-        <button type="button" disabled={ecartees === photos.length} onClick={() => agirGroupe(ecarterTout(plan, [g]), texteEcartees(photos.length - ecartees, raisonDe(g)))}>
-          {t`Tout écarter`}
+        <button type="button" disabled={ecartees === photos.length} data-raison={ecartees === photos.length ? 'libelle' : undefined} onClick={() => agirGroupe(ecarterTout(plan, [g]), texteEcartees(photos.length - ecartees, raisonDe(g)))}>
+          {ecartees === photos.length ? t`Tout est écarté` : t`Tout écarter`}
         </button>
         <button type="button" data-action="comparer" onClick={comparer} title={t`Touche C`}>
           {t`Comparer en grand`}
@@ -711,6 +718,8 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   /** Rafale, même scène : un clic (ou une touche) choisit une seule photo, sauf « Garder plusieurs photos ». */
   const uneSeule = (g: GroupeDoublons) => (g.sorte === 'rafales' || g.sorte === 'ia') && !plusieurs.has(g.cle) && photosDuGroupe(g, fichier).filter((x) => aGarder(x.etat)).length < 2;
   const zone = useRef<HTMLDivElement>(null);
+  // Groupe en cours : la carte qui a reçu le dernier clic ou le clavier (pour le bouton plein).
+  const [enCours, setEnCours] = useState<string | null>(null);
 
   const [groupement, choisirGroupement] = useGroupement(
     onglet,
@@ -769,7 +778,7 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   const nPartout = dansSection.filter((e) => partout(e.g)).length;
   const nGroupes = dansSection.length - nPartout;
   const nRelus = dansSection.filter((e) => !partout(e.g) && !e.relire).length;
-  const detail = [nGroupes > 0 && `${pluriel(nGroupes, 'groupe')} · ${pluriel(nRelus, 'validé', 'validés')}`, nPartout > 0 && pluriel(nPartout, 'photo dans plusieurs dossiers', 'photos dans plusieurs dossiers')]
+  const detail = [nGroupes > 0 && t`${pluriel(nGroupes, 'groupe')}, dont ${pluriel(nRelus, 'accepté', 'acceptés')}`, nPartout > 0 && pluriel(nPartout, 'photo dans plusieurs dossiers', 'photos dans plusieurs dossiers')]
     .filter(Boolean)
     .join(' · ');
 
@@ -854,6 +863,10 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
   const nGarderComparee = photosComparee.filter((x) => aGarder(x.etat)).length;
   const nEcarterComparee = photosComparee.filter((x) => x.etat === 'a_ecarter').length;
   const pct = total ? Math.round((relus / total) * 100) : 100;
+  // Un seul bouton plein (C-4.1) : « Accepter » du groupe en cours (celui où l'on a cliqué ou qui a le
+  // clavier) s'il reste à accepter, sinon du suivant à accepter dans la liste, sinon du premier.
+  const iEnCours = enCours ? visibles.findIndex((e) => e.g.cle === enCours) : -1;
+  const prochaine = [...visibles.slice(Math.max(0, iEnCours)), ...visibles.slice(0, Math.max(0, iEnCours))].find((e) => aRelire(e.g, fichier))?.g.cle;
 
   const photosOnglet = enAttenteOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
   // L'IA de la section : seulement si elle ne couvre pas déjà tout l'onglet (le bouton de la rangée suffit).
@@ -868,7 +881,7 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
         <span class="etiquette-portee">{t`Tout l’onglet`}</span>
         <strong>{titre}</strong>
         <span class="avance-doublons">
-          {total ? t`Validés : ${nombre(relus)} sur ${nombre(total)}` : t`Rien à valider`}
+          {total ? t`Acceptés : ${nombre(relus)} sur ${nombre(total)}` : t`Rien à accepter`}
           {total > 0 && (
             <span class="jauge-doublons" aria-hidden="true">
               <span style={{ width: `${pct}%` }} />
@@ -917,8 +930,8 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
         <div class="choix-segmente" role="radiogroup" aria-label={t`Groupes affichés`}>
           {(
             [
-              ['a_relire', t`À valider`],
-              ['relus', t`Validés`],
+              ['a_relire', t`À accepter`],
+              ['relus', t`Acceptés`],
               ['tous', t`Tous`],
             ] as const
           ).map(([v, libelle]) => (
@@ -937,7 +950,7 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
           </select>
         </label>
       </div>
-      <p class="discret aide-doublons">{t`Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » valide le groupe. Clavier : J et K d’un groupe à l’autre, Espace pour choisir, A pour accepter, N et P pour avancer dans la liste de gauche.`}</p>
+      <p class="discret aide-doublons">{t`Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Clavier : J et K d’un groupe à l’autre, Espace pour choisir, A pour accepter, N et P pour avancer dans la liste de gauche.`}</p>
 
       {section && (
         <TeteSection
@@ -948,10 +961,11 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
               <span class="actions">
                 {ciblesSection.length > 0 && <BoutonIARafales cibles={ciblesSection} libelle={t`Choisir avec l’IA ${ceci}`} />}
                 {boutonSection && (
-                  <button type="button" class="contour" onClick={accepterSection} disabled={!validables.length}>
-                    {t`Valider les ${nombre(validables.length)} groupes ${ceci}`}
+                  <button type="button" class="contour" onClick={accepterSection} disabled={!validables.length} aria-describedby={validables.length ? undefined : 'raison-accepter-section'}>
+                    {t`Accepter les ${nombre(validables.length)} groupes ${ceci}`}
                   </button>
                 )}
+                {boutonSection && <RaisonDesactivee id="raison-accepter-section" raison={!validables.length && t`Aucune photo choisie dans ces groupes : choisissez-en une par groupe.`} />}
                 {boutonSection && sansChoix > 0 && <span class="discret">{t`dont ${nombre(sansChoix)} où vous n’avez rien choisi`}</span>}
               </span>
             )
@@ -960,13 +974,20 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
       )}
       <div class="corps-doublons">
         <ListeSections liste={liste} choisie={section?.cle} choisir={choisir} />
-        <section class="contenu-doublons" ref={zone}>
+        <section
+          class="contenu-doublons"
+          ref={zone}
+          onFocusIn={(e) => {
+            const cle = (e.target as HTMLElement).closest<HTMLElement>('.carte-doublons')?.dataset.cle;
+            if (cle) setEnCours(cle);
+          }}
+        >
           {visibles.length === 0 && (
             <div class="encart">
-              <p>{filtre === 'a_relire' ? t`Tout est validé ici.` : t`Aucun groupe à montrer ici.`}</p>
+              <p>{filtre === 'a_relire' ? t`Tout est accepté ici.` : t`Aucun groupe à montrer ici.`}</p>
               {filtre === 'a_relire' && liste.some((x) => x.aRelire > 0) && (
                 <button type="button" onClick={() => choisir(liste.find((x) => x.aRelire > 0)!.cle)}>
-                  {t`Aller à la suite à valider`}
+                  {t`Aller à la suite à accepter`}
                 </button>
               )}
             </div>
@@ -990,12 +1011,14 @@ function ListeGroupes({ onglet, groupes, titre }: { onglet: Exclude<Onglet, 'mis
               agirGroupe={(m, message) => agirGroupe([g.cle], m, message)}
               rouvrir={() => setRouvertes(new Set([...rouvertes, g.cle]))}
               comparer={() => setComparee(g.cle)}
+              prochaine={g.cle === prochaine}
             />,
           ])}
           {visibles.length > 0 && enAttente.length === 0 && suite && (
             <p class="suite-doublons">
               <button type="button" class="principal" onClick={() => choisir(suite.cle)}>
-                {t`Suite à valider : ${suite.nom} ›`}
+                {t`Suite à accepter : ${suite.nom}`}
+                <Icone nom="chevronDroite" taille={20} />
               </button>
             </p>
           )}
@@ -1228,12 +1251,12 @@ export function PageDoublons() {
       );
       s.doublons = res.etat;
       const n = groupesARelire(res.etat, plan);
-      journal('doublons', t`Doublons (${avecIA ? t`IA, ${modele}` : t`rafales`}, ${strict ? t`strict` : t`prudent`}) : ${pluriel(n, 'groupe à valider', 'groupes à valider')} en ${Math.round((performance.now() - debut) / 1000)} s`);
+      journal('doublons', t`Doublons (${avecIA ? t`IA, ${modele}` : t`rafales`}, ${strict ? t`strict` : t`prudent`}) : ${pluriel(n, 'groupe à accepter', 'groupes à accepter')} en ${Math.round((performance.now() - debut) / 1000)} s`);
       if (res.budgetAtteint) notifier('erreur', new BudgetAtteint().message);
       else if (res.arrete) notifier('info', texteArret(un === 'journée', res.faits, lots.length));
       else if (res.erreurs.length)
         notifier('erreur', t`${un === 'journée' ? pluriel(res.erreurs.length, 'journée non analysée', 'journées non analysées') : pluriel(res.erreurs.length, 'dossier non analysé', 'dossiers non analysés')} : ${res.erreurs[0]}`);
-      else if (avecIA) notifier('ok', n === 0 ? t`Aucun groupe à valider.` : t`${pluriel(n, 'groupe à valider', 'groupes à valider')} : voyez les onglets « Rafales » et « Même scène (IA) ».`);
+      else if (avecIA) notifier('ok', n === 0 ? t`Aucun groupe à accepter.` : t`${pluriel(n, 'groupe à accepter', 'groupes à accepter')} : voyez les onglets « Rafales » et « Même scène (IA) ».`);
       changerEtape(ETAPE.doublons, 'en_cours');
     } catch (err) {
       notifier('erreur', t`Analyse interrompue : ${texteErreur(err)}`);
@@ -1250,7 +1273,15 @@ export function PageDoublons() {
   }, [analysesManquantes === 0, !!analyseEnCours.value]);
 
   const modeleInfo = MODELES.find((m) => m.id === modele);
-  const cout = estimation.dossiers ? t`environ ${chf < 0.01 ? `< ${nombre(0.01, 2)}` : nombre(chf, 2)} CHF` : t`gratuit (déjà fait)`;
+  const cout = !estimation.dossiers ? t`gratuit (déjà fait)` : chf < 0.01 ? t`moins de ${nombre(0.01, 2)} CHF` : t`environ ${nombre(chf, 2)} CHF`;
+  // Raison écrite à côté du bouton désactivé (C-4.7).
+  const raisonIA = progres
+    ? t`Analyse en cours.`
+    : analysesManquantes > 0
+      ? t`Attendez la fin de l’analyse des photos (encore ${nombre(analysesManquantes)}).`
+      : !modeleInfo
+        ? t`Modèle IA inconnu : choisissez-en un dans « Réglages avancés ».`
+        : '';
 
   const reglagesIA = (
     <>
@@ -1266,9 +1297,14 @@ export function PageDoublons() {
         </label>
       </fieldset>
       <div class="actions-etape">
-        <button type="button" class="principal" disabled={!!progres || analysesManquantes > 0 || !modeleInfo} onClick={() => void lancer(true)}>
-          {t`Analyser avec l’IA — ${cout}`}
+        <button type="button" class="bouton-ia" disabled={!!raisonIA} aria-describedby={raisonIA ? 'raison-analyse-ia' : undefined} onClick={() => void lancer(true)}>
+          <Icone nom="etincelle" taille={20} />
+          <span>
+            {t`Analyser avec l’IA`}
+            <span class="cout-aide"> — {cout}</span>
+          </span>
         </button>
+        <RaisonDesactivee id="raison-analyse-ia" raison={raisonIA} />
         <span class="discret">{t`${pluriel(dossiers.length, un, plusieurs)} · dépensé : ${nombre(s.ia.depenseCHF(), 2)} / ${s.projet.budget_chf} CHF`}</span>
       </div>
       <details class="avances">
@@ -1284,7 +1320,7 @@ export function PageDoublons() {
           </select>
         </label>
         <p class="discret">
-          {t`Les consignes viennent du script 06, réglé avec Claude Sonnet 4.6 ; les réponses sont mises en cache par modèle. Réglages du script : rafales à moins de 10 min et distance ≤ 12 ; scènes locales à distance ≤ 20 ; vérification par 6 photos au plus.`}
+          {t`Les consignes viennent du script 06, réglé avec Claude Sonnet 4.6 ; les réponses sont mises en cache par modèle. Réglages du script : rafales à moins de 10 min et à une distance de 12 au plus ; scènes locales à une distance de 20 au plus ; vérification par 6 photos au plus.`}
         </p>
         <button
           type="button"
@@ -1306,7 +1342,10 @@ export function PageDoublons() {
     const { relus, total } = avancement(o);
     // Copies : celles dans plusieurs dossiers gardés n'ont rien à relire ; elles comptent quand il ne reste qu'elles.
     if (!total) return <span class="compte gris">{nombre(o === 'copies' ? groupes.dossiers.length : 0)}</span>;
-    return relus === total ? <span class="compte fini">✓ {nombre(total)}</span> : <span class="compte">{t`${nombre(total - relus)} à valider`}</span>;
+    return relus === total ? <span class="compte fini">
+        <Icone nom="coche" taille={14} />
+        {nombre(total)}
+      </span> : <span class="compte">{t`${nombre(total - relus)} à accepter`}</span>;
   };
   const ONGLETS: [Onglet, string][] = [
     ['copies', t`Copies exactes`],
@@ -1316,15 +1355,11 @@ export function PageDoublons() {
   ];
 
   const enAttente = (['copies', 'rafales', 'ia'] as const).reduce((n, o) => n + avancement(o).total - avancement(o).relus, 0);
-  const resumeOnglet = (o: Sorte, nom: string) => {
-    const { relus, total } = avancement(o);
-    return `${nom} ${nombre(relus)} / ${nombre(total)}`;
-  };
 
   return (
     <div class="page large avec-barre page-doublons">
       <TeteEtape numero={ETAPE.doublons} titre={nomEtape(ETAPE.doublons)} cle="doublons">
-        {t`Les photos en double sont rangées par sorte, dans les onglets ci-dessous. Dans chaque groupe, un clic choisit la photo à garder ; « Accepter » valide le groupe. Les photos écartées vont dans « ${nomsSortie().misDeCote} » : rien n’est supprimé, et Ctrl+Z annule.`}
+        {t`Les photos en double sont rangées par sorte, dans les onglets ci-dessous. Dans chaque groupe, un clic choisit la photo à garder ; « Accepter » garde les photos choisies et écarte les autres. Les photos écartées vont dans « Mis de côté » : rien n’est supprimé, et Ctrl+Z annule.`}
         {s.projet.mode === 'vrac' && t` Le dossier n’étant pas encore trié, les rafales sont cherchées journée par journée.`}
       </TeteEtape>
 
@@ -1362,7 +1397,7 @@ export function PageDoublons() {
           <>
             <div class="encart encart-onglet">
               <p>
-                {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « ${dossierMisDeCote('doublons_exacts')} ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo.`}
+                {t`La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « Mis de côté ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo.`}
                 {intouches > 0 && t` Les dossiers « Ne pas toucher » ne sont pas examinés : leurs copies sont voulues.`}
               </p>
             </div>
@@ -1378,7 +1413,7 @@ export function PageDoublons() {
         ) : (
           <>
             <p class="encart encart-onglet">
-              {t`Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible. « Choisir avec l’IA » : l’IA choisit dans chaque rafale et dit pourquoi, vous validez.`}
+              {t`Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La ★ va à la plus nette ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible. « Choisir avec l’IA » : l’IA choisit dans chaque rafale et dit pourquoi, vous acceptez.`}
             </p>
             <ListeGroupes key="rafales" onglet="rafales" groupes={groupes.rafales} titre={t`Toutes les rafales`} />
           </>
@@ -1404,14 +1439,11 @@ export function PageDoublons() {
 
       {onglet === 'mis_de_cote' && <MisDeCote />}
 
+      {/* C-8.5 : ce que devient ce qui reste ; « Valider et continuer » plein une fois tout accepté (C-4.1). */}
       <BarreValidation
-        resume={[
-          resumeOnglet('copies', t`Copies exactes`),
-          resumeOnglet('rafales', t`Rafales`),
-          iaLancee ? resumeOnglet('ia', t`IA`) : t`IA pas lancée`,
-          pluriel(nbEcartees, 'photo écartée', 'photos écartées'),
-        ].join(' · ')}
-        alertes={enAttente ? [t`${pluriel(enAttente, 'groupe pas encore validé', 'groupes pas encore validés')} : leurs photos restent dans l’archive`] : []}
+        resume={`${enAttente ? t`${pluriel(enAttente, 'groupe pas encore accepté', 'groupes pas encore acceptés')} : toutes leurs photos sont gardées` : t`Tous les groupes sont acceptés`} · ${pluriel(nbEcartees, 'photo écartée', 'photos écartées')}`}
+        ecarte
+        fini={!enAttente && copies !== null && !!s.doublons}
         revenir={() => revenirDe('doublons')}
         valider={() => validerEtape('doublons')}
       />

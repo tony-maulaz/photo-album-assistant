@@ -116,7 +116,7 @@ export function modeleDe(u: Usage): string {
 export function texteCout(e: Estimation | null): string {
   if (!e || e.appels === 0) return t`gratuit (déjà fait)`;
   const chf = e.usd * reglages.value.tauxUsdChf;
-  return t`environ ${chf < 0.01 ? `< ${nombre(0.01, 2)}` : nombre(chf, 2)} CHF`;
+  return chf < 0.01 ? t`moins de ${nombre(0.01, 2)} CHF` : t`environ ${nombre(chf, 2)} CHF`;
 }
 
 /** « Saisissez d'abord votre clé API » affiché : retiré dès que la clé est là (il resterait sinon après une aide réussie). */
@@ -225,8 +225,16 @@ function BoutonAideIA({ fonction, options, children }: { fonction: string; optio
   };
   return (
     <div class="aide-ia">
-      <button type="button" class="bouton-ia" disabled={!!progres || enCours || e === null} onClick={() => void lancer()} title={t`${t(a.description)} Envoyé : ${t(a.envoi)}.`}>
-        <Icone nom="etincelle" taille={16} />
+      {/* Désactivé, son libellé dit pourquoi : « en cours… », « rien à faire » (C-4.7). */}
+      <button
+        type="button"
+        class="bouton-ia"
+        disabled={!!progres || enCours || e === null}
+        data-raison={progres || enCours || e === null ? 'libelle' : undefined}
+        onClick={() => void lancer()}
+        title={t`${t(a.description)} Envoyé : ${t(a.envoi)}.`}
+      >
+        <Icone nom="etincelle" taille={20} />
         <span>
           {t(a.nom)}
           <span class="cout-aide"> — {enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : texteCout(e)}</span>
@@ -238,6 +246,7 @@ function BoutonAideIA({ fonction, options, children }: { fonction: string; optio
           <Icone nom="alerte" taille={14} />
           {pluriel(illisibles, 'réponse illisible', 'réponses illisibles')}
           <button type="button" class="lien" onClick={() => void redemander()}>
+            {eRedemande && eRedemande.appels > 0 && <Icone nom="etincelle" taille={16} />}
             {eRedemande && eRedemande.appels > 0 ? t`Redemander (${texteCout(eRedemande)})` : t`Redemander`}
           </button>
         </span>

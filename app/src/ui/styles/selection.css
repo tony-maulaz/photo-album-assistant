@@ -102,12 +102,25 @@
 .page-selection .titre-selection {
   display: flex;
   flex-direction: column;
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 1 1 160px;
+  min-width: 160px;
 }
 
 .page-selection .titre-selection .titre-vue {
   min-width: 0;
+  flex: 0 0 auto;
+}
+
+.page-selection .outils-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e3);
+  flex: 0 0 auto;
+}
+
+/* La barre d'outils a sa ligne entière : « Annuler : … » ne la fait jamais passer à la ligne (C-8.2). */
+.page-selection .tete-vue > .barre-outils {
+  flex: 1 0 100%;
 }
 
 .page-selection .titre-selection .resume-vue {
@@ -293,7 +306,7 @@
 .fin-tri button {
   background: var(--neutre-doux);
   color: var(--texte);
-  border-color: transparent;
+  border-color: var(--contour);
 }
 
 .fin-tri button.principal {

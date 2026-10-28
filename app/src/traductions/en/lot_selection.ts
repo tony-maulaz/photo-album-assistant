@@ -35,7 +35,6 @@ export const TEXTES: Record<string, string> = {
   'Tournée pour l’album (touche R)': 'Rotated for the album (R key)',
   '{0} : {1} sur {2} dans l’album': '{0}: {1} of {2} in the album',
   'Équilibre par mois': 'Balance by month',
-  'Photos retenues par mois': 'Photos in the album per month',
   'cliquer pour n’afficher que ce jour': 'click to show only this day',
   'cliquer pour n’afficher que ce mois': 'click to show only this month',
   'Pointez une barre pour voir sa date ; un clic n’affiche que ses photos.': 'Point at a bar to see its date; a click shows only its photos.',

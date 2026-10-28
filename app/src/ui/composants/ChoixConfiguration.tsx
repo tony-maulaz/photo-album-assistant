@@ -3,7 +3,8 @@
 // mécanisme que la page Configuration, puis l'action demandée se poursuit.
 
 import { useState } from 'preact/hooks';
-import { t, tc } from '../../lib/langue';
+import { RaisonDesactivee } from './Cadre';
+import { t } from '../../lib/langue';
 import { configuration, notifier, texteErreur } from '../etat';
 import { chargerConfiguration, choisirDossierConfig, configVide, creerDossierConfig } from '../projets';
 import { confirmer } from './Dialogues';
@@ -51,15 +52,16 @@ export function ChoixConfiguration({ pourquoi, apres, annuler }: { pourquoi: str
         {t`Ce dossier « config » est commun à tous vos projets : créez-le une fois, par exemple à côté de l’application. Il contiendra l’adresse du domicile : ne le partagez pas.`}
       </p>
       <div class="actions">
-        <button type="button" class="principal" disabled={encours} onClick={() => void lancer(creerDossierConfig)()}>
+        <button type="button" class="principal" disabled={encours} aria-describedby={encours ? 'raison-config' : undefined} onClick={() => void lancer(creerDossierConfig)()}>
           {t`Créer le dossier « config »…`}
         </button>
-        <button type="button" disabled={encours} onClick={() => void lancer(choisirDossierConfig)()}>
+        <RaisonDesactivee id="raison-config" raison={encours && t`Ouverture du dossier en cours.`} />
+        <button type="button" disabled={encours} aria-describedby={encours ? 'raison-config' : undefined} onClick={() => void lancer(choisirDossierConfig)()}>
           {t`J’en ai déjà un : le choisir…`}
         </button>
         {annuler && (
           <button type="button" class="lien" onClick={annuler}>
-            {tc('dialogue', 'Annuler')}
+            {t`Ne rien faire`}
           </button>
         )}
       </div>

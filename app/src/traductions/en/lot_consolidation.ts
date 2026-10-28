@@ -53,7 +53,6 @@ export const TEXTES: Record<string, string> = {
   'week-end ou voyage': 'weekend or trip',
   'week-ends ou voyages': 'weekends or trips',
   // Une proposition
-  '✨ L’IA propose de les réunir dans « {0} »': '✨ The AI suggests gathering them in “{0}”',
   'Le remettre avec les autres': 'Put it back with the others',
   'Le laisser à part': 'Leave it apart',
   '+{0}': '+{0}',
@@ -80,7 +79,6 @@ export const TEXTES: Record<string, string> = {
     'The sorting sometimes splits one outing into several folders (a walk through two villages) and files a weekend as one folder per place. Choose what should be suggested, then, for each suggestion, gather the folders or leave them apart. Nothing is gathered without your consent.',
   'Rien à réunir avec ces réglages : vous pouvez continuer.': 'Nothing to gather with these settings: you can continue.',
   Propositions: 'Suggestions',
-  '✨ L’IA propose de renommer « {0} » en « {1} »': '✨ The AI suggests renaming “{0}” to “{1}”',
   'Non merci': 'No thanks',
   'Rangés ensemble dans « {0} » :': 'Filed together in “{0}”:',
   'Réunis dans « {0} » :': 'Gathered in “{0}”:',

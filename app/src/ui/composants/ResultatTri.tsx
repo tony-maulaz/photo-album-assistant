@@ -1,6 +1,6 @@
 // Résultat du tri automatique (D103, D104, D105) : à droite de la page, une
 // ligne par voyage, sortie ou période à la maison, dans l'ordre du temps, avec des onglets comme aux
-// Doublons (Tout, Voyages, Sorties, À la maison, Mis à part). Sans miniatures :
+// Doublons (Tout, Voyages, Sorties, À la maison, Autres). Sans miniatures :
 // les dates, le nombre de photos, la distance de la maison, l'événement du
 // calendrier et, pour un voyage, ses étapes. Avant de ranger, c'est un aperçu
 // recalculé à chaque réglage : ce qui vient d'apparaître est marqué
@@ -90,7 +90,7 @@ function Ligne({ l, evts, nouveau, apercu }: { l: LigneTri; evts: EvenementCalen
   return (
     <article class={`ligne-tri ${l.sorte}${nouveau ? ' nouvelle' : ''}`}>
       <span class="icone-ligne" aria-hidden="true">
-        <Icone nom={ICONES[l.sorte]} taille={18} />
+        <Icone nom={ICONES[l.sorte]} taille={20} />
       </span>
       <div class="corps-ligne">
         <div class="titre-ligne">
@@ -147,13 +147,13 @@ function MisAPart({ r }: { r: Resultat }) {
     [t`Vidéos seules`, t`Aucune photo prise à quelques heures près : elles sont rangées par mois.`, r.videosSeules],
   ];
   const presentes = lignes.filter(([, , n]) => n);
-  if (!presentes.length) return <p class="encart discret">{t`Rien n’est mis à part.`}</p>;
+  if (!presentes.length) return <p class="encart discret">{t`Aucune photo hors des voyages, sorties et dossiers de la maison.`}</p>;
   return (
     <ul class="mis-a-part">
       {presentes.map(([titreAPart, texte, n]) => (
         <li key={titreAPart}>
           <strong>
-            {titreAPart} <span class="discret">({nombre(n)})</span>
+            {titreAPart} <span class="compte gris">{nombre(n)}</span>
           </strong>
           <span class="discret">{texte}</span>
         </li>
@@ -186,7 +186,7 @@ export function ResultatTri({ r, apercu }: { r: Resultat; apercu: boolean }) {
     ['voyage', t`Voyages`],
     ['sortie', t`Sorties`],
     ['maison', t`À la maison`],
-    ['apart', t`Mis à part`],
+    ['apart', t`Autres`],
   ];
   const onglet = ongletChoisi.value;
   const lignes = onglet === 'tout' ? r.lignes : onglet === 'apart' ? [] : r.lignes.filter((l) => l.sorte === onglet);

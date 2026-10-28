@@ -56,6 +56,8 @@
   --h-btn: 40px;
   --h-puce: 36px;
   --h-frise: 28px;
+  /* Hauteur de la barre du bas, remesurée par BarreValidation (messages posés au-dessus). */
+  --haut-barre-validation: 66px;
 
   /* C-3.1 : neutres. */
   --fond: light-dark(#f6f5f2, #121315);
@@ -205,6 +207,8 @@ button {
     background 0.12s,
     border-color 0.12s,
     box-shadow 0.12s;
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 button:hover:not(:disabled) {
@@ -251,15 +255,17 @@ button.grand {
 
 /* C-4.5 : lien vert foncé souligné. */
 button.lien {
-  min-height: 0;
+  min-height: 24px;
   border: none;
   background: none;
-  padding: 2px 6px;
+  padding: 0;
   color: var(--lien);
   font-weight: 600;
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 4px;
+  font-size: inherit;
+  line-height: inherit;
 }
 
 button.lien:hover:not(:disabled) {
@@ -570,7 +576,7 @@ main {
 
 button.etape-courante {
   min-width: 0;
-  min-height: 34px;
+  min-height: var(--h-puce);
   padding: var(--e1) 10px;
   border: none;
   background: none;
@@ -579,6 +585,9 @@ button.etape-courante {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
 }
 
 button.etape-courante strong {
@@ -615,7 +624,7 @@ button.etape-courante:hover:not(:disabled) {
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 38px;
+  min-height: var(--h-btn);
   padding: var(--e1) 10px;
   border: none;
   border-radius: var(--r-commande);
@@ -683,8 +692,9 @@ button.etape-courante:hover:not(:disabled) {
 }
 
 .bouton-menu {
-  border-color: transparent;
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
 }
 
 .menu-deroulant {
@@ -695,7 +705,7 @@ button.etape-courante:hover:not(:disabled) {
 }
 
 .menu-deroulant button {
-  min-height: 38px;
+  min-height: var(--h-btn);
   padding: 6px var(--e3);
   border: none;
   border-radius: var(--r-commande);
@@ -747,14 +757,14 @@ button.bouton-aide {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 32px;
+  min-height: var(--h-puce);
   padding: 3px var(--e3) 3px 9px;
   border: 1.5px solid var(--contour);
   border-radius: var(--r-pastille);
   background: var(--surface);
   color: var(--texte);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   font-weight: 700;
 }
 
@@ -897,11 +907,11 @@ button.fleche-dossier:hover {
 }
 
 .pastilles-dossier button {
-  min-height: 28px;
+  min-height: var(--h-frise);
   padding: 2px var(--e3);
   border-radius: var(--r-pastille);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .pastilles-dossier button[aria-pressed='true'] {
@@ -967,11 +977,52 @@ button.fleche-dossier:hover {
 }
 
 .barre-validation .resume {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* C-8.5 : ligne 1, ce que devient ce qui reste. */
+.barre-validation .l1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e1) var(--e3);
+  margin: 0;
   font-weight: 600;
 }
 
+/* C-8.4 : ligne 2, « Rien n'est supprimé », avec le bouclier. */
+.barre-validation .l2 {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  color: var(--texte-2);
+}
+
+.barre-validation .l2 .icone {
+  flex: 0 0 auto;
+  color: var(--accent-doux-texte);
+}
+
+/* C-4.11 : Revenir et Valider et continuer, 140 et 260 px au moins, à 44 px de haut (C-4.3). */
+.barre-validation .actions button {
+  min-height: var(--h-plein);
+}
+
+.barre-validation button.bouton-revenir {
+  min-width: 140px;
+}
+
+.barre-validation button.bouton-valider {
+  min-width: 260px;
+}
+
 .barre-validation .alertes {
-  flex: 1;
+  flex: 0 1 auto;
+  font-weight: 400;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -989,6 +1040,10 @@ button.fleche-dossier:hover {
 
 .barre-validation .actions {
   margin: 0;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  /* C-4.11 : même place partout, quelle que soit la hauteur de la barre (une ou deux lignes à gauche). */
+  align-self: flex-end;
 }
 
 .pied {
@@ -1089,8 +1144,8 @@ button.fleche-dossier:hover {
 }
 
 .message button {
-  min-height: 32px;
-  border: none;
+  min-height: var(--h-btn);
+  border: 1.5px solid var(--contour);
   background: var(--neutre-doux);
   color: var(--texte);
 }
@@ -1374,7 +1429,7 @@ button.fleche-dossier:hover {
 .faux-bouton {
   display: inline-flex;
   align-items: center;
-  height: 46px;
+  height: var(--h-plein);
   padding: 0 22px;
   border-radius: var(--r-commande);
   border: 1.5px solid var(--filet-fort);
@@ -1479,13 +1534,13 @@ button.fleche-dossier:hover {
 }
 
 button.doux {
-  border-color: transparent;
+  border-color: var(--contour);
   background: var(--neutre-doux);
   font-weight: 700;
 }
 
 button.doux:hover:not(:disabled) {
-  border-color: transparent;
+  border-color: var(--contour);
   background: var(--table);
 }
 
@@ -1494,8 +1549,8 @@ button.discret-bouton {
   background: none;
   color: var(--texte-2);
   font-weight: 600;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   padding: var(--e1) var(--e2);
 }
 
@@ -1704,9 +1759,9 @@ main:has(.page-organiser) {
 }
 
 button.bouton-icone {
-  width: 34px;
-  min-height: 34px;
-  height: 34px;
+  width: var(--h-btn);
+  min-height: var(--h-btn);
+  height: var(--h-btn);
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -1787,6 +1842,7 @@ button.bouton-nouveau.cible {
   border: none;
   background: none;
   color: var(--texte-2);
+  flex: 0 0 20px;
 }
 
 /* Nom sur la première ligne, toute la largeur ; dates et alertes dessous. */
@@ -1885,15 +1941,26 @@ button.bouton-nouveau.cible {
 }
 
 .actions-dossier button {
-  min-height: 32px;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  min-height: var(--h-puce);
+  height: var(--h-puce);
+  padding-top: 0;
+  padding-bottom: 0;
+  white-space: nowrap;
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .actions-dossier button.bouton-icone {
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
+  height: var(--h-puce);
+  min-height: var(--h-puce);
+}
+
+/* C-5.2 : ces boutons portent leur mot à côté de l'icône ; ils prennent la largeur du mot. */
+.actions-dossier button.bouton-icone,
+.options-panneau button.bouton-icone {
+  width: auto;
+  padding: 0 var(--e3);
+  gap: var(--e1);
 }
 
 .contenu-organiser {
@@ -1905,9 +1972,10 @@ button.bouton-nouveau.cible {
 }
 
 /* Ligne du titre : tout sur une ligne ; le titre, le résumé et les événements se raccourcissent d'abord. */
+/* « Annuler : ce qu'il défait » reste entier (C-8.2) : faute de place, les outils passent sous le titre. */
 .tete-vue {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--e2) 14px;
   min-height: 52px;
@@ -1931,7 +1999,7 @@ button.bouton-nouveau.cible {
 }
 
 .tete-vue .curseur input {
-  width: 90px;
+  width: 72px;
 }
 
 .tete-vue .barre-outils {
@@ -1943,7 +2011,7 @@ button.bouton-nouveau.cible {
 .titre-vue {
   display: flex;
   flex-direction: column;
-  flex: 0 1 auto;
+  flex: 1 1 200px;
   min-width: 160px;
 }
 
@@ -1961,8 +2029,8 @@ button.bouton-nouveau.cible {
 
 .chemin-vue button.lien {
   padding: 0;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: inherit;
+  line-height: inherit;
   color: var(--texte-2);
 }
 
@@ -2005,10 +2073,10 @@ button.bouton-nouveau.cible {
 }
 
 .barre-outils button {
-  min-height: 34px;
+  min-height: var(--h-btn);
   padding: var(--e1) var(--e3);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .compte-selection {
@@ -2235,12 +2303,9 @@ button.bouton-nouveau.cible {
   position: absolute;
   top: 14px;
   right: 18px;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border-radius: 50%;
-  font-size: var(--t-section);
-  line-height: 1;
+  height: var(--h-btn);
+  padding: 0 var(--e3);
+  gap: var(--e1);
   background: var(--neutre-doux);
   color: var(--texte);
   border: none;
@@ -2404,8 +2469,9 @@ kbd {
 
 .comparateur-tete {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: var(--e2) var(--e3);
   padding: var(--e2) var(--e4);
 }
 
@@ -2530,10 +2596,9 @@ kbd {
   font-weight: 400;
 }
 
+/* Les pastilles s'enchaînent avec « Empiler » et « Filtres » : une ligne de moins à 1280 px. */
 .pastilles-filtre {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: contents;
 }
 
 /* Filtres en pastilles (C-4.8) : celle qui est allumée est en vert doux, jamais pleine (C-3.2). */
@@ -2545,8 +2610,8 @@ kbd {
   border-radius: var(--r-pastille);
   background: var(--surface);
   color: var(--texte);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .pastille-filtre.actif,
@@ -2598,15 +2663,15 @@ kbd {
 }
 
 .barre-action button {
-  height: 38px;
+  height: var(--h-btn);
   min-height: 0;
   padding: 0 11px;
-  border: none;
+  border: 1.5px solid var(--contour);
   border-radius: var(--r-commande);
   background: var(--neutre-doux);
   color: var(--texte);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .barre-action button:hover:not(:disabled) {
@@ -2639,11 +2704,10 @@ kbd {
 }
 
 .barre-action button.fermer-action {
-  width: 34px;
-  padding: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--e1);
   background: none;
   color: var(--texte-2);
 }
@@ -2887,7 +2951,7 @@ input.tres-court {
 .visionneuse button:not(.fermer) {
   background: var(--neutre-doux);
   color: var(--texte);
-  border-color: transparent;
+  border-color: var(--contour);
 }
 
 .tri-touches button:hover:not(:disabled),
@@ -3165,8 +3229,8 @@ button.bouton-ia:hover:not(:disabled) {
 
 .outil .aide-ia button.bouton-ia {
   width: 100%;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
 }
 
 .aide-ia .progression {
@@ -3548,12 +3612,12 @@ button.bouton-ia:hover:not(:disabled) {
 }
 
 .bascule-vue button {
-  min-height: 30px;
+  min-height: var(--h-puce);
   border: 0;
   border-radius: var(--r-commande);
   padding: 3px var(--e3);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
   background: none;
   color: var(--texte-2);
 }
@@ -3719,17 +3783,18 @@ button.bouton-ia:hover:not(:disabled) {
 .options-panneau {
   display: flex;
   flex: 1 1 100%;
+  flex-wrap: wrap;
   min-width: 0;
   align-items: center;
-  gap: 6px;
+  gap: var(--e2);
 }
 
 /* Le menu prend la place qui reste : son plus long choix ne pousse pas les boutons hors du panneau. */
 .options-panneau select {
-  flex: 1 1 0;
+  flex: 1 1 100%;
   min-width: 0;
-  height: 34px;
-  min-height: 34px;
+  height: var(--h-puce);
+  min-height: var(--h-puce);
   padding: 2px 6px;
   border-width: 1px;
   font-size: var(--t-petit);
@@ -4031,4 +4096,153 @@ button.bouton-ia:hover:not(:disabled) {
 .grille-photos:focus-visible {
   outline-offset: -5px;
   box-shadow: inset 0 0 0 7px var(--focus-noir) !important;
+}
+
+/* C-5.1 : une icône dans un bouton se tient à côté de son mot. */
+button:has(> .icone) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+}
+
+button > .icone {
+  flex: 0 0 auto;
+}
+
+/* C-4.7 : la raison d'une commande désactivée, écrite à côté d'elle. */
+.raison-desactivee {
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  color: var(--texte-2);
+}
+
+/* C-8.2 : « Annuler : ce qu'il défait » reste entier, sur une ligne de 40 px : le libellé est court
+   (un verbe et un nombre, sans nom, voir `Modification.libelle`), le geste avec ses noms est dans
+   l'infobulle. Largeur minimale commune : la barre ne bouge pas sous la souris d'un geste à l'autre ;
+   la paire « Annuler / Rétablir » ne se sépare jamais et ne rétrécit pas. */
+.annuler-retablir {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: var(--e2);
+  white-space: nowrap;
+}
+
+button.bouton-annuler {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 272px;
+  height: var(--h-btn);
+  justify-content: flex-start;
+}
+
+button.bouton-retablir {
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 156px;
+  height: var(--h-btn);
+}
+
+
+/* C-1.4, C-5.3 : la coche « fait » est une icône SVG, posée à côté de son mot. */
+.pastille-relue,
+.onglets-doublons .compte.fini,
+.tout-decide,
+p.ok,
+.couverture-choisie {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+}
+
+.carte-doublons .vu,
+.section-doublons .fait,
+.symbole {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* C-5.1 : le triangle des parties repliables (<details>) est le chevron du jeu SVG
+   (trait 1,75, bouts arrondis, 16 px dans le texte), pas le triangle du navigateur ;
+   il pivote quand la partie est ouverte. Son mot est le texte du résumé (C-5.2). */
+summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: var(--e2);
+  vertical-align: -3px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  transition: transform 0.15s;
+}
+
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  summary::before {
+    transition: none;
+  }
+}
+
+/* « Fermer » ne rétrécit jamais et reste au bout de la barre de Comparer, même à 1280×580
+   (la barre passe à la ligne plutôt que de le pousser hors de l'écran). */
+.comparateur-tete .fermer-comparateur {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Choix de l'utilisateur sur le lot 1 : les barres de données (jauges, mois, ligne de temps,
+   photos dans l'album) sont en vert doux bordé ; seul le bouton d'action reste vert plein (C-3.2).
+   Le bord est un contour intérieur : la taille des barres ne change pas. */
+.jauge .rempli,
+.avancement div,
+.barre-mois .valeur,
+.jauge-cible .rempli:not(.trop),
+.barre-jour .retenues,
+.pastille.retenues,
+.ldt-barre,
+.jauge-doublons span {
+  background: var(--accent-doux);
+  outline: 1.5px solid var(--accent);
+  outline-offset: -1.5px;
+}
+
+.ldt-barre {
+  color: var(--accent-doux-texte);
+}
+
+/* Ligne de temps : la barre choisie est un état, doux et bordé de 2 px (C-4.9), jamais pleine. */
+.ldt-barre.actif {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ligne-de-temps:has(.ldt-barre.actif) .ldt-barre:not(.actif) {
+  background: var(--surface);
+}
+
+/* La barre d'action tient dans sa colonne : sur une ligne tant qu'elle y tient (largeur de son
+   contenu, pas la moitié de la colonne que lui laisserait « left: 50% »), sinon elle passe à la
+   ligne plutôt que de sortir de l'écran (C-6.2). */
+.barre-action {
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--e4));
 }

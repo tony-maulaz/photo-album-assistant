@@ -2,14 +2,13 @@
 // en direct, grille de la moins nette à la plus nette, « Sauver » et « Écarter ».
 // Rien n'est écarté avant « Valider » : le seuil s'applique alors au plan.
 
-import { dossierMisDeCote } from '../../lib/sortie';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { appliquerFloues, compterFloues, deciderFlou, estFloue, photosConcernees, SEUIL_FLOU } from '../../lib/floues';
 import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { lancerAnalyseDossier } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
-import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreValidation, AnnulerRetablir, TeteEtape } from '../composants/Cadre';
 import { GrillePhotos } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { Visionneuse } from '../composants/Visionneuse';
@@ -81,7 +80,7 @@ export function PageFloues() {
     appliquer(appliquerFloues(s.plan, nettete, seuil));
     s.projet.seuil_flou = seuil;
     planifierEnregistrement();
-    if (ecartees) notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : elles iront dans « ${dossierMisDeCote('floues')} » (rien n’est supprimé).`, { libelle: t`Annuler`, faire: annuler });
+    if (ecartees) notifier('ok', t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} : dans « Mis de côté », rien n’est supprimé.`, { libelle: t`Annuler`, faire: annuler });
     validerEtape('floues');
     // Les photos écartées quittent leurs journées : les rafales y sont cherchées de nouveau, en arrière-plan.
     void lancerAnalyseDossier();
@@ -89,8 +88,9 @@ export function PageFloues() {
 
   return (
     <div class="page large avec-barre page-floues">
-      <TeteEtape numero={ETAPE.floues} titre={t`Photos floues`} cle="floues">
-        {t`Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « ${dossierMisDeCote('floues')} ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.`}
+      {/* « Annuler : … » et « Rétablir » dans l'en-tête de l'étape (C-8.2) : la ligne des réglages ne passe plus à la ligne. */}
+      <TeteEtape numero={ETAPE.floues} titre={t`Photos floues`} cle="floues" outils={<AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />}>
+        {t`Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « Mis de côté ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.`}
       </TeteEtape>
       <EncartAnalyse photos={concernees} pourquoi={t`il faut mesurer la netteté de chaque photo.`} />
       <div class="reglages-etape ligne">
@@ -109,19 +109,22 @@ export function PageFloues() {
             onInput={(e) => changerSeuil(depuisCurseur(Number(e.currentTarget.value)))}
           />
         </label>
-        <button type="button" class="lien" disabled={seuil === SEUIL_FLOU} onClick={() => changerSeuil(SEUIL_FLOU)} title={t`Réglage calibré sur de vraies photos`}>
-          {t`Revenir au réglage conseillé`}
-        </button>
+        {/* Au réglage conseillé, un état écrit, pas un bouton désactivé qui changerait de sens (C-4.7). */}
+        {seuil === SEUIL_FLOU ? (
+          <span class="discret" title={t`Réglage calibré sur de vraies photos`}>
+            {t`Réglage conseillé`}
+          </span>
+        ) : (
+          <button type="button" class="lien" onClick={() => changerSeuil(SEUIL_FLOU)} title={t`Réglage calibré sur de vraies photos`}>
+            {t`Revenir au réglage conseillé`}
+          </button>
+        )}
         <strong class="compteur-floues">{pluriel(ecartees, 'photo écartée', 'photos écartées')}</strong>
         <span class="discret">{t`sur ${nombre(concernees.length)}`}</span>
         <select value={voir} onChange={(e) => setVoir(e.currentTarget.value as 'toutes' | 'ecartees')} aria-label={t`Photos affichées`}>
           <option value="toutes">{t`Toutes, de la moins nette à la plus nette`}</option>
           <option value="ecartees">{t`Seulement celles qui seront écartées`}</option>
         </select>
-        <span class="espace" />
-        <button type="button" disabled={!s.historique.peutAnnuler} onClick={annuler} title={s.historique.prochaineAnnulation ? t`Annuler : ${s.historique.prochaineAnnulation} (Ctrl+Z)` : 'Ctrl+Z'}>
-          {t`Annuler`}
-        </button>
       </div>
       <AideIA fonction="IA1">
         {aSuivre.length > 0 && (
@@ -154,8 +157,9 @@ export function PageFloues() {
             <button type="button" onClick={() => appliquer(deciderFlou(s.plan, choisis, undefined))} title={t`Écartée ou gardée selon le curseur, comme les autres`}>
               {t`Selon le curseur`}
             </button>
-            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Tout désélectionner (Échap)`} aria-label={t`Tout désélectionner`}>
+            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Échap`}>
               <Icone nom="croix" taille={16} />
+              {t`Tout désélectionner`}
             </button>
           </div>
         )}
@@ -182,7 +186,8 @@ export function PageFloues() {
         />
       </div>
       <BarreValidation
-        resume={pluriel(ecartees, 'photo écartée', 'photos écartées')}
+        resume={t`${pluriel(ecartees, 'photo écartée', 'photos écartées')} · ${pluriel(concernees.length - ecartees, 'autre est gardée', 'autres sont gardées')}`}
+        ecarte
         alertes={sansMesure ? [t`${pluriel(sansMesure, 'photo sans mesure de netteté', 'photos sans mesure de netteté')} (gardées)`] : []}
         revenir={() => revenirDe('floues')}
         valider={valider}

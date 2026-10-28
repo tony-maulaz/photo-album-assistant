@@ -95,7 +95,7 @@ export function TitreVue({ titre, id, sousTitre }: { titre: string; id?: string;
               <button type="button" class="lien" onClick={() => choisirVue(p.id)} title={t`Ouvrir « ${p.nom} »`}>
                 {p.nom}
               </button>
-              <span aria-hidden="true">›</span>
+              <Icone nom="chevronDroite" taille={16} />
             </Fragment>
           ))}
         </div>
@@ -299,9 +299,14 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
           (enfants.length ? t` (dont ${nombre(direct)} directement)` : '')
         }
       >
-        <button type="button" class="deplier" onClick={basculer} aria-label={deplie ? t`Replier` : t`Déplier`} disabled={!enfants.length}>
-          {enfants.length ? (deplie ? '▾' : '▸') : ''}
-        </button>
+        {/* Sans sous-dossier, une place vide (pas un bouton désactivé) : les noms restent alignés. */}
+        {enfants.length ? (
+          <button type="button" class="deplier" onClick={basculer} aria-label={deplie ? t`Replier` : t`Déplier`}>
+            <Icone nom={deplie ? 'chevronBas' : 'chevronDroite'} taille={16} />
+          </button>
+        ) : (
+          <span class="deplier" aria-hidden="true" />
+        )}
         <div class="texte-dossier">
           {enRenommage ? (
             <input
@@ -323,7 +328,10 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
           )}
           {/* Deuxième ligne : où il se trouve (à plat), dates et alertes ; le nom garde toute la largeur. */}
           <span class="infos-dossier">
-            {plat && d.parent !== null && d.parent !== RACINE && <span class="chemin-dossier">{cheminDossier(s.plan, d.parent)} ›</span>}
+            {plat && d.parent !== null && d.parent !== RACINE && <span class="chemin-dossier">
+                {cheminDossier(s.plan, d.parent)}
+                <Icone nom="chevronDroite" taille={14} />
+              </span>}
             <span class="dates-dossier">{periode(r.duTotal, r.auTotal)}</span>
             {arbre.petits && direct > 0 && direct < SEUIL_PETIT && (
               <span class="badge petit" title={t`Petit dossier : moins de ${SEUIL_PETIT} photos`}>
@@ -350,7 +358,7 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
           {/* L'événement du calendrier sur sa propre ligne : en bout de ligne, les badges le coupaient. */}
           {evenement && (
             <span class="evenement-dossier" title={t`Calendrier : la moitié au moins des photos ont été prises pendant « ${evenement.titre} »`}>
-              <Icone nom="calendrier" taille={12} />
+              <Icone nom="calendrier" taille={14} />
               <span>{evenement.titre}</span>
             </span>
           )}
@@ -375,15 +383,15 @@ async function fusionner(source: string, cible: string) {
   if (!a || !b) return;
   const r = resumes(s.plan).get(source)!;
   const ok = await confirmer(
-    t`Fusionner les dossiers ?`,
-    t`Les ${nombre(r.photosTotal + r.videosTotal)} photos et vidéos de « ${a.nom} » (avec ses sous-dossiers) passent dans « ${b.nom === 'Photos' && b.parent === null ? t`Photos (racine)` : b.nom} », puis « ${a.nom} » disparaît. Ctrl+Z annule.`,
-    t`Fusionner`,
+    t`Réunir les dossiers ?`,
+    t`Les ${nombre(r.photosTotal + r.videosTotal)} photos et vidéos de « ${a.nom} », avec ses sous-dossiers, passent dans « ${b.nom === 'Photos' && b.parent === null ? t`Photos, le dossier principal` : b.nom} », puis « ${a.nom} » disparaît. Ctrl+Z annule.`,
+    t`Réunir`,
   );
   if (!ok) return;
   try {
     appliquer(fusionnerDossiers(s.plan, source, cible));
     if (vue.value === source) choisirVue(cible);
-    notifier('ok', t`« ${a.nom} » fusionné dans « ${b.nom} ».`);
+    notifier('ok', t`« ${a.nom} » réuni dans « ${b.nom} ».`);
   } catch (err) {
     notifier('erreur', texteErreur(err));
   }
@@ -474,7 +482,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
           class={`ligne-dossier speciale${vue.value === VUE_MIS_DE_COTE ? ' actif' : ''}${deCote.survol ? ' cible' : ''}`}
           {...deCote.props}
           onClick={() => choisirVue(VUE_MIS_DE_COTE)}
-          title={t`Ce qui est écarté va dans « ${nomsSortie().misDeCote} » : rien n’est supprimé`}
+          title={t`Ce qui est écarté va ici, puis dans le dossier « ${nomsSortie().misDeCote} » de la sortie : rien n’est supprimé`}
         >
           <span class="nom-dossier">{t`Mis de côté`}</span>
           <span class="nombre-dossier">{nombre(nbMisDeCote)}</span>
@@ -512,10 +520,10 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
             class={`bouton-icone${seulementAlertes ? ' actif' : ''}`}
             aria-pressed={seulementAlertes}
             onClick={() => setSeulementAlertes(!seulementAlertes)}
-            title={t`Seulement les dossiers avec une alerte (sans date, nom en double, même sortie ?…)`}
-            aria-label={t`Seulement les alertes`}
+            title={t`Seulement les dossiers avec une alerte : sans date, nom en double, même sortie ?`}
           >
             <Icone nom="alerte" taille={16} />
+            {t`Alertes`}
           </button>
           {!simple && (
             <button
@@ -523,10 +531,10 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
               class={`bouton-icone bouton-nouveau${nouveau.survol ? ' cible' : ''}`}
               {...nouveau.props}
               onClick={() => void nouveauDossierAvec([], dossierPourNouveauVide())}
-              title={t`Nouveau dossier, dans le dossier affiché (des photos déposées ici partent dans un dossier voisin)`}
-              aria-label={t`Nouveau dossier`}
+              title={t`Nouveau dossier, dans le dossier affiché ; des photos déposées ici partent dans un dossier voisin`}
             >
-              <Icone nom="plus" taille={18} />
+              <Icone nom="plus" taille={16} />
+              {t`Nouveau`}
             </button>
           )}
         </div>
@@ -564,7 +572,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
   );
 }
 
-/** Dossier dont on choisit avec quoi le fusionner (« Fusionner avec… »), ou `null`. */
+/** Dossier dont on choisit avec quoi le réunir (« Réunir avec… »), ou `null`. */
 const fusionAChoisir = signal<string | null>(null);
 
 /** Écart en jours entre deux périodes (0 si elles se touchent ou se chevauchent). */
@@ -614,8 +622,8 @@ function DialogueFusion({ id }: { id: string }) {
   };
   return (
     <div class="voile" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
-      <div class="dialogue deplacer" role="dialog" aria-label={t`Fusionner avec un autre dossier`}>
-        <h2>{t`Fusionner « ${source.nom} » avec…`}</h2>
+      <div class="dialogue deplacer" role="dialog" aria-label={t`Réunir avec un autre dossier`}>
+        <h2>{t`Réunir « ${source.nom} » avec…`}</h2>
         <p class="discret">{t`Ses photos passent dans le dossier choisi. Les plus proches dans le temps sont en tête.`}</p>
         <input
           ref={champ}
@@ -643,7 +651,7 @@ function DialogueFusion({ id }: { id: string }) {
             </li>
           ))}
         </ul>
-        <p class="discret">{t`↑ ↓ pour choisir, Entrée pour fusionner, Échap pour fermer.`}</p>
+        <p class="discret">{t`↑ ↓ pour choisir, Entrée pour réunir, Échap pour fermer.`}</p>
       </div>
     </div>
   );
@@ -667,17 +675,18 @@ export function ActionsDossier() {
   };
   return (
     <span class="actions-dossier">
-      <button type="button" class="bouton-icone" onClick={() => (renommage.value = d.id)} title={t`Renommer (F2 ou double-clic sur le dossier)`} aria-label={t`Renommer`}>
+      <button type="button" class="bouton-icone" onClick={() => (renommage.value = d.id)} title={t`F2 ou double-clic sur le dossier`}>
         <Icone nom="crayon" taille={16} />
+        {t`Renommer`}
       </button>
       {!vide && (
         <button type="button" class="doux" title={t`Mettre ses photos dans un autre dossier (ou glisser ce dossier sur un autre, à gauche)`} onClick={() => (fusionAChoisir.value = d.id)}>
-          {t`Fusionner avec…`}
+          {t`Réunir avec…`}
         </button>
       )}
       {vide && (
         <button type="button" class="doux" onClick={() => faire(() => supprimerDossierVide(s.plan, d.id))}>
-          {t`Supprimer (vide)`}
+          {t`Retirer ce dossier vide`}
         </button>
       )}
       {fusionAChoisir.value === d.id && <DialogueFusion id={d.id} />}

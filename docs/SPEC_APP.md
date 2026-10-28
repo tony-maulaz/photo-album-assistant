@@ -510,21 +510,21 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   Sélection).
 - **Un groupe par carte** : heure, sorte, emplacement, proposition. Chaque
   photo a une proposition (garder ou écarter). **Un clic choisit, « Accepter »
-  valide** (D101) : un clic sur une photo pose un choix en attente (« à
+  applique** (D101) : un clic sur une photo pose un choix en attente (« à
   garder », « à écarter », en pointillés ; « Votre choix · pas encore
-  validé »), noté dans le plan, annulable, sans rien mettre de côté ; dans
+  accepté »), noté dans le plan, annulable, sans rien mettre de côté ; dans
   une rafale ou une même scène, il choisit cette photo seule (les autres
   passent « à écarter »), sauf la case **Garder plusieurs photos** du groupe
   (cochée d'office dès deux photos choisies ; Ctrl+clic ajoute une photo) ;
   pour les copies exactes, il change cette photo seule. **Accepter : garder
-  N, écarter M** applique les choix et valide le groupe (« Gardée »,
-  « Écartée », « ✓ Validé ») ; aussi **Tout garder**, **Tout écarter**,
+  N, écarter M** applique les choix et accepte le groupe (« Gardée »,
+  « Écartée », « Accepté » avec la coche) ; aussi **Tout garder**, **Tout écarter**,
   **Comparer en grand** (zoom synchronisé, dossier de chaque photo, ← → d'un
   groupe à l'autre, 1, 2, 3… choisissent la photo de ce numéro, « Accepter
-  et groupe suivant »). Filtres **À valider**, **Validés**, **Tous** : avec
-  « À valider », un groupe validé s'en va, « Annuler » le fait revenir ; avec
-  « Validés » ou « Tous », il se replie à sa place (« Revoir » le rouvre,
-  « Replier » le referme) (D100). Un groupe non validé garde ses photos dans
+  et groupe suivant »). Filtres **À accepter**, **Acceptés**, **Tous** : avec
+  « À accepter », un groupe accepté s'en va, « Annuler » le fait revenir ; avec
+  « Acceptés » ou « Tous », il se replie à sa place (« Revoir » le rouvre,
+  « Replier » le referme) (D100). Un groupe pas encore accepté garde ses photos dans
   l'archive. Tout s'annule (Ctrl+Z). Clavier : J et K, ← et →, Espace, A, C,
   N et P.
 - **Copies exactes** sur tout le projet, quels que soient le dossier et la

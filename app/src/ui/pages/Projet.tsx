@@ -202,6 +202,7 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         valider={() => void creer()}
         libelleValider={encours ? t`Création…` : t`Créer le projet`}
         validerActif={!!source && !!sortie && !erreur && !existant && !encours}
+        raisonInactif={encours ? t`Création en cours.` : !source || !sortie ? t`Choisissez les deux dossiers.` : erreur ? t`Corrigez d’abord l’erreur ci-dessus.` : t`Ce projet existe déjà : ouvrez-le ci-dessus.`}
       />
     </div>
   );

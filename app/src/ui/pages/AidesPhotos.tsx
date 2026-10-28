@@ -93,7 +93,7 @@ function nomVue(s: Session): string {
 
 enregistrerAide({
   id: 'IA8',
-  nom: aTraduire('Étiqueter les photos avec l’IA'),
+  nom: aTraduire('Étiqueter les photos'),
   etape: ETAPE.selection,
   description: aTraduire('Pour chaque photo : personnes, type, défauts éventuels et courte description. Tout sert de filtre et à la recherche en langage naturel.'),
   envoi: aTraduire('chaque photo réduite à 768 px, 10 par appel'),
@@ -133,7 +133,7 @@ enregistrerAide({
 
 enregistrerAide({
   id: 'IA9',
-  nom: aTraduire('Apprécier les photos avec l’IA'),
+  nom: aTraduire('Apprécier les photos'),
   etape: ETAPE.selection,
   description: aTraduire('Note indicative de qualité (composition, expressions, lumière), avec une phrase. Sert à trier, jamais à cocher.'),
   envoi: aTraduire('les photos en 1024 px, 6 par appel'),
@@ -179,7 +179,7 @@ function pileChoisie(s: Session): FichierPlan[] {
 
 enregistrerAide({
   id: 'IA10',
-  nom: aTraduire('Meilleure de la sélection (IA)'),
+  nom: aTraduire('Trouver la meilleure'),
   etape: ETAPE.selection,
   description: aTraduire('Parmi 2 à 12 photos semblables sélectionnées (une pile), l’IA indique celle qu’elle préférerait et pourquoi ; vous gardez la main.'),
   siRien: aTraduire('sélectionnez 2 à 12 photos semblables'),
@@ -222,7 +222,7 @@ enregistrerAide({
 
 enregistrerAide({
   id: 'IA11',
-  nom: aTraduire('Contrôler la sélection de cette sortie (IA)'),
+  nom: aTraduire('Contrôler cette sortie'),
   etape: ETAPE.selection,
   description: aTraduire('Relecture des photos retenues d’une sortie : redondances, moments manquants, photos faibles. Uniquement des remarques.'),
   siRien: aTraduire('choisissez une sortie avec des photos retenues'),
@@ -413,7 +413,7 @@ export interface TextesProposes {
 function aideTextes(id: 'IA12' | 'IA13', legendes: boolean) {
   enregistrerAide({
     id,
-    nom: legendes ? aTraduire('Proposer des légendes (IA)') : aTraduire('Proposer titres et introductions (IA)'),
+    nom: legendes ? aTraduire('Proposer des légendes') : aTraduire('Proposer titres et introductions'),
     etape: ETAPE.album,
     description: legendes
       ? aTraduire('Légendes pour une part des photos de chaque section (15 % par défaut), dans le ton choisi.')
@@ -475,7 +475,7 @@ export function couverturesProposees(s: Session): { id: string; raison: string }
 
 enregistrerAide({
   id: 'IA14',
-  nom: aTraduire('Suggérer une couverture (IA)'),
+  nom: aTraduire('Suggérer une couverture'),
   etape: ETAPE.album,
   description: aTraduire('5 candidates parmi les grandes photos ★★, avec la raison.'),
   siRien: aTraduire('il faut au moins 2 grandes photos ★★'),
@@ -521,7 +521,7 @@ function demandesControle(s: Session) {
 
 enregistrerAide({
   id: 'IA15',
-  nom: aTraduire('Relire l’album (IA)'),
+  nom: aTraduire('Relire l’album'),
   etape: ETAPE.album,
   description: aTraduire('Relecture des pages simulées : redondances entre pages voisines, rythme, sections déséquilibrées. Uniquement des remarques.'),
   envoi: aTraduire('planches de l’album dans l’ordre, avec le numéro de page'),

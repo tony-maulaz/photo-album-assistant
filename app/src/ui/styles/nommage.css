@@ -11,16 +11,18 @@
   display: inline-flex;
   align-items: center;
   gap: var(--e1);
-  min-height: 0;
+  /* Une pastille : 36 px (C-4.3). */
+  min-height: var(--h-puce);
+  height: var(--h-puce);
   max-width: 360px;
-  padding: 2px 9px;
+  padding: 0 var(--e3);
   border: 1px solid var(--contour);
   border-radius: var(--r-pastille);
   background: var(--neutre-doux);
   color: var(--texte-2);
-  font-size: var(--t-petit);
+  font-size: var(--t-corps);
   font-weight: 400;
-  line-height: 1.5;
+  line-height: var(--lh-corps);
 }
 
 .nom-possible .icone-nom {

@@ -58,12 +58,9 @@ export const TEXTES: Record<string, string> = {
   ' (conseillé) : des expressions ou des poses différentes sont gardées': ' (recommended): different expressions or poses are kept',
   Strict: 'Strict',
   ' : une seule photo par scène, même si les expressions changent': ': a single photo per scene, even if the expressions change',
-  'Analyser avec l’IA — {0}': 'Analyse with the AI — {0}',
   '{0} · dépensé : {1} / {2} CHF': '{0} · spent: {1} / {2} CHF',
   'Réglages avancés': 'Advanced settings',
   'Modèle IA': 'AI model',
-  'Les consignes viennent du script 06, réglé avec Claude Sonnet 4.6 ; les réponses sont mises en cache par modèle. Réglages du script : rafales à moins de 10 min et distance ≤ 12 ; scènes locales à distance ≤ 20 ; vérification par 6 photos au plus.':
-    'The instructions come from script 06, tuned with Claude Sonnet 4.6; answers are cached per model. Script settings: bursts less than 10 min apart and distance ≤ 12; local scenes at distance ≤ 20; checks of at most 6 photos.',
   '{0} : relancez l’analyse.': '{0}: run the analysis again.',
   'réponse illisible oubliée': 'unreadable answer forgotten',
   'réponses illisibles oubliées': 'unreadable answers forgotten',
@@ -72,7 +69,6 @@ export const TEXTES: Record<string, string> = {
   'Arrêter (les réponses déjà reçues sont gardées)': 'Stop (answers already received are kept)',
   Dossier: 'Folder',
   'Groupes affichés': 'Groups shown',
-  'À valider': 'To validate',
   groupe: 'group',
   groupes: 'groups',
 
@@ -103,10 +99,8 @@ export const TEXTES: Record<string, string> = {
   ' (confiance {0}/10)': ' (confidence {0}/10)',
   'Renommé « {0} ».': 'Renamed “{0}”.',
   '« {0} »': '“{0}”',
-  Fusionner: 'Merge',
   'Renommer « {0} » en « {1} »': 'Rename “{0}” to “{1}”',
   Renommer: 'Rename',
-  '« {0} » fusionné dans « {1} ».': '“{0}” merged into “{1}”.',
 
   // Pages.tsx
   '{0} — {1} / {2} USD par million de jetons': '{0} — {1} / {2} USD per million tokens',
@@ -125,7 +119,6 @@ export const TEXTES: Record<string, string> = {
   'Clé enregistrée.': 'Key saved.',
   'Enregistrer la clé': 'Save the key',
   'Test en cours…': 'Testing…',
-  '✓ La clé fonctionne ({0} modèles accessibles).': '✓ The key works ({0} models available).',
   Tester: 'Test',
   'Oublier la clé': 'Forget the key',
   'Fenêtres de choix de dossier et de fichier': 'Windows for choosing folders and files',
@@ -226,9 +219,9 @@ export const TEXTES: Record<string, string> = {
     ': figures, dates, cameras and clock offset; the photo analysis (sharpness, similarity, copies, bursts) runs meanwhile.',
   ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
-  ' : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider ».':
-    ': set the tolerance; S saves a photo, X sets aside a failed photo. Nothing is set aside before “Confirm”.',
-  ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » valide le groupe.': ': one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: a click chooses the photo to keep, “Accept” validates the group.',
+  ' : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider et continuer ».':
+    ': set the tolerance; S saves a photo, X sets aside a failed photo. Nothing is set aside before “Confirm and continue”.',
+  ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » écarte les autres.': ': one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: a click chooses the photo to keep, “Accept” sets the others aside.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
   ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',
   ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':
@@ -250,12 +243,8 @@ export const TEXTES: Record<string, string> = {
     'Move: drag the selection onto a folder in the panel, or press M (then type part of the name), or keys 1 to 9 (last folders used).',
   'Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.':
     'The “+” button next to the search creates a folder in the folder shown; photos dropped on it (or “New folder” in the selection bar) go into a new folder next to it.',
-  'Fusionnez deux dossiers avec « Fusionner avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom (ou F2) pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.':
-    'Merge two folders with “Merge with…” next to the title, or by dragging one onto the other; double-click a name (or F2) to rename it. In a folder of several days, each day has its title, with the calendar events; “New folder with this day” takes it out of the folder.',
   'Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).':
     'The badges point out what deserves a look: small folder, very large, unknown place, no date, duplicate name, same outing as a neighbouring folder (photos taken one after the other, at the same place).',
-  'Suppr met de côté (rien n’est supprimé : les éléments iront dans « {0} ») ; dans « Mis de côté », Suppr les remet.':
-    'Delete sets aside (nothing is deleted: the items will go to “{0}”); in “Set aside”, Delete puts them back.',
   'Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.': 'Double-click or Enter: the photo shown large; ← → to go to the next one.',
   'Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.': 'Ctrl+Z undoes, Ctrl+Y (or Ctrl+Shift+Z) redoes, at every step; “?” shows all the shortcuts.',
   'Créer la sortie (étape {0})': 'Creating the output (step {0})',
@@ -281,7 +270,6 @@ export const TEXTES: Record<string, string> = {
   'Que faire de {0}': 'What to do with {0}',
   'photo sans date': 'photo without a date',
   'photos sans date': 'photos without a date',
-  '✓ Analyse des photos terminée.': '✓ Photo analysis finished.',
   'janv.': 'Jan',
   'févr.': 'Feb',
   mars: 'Mar',
@@ -337,8 +325,6 @@ export const TEXTES: Record<string, string> = {
   'À savoir': 'Good to know',
   '{0} directement à la racine du dossier (pas dans un sous-dossier).': '{0} directly at the top level of the folder (not in a subfolder).',
   '{0} (1 ou 2 photos) : à rattacher ailleurs à l’étape suivante si besoin.': '{0} (1 or 2 photos): to attach elsewhere in the next step if needed.',
-  '{0} (floues, doublons…) : comptés ci-dessus, ils iront dans « {1} ».':
-    '{0} (blurry, duplicates…): counted above, they will go to “{1}”.',
   '{0} : l’état d’un ancien projet (dossier « .album »).': '{0}: the state of an earlier project (“.album” folder).',
   'fichier ignoré': 'file ignored',
   'fichiers ignorés': 'files ignored',
@@ -368,7 +354,6 @@ export const TEXTES: Record<string, string> = {
   '{0} de l’album, numérotées dans l’ordre pour ifolor, et les textes ({1})':
     '{0} from the album, numbered in order for ifolor, and the texts ({1})',
   'rien : aucune photo retenue à l’étape {0}': 'nothing: no photos selected in step {0}',
-  '{0} écartés (rien n’est supprimé)': '{0} set aside (nothing is deleted)',
   '{0} ni photo ni vidéo, avec leur chemin d’origine': '{0} neither photo nor video, with their original path',
   '{0} ni photo ni vidéo, avec son chemin d’origine': '{0} neither photo nor video, with its original path',
   'le bilan, lisible dans un navigateur': 'the summary, readable in a browser',
