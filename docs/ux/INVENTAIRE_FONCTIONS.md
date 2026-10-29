@@ -30,14 +30,15 @@ incohérents**.
 | Liste des étapes avec leur état | « Étape n sur 13 · Nom ▾ » → menu déroulant | V | Cadre.tsx:89-111 |
 | Budget IA dépensé | pastille à anneau « IA x / y CHF », détail en infobulle ; **pas cliquable** (l'infobulle renvoie au Journal) | V/B | Cadre.tsx:185-192 |
 | Menu (icône et mot « Menu ») : Fonctions IA, Configuration, Réglages, Journal (projet ouvert), Aide, Fermer le projet | bouton « Menu » | I | Cadre.tsx:117-164 |
-| Annuler la dernière modification | Ctrl+Z (pages d'étape seulement, **pas quand une fenêtre est ouverte**) | C | Raccourcis.tsx:391-413 |
+| Annuler la dernière modification | Ctrl+Z (pages d'étape seulement, **pas quand une fenêtre est ouverte** ; lot 4, tour 3 : sur les pages passées au cadre, seulement un geste de l'étape affichée, sinon un message nomme l'étape — `annulerIci`) | C | Raccourcis.tsx, CadreCommun.tsx |
 | Rétablir | Ctrl+Y ou Ctrl+Maj+Z (mêmes limites) | C | idem |
 | Liste des raccourcis | touche « ? » ; **aucun bouton** ne l'ouvre (seule la page Aide le dit) | C | Raccourcis.tsx:397, 484 |
 | Fermer menu / fenêtre | Échap, clic à côté | C/G | Cadre.tsx:15-34 |
 | Précédent du navigateur | reste dans l'application | G | navigation.ts |
 | Bandeau « le dossier à trier a changé » | « Mettre à jour l'inventaire » / « Plus tard » | V | BandeauSource.tsx |
 | Annuler depuis une notification | bouton « Annuler » dans le message (Lieux, Doublons, Petits, Consolidation, Nommage, Tri, Album, Floues) | T | etat.ts, organiser.ts:110 |
-| Revenir / Valider et continuer | barre du bas, à droite, libellé variable selon la page | V | Cadre.tsx:244-283 |
+| Revenir / Valider et continuer | barre du bas, à droite, libellé variable selon la page ; lot 4 : « Valider et continuer » au même pixel sur toutes les pages (barre de 64 px à 1440×900, 56 px en dessous) | V | Cadre.tsx:244-283 |
+| **Cadre commun (lot 4, pages passées : Sélection, Doublons)** : Aide dans la barre de l'application, juste avant Menu, « à lire » tant qu'elle n'a pas été ouverte (sous 1440 px, elle ne s'ouvre pas seule) ; colonne de l'Aide (320 / 304 px) avec « Fermer » et Échap, « Tout le mode d'emploi » ; « Annuler » et « Rétablir » à droite de l'en-tête d'étape, leur libellé suit chaque geste (corrigé au tour 1 des contrôles : il restait figé) ; le bouton ne défait qu'un geste de l'étape affichée, sinon « Rien à annuler ici » avec l'étape en infobulle (tour 2, choix 6 A) ; **Ctrl+Z et Ctrl+Y suivent la même règle sur ces pages** (tour 3 : ils disent « Rien à annuler ici. Votre dernier changement est à l'étape N, … » au lieu de défaire sans le montrer un geste d'une autre étape ; rien n'est perdu : le geste s'annule à son étape, ou par le lien « Annuler » de son message ; « Y aller » au sous-lot 4a2 ; un libellé d'historique reste en français après un changement de langue) ; « Rien à rétablir ici » de même ; le message passager s'écrit dans l'en-tête, à la place de la consigne (la bulle revient dans une vue en grand ou un dialogue ; son « Annuler » est celui de l'en-tête, sauf pour un message venu d'une autre étape, qui garde le sien, tour 3 ; la zone `role=status` reste dans l'arbre d'accessibilité, même vide) ; un clic à la souris sur une décision ou un outil de la Sélection ou du Recadreur laisse le focus où il était ; « Taille − + » au bout de la barre d'outils (100 à 600 px, le même réglage que Réglages) ; au palier (1180 px de large ou moins), la liste de gauche devient un menu dans la tête de la table (ouvert, il prend le focus ; Échap ou un clic à côté le ferment et rendent le focus à son bouton) ; sous 440 px de haut, la page défile en entier | barre de l'application, en-tête d'étape, barre d'outils | V | CadreCommun.tsx, App.tsx (`data-cadre`) |
 
 ## 1. Écran « Reprendre » (au lancement)
 
@@ -165,29 +166,38 @@ incohérents**.
 
 ## 10. Étape 5 « Doublons »
 
+Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : bandes fixes, seule la zone des groupes (et la liste de gauche) défile.
+
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
-| Onglets Copies exactes / Rafales / Même scène (IA) / Mis de côté, avec compteur | onglets | V |
-| Tout l'onglet (copies) : Accepter les N propositions, Garder tous les exemplaires | rangée « Tout l'onglet » | V |
-| Tout l'onglet (rafales) : Choisir avec l'IA dans N rafales (IA16) | rangée | V |
-| Afficher À accepter / Acceptés / Tous | bouton segmenté | V |
-| Grouper par journée / mois / dossier | liste | V |
-| Taille des photos | loupe dans la barre de filtres (y = 510 à 1440×900) | I |
-| Classer par heure / plus grands groupes d'abord | liste | V |
-| Liste de gauche : choisir une journée ou un dossier, ✓ ou nombre restant, chercher un dossier (Entrée = premier trouvé) | liste | V |
+| Explication de l'étape et de l'onglet, rappel des clics et du clavier, « Vos photos d'origine ne bougent pas » | lot 4 : « Aide » dans la barre de l'application (« à lire » sous 1440 px), colonne de l'Aide | V |
+| Onglets Copies exactes / Rafales / Même scène (IA) / Mis de côté, avec ce qui reste à accepter (dessous) | lot 4 : barre d'outils ; « Acceptés : x sur y » dans l'infobulle du menu de l'onglet | V/B |
+| Tout l'onglet (copies) : Accepter les N propositions, Garder tous les exemplaires | lot 4 : menu « Toutes les copies ▾ » de la barre d'outils | V |
+| Tout l'onglet (rafales) : Choisir avec l'IA dans N rafales (IA16, prix sur la ligne) | lot 4 : menu « ✦ Toutes les rafales ▾ » de la barre d'outils | V |
+| Afficher À accepter / Acceptés / Tous (« Tous » par défaut, C-4.8) | lot 4 : haut de la liste de gauche (au palier, dans son menu) | V |
+| Grouper par journée / mois / dossier | lot 4 : « Grouper et classer », replié en haut de la liste de gauche (ouvert d'office par dossier ou par taille ; il reste ouvert quand on revient à « par journée » ; une ligne par réglage, le mot devant sa liste) | V |
+| Taille des photos | lot 4 : « Taille − + » au bout de la barre d'outils ; au palier, les photos font les trois quarts du réglage (160 → 120 px) | V |
+| Classer par heure / plus grands groupes d'abord | lot 4 : « Grouper et classer », replié en haut de la liste de gauche | V |
+| Liste de gauche : choisir une journée ou un dossier, ✓ ou nombre restant, chercher un dossier (Entrée = premier trouvé) | colonne de gauche ; lot 4, au palier : menu de la tête de la table (le même composant), qui porte le nom de la section et ce qui y reste | V |
 | Élargir la liste de gauche, double-clic = largeur d'origine | poignée sur le bord | G/B |
-| Section : Choisir avec l'IA de cette journée, Accepter les N groupes de cette journée | en-tête de section, étiquette de portée | V |
-| Groupe : clic sur une photo = la choisir (seule dans une rafale), Ctrl+clic = en plus | clic | V (expliqué en petit gris) |
-| Groupe : Accepter (A), Tout garder, Tout écarter, Comparer en grand (C), Replier, Garder plusieurs photos (case) | pied de carte | V |
-| Groupe validé replié : Revoir | lien | V |
-| Suite à accepter : X › / Aller à la suite à accepter | bouton | V |
-| Clavier : J/K ou ↓↑ groupe, ← → photo, Espace choisir, A accepter, C comparer, N/P journée suivante/précédente | clavier (dit en petit gris sous les filtres) | C |
-| Comparateur (lot 3 de la charte) : présentation calculée « Côte à côte » / « Une à la fois » (bouton et Entrée, gardée d'un groupe à l'autre jusqu'à la fermeture ; côte à côte choisi à la main sur 2 ou 3 rangées, désactivé avec sa raison si les photos seraient trop petites), ↑ ↓ photo (le clavier sur la carte), ← → ou Page préc./suiv. groupe (« Groupe précédent », « Groupe suivant » ; « Groupe n sur N » dans le titre), Accepter et groupe suivant (A, libellé chiffré, alerte), 1 à 9 = garder/écarter la photo n si elle est à l'écran (« À garder » en mode une seule photo écarte les autres, dit dans l'infobulle), « À garder / À écarter » sous chaque photo (état allumé), Garder plusieurs photos (case : ligne d'information en côte à côte, sous le choix en « Une à la fois »), Choisir avec l'IA (prix), avis et raison de l'IA, dossier et « rangée dans … », copies : poids et nom s'il diffère, nom du fichier (« Une à la fois », infobulle), zoom − / Photo entière (0) / + (touches − +), molette, glisser, double-clic = une à la fois, Annuler / Rétablir (Ctrl+Z, Ctrl+Y), Fermer (Échap, le clavier revient au bouton qui l'a ouverte), bande des vignettes avec leur état, rappel « ↑ ↓ photo · ← → groupe » à toutes les tailles (au large : « 1–N choisir · A accepter ») | fenêtre | V/C |
-| Même scène : Prudent / Strict, Analyser avec l'IA (coût dans le bouton), Arrêter | encart | V |
+| Section : Choisir avec l'IA de cette journée, Accepter les N groupes de cette journée (« dont N où vous n'avez rien choisi ») | lot 4 : menu « Cette journée ▾ » (« Ce mois », « Ce dossier ») de la tête de la table, ✦ si l'IA y est | V |
+| Groupe : clic sur une photo = la choisir (seule dans une rafale), Ctrl+clic = en plus ; aux Copies, clic sur la ligne d'un exemplaire | clic ; lot 4 : un clic n'importe où dans un groupe le rend « en cours » (il prend le plein), sans défilement | V |
+| Groupe : Accepter (A) | lot 4 : plein au bout de l'en-tête collé du groupe en cours (les autres en contour) ; il nomme ce qu'il garde (« garder la 4 [vignette], écarter 5 autres », « garder 3 photos, écarter 9 autres », Copies « garder celle de « dossier » », ou le nom du fichier quand deux exemplaires sont dans le même dossier) ; A vise le groupe du plein ; ignoré 0,5 s après une acceptation ; A ou Entrée gardée enfoncée : une seule fois ; le groupe accepté se replie à sa place (avec tous les filtres) | V/C |
+| Groupe : Comparer en grand (C) | lot 4 : en-tête du groupe (icône seule dans toute la liste si un en-tête manque de place ; la durée d'une rafale est passée dans l'infobulle du titre pour lui laisser son mot) ; C vise le groupe du plein | V/I/C |
+| Groupe : Tout garder, Garder plusieurs photos (case) | lot 4 : ligne des boutons sous les photos | V |
+| Groupe : Tout écarter | lot 4 : menu « Autres choix ▾ » de la ligne des boutons | V |
+| Groupe : état (« Votre choix · pas encore accepté », proposition) et dossier de la photo proposée | lot 4 : ligne des boutons (plus dans l'en-tête) | V |
+| Groupe : Replier (groupe déjà accepté, rouvert) | lot 4 : en-tête, à la place du plein | V |
+| Place de chaque photo d'une rafale (1, 2, 3…) | lot 4 : au début de sa bande d'état (« 4 · À garder »), le chiffre des touches de Comparer | V |
+| Copies exactes : la photo une fois, une ligne par exemplaire (état, dossier, nom, date, copie réduite, poids) | lot 4 : sous l'en-tête du groupe | V |
+| Groupe validé replié : Revoir | lien, juste après le texte de la ligne repliée (pas au bout à droite, sous le plein d'avant) ; ignore les clics 0,5 s après une acceptation (second clic d'un double-clic) ; la ligne d'exemplaires dit « 1 gardé, 1 écarté » | V |
+| Section suivante à accepter | lot 4 : « Journée suivante à accepter : … › » (« Mois / Dossier suivant ») sur sa propre ligne, sous la ligne des boutons du dernier groupe ; quand la section est finie, le même libellé en plein dans la tête de la table ; quand l'onglet est fini, et sur « Mis de côté », plein « Rafales : 6 à accepter › » (prochain onglet qui reste) | V |
+| Clavier : J/K ou ↓↑ groupe, ← → photo, Espace choisir, A accepter, C comparer, N/P journée suivante/précédente | clavier ; tout est écrit dans l'Aide (← →, ↓ ↑ et C ajoutés au tour 1 des contrôles), A et C aussi dans les infobulles | C |
+| Comparateur (lot 3 de la charte) : présentation calculée « Côte à côte » / « Une à la fois » (bouton et Entrée, gardée d'un groupe à l'autre jusqu'à la fermeture ; côte à côte choisi à la main sur 2 ou 3 rangées, désactivé avec sa raison si les photos seraient trop petites), ↑ ↓ photo (le clavier sur la carte), ← → ou Page préc./suiv. groupe (« Groupe précédent », « Groupe suivant » ; « Groupe n sur N » dans le titre), Accepter et groupe suivant (A, lot 4 : le même libellé que la page, vignette comprise ; A gardée enfoncée une fois), 1 à 9 = garder/écarter la photo n si elle est à l'écran (« À garder » en mode une seule photo écarte les autres, dit dans l'infobulle), « À garder / À écarter » sous chaque photo (état allumé), Garder plusieurs photos (case : ligne d'information en côte à côte, sous le choix en « Une à la fois »), Choisir avec l'IA (prix), avis et raison de l'IA, dossier et « rangée dans … », copies : poids et nom s'il diffère, nom du fichier (« Une à la fois », infobulle), zoom − / Photo entière (0 ; lot 4 : en icône sous 1440 px quand la vue a « Groupe précédent / suivant », pour que le plein reste entier) / + (touches − +), molette, glisser, double-clic = une à la fois, Annuler / Rétablir (Ctrl+Z, Ctrl+Y), Fermer (Échap ; lot 4 : la page montre le dernier groupe regardé, qui prend le plein et le focus), bande des vignettes avec leur état, rappel « ↑ ↓ photo · ← → groupe » à toutes les tailles (au large : « 1–N choisir · A accepter ») | fenêtre | V/C |
+| Même scène : Prudent / Strict, Analyser avec l'IA (coût dans le bouton), Arrêter | encart (lot 4 : dans la zone qui défile ; l'analyse en cours sous la barre d'outils) | V |
 | Réglages avancés IA : modèle, redemander les réponses illisibles | replié | V |
-| Mis de côté : Grouper, taille, Tout remettre (N), clic = remettre / écarter de nouveau | onglet | V |
-| **Bouton Annuler** | **absent** (notification « Annuler » ou Ctrl+Z seulement) | — |
+| Mis de côté : Grouper (haut de la liste de gauche), taille (barre d'outils), Tout remettre (N) (tête de la table), clic = remettre / écarter de nouveau ; plein vers le prochain onglet qui reste à accepter | onglet (« Mis de côté », avec « N photos » dessous) | V |
+| Annuler : *le geste* / Rétablir | lot 4 : à droite de l'en-tête d'étape (avant : notification ou Ctrl+Z seulement) ; après « Accepter », le message « N photos écartées : dans « Mis de côté » » s'écrit dans l'en-tête (compté avant le geste : il disait « 0 photo écartée » au tour 2) et le groupe suivant vient en haut de la zone, sa bande « À garder » entière ; le focus (s'il était dans la table) va sur la photo gardée de ce groupe, pas sur son plein : → et Espace y gardent leur sens (tour 3) ; une annulation qui rouvre un groupe lui rend le plein et le montre en haut de la zone (tour 3) ; « Tout garder », « Tout écarter », la section et l'onglet passent par la même garde de 0,5 s (un double-clic sur « Tout garder » n'accepte plus le groupe suivant, tour 3) | V/C |
 
 ## 11. Étape 6 « Tri automatique » (refaite par D107, relevée pour cohérence)
 
@@ -303,26 +313,29 @@ incohérents**.
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Explication : « Replier » en haut à droite, puis « Aide » coincé entre la loupe et la colonne de droite | 2 places | V |
-| Tri rapide (plein écran, une photo à la fois) | bouton contour « Tri rapide » (ligne du titre), T ou Entrée, **double-clic sur une photo** | V/C/G |
+| Explication | lot 4 : « Aide » dans la barre de l'application (« à lire »), colonne de l'Aide | V |
+| Tri rapide (plein écran, une photo à la fois) | bouton « Tri rapide » de la tête de la table (lot 4 : le plein quand aucune photo choisie n'attend « Dans l'album »), T ou Entrée, **double-clic sur une photo** | V/C/G |
 | Annuler (historique global) : « Annuler : *le geste* », infobulle avec les noms | bouton | V/C |
 | Rétablir | bouton « Rétablir » à côté d'« Annuler », Ctrl+Y | V/C |
-| Taille des photos | loupe dans la barre de la vue (x = 958) | I |
-| Filtrer : Toutes / À décider / Dans l'album / ★★ Grandes / Pas pour l'album (avec compteurs), Nouvelles | pastilles | V |
-| Empiler les photos semblables ; déplier une pile | pastille ; badge ▸ N sur la photo | V/I |
-| Rechercher dans les descriptions de l'IA (après IA8) | champ | V |
-| Filtres secondaires : jour, arrivée, appareil, indicateurs, tri (date, netteté, appréciation), personnes, type, défauts | « Filtres ▾ » | V |
-| Effacer les filtres | lien | V |
-| Choisir une sortie | panneau de gauche (clic = filtre) | V |
+| Taille des photos | lot 4 : « Taille − + » au bout de la barre d'outils | V |
+| Filtrer : Toutes / À décider / Dans l'album / Pas pour l'album (avec compteurs) | lot 4 : pastilles après « Afficher : » dans la barre d'outils | V |
+| Filtrer : ★★ Grandes, Nouvelles | lot 4 : pastilles de « Filtres ▾ » (tête de la table) | V |
+| Empiler les photos semblables ; déplier une pile | lot 4 : case « Ranger les presque pareilles en pile » de « Filtres ▾ » ; badge au bout de la bande | V/I |
+| Rechercher dans les descriptions de l'IA (après IA8) | champ dans la tête de la table | V |
+| Filtres secondaires : jour, arrivée, appareil, indicateurs, tri (date, netteté, appréciation), personnes, type, défauts | « Filtres ▾ » (« Filtres : N actifs ») | V |
+| Effacer les filtres | lien de « Filtres ▾ » (efface aussi les piles) | V |
+| Choisir une sortie | panneau de gauche (clic = filtre) ; lot 4, au palier : menu de la tête de la table (le même panneau) | V |
 | Sélectionner : clic, Ctrl, Maj, rectangle, flèches, Ctrl+A, Échap | souris/clavier | G/C |
-| ★ Dans l'album / ★★ Grande / Pas pour l'album / À décider | barre noire flottante en bas ; Espace ou 1, 2, X, Suppr ou Retour arrière | V/C |
-| Tourner d'un quart de tour (Maj : l'autre sens) | bouton « Tourner » (icône SVG et mot) ; R / Maj+R | I/C |
-| Recadrer… (une seule photo) | barre flottante ; K | V/C |
-| Comparer (2 à 4 photos) | barre flottante ; C | V/C |
-| Déplacer… vers une autre sortie | barre flottante ; M | V/C |
+| ★ Dans l'album / ★★ Grande / Pas pour l'album / À décider | lot 4 : bloc fixe de la colonne de droite « N photos choisies » (« Dans l'album » plein tant qu'une photo choisie n'y est pas ; la décision déjà prise est allumée) ; Espace ou 1, 2, X, Suppr ou Retour arrière (Espace et Entrée sur un bouton qui a le focus : c'est ce bouton qui agit, corrigé au tour 1 des contrôles) | V/C |
+| Outils de la colonne de droite (Ne plus choisir, Tourner, Recadrer et tourner…, Comparer, Déplacer) et « L'album », à 1180 px ou moins avec l'Aide ouverte | seulement les 4 décisions restent au-dessus de l'Aide ; les outils au clavier (Échap, R, K, C, M) ; tout revient à la fermeture de l'Aide | V/C |
+| Ne plus choisir | lot 4 : premier outil de la colonne de droite ; Échap | V/C |
+| Tourner d'un quart de tour (Maj : l'autre sens) | lot 4 : outil « Tourner » de la colonne de droite ; R / Maj+R | V/C |
+| Recadrer et tourner… (une seule photo) | lot 4 : outil de la colonne de droite (désactivé avec « une photo à la fois ») ; K | V/C |
+| Comparer en grand (2 à 4 photos) | lot 4 : outil de la colonne de droite (désactivé avec « de 2 à 4 photos ») ; C | V/C |
+| Déplacer vers une sortie… | lot 4 : outil de la colonne de droite ; M | V/C |
 | Déplacer en glissant une photo sur une sortie du panneau | glisser | G (dit nulle part) |
 | Renommer une sortie (double-clic dans le panneau), **fusionner deux sorties en glissant l'une sur l'autre** | panneau « simple » qui garde ces gestes | G (dit nulle part) |
-| Cible : nombre, pages/photos, photos par page, jauge | colonne de droite | V |
+| Cible : nombre, pages/photos, photos par page, jauge | colonne de droite (« L'album », sous les outils quand des photos sont choisies) | V |
 | Équilibre par jour/mois : barre = date au survol, clic = filtrer ce jour | colonne de droite | V/B |
 | Sorties sans photo retenue : aller à la sortie | liens | V |
 | Redondances : comparer | liens | V |
@@ -330,8 +343,8 @@ incohérents**.
 | **Tri rapide** : Espace/1 ★, 2 ★★, X pas dans l'album, ⌫/Suppr à décider, R/Maj+R tourner, ← → précédente/suivante, Échap fermer, molette/glisser/0 zoom ; en fin : Aller à la première à décider (Entrée), Fermer, Terminer, Revoir depuis le début | boutons + clavier | V/C |
 | Tri rapide : recadrer (K), déplacer (M), comparer (C), **annuler (Ctrl+Z)** | **absents** (touches avalées) | — |
 | **Comparateur** (lot 3 de la charte) : « ★ Dans l'album / ★★ Grande / Pas pour l'album / À décider » sous chaque photo (état allumé), présentation calculée et Entrée, double-clic = une à la fois, ↑ ↓ photo, la photo courante (date, dossier, note et choix de l'IA en bref) sur la ligne d'information, le texte entier de l'IA dans « Une à la fois » et l'infobulle, zoom − / Photo entière (0) / +, molette, glisser, Annuler / Rétablir, Fermer (Échap), bande des vignettes avec leur état ; aucun numéro affiché (les touches 1 à 9 n'y servent pas) | fenêtre | V/C |
-| Comparateur : Tourner, Recadrer… (photo affichée en « Une à la fois ») | légende de droite | V |
-| **Recadreur** : glisser le cadre, tirer un coin, Libre / 3:2 / 4:3 / Carré, En portrait / En paysage, Redresser (curseur) + 0°, Tout reprendre, Fermer sans recadrer, Accepter le recadrage (Entrée), Échap | fenêtre plein écran | V/C/G |
+| Comparateur : Tourner, Recadrer et tourner… (photo affichée en « Une à la fois ») | légende de droite | V |
+| **Recadreur** (lot 4 : vue en grand, salle sombre) : glisser le cadre, tirer un coin, Libre / 3:2 / 4:3 / Carré, En portrait / En paysage, **quart de tour À gauche / À droite, tout de suite** (le cadre tourne avec la photo), Redresser (curseur) + « Remettre à 0° », « Remettre la photo entière » (ex-« Tout reprendre » ; lot 4 : dans la barre du bas, à gauche du plein, visible à toutes les tailles ; « Déjà la photo entière », désactivé, quand il n'y a rien à remettre ; à 1024×400, le curseur Redresser est sous le pli de la colonne, qui défile), **un seul « Annuler : … » et « Rétablir »** (une pile : réglages du cadre et quarts de tour ; Ctrl+Z, Ctrl+Y), « Fermer sans recadrer » en haut à gauche (Échap ; un quart de tour reste fait), « Accepter le recadrage » dans la barre du bas fixe (Entrée, sauf sur un autre bouton) | fenêtre plein écran | V/C/G |
 | Voir une photo en grand **sans** la trier | **absent** (le double-clic ouvre le Tri rapide) | — |
 
 ## 17. Étape 12 « Album »

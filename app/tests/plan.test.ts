@@ -315,6 +315,20 @@ describe('« Annuler : ce qu’il défait » (C-8.2, C-10.3)', () => {
     expect(h.detailAnnulation).toMatch(/« .+ » dans « .+ »/);
   });
 
+  it('dit l’étape du geste à annuler et de celui à rétablir (choix 6 A du lot 4)', () => {
+    const plan = exemple();
+    const h = new Historique();
+    const photo = [...plan.fichiers.values()].find((f) => f.categorie === 'photo')!;
+    expect(h.etapeAnnulation).toBeUndefined();
+    h.enregistrer({ ...noterAlbum(plan, [photo.id], 1)!, etape: 10 });
+    h.enregistrer({ ...noterAlbum(plan, [photo.id], 2)!, etape: 11 });
+    expect(h.etapeAnnulation).toBe(11);
+    h.annuler(plan);
+    expect(h.etapeAnnulation).toBe(10);
+    expect(h.etapeRetablissement).toBe(11);
+    expect(plan.fichiers.get(photo.id)!.album).toBe(1);
+  });
+
   it('dit un geste, pas un état : traitement des dossiers, album, recadrage', () => {
     const plan = exemple();
     const sous = [...plan.dossiers.values()].filter((d) => d.parent !== null);

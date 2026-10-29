@@ -20,8 +20,9 @@ import { TEXTES as pagesB } from './pagesB';
 import { TEXTES as pagesC } from './pagesC';
 import { TEXTES as lot_charte2 } from './lot_charte2';
 import { TEXTES as lot_charte3 } from './lot_charte3';
+import { TEXTES as lot_charte4 } from './lot_charte4';
 
 /** Les tables séparément, pour que le test repère une même phrase traduite de deux façons. */
-export const PARTIES = { commun, composants, logique, navigateur, pagesA, pagesB, pagesC, lot_sortie, lot_album, lot_selection, lot_rangement, lot_doublons, lot_accueil, lot_general, lot_tri, lot_noms, lot_consolidation, lot_charte2, lot_charte3 };
+export const PARTIES = { commun, composants, logique, navigateur, pagesA, pagesB, pagesC, lot_sortie, lot_album, lot_selection, lot_rangement, lot_doublons, lot_accueil, lot_general, lot_tri, lot_noms, lot_consolidation, lot_charte2, lot_charte3, lot_charte4 };
 
 export const EN: Record<string, string> = Object.assign({}, ...Object.values(PARTIES));

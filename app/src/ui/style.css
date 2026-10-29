@@ -59,6 +59,16 @@
   /* Hauteur de la barre du bas, remesurée par BarreValidation (messages posés au-dessus). */
   --haut-barre-validation: 66px;
 
+  /* C-7.1 (lot 4, provisoire) : bandes du cadre commun, à 1440×900 puis sous 1440 px ou 700 px de haut. */
+  --h-app: 52px;
+  --h-app-petit: 44px;
+  --h-barre-bas: 64px;
+  --h-barre-bas-petit: 56px;
+  --l-panneau-droit: 304px;
+  --l-panneau-droit-petit: 288px;
+  --l-aide: 320px;
+  --l-aide-petit: 304px;
+
   /* C-3.1 : neutres. */
   --fond: light-dark(#f6f5f2, #121315);
   --surface: light-dark(#ffffff, #1b1d20);
@@ -534,12 +544,16 @@ main {
   transform: scaleY(1.5);
 }
 
+/* Frise : une donnée, pas une action (C-3.2, choix du lot 1) : vert doux bordé pour une étape validée ; seul le
+   bouton d'action est vert plein. En cours : le filet vert seul. */
 .bandeau .etape.validee {
-  background: var(--accent);
+  background: var(--accent-doux);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
 .bandeau .etape.en_cours {
-  background: color-mix(in srgb, var(--accent) 40%, var(--table));
+  background: var(--table);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, var(--table));
 }
 
 .bandeau .etape.a_revoir {
@@ -966,7 +980,9 @@ button.fleche-dossier:hover {
   display: flex;
   align-items: center;
   gap: var(--e4);
-  min-height: 66px;
+  /* Lot 4 : 64 px à 1440×900, 56 px en dessous ; « Valider et continuer » au même pixel sur toutes les pages
+     (collé au bas de la barre, à 10 px puis 6 px du bord), que la barre ait une ligne ou deux. */
+  min-height: var(--h-barre-bas);
   padding: 10px var(--e5);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(10px);
@@ -3804,30 +3820,75 @@ button.bouton-ia:hover:not(:disabled) {
   font-weight: 400;
 }
 
-/* Recadrage pour l'album (D62) : la photo en grand, le cadre à tirer, les formats et le redressement. */
+/* Recadrer et tourner (D62, lot 4) : une vue en grand, salle sombre. Barre du haut (Fermer, titre, un seul
+   « Annuler »), ligne d'information, la photo et la colonne des outils, barre du bas fixe avec le plein. */
 .recadreur {
   position: fixed;
   inset: 0;
   z-index: 60;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--e3);
-  padding: var(--e4) 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) var(--h-barre-bas-petit);
   background: var(--fond);
   color: var(--texte);
-  overflow: auto;
 }
 
-.tete-recadreur {
+.barre-haut-recadreur {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--e1) 14px;
+  align-items: center;
+  gap: var(--e4);
+  min-height: 48px;
+  padding: var(--e1) var(--e5);
+  border-bottom: 1px solid var(--filet);
 }
 
-.tete-recadreur .discret {
+.barre-haut-recadreur .fermer-recadreur {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+}
+
+.titre-recadreur {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.barre-haut-recadreur .annuler-retablir {
+  flex: 0 0 auto;
+}
+
+.info-recadreur {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  padding: var(--e1) var(--e5);
   color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.info-recadreur .icone {
+  flex: none;
+}
+
+.scene-recadreur {
+  display: flex;
+  min-height: 0;
+}
+
+.zone-photo-recadreur {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .scene-recadrage {
@@ -3898,16 +3959,48 @@ button.bouton-ia:hover:not(:disabled) {
 }
 
 .outils-recadrage {
+  flex: 0 0 288px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+  padding: var(--e3) var(--e5) var(--e3) var(--e4);
+  overflow: auto;
+  border-left: 1px solid var(--filet);
+}
+
+.outils-recadrage section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--e2);
+}
+
+.outils-recadrage h3 {
+  margin: 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 600;
+  color: var(--texte-2);
+}
+
+.outils-recadrage .formats,
+.outils-recadrage .quarts {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--e3) 28px;
+  gap: 6px;
 }
 
-.outils-recadrage .formats {
-  display: flex;
+.outils-recadrage .quarts {
+  flex-wrap: nowrap;
+}
+
+.outils-recadrage .quarts button {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--e1);
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .outils-recadrage .formats button {
@@ -3920,14 +4013,8 @@ button.bouton-ia:hover:not(:disabled) {
   color: var(--accent-doux-texte);
 }
 
-.outils-recadrage .redresser {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.outils-recadrage .redresser input {
-  width: 220px;
+.outils-recadrage input[type='range'] {
+  width: 100%;
 }
 
 .outils-recadrage .lien,
@@ -3935,11 +4022,29 @@ button.bouton-ia:hover:not(:disabled) {
   color: var(--texte-2);
 }
 
-.actions-recadrage {
+.outils-recadrage .discret {
+  margin: 0;
+}
+
+.barre-bas-recadreur {
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: min(900px, 100%);
+  justify-content: flex-end;
+  gap: var(--e4);
+  padding: 0 var(--e5);
+  border-top: 1px solid var(--filet);
+}
+
+.rappel-recadreur {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.barre-bas-recadreur .accepter-recadrage,
+.barre-bas-recadreur .remettre-entiere {
+  flex: 0 0 auto;
 }
 
 .miniature-recadree {

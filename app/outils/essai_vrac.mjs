@@ -285,7 +285,7 @@ try {
   await page.locator('.onglet-doublons.actif', { hasText: 'Copies exactes' }).waitFor({ timeout: 60_000 });
   await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
   verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à accepter'), 'onglets : on arrive sur « Copies exactes », 2 groupes à valider');
-  const copie0140 = page.locator('.tuile-doublon[aria-label^="copie de 0140.jpg"]');
+  const copie0140 = page.locator('.tuile-doublon[aria-label$=" · copie de 0140.jpg"]');
   verifier((await copie0140.getAttribute('class')).includes('a_ecarter'), 'copies exactes : la copie du vrac est proposée à l’écart (« à écarter »)');
   const carte0141 = page.locator('.carte-doublons', { hasText: '0141' });
   verifier(
@@ -298,33 +298,50 @@ try {
   // Un clic garde la copie proposée à l'écart ; Ctrl+Z annule (la page ne perd rien).
   await copie0140.click();
   // Un clic choisit (« à garder »), sans rien valider : le groupe reste à valider (D101).
-  await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('choisie'));
+  await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label$=" · copie de 0140.jpg"]')?.classList.contains('choisie'));
   verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à accepter') && (await page.locator('.pastille-attente').count()) === 1, 'un clic choisit sans valider : « Votre choix · pas encore validé », toujours 2 à valider');
   await page.keyboard.press('Control+z');
-  await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label^="copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
+  await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label$=" · copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
   verifier(true, 'un clic garde une copie proposée à l’écart ; Ctrl+Z annule');
-  // Chaque bouton au-dessus de ce qu'il touche (D98) : l'explication sans bouton, puis la rangée de l'onglet, puis les filtres.
-  const ordreBlocs = await page.evaluate(() => [...document.querySelectorAll('.encart-onglet, .rangee-onglet, .outils-doublons')].map((x) => x.className.split(' ').at(-1)));
+  // Lot 4 (cadre commun) : l'explication de l'onglet est dans l'Aide (ouverte d'elle-même à 1440 px à la première
+  // visite), ce qui touche tout l'onglet dans le menu « Toutes les copies » de la barre d'outils, les filtres en haut
+  // de la liste de gauche, sans « Accepter ».
+  const aideDoublons = await page.evaluate(() => ({ ouverte: !!document.querySelector('#panneau-aide .encart-onglet'), boutons: document.querySelectorAll('#panneau-aide .encart-onglet button').length }));
+  if (aideDoublons.ouverte) await page.locator('[data-place=aide]').click();
   verifier(
-    (await page.locator('.encart-onglet button').count()) === 0 &&
-      ordreBlocs.join(',') === 'encart-onglet,rangee-onglet,outils-doublons' &&
+    aideDoublons.ouverte &&
+      aideDoublons.boutons === 0 &&
+      (await page.locator('.outils-cadre .rangee-onglet .bouton-portee', { hasText: 'Toutes les copies' }).count()) === 1 &&
+      (await page.locator('.sections-doublons .outils-doublons').count()) === 1 &&
       (await page.locator('.outils-doublons button', { hasText: /^Accepter/ }).count()) === 0 &&
-      (await page.locator('.rangee-onglet').innerText()).includes('Acceptés : 0 sur 2'),
-    `boutons de tout l’onglet dans leur rangée, entre l’explication et les filtres : ${ordreBlocs.join(', ')}`,
+      ((await page.locator('.rangee-onglet').getAttribute('title')) ?? '').includes('Acceptés : 0 sur 2'),
+    'explication de l’onglet dans l’Aide, boutons de tout l’onglet dans son menu, filtres en haut de la liste de gauche',
   );
+  // « Tous » allumé par défaut (C-4.8) ; un groupe accepté reste à sa place, replié (D100 levée le 27.10).
+  verifier((await page.getByRole('radio', { name: 'Tous' }).getAttribute('aria-checked')) === 'true', 'Doublons : le filtre « Tous » est allumé par défaut (C-4.8)');
   const cartes = await page.locator('.carte-doublons').count();
-  await page.locator('.rangee-onglet').getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
+  const ouvertes = await page.locator('.carte-doublons:not(.repliee)').count();
+  await page.locator('.rangee-onglet .bouton-portee').click();
+  await page.locator('.rangee-onglet').getByRole('menuitem', { name: 'Accepter les 2 propositions', exact: true }).click();
   await page.locator('.onglet-doublons.actif .compte.fini', { hasText: '2' }).waitFor();
   verifier(
-    (await page.locator('.carte-doublons').count()) === cartes - 2,
-    'copies exactes écartées : avec « À valider », les groupes acceptés s’en vont (D100)',
+    (await page.locator('.carte-doublons').count()) === cartes && (await page.locator('.carte-doublons:not(.repliee)').count()) === ouvertes - 2,
+    'copies exactes écartées : les groupes acceptés restent à leur place, repliés (D100 levée)',
   );
+  // L'onglet fini : le plein mène au prochain onglet qui reste à accepter (É1), pas à une impasse.
+  {
+    const suite = page.locator('[data-action=onglet-suivant]');
+    const rafalesRestent = /à accepter/.test(await page.locator('.onglet-doublons', { hasText: 'Rafales' }).innerText());
+    verifier(!rafalesRestent || ((await suite.count()) === 1 && (await suite.innerText()).includes('Rafales')), 'Copies toutes acceptées : un plein « Rafales : N à accepter › »');
+  }
   await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
   await page.locator('.tuile-doublon.ecartee').first().waitFor();
   verifier((await page.locator('.tuile-doublon.ecartee').count()) === 2, 'onglet « Mis de côté » : les 2 copies écartées, prêtes à être remises');
   // Grouper par dossier : une copie se range sous chacun des dossiers de la source où elle a un exemplaire.
   await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
   await page.getByRole('radio', { name: 'Tous' }).click();
+  // « Grouper et classer » est replié dans la liste de gauche (lot 4) : on l'ouvre.
+  if (!(await page.locator('.outils-doublons details.grouper-classer').evaluate((d) => d.open))) await page.locator('.outils-doublons details.grouper-classer > summary').click();
   await page.locator('.outils-doublons select').first().selectOption('dossier');
   // Le chemin complet est dans l'infobulle ; la liste n'affiche que le dernier nom, en retrait sous son parent (D97).
   const cheminsSections = () => page.locator('.section-doublons').evaluateAll((l) => l.map((b) => b.getAttribute('title')));
@@ -343,7 +360,8 @@ try {
   verifier(trouves.length === 1 && trouves[0] === 'janvier/fete', `recherche d’un dossier : ${trouves.join(', ')}`);
   // Photo dans deux dossiers gardés : sous les groupes à relire, toute gardée ; celle du dossier choisi à gauche (D100).
   await fete.click();
-  const premiersChemins = () => page.locator('.carte-doublons:not(.repliee) .photo-doublon:first-child .chemin-doublon').evaluateAll((l) => l.map((x) => x.textContent));
+  // Lot 4 : aux Copies, la photo montrée une fois et une ligne par exemplaire ; celle du dossier choisi d'abord.
+  const premiersChemins = () => page.locator('.carte-doublons:not(.repliee) .exemplaire:first-child strong.chemin-doublon').evaluateAll((l) => l.map((x) => x.textContent));
   verifier(
     (await page.locator('.titre-partout').innerText()).includes('tout est gardé') && (await page.locator('.carte-doublons .tuile-doublon.gardee').count()) === 2,
     'photo dans deux dossiers gardés : « Aussi dans d’autres dossiers gardés », les deux exemplaires gardés',
@@ -389,7 +407,7 @@ try {
   await page.keyboard.press('Control+z');
   await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.a_ecarter').waitFor();
   verifier(
-    (await comparateur.count()) === 1 && /^Accepter : garder \d+/.test(await comparateur.locator('.navigation-groupes button.principal').innerText()),
+    (await comparateur.count()) === 1 && /^Accepter : (garder (la \d+|\d+|les \d+|celle de « |« )|écarter les \d+)/.test(((await comparateur.locator('.navigation-groupes button.principal').textContent()) ?? '').replace(/\s+/g, ' ').trim()),
     'comparer en grand : Ctrl+Z annule sans fermer la vue ; « Accepter : garder N, écarter M » comme sur la carte',
   );
   await page.keyboard.press(String(n));
@@ -403,14 +421,20 @@ try {
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
   await page.locator('.onglet-doublons.actif', { hasText: '2 à accepter' }).waitFor();
-  // « À valider » : un groupe accepté s'en va ; « Annuler » le fait revenir.
-  const aRelire = await page.locator('.carte-doublons').count();
-  await page.locator('.carte-doublons').first().locator('[data-action="accepter"]').click();
-  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons').length === n - 1, aRelire);
+  // « À accepter » : un groupe accepté se replie à sa place (D100 levée) ; « Annuler » le rouvre.
+  const aRelire = await page.locator('.carte-doublons:not(.repliee)').count();
+  const toutes = await page.locator('.carte-doublons').count();
+  await page.locator('.carte-doublons:not(.repliee)').first().locator('[data-action="accepter"]').click();
+  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons:not(.repliee)').length === n - 1, aRelire);
+  const resteLa = (await page.locator('.carte-doublons').count()) === toutes;
+  // L'en-tête dit le geste à défaire (« Annuler : accepter 1 copie »), actif (tour 1 du lot 4, B1).
+  const annulerEntete = await page.locator('.entete-cadre .bouton-annuler').evaluate((b) => ({ texte: b.textContent.replace(/\s+/g, ' ').trim(), actif: !b.disabled }));
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
-  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons').length === n, aRelire);
-  verifier(true, '« À valider » : un groupe accepté s’en va, Ctrl+Z le fait revenir');
+  await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons:not(.repliee)').length === n, aRelire);
+  const retablirEntete = await page.locator('.entete-cadre .bouton-retablir').evaluate((b) => !b.disabled);
+  verifier(resteLa, '« À accepter » : un groupe accepté se replie à sa place, Ctrl+Z le rouvre');
+  verifier(annulerEntete.actif && /^Annuler : accepter 1 /.test(annulerEntete.texte) && retablirEntete, `en-tête : « ${annulerEntete.texte} » actif après « Accepter », « Rétablir » actif après Ctrl+Z`);
   // Les rafales sont cherchées avec l'analyse (D81) : elles sont déjà là.
   await page.locator('.onglet-doublons', { hasText: 'Rafales' }).click();
   await page.locator('.carte-doublons, .encart:has-text("Aucune rafale")').first().waitFor({ timeout: 60_000 });
@@ -434,6 +458,8 @@ try {
   await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
   // IA des rafales (D102) : sa photo porte la ★, avec sa raison sous chaque photo ; un seul Ctrl+Z annule son choix.
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
+  // Lot 4 : ce qui touche tout l'onglet est dans le menu « Toutes les rafales » de la barre d'outils.
+  await page.locator('.rangee-onglet .bouton-portee').click();
   await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA dans 1 rafale/ }).click();
   await rafale.locator('.avis-ia').waitFor();
   await capturer(page, 'v2d_rafales_ia');

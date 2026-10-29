@@ -142,14 +142,6 @@
   flex: 1;
 }
 
-.avance-doublons {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-}
-
 .jauge-doublons {
   width: 140px;
   height: 8px;
@@ -294,10 +286,8 @@
   border-color: var(--filet-fort);
 }
 
-.carte-doublons:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-doux);
-}
+/* Pas de filet vert au focus : un seul groupe « en cours » porte le filet (C-6.6, `.en-cours`) ; le cadre jaune
+   et noir de :focus-visible suffit au clavier (C-9.5, tour 1 du lot 4). */
 
 .carte-doublons > header,
 .carte-doublons > footer {
@@ -365,8 +355,11 @@
   line-height: var(--lh-corps);
 }
 
+/* « Revoir » juste après le texte, pas au bout de la ligne : rien de cliquable n'arrive là où était le plein
+   (second clic d'un double-clic sur « Accepter », tour 2 du lot 4). */
 .carte-doublons.repliee .resume {
-  flex: 1;
+  flex: 0 1 auto;
+  min-width: 0;
   color: var(--texte-2);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);

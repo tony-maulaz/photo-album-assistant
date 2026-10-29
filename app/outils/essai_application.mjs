@@ -371,14 +371,21 @@ try {
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
   await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.a_ecarter').length === n, aEcarterAvant);
+  const repliesAvant = await page.locator('.carte-doublons.repliee').count();
   await carte.locator('[data-action="accepter"]').click();
   await page.waitForTimeout(300);
-  verifier((await page.locator('.barre-validation .resume').innerText()).includes('1 photo écartée'), 'un doublon écarté après relecture');
-  verifier((await page.locator('.carte-doublons').count()) === groupes - 1, 'avec « À valider », le groupe accepté s’en va (D100)');
+  // Lot 4 : le compte des photos écartées est sur l'onglet « Mis de côté » (la barre du bas dit ce qui reste).
+  verifier(/\b1\b/.test(await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).innerText()), 'un doublon écarté après relecture');
+  // D100 levée (27.10) : le groupe accepté reste à sa place, replié en une ligne (« Revoir »).
+  verifier((await page.locator('.carte-doublons').count()) === groupes && (await page.locator('.carte-doublons.repliee').count()) === repliesAvant + 1, 'le groupe accepté reste à sa place, replié (D100 levée)');
 
   // Étape 9 : sélection au clavier, tri rapide, rotation.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
   await page.locator('.page-selection .tuile').first().waitFor();
+  // Lot 4 (choix 5) : à 1440 px, l'Aide s'ouvre seule à la première visite et la liste des sorties passe en
+  // menu (palier) ; on la referme pour garder la liste en colonne.
+  const aideSelection = page.locator('[data-place="aide"][aria-expanded="true"]');
+  if (await aideSelection.count()) await aideSelection.click();
   await page.locator('.page-selection .tuile').first().click();
   await page.keyboard.press('Control+a');
   await page.keyboard.press(' ');
@@ -447,11 +454,21 @@ try {
     `panneau « Par taille » : ${tailles.length} dossiers à plat, les plus petits d’abord, le dossier parent sous le nom`,
   );
   await page.locator('.options-panneau select').selectOption('arbre');
-  await page.locator('.page-selection .tete-vue .curseur input').fill('500');
+  // « Taille − + » (lot 4, C-8.3) : un pas à la fois, jusqu'à la taille voulue.
+  const taillePhotos = async (px) => {
+    const reglage = page.locator('.page-selection [data-place="taille"]');
+    for (let i = 0; i < 20; i++) {
+      const v = Number(await reglage.getAttribute('data-valeur'));
+      if (v === px || (v < px && (await reglage.locator('[data-action="plus-grandes"]').isDisabled())) || (v > px && (await reglage.locator('[data-action="plus-petites"]').isDisabled()))) break;
+      await reglage.locator(v < px ? '[data-action="plus-grandes"]' : '[data-action="plus-petites"]').click();
+      if ((v < px && Number(await reglage.getAttribute('data-valeur')) > px) || (v > px && Number(await reglage.getAttribute('data-valeur')) < px)) break;
+    }
+  };
+  await taillePhotos(480);
   await page.waitForTimeout(300);
   const largeur = await page.locator('.page-selection .tuile').first().evaluate((e) => e.getBoundingClientRect().width);
   verifier(largeur >= 480, `zoom des miniatures jusqu’à 600 px (case de ${Math.round(largeur)} px)`);
-  await page.locator('.page-selection .tete-vue .curseur input').fill('160');
+  await taillePhotos(160);
   const infobulle = await page.locator('.page-selection .tuile').first().getAttribute('title');
   verifier(infobulle.includes('« '), `infobulle avec la description de l’IA : ${infobulle.split('\n').slice(2).join(' / ')}`);
 

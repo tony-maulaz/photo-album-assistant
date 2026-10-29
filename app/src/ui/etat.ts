@@ -24,6 +24,7 @@ import { Miniatures } from '../navigateur/miniatures';
 import { ETAPE, ETAPES, etapePrecedente, etapeSuivante, noterProjetRecent, type CodeEtape, type EtatProjet, type EtatEtape, type Projet } from '../navigateur/projet';
 import { enregistrerReglages, lireReglages, type Reglages } from '../navigateur/reglages';
 import { GroupeWorkers } from '../navigateur/workers';
+import { minusculeInitiale } from './format';
 
 export type Page =
   | { nom: 'reprendre' }
@@ -234,6 +235,8 @@ document.addEventListener('visibilitychange', () => {
 export function appliquer(m: Modification | null) {
   const s = session.value;
   if (!s || !m) return;
+  const p = page.value;
+  if (p.nom === 'etape' && m.etape === undefined) m.etape = p.numero;
   s.historique.enregistrer(m);
   apresChangement();
 }
@@ -251,12 +254,16 @@ function apresChangement() {
   planifierEnregistrement();
 }
 
+/** Nombre d'annulations faites : une page y voit qu'un changement vient d'« Annuler » (Doublons rend le plein au groupe rouvert). */
+export const annulations = signal(0);
+
 export function annuler() {
   const s = session.value;
   const m = s?.historique.annuler(s.plan);
   if (m) {
+    annulations.value++;
     apresChangement();
-    notifier('info', t`Annulé : ${m.detail ?? m.libelle}`);
+    notifier('info', t`Annulé : ${minusculeInitiale(m.detail ?? m.libelle)}`);
   }
 }
 
@@ -265,7 +272,7 @@ export function retablir() {
   const m = s?.historique.retablir(s.plan);
   if (m) {
     apresChangement();
-    notifier('info', t`Rétabli : ${m.detail ?? m.libelle}`);
+    notifier('info', t`Rétabli : ${minusculeInitiale(m.detail ?? m.libelle)}`);
   }
 }
 

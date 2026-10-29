@@ -15,7 +15,6 @@ export const TEXTES: Record<string, string> = {
   exemplaire: 'copy',
   exemplaires: 'copies',
   'Rafale de {0} photos': 'Burst of {0} photos',
-  'Rafale de {0} photos {1}': 'Burst of {0} photos {1}',
   'en moins d’une seconde': 'in less than a second',
   'en {0} s': 'in {0} s',
   'en {0} min': 'in {0} min',
@@ -44,7 +43,6 @@ export const TEXTES: Record<string, string> = {
   'Toutes les photos du groupe sont gardées.': 'All the photos of the group are kept.',
   'Touche A': 'Key A',
   'Touche A, puis groupe suivant': 'Key A, then next group',
-  'Touche C': 'Key C',
   'Comparer en grand': 'Compare full size',
   Afficher: 'Show',
   Tous: 'All',
@@ -52,7 +50,6 @@ export const TEXTES: Record<string, string> = {
   'par heure': 'by time',
   'les plus grands groupes d’abord': 'largest groups first',
   // Portée des boutons groupés (D98)
-  'Tout l’onglet': 'Whole tab',
   'Toutes les copies exactes': 'All exact copies',
   'Toutes les rafales': 'All bursts',
   'Toutes les scènes en double': 'All repeated scenes',
@@ -134,8 +131,6 @@ export const TEXTES: Record<string, string> = {
   // Un clic choisit, « Accepter » valide (D101)
   'Choisir une photo': 'Choose a photo',
   'Cliquer pour garder celle-ci seule (Ctrl+clic : en plus)': 'Click to keep only this one (Ctrl+click: in addition)',
-  'Accepter : garder {0}, écarter {1}': 'Accept: keep {0}, set aside {1}',
-  'Accepter : garder {0}': 'Accept: keep {0}',
   'Garder plusieurs photos': 'Keep several photos',
   'dont {0} où vous n’avez rien choisi': 'including {0} where you chose nothing',
   // D102 — choisir dans les rafales avec l'IA

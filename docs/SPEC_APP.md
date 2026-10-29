@@ -482,51 +482,72 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   part (« Renommer », « Non merci »).
 
 ### 6.8 Étape 5 — Doublons (IA)
-- **Onglets** (D71), un par sorte de doublons, chacun avec ce qui reste à
-  relire : **Copies exactes** (avec les photos présentes dans plusieurs
-  dossiers gardés, D86), **Rafales**, **Même scène (IA)**, **Mis de côté**
-  (tout ce que l'étape a écarté, à remettre d'un clic). Chaque bouton est
-  juste au-dessus de ce qu'il touche, avec une étiquette de portée (D98) :
-  sous l'explication de l'onglet (texte seul), la **rangée de l'onglet**
-  (« Tout l'onglet », ce qui reste à relire, la jauge ; pour les copies
-  seulement : « Accepter les N propositions » et « Garder tous les
-  exemplaires ») ; puis la barre des filtres, toujours visible en haut :
-  Afficher (À relire, Relus, Tous), Grouper, taille, Classer ; puis la page.
-  En tête de la section affichée : son titre, ce qui reste à relire et
-  « Valider les N groupes de cette journée / de ce mois / de ce dossier »
-  (s'il reste au moins deux groupes ; ceux où au moins une photo est
-  choisie, « dont N où vous n'avez rien choisi ») : on parcourt la section
-  en choisissant d'un clic, puis on la valide d'un coup (D100, D101) ; pas de
-  boutons vers les sections voisines (N et P au clavier). La liste de gauche
-  et la première carte commencent à la même hauteur. Groupé par dossier, la
-  photo du dossier choisi est à gauche dans chaque groupe. À gauche, la liste des journées
-  (puis des dossiers gardés, puis des photos sans date) ; on relit une
-  journée à la fois, et toute la liste de ses groupes s'affiche.
-  « Grouper » : par journée, par mois ou par dossier (par défaut par
-  journée, par mois au-delà de 20 journées) ; par dossier, une copie se
-  range sous chaque dossier de la source où elle a un exemplaire (même
-  après le tri), et les dossiers sont par ordre alphabétique, avec une
-  recherche. Un curseur règle la taille des photos (le même réglage qu'à la
-  Sélection).
-- **Un groupe par carte** : heure, sorte, emplacement, proposition. Chaque
-  photo a une proposition (garder ou écarter). **Un clic choisit, « Accepter »
-  applique** (D101) : un clic sur une photo pose un choix en attente (« à
-  garder », « à écarter », en pointillés ; « Votre choix · pas encore
-  accepté »), noté dans le plan, annulable, sans rien mettre de côté ; dans
-  une rafale ou une même scène, il choisit cette photo seule (les autres
-  passent « à écarter »), sauf la case **Garder plusieurs photos** du groupe
-  (cochée d'office dès deux photos choisies ; Ctrl+clic ajoute une photo) ;
-  pour les copies exactes, il change cette photo seule. **Accepter : garder
-  N, écarter M** applique les choix et accepte le groupe (« Gardée »,
-  « Écartée », « Accepté » avec la coche) ; aussi **Tout garder**, **Tout écarter**,
-  **Comparer en grand** (zoom synchronisé, dossier de chaque photo, ← → d'un
-  groupe à l'autre, 1, 2, 3… choisissent la photo de ce numéro, « Accepter
-  et groupe suivant »). Filtres **À accepter**, **Acceptés**, **Tous** : avec
-  « À accepter », un groupe accepté s'en va, « Annuler » le fait revenir ; avec
-  « Acceptés » ou « Tous », il se replie à sa place (« Revoir » le rouvre,
-  « Replier » le referme) (D100). Un groupe pas encore accepté garde ses photos dans
-  l'archive. Tout s'annule (Ctrl+Z). Clavier : J et K, ← et →, Espace, A, C,
-  N et P.
+- **Cadre commun** (lot 4 de la charte, D111, provisoire jusqu'à l'essai sur
+  de vraies photos ; `docs/ux/CHARTE.md` C-7, C-8) : bandes fixes (barre de
+  l'application, en-tête d'étape avec « Annuler : … » et « Rétablir », barre
+  d'outils, barre du bas) ; seules la liste de gauche et la zone des groupes
+  défilent ; l'explication de l'étape et de l'onglet, et le clavier, sont dans
+  l'**Aide** (barre de l'application, « à lire » sous 1440 px).
+- **Onglets** (D71), un par sorte de doublons, dans la barre d'outils, chacun
+  avec ce qui reste à accepter : **Copies exactes** (avec les photos présentes
+  dans plusieurs dossiers gardés, D86), **Rafales**, **Même scène (IA)**,
+  **Mis de côté** (tout ce que l'étape a écarté, à remettre d'un clic). Ce qui
+  touche tout l'onglet est dans un menu nommé par sa portée (D98) : « Toutes
+  les copies ▾ » (« Accepter les N propositions », « Garder tous les
+  exemplaires ») ou « ✦ Toutes les rafales ▾ » (« Choisir avec l'IA », prix
+  sur sa ligne) ; puis « Taille − + » (le même réglage qu'à la Sélection ; au
+  palier, les photos en font les trois quarts). En haut de la liste de
+  gauche : **Afficher** (À accepter, Acceptés, **Tous** par défaut),
+  « Grouper et classer » (replié), « Chercher » (par dossier) ; dessous, les
+  journées (puis les dossiers gardés, puis les photos sans date), avec ce qui
+  reste ; au palier, la liste devient un menu dans la tête de la table. Tête de
+  la table : le titre de la section et son compte, le menu « Cette journée ▾ »
+  (« Ce mois », « Ce dossier ») avec « Accepter les N groupes de cette
+  journée » (s'il reste au moins deux groupes ; ceux où au moins une photo est
+  choisie, « dont N où vous n'avez rien choisi ») et l'IA de la section : on
+  parcourt la section en choisissant d'un clic, puis on la valide d'un coup
+  (D100, D101) ; quand la section est finie, le plein « Suite à accepter :
+  … › » ; quand l'onglet est fini (et sur « Mis de côté »), le plein mène au
+  prochain onglet qui reste (« Rafales : 6 à accepter › »). Pas de boutons
+  vers les sections voisines (N et P au clavier ; « Journée suivante à
+  accepter » sur la ligne des boutons du dernier groupe). Groupé par dossier,
+  la photo du dossier choisi est à gauche dans chaque groupe. « Grouper » :
+  par journée, par mois ou par dossier (par défaut par journée, par mois
+  au-delà de 20 journées) ; par dossier, une copie se range sous chaque
+  dossier de la source où elle a un exemplaire (même après le tri), et les
+  dossiers sont par ordre alphabétique, avec une recherche.
+- **Un groupe**, posé sur la table : un en-tête d'une ligne, collé en haut de
+  la zone tant que le groupe se voit (heure · sorte, « Comparer en grand »,
+  le plein « Accepter » au bout à droite), puis les photos, chacune avec sa
+  place au début de sa bande d'état (« 4 · À garder ») ; aux Copies, la photo
+  une fois et une ligne par exemplaire. Chaque photo a une proposition
+  (garder ou écarter). **Un clic choisit, « Accepter » applique** (D101) : un
+  clic sur une photo pose un choix en attente (« À garder », « À écarter » ;
+  « Votre choix · pas encore accepté »), noté dans le plan, annulable, sans
+  rien mettre de côté ; dans une rafale ou une même scène, il choisit cette
+  photo seule (les autres passent « à écarter »), sauf la case **Garder
+  plusieurs photos** du groupe (cochée d'office dès deux photos choisies ;
+  Ctrl+clic ajoute une photo) ; pour les copies exactes, il change cet
+  exemplaire seul. Le plein suit **le dernier geste** (le groupe cliqué, ou
+  touché au clavier ; après la molette, le premier groupe dont on voit la
+  bande « À garder ») et dit ce qu'il fait : « Accepter : garder la 4
+  [vignette], écarter 5 autres », « garder 3 photos, écarter 9 autres »,
+  aux Copies « garder celle de « dossier » » (ou le nom du fichier si deux
+  exemplaires sont dans le même dossier) ; il applique les choix et accepte
+  le groupe (« Gardée », « Écartée », « Accepté » avec la coche) ; il ignore
+  les clics, A et Entrée 0,5 s après une acceptation (comme « Tout garder »,
+  « Tout écarter » et les photos du groupe suivant) ; le focus passe alors à
+  la photo gardée du groupe suivant, jamais à son plein (Espace y choisit,
+  il n'accepte pas). Aussi **Tout garder**,
+  **Tout écarter** (« Autres choix ▾ »), **Comparer en grand** (zoom
+  synchronisé, dossier de chaque photo, ← → d'un groupe à l'autre, 1, 2, 3…
+  choisissent la photo de ce numéro, le même plein). Un groupe accepté se
+  replie à sa place, quel que soit le filtre (« Revoir » le rouvre,
+  « Replier » le referme ; D100 levée le 27.10) ; « Annuler » le rouvre et
+  lui rend le plein, en haut de la zone. Un
+  groupe pas encore accepté garde ses photos dans l'archive. Tout s'annule
+  (Ctrl+Z, ou « Annuler : … » de l'en-tête). Clavier : J et K (ou ↓ ↑), ← et
+  →, Espace, A et C (le groupe du plein), N et P.
 - **Copies exactes** sur tout le projet, quels que soient le dossier et la
   date (D61) : même contenu (empreinte du fichier) ou **même photo en
   version réduite** (WhatsApp : très semblable, dimensions plus petites,
@@ -554,8 +575,8 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   réduite) ; quand les photos se valent, une photo est choisie sans ★ et la
   proposition le dit (D101). Un « Accepter » groupé ne valide jamais un
   groupe où aucune photo n'est choisie.
-- **Choisir dans les rafales (IA16, D102)** : « Choisir avec l'IA » dans la
-  rangée de l'onglet Rafales (toutes les rafales à valider), dans l'en-tête
+- **Choisir dans les rafales (IA16, D102)** : « Choisir avec l'IA » dans le
+  menu « ✦ Toutes les rafales ▾ » (toutes les rafales à valider), dans celui
   de la section, ou dans « Comparer en grand » (cette rafale), coût affiché.
   L'IA (modèle rapide, photos en 1568 px) choisit la meilleure photo et dit
   pourquoi, « IA : … » sous chaque photo ; son choix est posé comme un clic,
@@ -604,9 +625,34 @@ couverture).
 | **Recherche en langage naturel** | « Les enfants sur un éléphant », « coucher de soleil sur la plage » : recherche dans les descriptions (après étiquetage). |
 | **Contrôle de la sélection** | Relecture des photos retenues par sortie : redondances, moments manquants (« aucune photo de groupe à Bangkok »), photos faibles. Uniquement des remarques. |
 
-**Recadrage** (D62) : « Recadrer… » ou la touche K sur une photo retenue
-ouvre la photo en grand avec un cadre à tirer, des formats (libre, 3:2, 4:3,
-carré, portrait ou paysage) et un curseur « Redresser » (±15°). Seule la
+**Page (cadre commun du lot 4, D111, règles C-7 et C-8 provisoires jusqu'à
+l'essai sur de vraies photos)** : en-tête fixe (titre, consigne d'une ligne,
+« Annuler : … » et « Rétablir » ; le message passager s'y écrit à la place de
+la consigne), barre d'outils « Afficher : Toutes · À décider · ★ Dans
+l'album · Pas pour l'album » et « Taille − + », la grille seule défile, barre
+du bas fixe. **Plus de barre noire** : la colonne de droite « *N* photos
+choisies » porte les décisions (« ★ Dans l'album », plein tant qu'une photo
+choisie n'y est pas ; ★★ Grande, À décider, Pas pour l'album ; la décision
+déjà prise par toutes est allumée), puis les outils (Ne plus choisir,
+Tourner, Recadrer et tourner…, Comparer en grand, Déplacer vers une
+sortie…) ; sans photo choisie, « L'album » (cible, équilibre, redondances,
+aides IA). Un clic à la souris sur une décision ou un outil laisse le focus
+dans la grille : Espace garde son sens (« Dans l'album »). « Annuler » de
+l'en-tête, comme Ctrl+Z, ne défait qu'un geste fait à cette étape ; sinon
+« Rien à annuler ici », et la touche nomme l'étape du dernier changement
+(choix 6 A ; « Y aller » au sous-lot 4a2).
+
+**Recadrage** (D62, lot 4) : « Recadrer et tourner… » ou la touche K sur une
+photo choisie ouvre la photo en grand avec un cadre à tirer, des formats
+(libre, 3:2, 4:3, carré, en portrait ou en paysage), « Tourner » (à gauche,
+à droite : le **quart de tour est fait tout de suite**, le cadre tourne avec
+la photo) et un curseur « Redresser » (±15°, « Remettre à 0° »). Un seul
+« Annuler » et une seule pile : réglages du cadre et quarts de tour mêlés,
+défaits dans l'ordre inverse (Ctrl+Z aussi) ; un geste sans effet n'y entre
+pas. La barre du bas, toujours visible, porte « Remettre la photo entière »
+(« Déjà la photo entière », désactivé, quand il n'y a rien à remettre) et
+« Accepter le recadrage » (Entrée) ; « Fermer sans recadrer » (Échap)
+abandonne le cadre et le redressement, un quart de tour reste fait. Seule la
 copie dans `Album/` est recadrée, réencodée en haute qualité avec l'EXIF de
 l'original ; la miniature et l'aperçu de l'album montrent la photo recadrée,
 un badge ✂ la signale.

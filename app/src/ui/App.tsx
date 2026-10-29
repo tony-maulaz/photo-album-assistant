@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { BandeauSource } from './composants/BandeauSource';
 import { Entete, Messages } from './composants/Cadre';
+import { PAGES_CADRE } from './composants/CadreCommun';
 import { Dialogues } from './composants/Dialogues';
 import { Raccourcis } from './composants/Raccourcis';
 import { t } from '../lib/langue';
@@ -105,8 +106,12 @@ export function App() {
     default:
       contenu = <PageAccueil />;
   }
+  // Cadre commun (lot 4, D111) : les pages passées au cadre ne défilent plus en entier ; les autres gardent
+  // l'ancien défilement (« ancien »), en attendant leur tour.
+  const code = p.nom === 'etape' && s ? CODES_ETAPES[p.numero - 1] : undefined;
+  const cadre = code && PAGES_CADRE.has(code) && s?.projet.inventaire ? 'commun' : 'ancien';
   return (
-    <div class={`app page-${p.nom}${p.nom === 'etape' ? ` etape-${p.numero}` : ''}`}>
+    <div class={`app page-${p.nom}${p.nom === 'etape' ? ` etape-${p.numero}` : ''}`} data-cadre={cadre}>
       <Entete />
       {p.nom === 'etape' && s && <BandeauSource />}
       {/* Repère stable pour les essais : le code de l'étape, quel que soit son titre affiché. */}

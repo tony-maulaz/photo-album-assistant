@@ -14,6 +14,7 @@ import './styles/resultatTri.css';
 import './styles/nommage.css';
 import './styles/consolidation.css';
 import './styles/etats.css';
+import './styles/cadre.css';
 import { effect } from '@preact/signals';
 import { render } from 'preact';
 import { definirLangue, langueDuNavigateur, t } from '../lib/langue';

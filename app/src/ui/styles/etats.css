@@ -367,10 +367,6 @@
   color: var(--afaire);
 }
 
-.legende-une .plusieurs-photos {
-  white-space: normal;
-}
-
 .comparateur .plusieurs-photos {
   flex: none;
   display: inline-flex;
@@ -379,6 +375,14 @@
   min-height: 24px;
   margin: 0;
   white-space: nowrap;
+}
+
+/* Dans la légende de « Une à la fois » (180 px au palier) : le libellé passe à la ligne au lieu d'être rogné
+   (« Garder plusieurs photo▌ », lot 4). Après la règle d'au-dessus et plus précise : au tour 3, la règle de
+   même poids écrite après la remettait sur une ligne. */
+.comparateur .legende-une .plusieurs-photos {
+  white-space: normal;
+  margin-left: 0;
 }
 
 .rien-supprime-vue {
@@ -612,6 +616,12 @@
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* Rien ne s'y tasse : la légende défile plutôt que de rogner les choix (« ★★ Grande », « À écarter » à 1024×464,
+   tour 2 du lot 4). */
+.legende-une > * {
+  flex-shrink: 0;
 }
 
 .titre-legende {

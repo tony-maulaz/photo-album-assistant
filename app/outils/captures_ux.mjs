@@ -604,8 +604,13 @@ try {
     await attendre(1500);
     await etat('10_etape05_doublons_rafales', 'Étape 5 Doublons : onglet Rafales', { pleine: true });
     await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
-    const accepter = page.locator('.rangee-onglet').getByRole('button', { name: /^Accepter les \d+ propositions/ });
-    if (await accepter.count()) await accepter.click();
+    // Lot 4 : ce qui touche tout l'onglet est dans le menu « Toutes les copies ▾ » de la barre d'outils.
+    const menuCopies = page.locator('.rangee-onglet .bouton-portee');
+    if (await menuCopies.count()) {
+      await menuCopies.click();
+      const accepter = page.locator('.rangee-onglet').getByRole('menuitem', { name: /^Accepter (les \d+ propositions|la proposition)/ });
+      if (await accepter.count()) await accepter.click();
+    }
     await valider();
   });
 
@@ -829,7 +834,8 @@ try {
     await capturer('38_etape11_selection_apres_choix', 'Étape 11 Sélection : grille après les choix (bouton Annuler actif)', { pleine: false });
     // Une photo sélectionnée.
     await page.locator('.page-selection .tuile').nth(2).click();
-    await page.locator('.barre-action').waitFor();
+    // Lot 4 : plus de barre noire ; les choix sont dans la colonne de droite « N photos choisies ».
+    await page.locator('.panneau-choix').waitFor();
     await attendre(800);
     await etat('39_etape11_selection_une_photo', 'Étape 11 Sélection : UNE photo sélectionnée (où sont ses options)', { pleine: true });
     if (actif()) {
@@ -842,7 +848,7 @@ try {
         };
         const tuile = document.querySelector('.page-selection .tuile.choisie');
         return {
-          barre_action: b('.page-selection .barre-action'),
+          panneau_choix: b('.page-selection .panneau-choix'),
           tuile_choisie: tuile ? (({ x, y, width, height }) => ({ x: Math.round(x), y: Math.round(y), largeur: Math.round(width), hauteur: Math.round(height) }))(tuile.getBoundingClientRect()) : null,
           outils_droite: b('.page-selection .outils-selection'),
           // Les marques ↻ ✂ ▣ ont quitté la photo pour le bout de la bande d'état (lot 3 de la charte, C-9.6).
@@ -854,18 +860,18 @@ try {
       await retailler(1280, 720);
       await cliche('41_etape11_selection_une_photo_1280.png', 'Étape 11 Sélection : UNE photo sélectionnée (écran visible 1280×720)');
       mesures.selection_une_photo_1280 = await page.evaluate(() => {
-        const r = document.querySelector('.page-selection .barre-action')?.getBoundingClientRect();
+        const r = document.querySelector('.page-selection .panneau-choix')?.getBoundingClientRect();
         return r ? { x: Math.round(r.x), y: Math.round(r.y), largeur: Math.round(r.width), hauteur: Math.round(r.height), visible_dans_ecran: r.top >= 0 && r.bottom <= innerHeight } : null;
       });
       await retailler(1440, 900);
     }
-    await etat('42_etape11_selection_barre_action_zoom', 'Étape 11 Sélection : zoom sur la barre d’actions de la photo sélectionnée', { element: '.page-selection .barre-action' });
+    await etat('42_etape11_selection_panneau_choix_zoom', 'Étape 11 Sélection : zoom sur la colonne « N photos choisies »', { element: '.page-selection .panneau-choix' });
     // Recadrage.
-    const recadrer = page.getByRole('button', { name: 'Recadrer…' });
+    const recadrer = page.locator('.panneau-choix').getByRole('button', { name: /^Recadrer et tourner/ });
     if (await recadrer.count()) {
-      await recadrer.click();
+      await recadrer.first().click();
       await attendre(2000);
-      await etat('43_etape11_selection_recadreur', 'Étape 11 Sélection : recadrage ouvert (bouton « Recadrer… » de la barre d’actions, touche K)');
+      await etat('43_etape11_selection_recadreur', 'Étape 11 Sélection : recadrage ouvert (« Recadrer et tourner… » de la colonne de droite, touche K)');
       await page.keyboard.press('Escape');
       await attendre(500);
       const fermer = page.getByRole('button', { name: /^(Annuler|Fermer|Fermer sans recadrer)$/ }).last();

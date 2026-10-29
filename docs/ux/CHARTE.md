@@ -1,6 +1,6 @@
 # Charte graphique : « Table lumineuse »
 
-**État : style FIGÉ (D110, 27.10.2026) ; dispositions PROVISOIRES.**
+**État : style FIGÉ (D110, 27.10.2026), avec les évolutions É1 à É10 acceptées le 28.10 (D111) ; dispositions PROVISOIRES.**
 
 - **Figé** (l'agent `gardien-style` le fait respecter, en priorité sur les
   autres agents d'interface ; seul l'utilisateur peut le faire évoluer) :
@@ -72,6 +72,79 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
   la barre du bas dit « Groupe précédent » et « Groupe suivant ».
 - **La présentation choisie à la main** est gardée d'un groupe à l'autre
   (pour les groupes du même nombre de photos), jusqu'à la fermeture de la vue.
+
+## Évolutions acceptées par l'utilisateur (D111, 28.10.2026, lot 4)
+
+Ces évolutions changent des règles figées ; elles sont acceptées (choix 1 et 2
+de D111). Les règles C-7 et C-8 du cadre commun, plus bas, restent
+**provisoires** jusqu'à l'essai de l'utilisateur sur de vraies photos.
+
+| N° | Règle | Évolution |
+|---|---|---|
+| É1 | C-4.1 | Exactement un bouton plein sur les pages d'étape, dans Comparer et dans le Recadreur ; aucun dans la visionneuse et pendant « Décider une par une », où les choix sont la commande ; à la fin du parcours, un plein |
+| É2 | C-3.9 | Salle sombre pour toutes les vues en grand (Comparer, Décider une par une, visionneuse, Recadrer et tourner) |
+| É3 | C-6.6 | Les doubles pages de l'Album sont des feuilles blanches (rayon 6, sans ombre) posées sur la table |
+| É4 | C-9.1, C-9.2 | Copies exactes : la photo une fois ; une bande par exemplaire, à gauche de sa ligne (44 / 40 px) ; la ligne entière se choisit |
+| É5 | C-10.1, glossaire | « Réunir des dossiers » remplace « Consolidation » ; « Accepter » vaut aussi pour un recadrage |
+| É6 | C-9.1, C-5.2 | Vignettes des vues de parcours : bande de 24 px, icône de 16 px, le mot dans l'infobulle et le lecteur d'écran |
+| É7 | C-5.2 | Au palier, ‹ › de la journée en icône seule ; « Comparer en grand » prend son icône dans toute la liste de Doublons dès qu'un en-tête manque de place ; la pastille « à accepter » quitte l'en-tête d'un groupe ouvert ; les 4 outils de « Décider une par une » gardent leur mot |
+| É8 | C-7.6 | Écran très bas (moins de 440 px de haut) : la page défile en entier, seule la barre du bas reste fixe (et la liste de gauche, là où elle est une colonne) |
+| É9 | C-4.2, C-6.5, C-6.6, C-9.1, C-9.2 | Chaque photo d'une rafale porte sa place au début de sa bande d'état (« 4 · À garder »), qui prend la place de l'icône ; rien sur l'image. Le plein de Doublons nomme la photo gardée et la montre en vignette de 24 px : « Accepter : garder la 4 [vignette], écarter 5 autres » ; « garder 3 photos, écarter 9 autres » ; un compte n'est jamais un nombre nu ; aux Copies, « garder celle de « dossier » » (nom exact, coupé au milieu au-delà de 40 signes si la place manque). Le même libellé sur la page et dans Comparer ; le plein au bout à droite de son en-tête, sur une ligne |
+| É10 | C-10.1, glossaire | Une vue qui prend la place d'une page (« Décider une par une ») se quitte par « ← Revenir à *la page* » ; les vues ouvertes par-dessus (Comparer, visionneuse, Recadreur) par « ✕ Fermer » ; « Revenir » ne sert jamais à remettre un réglage (Recadreur : « Remettre la photo entière ») |
+
+État du code (29.10, sous-lots 1 et 2 du lot 4, pas encore commités) : É1 et
+É10 appliquées à la Sélection, à Doublons et au Recadreur ; É2 au Recadreur
+(déjà en salle sombre) ; É4, É7 (« Comparer en grand » en icône dans toute
+la liste, pastille hors de l'en-tête) et É9 à Doublons (page et « Comparer en
+grand ») ; les autres viennent avec leurs pages.
+
+Écarts du code à la proposition validée, **en attente de la décision de
+l'utilisateur** (ils ne font pas évoluer la charte tant qu'il ne les a pas
+acceptés ; questions dans `docs/ux/DEMANDES.md`, ligne du 29.10) :
+- É4 : la ligne d'un exemplaire fait 56 / 40 px (deux lignes de texte :
+  dossier, puis nom, date et poids), et non 44 / 40 ;
+- É9 : le nom du dossier se raccourcit par la fin, pas au milieu (40 signes
+  tiennent à 1024 px ; mesuré par `essai_cadre.mjs`) ; quand deux exemplaires
+  sont dans le même dossier, le plein nomme le fichier gardé (« garder
+  « 0140_….jpg », écarter 1 », raccourci au milieu), proposé après le tour 1
+  des contrôles (le dossier ne dit pas lequel est gardé) ;
+- les menus de portée (« Toutes les copies ▾ », « ✦ Toutes les rafales ▾ »,
+  « Cette journée ▾ ») restent des menus à toutes les largeurs, alors que la
+  maquette met l'action en clair à 1280 et 1440 (prix compris) ;
+- « Garder plusieurs photos » reste sur la ligne des boutons au palier, pas
+  dans l'en-tête ; pas de ‹ › autour du menu de la journée (N et P au clavier) ;
+- le compte des photos écartées est sur l'onglet « Mis de côté », plus dans
+  la barre du bas ;
+- au palier, les photos de Doublons font les trois quarts du réglage « Taille »
+  (160 → 120 px, comme la maquette) pour que la bande « À garder » se voie à
+  l'arrivée ;
+- (tour 2 des contrôles) le message passager des pages passées au cadre
+  s'écrit dans l'en-tête d'étape, à la place de la consigne et à côté
+  d'« Annuler » (son propre « Annuler » y est retiré, celui de l'en-tête suffit,
+  sauf pour un message venu d'une autre étape, « 12 photos écartées » de
+  Floues à l'arrivée : il garde son « Annuler », tour 3) ; dans une vue en
+  grand ou un dialogue, la bulle d'avant revient ; la zone `role=status` de
+  l'en-tête reste dans l'arbre d'accessibilité même vide (masquée à l'écran) ;
+- (tour 2, complété au tour 3) choix 6 A sur les pages passées au cadre :
+  « Rien à annuler ici » / « Rien à rétablir ici » quand le dernier geste est
+  d'une autre étape (l'étape en infobulle, « allez-y pour l'annuler ») ;
+  **Ctrl+Z et Ctrl+Y suivent la même règle** et le disent (« Rien à annuler
+  ici. Votre dernier changement est à l'étape 4, … ») ; les pages pas encore
+  passées gardent l'annulation globale ; « Y aller » reste au sous-lot 4a2 ;
+- (tour 2) Recadreur : « Remettre la photo entière » devient « Déjà la photo
+  entière », désactivé, quand il n'y a rien à remettre ; restent à faire au
+  sous-lot 4c, pour que l'essai ne prenne pas l'écran d'aujourd'hui pour la
+  cible : Aide en haut à droite, formats en segmenté sur deux lignes,
+  « En largeur | En hauteur » au lieu du lien « En portrait / En paysage »,
+  « Assez net pour une grande photo » au lieu des « pixels gardés », ✓ sur le
+  plein, cadre réglé aux flèches et par + / −.
+
+Repris dans le code après le tour 1 des contrôles (29.10), conformément aux
+choix de l'utilisateur du 27.10 : « Tous » allumé par défaut à Doublons
+(C-4.8) ; un groupe accepté se replie à sa place avec tous les filtres, il ne
+s'en va plus avec « À accepter » (D100 levée) ; les groupes posés sur la
+table, sans carte blanche (C-6.6) ; la frise en vert doux bordé (sa coche
+dans des cases de 28 px viendra avec la barre de l'application, sous-lot 4b).
 
 ## Corrections à intégrer avant d'appliquer (contrôleurs du 27.10)
 
@@ -167,6 +240,23 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-7.5 | Vue **Comparer** : barres 48 / 32 / scène / 56. Présentation calculée (côte à côte si chaque photo y garde ≥ la moitié de sa surface en « Une à la fois », jamais sous 220 px de haut). « Une à la fois » : photo, légende à droite (220 px), bande de vignettes (1 colonne, 2 sous 700 px de haut ; toutes visibles jusqu'à 6). Côte à côte : cartes de la largeur de la photo, au moins celle de l'état et de ses choix (240 px ; 340 à la Sélection) ; c'est la rangée qui doit tenir. Choisi à la main : 2 ou 3 rangées si une ne tient pas, désactivé sous 80 px de haut. Une paire toujours côte à côte. Sous la carte : le choix, puis 2 lignes au plus (remarque, heure, dossier). Ligne d'information et titre passent à la ligne, jamais coupés. Ouverture sur la photo conseillée (IA ou la plus nette), sinon la première « À garder », sinon la 1 ; la réponse de « Choisir avec l'IA » y fait passer (choix de l'utilisateur). Le clavier entre dans la vue à l'ouverture et y reste ; ↑ ↓ le posent sur la carte, jamais sur un choix ; Entrée bascule partout sauf sur une commande (Fermer, Accepter…). ↑ ↓ photo, ← → groupe, dans la journée ou le dossier. Quitter : « Fermer » (Échap). Calcul : `app/src/lib/presentationComparer.ts` (proportions lues sur les miniatures, quart de tour compris) | mesures de `systeme.md` § 10 ; `essai_charte.mjs` à 2, 3, 4 et 6 photos (Doublons) et 3 (Sélection), à 1440, 1280 et 1024 ; ↓ puis Entrée ne change aucun état |
 | C-7.6 | Palier « texte agrandi » (moins de 1180 px de large, soit 1280 à 125 %) : frise et nom du projet masqués, barre d'outils sur 2 lignes, en-têtes qui passent à la ligne ; rien ne défile en largeur | fenêtre de 1024×464 |
 
+### C-7 du cadre commun (lot 4, PROVISOIRE, pages passées : Sélection, Doublons, et le Recadreur)
+
+Une page passée au cadre porte `data-cadre="commun"` sur `.app` ; les autres
+gardent l'ancien défilement (`data-cadre="ancien"`) jusqu'à leur tour.
+Contrôle : `app/outils/essai_cadre.mjs`.
+
+| N° | Règle | Test |
+|---|---|---|
+| C-7.1 (lot 4) | Bandes fixes : barre de l'application 52 / 44, en-tête d'étape 76 / 52, barre d'outils 60 / 56 / 52, contenu, barre du bas **64 / 56 / 56** (1440×900 ; sous 1440 px de large ou 700 px de haut ; palier). Seul le contenu défile, chaque colonne de son côté ; la page ne défile pas à 440 px de haut et plus | `essai_cadre.mjs` : titre, Annuler, Aide, Taille, barre du bas et Valider immobiles quand chaque colonne est menée à 50 % puis 100 % |
+| C-7.1 bis | Le plein n'est jamais dans ce qui défile (tête de table, bloc fixe du panneau, barre du bas), ou bien il suit le dernier geste (Doublons) | un seul plein entier, non recouvert (`elementFromPoint`), à l'arrivée, à 50 % et à 100 % de chaque colonne |
+| C-7.1 ter | À tout moment, ce que fait le plein se voit ou se lit. **À l'arrivée et après « Accepter »** (440 px de haut et plus), la bande « À garder » du groupe qui porte le plein est entière : après « Accepter », le groupe suivant vient en haut de la zone, au même y qu'à l'arrivée (une grande rafale dont la photo gardée est en bas descend jusqu'à sa bande, son en-tête collé en haut) ; après la molette, le libellé juste suffit (place et vignette ; aux Copies, le dossier, ou le fichier si deux exemplaires sont dans le même dossier). Le texte d'un plein n'est jamais rogné : il ne rétrécit pas, ce sont ses voisins qui cèdent (dans Comparer : « Photo entière » en icône sous 1440 px, puis le rappel des touches sur deux lignes, jamais coupé) | Doublons : bande entière à l'arrivée ; à chaque position, bande ou libellé ; `scrollWidth ≤ clientWidth` et texte dans sa boîte pour chaque plein, page et Comparer (rafale de 12), aux 3 tailles et aux 2 thèmes |
+| C-7.1 quater (lot 4, Doublons) | Le plein est dans l'en-tête du groupe en cours, collé en haut de la zone qui défile (chaque en-tête pousse le précédent ; sous 440 px de haut, sous la tête de la table). **Le dernier geste gagne** : un clic, une touche ou le focus venu du clavier dans un groupe le rend « en cours », sur place, sans défilement ; après la molette, s'il est sorti de la vue, le plein passe au premier groupe dont on voit la bande « À garder » entière, à défaut à celui dont l'en-tête est collé en haut. A et C visent ce groupe, où que soit le focus, sauf dans un champ de texte ou un menu ouvert. Après « Accepter » — et après tout geste qui replie un groupe : « Tout garder », « Tout écarter », la section, l'onglet (tour 3) — le plein suivant ignore les clics, A et Entrée 0,5 s (il arrive en fondu), « Tout garder » et les photos du groupe suivant aussi ; une touche gardée enfoncée n'accepte qu'une fois, sur le plein comme sur une photo. Après « Accepter », si le focus était dans la table, il va sur la photo gardée du groupe qui prend le plein, jamais sur le plein : Espace y garde le sens « choisir », → passe à la photo d'à côté (tour 3). Une annulation qui rouvre un groupe de la page (Ctrl+Z, « Annuler » de l'en-tête ou du message) lui rend le plein et le montre en haut de la zone, comme après « Accepter » (tour 3). Fermer « Comparer en grand » rend le plein au dernier groupe regardé et le montre. Seul « Accepter » fait avancer la liste : le groupe accepté se replie à sa place, avec tous les filtres (D100 levée) ; le focus ne suit le plein que s'il était déjà dans la table. L'en-tête collé touche le bord haut de la zone (rien ne défile au-dessus de lui). Un seul groupe porte le filet vert : le focus n'en dessine pas un second | `essai_cadre.mjs`, essais de geste (clic dans un autre groupe puis A, double-clic au centre et à 20 px du bord droit du plein, double-clic sur « Tout garder » aux 3 tailles, clic sur une photo puis A, → et Espace (rien d'accepté), A puis Ctrl+Z (plein sur le groupe rouvert, au y d'arrivée, A le réaccepte), A deux fois, A et Entrée gardées 1,2 s, clic sur une photo du groupe suivant 150 ms après « Accepter », A cinq fois de suite aux 3 tailles, champ « Chercher » et molette, Tab puis A, retour de Comparer) ; en-tête collé au bord de la zone. Après un geste qui replie un groupe, rien de cliquable n'arrive à la place du plein : « Revoir » suit le texte de la ligne repliée et ignore les clics 0,5 s |
+| C-7.3 bis (lot 4, Doublons) | Barre d'outils : les onglets (le nom, et dessous ce qui reste), puis le menu de l'onglet (« Toutes les copies ▾ », « ✦ Toutes les rafales ▾ »), « Taille − + ». Liste de gauche : en haut « Afficher » (« Tous » allumé par défaut), « Grouper et classer » replié (ouvert d'office par dossier ou par taille ; ouvert, chaque mot au-dessus de sa liste, les deux listes alignées et de la même largeur, tour 3), « Chercher » ; dessous les journées ou dossiers. Tête de la table : le titre de la section et son compte, le menu « Cette journée ▾ » (ou « Ce mois », « Ce dossier ») ; quand la section est finie, le plein « Suite à accepter : … › » ; quand l'onglet est fini (et sur « Mis de côté »), le plein « Rafales : 6 à accepter › » vers le prochain onglet qui reste ; tout accepté : « Valider et continuer » plein. Chaque en-tête de groupe sur une ligne (56 / 52 / 48 px au plus) : heure et titre, « Comparer en grand », le plein au bout à droite. Dessous : les photos, chacune avec sa place au début de sa bande (« 4 · À garder ») ; aux Copies, la photo une fois et une ligne par exemplaire. Ligne des boutons : « Garder plusieurs photos », « Tout garder », « Autres choix ▾ » (« Tout écarter »), l'état du groupe en mots, son dossier, et sur le dernier groupe « Journée suivante à accepter : … › ». Sous 700 px de haut, le défilement s'accroche au début des groupes (proximité) | Doublons |
+| C-7.3 (lot 4) | Gabarit Photos : liste de gauche (largeur réglable), table, panneau de droite 304 / 288 « N photos choisies » ; sans photo choisie, « L'album » ; Aide 320 / 304 qui pousse le contenu | Sélection |
+| C-7.6 (lot 4) | Palier : quand la largeur du contenu (Aide déduite) est de 1180 px ou moins, la liste de gauche devient un menu dans la tête de la table (le même panneau, en un seul exemplaire) ; frise et nom du projet masqués ; l'Aide ouverte prend la place du panneau de droite (les décisions restent au-dessus d'elle) ; rien ne défile en largeur | 1024×464 |
+| C-7.6 bis | Écran très bas (moins de 440 px de haut) : la page défile en entier, la barre du bas reste fixe, la tête de la table et le haut du panneau (avec leur plein) collent en haut de la fenêtre ; la grille de photos suit le défilement de la fenêtre (une seule barre de défilement) | 1024×400 |
+
 ## C-8 Places fixes
 
 | N° | Règle |
@@ -177,6 +267,19 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-8.4 | **« Rien n'est supprimé… »** avec le bouclier, **seulement là où l'on écarte des photos** (choix de l'utilisateur, 28.10) : ligne 2 de la barre du bas des étapes Floues, Doublons, Tri, Lieux et sorties, Sortie ; ligne d'information de « Comparer en grand » des Doublons |
 | C-8.5 | Ligne 1 de la barre du bas : ce que devient ce qui reste (« 12 groupes pas encore acceptés : toutes leurs photos sont gardées ») |
 | C-8.6 | Rien ne flotte : le retour se lit à la place du geste et dans « Annuler : … » ; une erreur reste jusqu'à un clic |
+
+### C-8 du cadre commun (lot 4, PROVISOIRE, mêmes pages)
+
+| N° | Règle |
+|---|---|
+| C-8.1 (lot 4) | « Aide » dans la barre de l'application, juste avant Menu (`data-place="aide"`) ; elle s'ouvre d'elle-même à la première visite d'une étape à partir de 1440 px de large ; en dessous, elle porte « à lire » jusqu'à la première ouverture ; « Fermer » (avec le mot) ou Échap la ferment ; « Tout le mode d'emploi » en bas |
+| C-8.2 (lot 4) | « Annuler : … » et « Rétablir » à droite de l'en-tête d'étape, Rétablir à 24 px du bord ; leur libellé suit chaque geste (« Annuler : accepter 1 rafale ») ; au palier, ils passent en 14 px avec la consigne, pour que l'en-tête garde sa hauteur d'un geste à l'autre (rien n'est coupé). Dans le Recadreur, un seul « Annuler » (une seule pile : réglages du cadre et quarts de tour) ; « Remettre la photo entière » dans la barre du bas, à gauche d'« Accepter le recadrage ». Contrôle : `essai_cadre.mjs` (libellé après un clic, « Accepter » et Ctrl+Z à Doublons, après deux décisions à la Sélection ; titre et barre d'outils au même y d'un geste à l'autre à 1024×464) |
+| C-8.2 bis (lot 4, tours 2-3, provisoire) | Sur une page passée au cadre, « Annuler » et « Rétablir » de l'en-tête, Ctrl+Z et Ctrl+Y ne défont et ne refont qu'un geste fait à l'étape affichée ; sinon « Rien à annuler ici » / « Rien à rétablir ici », l'étape du dernier changement en infobulle, et la touche le dit par un message (choix 6 A ; « Y aller » au sous-lot 4a2). Un message venu d'une autre étape garde son propre « Annuler ». Un geste sans effet n'entre pas dans l'historique et ne vide pas « Rétablir » (Recadreur : format déjà choisi, photo déjà entière, « Accepter » sans changement). Un clic à la souris sur une décision ou un outil (Sélection, Recadreur) ne laisse pas le focus sur le bouton : Espace et Entrée gardent le sens de la page. Contrôle : `essai_cadre.mjs` (clic « Tourner » puis Espace : un quart de tour et les photos dans l'album ; clic « À droite » puis Entrée : le Recadreur se ferme ; « Déjà la photo entière » désactivé ; Ctrl+Z à l'arrivée sur la Sélection et sur Doublons après Floues : rien de défait, l'étape dite ; le message de Floues garde son lien « Annuler ») |
+| C-8.3 (lot 4) | « Taille − + » au bout de la barre d'outils, à 24 px du bord (`data-place="taille"`), de 100 à 600 px |
+| C-8.3 bis (lot 4, tours 2-3, provisoire) | Message passager d'une page passée au cadre : dans l'en-tête d'étape, à la place de la consigne (deux lignes au plus, entier en infobulle), jamais sur les photos, le plein ou la barre du bas ; le nombre qu'il annonce est compté avant le geste. Dans une vue en grand ou un dialogue, la bulle. La zone `role=status` est toujours dans l'arbre d'accessibilité : vide, elle est masquée à l'écran (`clip-path`), jamais `display: none` ; chaque message est un nouveau nœud (WCAG 4.1.3). Contrôle : `essai_cadre.mjs` (après chaque A, « N photos écartées » juste dans l'en-tête, aucune bulle sur la page ; zone `status` vide présente dans l'arbre d'accessibilité, lu par CDP) |
+| C-8.4 (lot 4) | « Valider et continuer » au même pixel sur toutes les pages, passées au cadre ou non ; la ligne 1 de la barre du bas tient sur deux lignes au plus (14 px au palier), nombres à 4 chiffres compris |
+| C-8.4 bis (lot 4) | Pages passées au cadre où l'on écarte (Doublons) : la phrase courte « Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». » (66 signes) ; « Vos photos d’origine ne bougent pas » dans son infobulle et dans l'Aide. La ligne 1 dit ce qui reste (« 12 groupes pas encore acceptés : toutes leurs photos sont gardées. ») ; le compte des photos écartées est sur l'onglet « Mis de côté » |
+| C-8.7 | Panneau de droite : une tête (« 3 photos choisies »), le bloc fixe des décisions (le plein n'y est qu'à la Sélection, la décision déjà prise est allumée), puis ce qui défile : les outils de la photo avec leur touche (« Ne plus choisir » en premier), et l'album |
 
 ## C-9 États des photos
 
@@ -197,7 +300,7 @@ captures aux deux tailles et aux deux thèmes se refont avec Playwright à
 | C-10.1 | Un verbe par portée : **Accepter** (un groupe, un nom, un rangement), **Valider et continuer** (l'étape) ; « Fermer » pour quitter une vue | aucun « valid » hors du bouton d'étape |
 | C-10.2 | **Un état, un mot**, sur toute la page et dans la vue en grand : « à accepter » / « pas encore acceptés » | — |
 | C-10.3 | Un compteur dit de quoi il parle ; pas de parenthèses ; les compteurs exclusifs s'additionnent, sinon « dont » | somme des pastilles = total |
-| C-10.4 | Jamais de « … » de coupure sur la consigne, la bande, la remarque (sauf au-delà de 2 lignes) ou Annuler | contrôle « texte coupé » : 0 (`essai_charte.mjs` : bandes de toutes les pages, au plus petit curseur avec ↻ ; titre, ligne d'information, légende et vignettes de Comparer à 1440, 1280 et 1024) |
+| C-10.4 | Jamais de « … » de coupure sur la consigne, la bande, la remarque (sauf au-delà de 2 lignes) ou Annuler | contrôle « texte coupé » : 0 (`essai_charte.mjs` : bandes de toutes les pages, au plus petit curseur avec ↻ ; titre, ligne d'information, légende et vignettes de Comparer à 1440, 1280 et 1024 ; dans la légende de « Une à la fois », le texte mesuré ligne par ligne, pas la boîte : `essai_charte.mjs` et `essai_cadre.mjs`, « Garder plusieurs photos » à 1024×464, tour 3) |
 | C-10.5 | Un libellé ne change pas avec la largeur ; on gagne la place ailleurs (menu « Plus ▾ », marges) | — |
 | C-10.6 | « environ » plutôt que « ≈ » ; aucun « Ø » | — |
 

@@ -54,6 +54,13 @@ Node 24 (fichier `.nvmrc`) : `source ~/.nvm/nvm.sh && nvm use`, puis :
   textes, « Rien n'est supprimé » dans la barre du bas des étapes où l'on
   écarte, contour du clavier à chaque Tab ; `light-dark()` intact dans le
   build ; signale (sans échouer) les écrans sans bouton plein.
+- `node outils/essai_cadre.mjs` : le cadre commun du lot 4 de la charte (D111) sur le fichier construit,
+  à 1440×900, 1280×580, 1024×464 et 1024×400, en clair et en sombre, avec 110 photos fabriquées pour
+  que les colonnes défilent : bandes fixes, un seul bouton plein visible à l'arrivée, à mi-course et en
+  bas de chaque colonne, places de l'Aide, d'Annuler et de Taille, « Valider et continuer » au même
+  pixel sur toutes les pages, Sélection (« N photos choisies »), Recadreur, Doublons et ses gestes. Les
+  pages pas encore passées au cadre (`data-cadre="ancien"`) n'ont que les contrôles généraux. Il échoue
+  tant que Doublons n'est pas passé au cadre.
 - `node outils/essai_echelle.mjs DOSSIER [CAPTURES]` : même parcours sur un
   vrai dossier trié (copié dans le stockage du navigateur), avec les durées ;
   `VRAC=1` pour tout retrier par lieux.

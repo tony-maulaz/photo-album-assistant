@@ -109,6 +109,13 @@ describe('décisions (un clic, Accepter, Tout garder, Tout écarter)', () => {
     expect(etats(p, rafale)).toEqual(['a_ecarter', 'choisie', 'a_ecarter']);
   });
 
+  it('« Annuler : … » dit la sorte du groupe accepté : « Accepter 1 rafale », « Accepter 1 copie » (C-8.2)', () => {
+    expect(accepter(plan(), [rafale])?.libelle).toBe('Accepter 1 rafale');
+    const p = plan();
+    const copie: GroupeDoublons = { cle: 'copie:a', sorte: 'copies', etoile: 'a.jpg', section: 'jour:2025-12-13', membres: [{ id: 'a.jpg', garder: true }, { id: 'IMG_1.jpg', garder: false }] };
+    expect(accepter(p, [copie])?.libelle).toBe('Accepter 1 copie');
+  });
+
   it('un groupe validé qu’on touche repasse à valider ; une photo écartée choisie revient à « Accepter »', () => {
     const p = plan();
     accepter(p, [rafale]);

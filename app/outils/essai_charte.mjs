@@ -73,12 +73,13 @@ const MINIMUM_PAGES = 20;
 /**
  * Pages d'étape sans bouton plein permis (C-4.1), à faire trancher par l'utilisateur
  * (« au plus un plein ; aucun quand la prochaine action est un geste ou un choix sans préférence ») :
- * - Sélection, sa barre d'action, Décider une par une, la visionneuse : choisir ★ / ★★ / ✕ sur les photos ;
+ * - Décider une par une, la visionneuse : choisir ★ / ★★ / ✕ sur les photos (la Sélection a son plein
+ *   depuis le lot 4 : « Tri rapide », ou « Dans l'album » pour les photos choisies) ;
  * - Petits dossiers sans proposition de l'IA : deux dossiers voisins au choix, aucun n'est mis en avant.
  */
-const SANS_PLEIN = new Set(['selection', 'selection-barre-action', 'tri-rapide', 'visionneuse', 'petits-dossiers', 'selection-comparer-3']);
+const SANS_PLEIN = new Set(['tri-rapide', 'visionneuse', 'petits-dossiers', 'selection-comparer-3']);
 /** Pages dont les photos ont un état : au moins une bande d'état à l'écran (C-9.1). */
-const BANDES = new Set(['floues', 'doublons', 'selection', 'selection-barre-action']);
+const BANDES = new Set(['floues', 'doublons', 'selection', 'selection-choisies']);
 
 const photos = readdirSync(PHOTOS).filter((f) => f.endsWith('.jpg') && !f.startsWith('Vacances'));
 
@@ -311,7 +312,7 @@ function mesurer() {
     .map((x) => `« ${nom(x) || x.className} »`);
   // Une commande d'une barre (en-tête de vue, barre du bas, en-tête de Comparer) ne déborde pas de sa barre
   // sur la colonne voisine (barre d'outils qui ne passe pas à la ligne).
-  for (const barre of document.querySelectorAll('.tete-vue, .tete-etape, .barre-validation, .comparateur-tete, .barre-action')) {
+  for (const barre of document.querySelectorAll('.tete-vue, .tete-etape, .barre-validation, .comparateur-tete, .barre-action, .entete-cadre, .outils-cadre, .tete-col, .barre-haut-recadreur, .barre-bas-recadreur')) {
     const bb = barre.getBoundingClientRect();
     if (!bb.width || !bb.height) continue;
     for (const x of barre.querySelectorAll('button, label, input, select')) {
@@ -375,6 +376,11 @@ function mesurer() {
     if (parseFloat(st.borderTopWidth) > 0 && st.borderTopStyle !== 'none') bandes.push(`bande bordée comme une commande « ${nom(bande)} »`);
     if (!(bande.textContent || '').trim()) bandes.push(`bande sans mot sous ${ici}`);
   }
+  // Copies exactes (lot 4) : la photo montrée une fois, une ligne par exemplaire avec sa bande d'état.
+  const exemplaires = [...document.querySelectorAll('.tuile-doublon.exemplaire > .bande-etat')].filter((b) => {
+    const r = b.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < H && (b.textContent || '').trim();
+  }).length;
   // C-10.4 : le mot d'une bande n'est jamais coupé (ni « … » ni coupé net), sur toute bande visible.
   for (const bande of document.querySelectorAll('.bande-etat')) {
     const b = bande.getBoundingClientRect();
@@ -409,6 +415,7 @@ function mesurer() {
     marques: [...new Set(marques)],
     bandes: [...new Set(bandes)],
     photosEtat: photosEtat.length,
+    exemplaires,
   };
 }
 
@@ -456,13 +463,28 @@ function mesurerComparer() {
     coteImpossible: !!vue.querySelector('.choix-presentation button:first-child:disabled'),
     focusDansLaVue: !!document.activeElement?.closest('.comparateur'),
     // C-10.4 : aucun texte coupé (« … » ou coupé net) ; la remarque des cartes a droit à 2 lignes.
-    coupes: [...vue.querySelectorAll('.comparateur-tete h2, .cmp-ligne-texte > span, .rien-supprime-vue, .alerte-doublons, .titre-legende, .infos-une > *, .choix-photo button, .touches-comparer, .position-groupe, .plusieurs-photos, .bande-etat')]
+    // Le plein (« Accepter : garder la 4 [v], écarter 5 autres ») n'est jamais rogné (C-10.5, tour 1 du lot 4).
+    coupes: [...vue.querySelectorAll('.comparateur-tete h2, .cmp-ligne-texte > span, .rien-supprime-vue, .alerte-doublons, .titre-legende, .infos-une > *, .choix-photo button, .touches-comparer, .position-groupe, .plusieurs-photos, .bande-etat, .cmp-bas [data-action=accepter]')]
       .filter((x) => {
         const b = x.getBoundingClientRect();
         if (!b.width || !b.height || getComputedStyle(x).display === 'none') return false;
         const parent = x.closest('.legende-une');
         // La légende de « Une à la fois » défile si elle est plus haute que la scène : rien n'y est perdu.
         const horsVue = parent ? false : b.bottom > H + 1 || b.right > W + 1;
+        // … mais rien n'y est rogné : ni par le bord de la légende (« Garder plusieurs photo▌ »), ni par la boîte des
+        // choix tassée (« ★★ Grande », « À écarter » à 1024×464 ; tour 2 du lot 4).
+        if (parent) {
+          const l = parent.getBoundingClientRect();
+          const boite = x.parentElement?.closest('.choix-photo')?.getBoundingClientRect();
+          if (b.right > l.right + 1 || b.left < l.left - 1) return true;
+          // Le texte lui-même, ligne par ligne, et pas seulement la boîte : un label étiré à la largeur de la légende
+          // reste dedans alors que son texte déborde (« Garder plusieurs photo▌ », tour 3 du lot 4).
+          const r = document.createRange();
+          r.selectNodeContents(x);
+          const droite = l.left + parent.clientLeft + parent.clientWidth;
+          if ([...r.getClientRects()].some((c) => c.width > 0 && (c.right > droite + 0.5 || c.left < l.left - 0.5))) return true;
+          if (boite && (b.bottom > boite.bottom + 1 || b.top < boite.top - 1)) return true;
+        }
         return horsVue || x.scrollWidth > x.clientWidth + 1 || x.scrollHeight > x.clientHeight + 2;
       })
       .map((x) => `${x.className || x.tagName.toLowerCase()} « ${(x.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 50)} »`),
@@ -539,7 +561,7 @@ try {
         if (m.sansRaison.length) fautes.push(`${ici} : bouton désactivé sans sa raison écrite (C-4.7) : ${m.sansRaison.slice(0, 5).join(' ; ')}`);
         if (m.marques.length) fautes.push(`${ici} : marque posée sur une photo (C-9.1) : ${m.marques.slice(0, 5).join(' ; ')}`);
         if (m.bandes.length) fautes.push(`${ici} : bande d’état (C-9.1, C-9.2) : ${m.bandes.slice(0, 5).join(' ; ')}`);
-        if (BANDES.has(nomPage) && h >= 900 && !m.photosEtat) fautes.push(`${ici} : aucune photo avec sa bande d’état à l’écran (C-9.1)`);
+        if (BANDES.has(nomPage) && h >= 900 && !m.photosEtat && !m.exemplaires) fautes.push(`${ici} : aucune photo avec sa bande d’état à l’écran (C-9.1)`);
         if (m.boutonsPetits.length) fautes.push(`${ici} : bouton sous 16 px (C-2.2) : ${m.boutonsPetits.slice(0, 5).join(' ; ')}`);
         if (m.caracteres.length) fautes.push(`${ici} : caractère-icône au lieu d’une icône SVG (C-1.4) : ${m.caracteres.slice(0, 5).join(' ; ')}`);
         if (m.barre && ECARTE.has(m.etape) && !m.bouclier) fautes.push(`${ici} : barre du bas sans « Rien n’est supprimé » et son bouclier (C-8.4)`);
@@ -647,8 +669,12 @@ try {
   await page.locator('.carte-doublons').first().waitFor({ timeout: 60_000 });
   await controler('doublons');
   await clavier('doublons', 30);
+  // Lot 4 : l'Aide s'ouvre d'elle-même à 1440 px à la première visite et la liste de gauche passe en menu ; on la ferme.
+  if ((await page.locator('[data-place=aide]').getAttribute('aria-expanded')) === 'true') await page.locator('[data-place=aide]').click();
   // « Comparer en grand » à 2, 3, 4 et 6 photos (C-7.5), aux deux tailles : toutes les copies dans une
   // section (« Grouper par dossier » : elles sont toutes dans le dossier à trier).
+  // « Grouper et classer » est replié dans la liste de gauche (lot 4) : on l'ouvre.
+  if (!(await page.locator('.outils-doublons details.grouper-classer').evaluate((d) => d.open))) await page.locator('.outils-doublons details.grouper-classer > summary').click();
   await page.locator('.outils-doublons select').first().selectOption('dossier');
   await page.waitForTimeout(500);
   /** Contrôles de « Comparer en grand » à une taille ; `n` photos, `doublons` : la vue où l'on écarte. */
@@ -657,6 +683,7 @@ try {
     await page.waitForTimeout(400);
     const c = await page.evaluate(mesurerComparer);
     const ici = `${nomVue} ${w}×${h}`;
+    if (CAPTURES) await page.screenshot({ path: join(CAPTURES, `${nomVue}_${w}x${h}.png`) });
     if (n === 2 && c.presentation !== 'cote') fautes.push(`${ici} : une paire doit être côte à côte (${c.presentation})`);
     if (c.presentation === 'cote' && (c.volets !== n || !c.imagesDedans || c.sceneDebordeLargeur)) fautes.push(`${ici} : côte à côte, les ${n} photos ne sont pas toutes à l’écran (${c.volets} volets)`);
     if (c.presentation === 'cote' && n >= 3 && c.hauteurs.some((x) => x < 219)) fautes.push(`${ici} : côte à côte calculé sous 220 px de haut (${c.hauteurs.join(', ')})`);
@@ -791,12 +818,12 @@ try {
   await page.locator('.tuile').first().waitFor({ timeout: 60_000 });
   await controler('selection');
   await clavier('selection', 30);
-  // Une photo choisie : la barre d'action (bulle sombre).
+  // Une photo choisie : la colonne de droite « 1 photo choisie » (lot 4 : plus de barre noire).
   await page.locator('.page-selection .tuile').nth(1).click();
-  await page.locator('.barre-action').waitFor();
-  await controler('selection-barre-action');
-  // Recadrage (salle sombre, tiers dessinés).
-  const recadrer = page.getByRole('button', { name: 'Recadrer…' });
+  await page.locator('.panneau-choix .bloc-fixe').waitFor();
+  await controler('selection-choisies');
+  // Recadrer et tourner (salle sombre, tiers dessinés).
+  const recadrer = page.locator('.panneau-choix').getByRole('button', { name: /^Recadrer et tourner/ });
   if (await recadrer.count()) {
     await recadrer.click();
     await page.locator('.recadreur').waitFor();
@@ -817,9 +844,14 @@ try {
     await page.keyboard.press('x');
     await page.keyboard.press('r');
     await tuile.locator('.bande-etat.pas').waitFor();
-    const curseur = page.locator('label.curseur input[type=range]').first();
-    const taille = await curseur.inputValue();
-    await curseur.fill('100');
+    // « Taille − + » (C-8.3) : « − » jusqu'à la plus petite taille, puis « + » autant de fois pour revenir.
+    const moins = page.locator('[data-place="taille"] [data-action="plus-petites"]');
+    const plus = page.locator('[data-place="taille"] [data-action="plus-grandes"]');
+    let pas = 0;
+    while (await moins.isEnabled()) {
+      await moins.click();
+      pas++;
+    }
     await page.waitForTimeout(600);
     for (const [w, h] of TAILLES) {
       await page.setViewportSize({ width: w, height: h });
@@ -832,7 +864,7 @@ try {
       console.log(`selection ${w}×${h}, curseur au minimum : ${coupes.length ? 'mot coupé' : 'mot entier'}${serree.serree ? ', ↻ dans la remarque' : ', ↻ au bout de la bande'}`);
     }
     await page.setViewportSize({ width: 1440, height: 900 });
-    await curseur.fill(taille);
+    for (let i = 0; i < pas; i++) await plus.click();
     await page.evaluate(() => document.activeElement?.blur?.());
     await page.keyboard.press('Control+z');
     await page.keyboard.press('Control+z');
@@ -845,7 +877,7 @@ try {
     await tuiles.nth(1).click({ modifiers: ['Control'] });
     await tuiles.nth(2).click({ modifiers: ['Control'] });
     const ouvrir = async () => {
-      await page.locator('.barre-action').getByRole('button', { name: 'Comparer', exact: true }).click();
+      await page.locator('.panneau-choix').getByRole('button', { name: /^Comparer en grand/ }).click();
       await page.locator('.comparateur[data-presentation]').waitFor();
       await page.waitForFunction(() => [...document.querySelectorAll('.comparateur .volet-image img')].every((x) => x.complete && x.naturalWidth > 0), null, { timeout: 20_000 }).catch(() => undefined);
     };

@@ -1,0 +1,1314 @@
+/* Lot 4 de la charte (D111) : le cadre commun des pages d'étape, PROVISOIRE (C-7, C-8) jusqu'à l'essai de
+   l'utilisateur sur de vraies photos. Les pages passées au cadre portent `data-cadre="commun"` sur `.app` :
+   bandes de hauteur fixe, seule la zone de contenu défile, chaque colonne de son côté ; sous 440 px de haut,
+   la page défile en entier et seule la barre du bas reste en place. Les autres pages (`data-cadre="ancien"`)
+   gardent leur défilement d'avant. Chargé en dernier. */
+
+/* « Valider et continuer » au même pixel sur toutes les pages : la barre du bas fait 56 px sous 1440 px de
+   large ou sous 700 px de haut, le bouton à 6 px du bord (centré dans 56 px). */
+@media (max-width: 1439.98px), (max-height: 699.98px) {
+  .barre-validation {
+    min-height: var(--h-barre-bas-petit);
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
+.app[data-cadre='commun'] {
+  --h-app-cadre: var(--h-app);
+  --h-barre-cadre: var(--h-barre-bas);
+  --l-droit: var(--l-panneau-droit);
+  --l-aide-cadre: var(--l-aide);
+}
+
+@media (max-width: 1439.98px) {
+  .app[data-cadre='commun'] {
+    --l-droit: var(--l-panneau-droit-petit);
+    --l-aide-cadre: var(--l-aide-petit);
+  }
+}
+
+@media (max-width: 1439.98px), (max-height: 699.98px) {
+  .app[data-cadre='commun'] {
+    --h-barre-cadre: var(--h-barre-bas-petit);
+  }
+}
+
+@media (max-width: 1180px), (max-height: 699.98px) {
+  .app[data-cadre='commun'] {
+    --h-app-cadre: var(--h-app-petit);
+  }
+}
+
+/* Le cadre tient dans la fenêtre, jusqu'au palier de 1024 px (C-7.6) : rien ne défile en largeur. */
+body:has(.app[data-cadre='commun']) {
+  min-width: 0;
+}
+
+.app[data-cadre='commun'] main {
+  overflow: hidden;
+}
+
+/* --- Barre de l'application : hauteur fixe ; Aide juste avant Menu ; au palier, frise et nom du projet masqués --- */
+
+.app[data-cadre='commun'] .entete {
+  height: var(--h-app-cadre);
+  gap: var(--e3);
+  padding-right: var(--e5);
+}
+
+.app[data-cadre='commun'] .entete .projet {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.app[data-cadre='commun'] .avancement-etapes {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 1180px) {
+  .app[data-cadre='commun'] .entete .projet,
+  .app[data-cadre='commun'] .bandeau {
+    display: none;
+  }
+}
+
+button.aide-cadre {
+  flex: 0 0 auto;
+  min-height: var(--h-btn);
+  margin-right: calc(var(--e2) - var(--e3));
+  padding: 0 var(--e3) 0 10px;
+  border-radius: var(--r-commande);
+}
+
+/* « à lire » : l'Aide de l'étape n'a pas encore été ouverte (brun = reste à faire, C-3.3). */
+.marque-a-lire {
+  margin-left: var(--e1);
+  padding: 0 var(--e2);
+  border-radius: var(--r-pastille);
+  background: var(--afaire-doux);
+  color: var(--afaire);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 600;
+}
+
+/* --- La page : en-tête d'étape, barre d'outils, corps (seule partie qui défile), barre du bas --- */
+
+.page-cadre {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding-bottom: var(--h-barre-cadre);
+}
+
+.entete-cadre {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--e4);
+  min-height: 76px;
+  padding: 10px var(--e5);
+  background: var(--surface);
+}
+
+.titre-cadre {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.titre-cadre h1 {
+  margin: 0;
+  font-size: var(--t-titre);
+  line-height: var(--lh-titre);
+  font-weight: 700;
+}
+
+.consigne {
+  margin: 0;
+  color: var(--texte-2);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+}
+
+.entete-cadre .annuler-retablir {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Message passager des pages du cadre : dans l'en-tête, à la place de la consigne, à côté d'« Annuler » ; jamais
+   sur les photos, le plein ou la barre du bas (tour 2 du lot 4). Sans message, l'élément reste là, vide, pour
+   le lecteur d'écran (role=status) : masqué à l'écran seulement, jamais `display: none`, qui le sortirait de
+   l'arbre d'accessibilité (tour 3, WCAG 4.1.3). Dans une vue en grand ou un dialogue, la bulle d'avant revient. */
+.message-entete:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Un nouveau nœud par message (`key`) ; il ne change rien à la mise en page. */
+.message-entete > .contenu-message {
+  display: contents;
+}
+
+.message-entete {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-width: 0;
+  color: var(--texte);
+  font-weight: 600;
+  animation: apparition 0.18s ease-out;
+}
+
+.message-entete .texte-message {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.message-entete.erreur .pastille-message {
+  background: var(--perte);
+  color: var(--sur-perte);
+}
+
+.message-entete button.lien {
+  flex: none;
+}
+
+body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
+  display: none;
+}
+
+/* Sous 700 px de haut : la consigne sur la ligne du titre (52 px). */
+@media (max-height: 699.98px) {
+  .entete-cadre {
+    min-height: 52px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .titre-cadre {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    column-gap: var(--e4);
+  }
+
+  .titre-cadre h1 {
+    flex: none;
+    white-space: nowrap;
+  }
+}
+
+/* Palier sous 700 px de haut : la consigne, « Annuler : … » et « Rétablir » en 14 px, pour que l'en-tête reste
+   sur une ligne de 52 px d'un geste à l'autre (la page ne descend pas au clic) ; rien n'est coupé (C-10.4, C-8.2) :
+   si la place manque encore, la consigne passe dessous (tour 1 du lot 4). */
+@media (max-width: 1180px) and (max-height: 699.98px) {
+  .entete-cadre .consigne,
+  .entete-cadre .annuler-retablir button {
+    font-size: var(--t-petit);
+    line-height: var(--lh-petit);
+  }
+
+  .entete-cadre button.bouton-annuler {
+    min-width: 300px;
+  }
+
+  .entete-cadre button.bouton-retablir {
+    min-width: 132px;
+  }
+}
+
+.outils-cadre {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--e4);
+  min-height: 60px;
+  padding: var(--e2) var(--e5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--filet);
+}
+
+@media (max-height: 699.98px) {
+  .outils-cadre {
+    min-height: 56px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .outils-cadre {
+    min-height: 52px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}
+
+.gauche-outils {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+}
+
+.mot-afficher,
+.mot-taille {
+  color: var(--texte-2);
+  white-space: nowrap;
+}
+
+.outils-cadre .pastilles-filtre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+
+/* « Taille − + » au bout de la barre d'outils (C-8.3). */
+.taille-cadre {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+
+button.bouton-taille {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--h-btn);
+  padding: 0;
+}
+
+/* Le corps : les colonnes côte à côte, chacune défile de son côté. */
+.corps-cadre {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
+.corps-cadre > * {
+  min-height: 0;
+}
+
+.colonne-liste {
+  flex: 0 0 var(--largeur-panneau, 340px);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.colonne-liste > .panneau-dossiers {
+  flex: 1 1 auto;
+}
+
+.table-cadre {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--table);
+}
+
+/* Tête d'une colonne : 52 px (48 sous 700 px de haut et au palier), fixe au-dessus de ce qui défile. */
+.tete-col {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: 52px;
+  padding: 6px var(--e5);
+  border-bottom: 1px solid var(--filet);
+}
+
+@media (max-height: 699.98px), (max-width: 1180px) {
+  .tete-col {
+    min-height: 48px;
+    padding-top: var(--e1);
+    padding-bottom: var(--e1);
+  }
+}
+
+.tete-col h2 {
+  margin: 0;
+  font-size: var(--t-section);
+  line-height: var(--lh-section);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tete-table {
+  background: var(--surface);
+  flex-wrap: nowrap;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.tete-table .sous-titre-vue {
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.tete-table .titre-vue {
+  flex: 0 1 auto;
+  min-width: 80px;
+}
+
+.tete-table .titre-vue h2 {
+  -webkit-line-clamp: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resume-table {
+  /* Se raccourcit avant le nom de la sortie affichée. */
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.tete-table > button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  white-space: nowrap;
+}
+
+.tete-table .recherche-photos {
+  flex: 0 1 260px;
+  min-width: 120px;
+}
+
+/* Au palier, la liste de gauche est un menu dans la tête de la table : le même panneau, en un seul exemplaire. */
+button.menu-liste {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.nom-menu-liste {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.page-cadre[data-palier] .colonne-liste {
+  display: none;
+}
+
+.page-cadre[data-palier][data-liste='ouverte'] .colonne-liste {
+  display: flex;
+  position: absolute;
+  z-index: 30;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(340px, 80vw);
+  box-shadow: var(--ombre-flottant);
+}
+
+.filtres-table {
+  flex: 0 0 auto;
+  padding: var(--e2) var(--e5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--filet);
+}
+
+.filtres-table .case-piles {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+
+.table-cadre > .encart {
+  margin: var(--e2) var(--e5);
+}
+
+.table-cadre > .grille-photos {
+  flex: 1 1 auto;
+}
+
+/* --- Panneau de droite : « N photos choisies » (C-8.7 proposée) --- */
+
+.panneau-cadre {
+  flex: 0 0 var(--l-droit);
+  width: var(--l-droit);
+  /* Rien ne déborde en largeur (C-7.1) ; « clip » ne fait pas défiler : le haut collé reste collé. */
+  overflow-x: clip;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--filet);
+}
+
+.haut-panneau {
+  flex: 0 0 auto;
+  background: var(--surface);
+}
+
+.bloc-fixe {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e3) var(--e5) var(--e4);
+  border-bottom: 1px solid var(--filet);
+}
+
+.deux-decisions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e2);
+}
+
+button.decision {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  padding: 0 var(--e3);
+  white-space: nowrap;
+}
+
+button.decision.principal {
+  justify-content: flex-start;
+  padding-left: var(--e4);
+}
+
+button.decision.album:not(.principal) {
+  justify-content: flex-start;
+  padding-left: var(--e4);
+}
+
+/* La décision déjà prise par toutes les photos choisies : allumée, doux et bordé (C-4.9). */
+button.decision.on,
+button.decision.on:hover:not(:disabled) {
+  background: var(--accent-doux);
+  border: 2px solid var(--accent);
+  color: var(--accent-doux-texte);
+}
+
+.pastille-filtre .etoiles,
+.filtres-table .etoiles {
+  margin-right: var(--e1);
+  color: var(--etoile-trait);
+}
+
+.decision .etoiles {
+  color: var(--etoile-trait);
+}
+
+.decision.principal .etoiles {
+  color: inherit;
+}
+
+.defile-col {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.panneau-cadre .defile-col {
+  padding: var(--e2) var(--e4) var(--e4);
+}
+
+.outils-choix {
+  display: grid;
+  gap: 2px;
+  padding-bottom: var(--e3);
+  border-bottom: 1px solid var(--filet);
+}
+
+button.outil-photo {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  width: 100%;
+  min-height: var(--h-btn);
+  padding: var(--e1) var(--e2);
+  border: none;
+  background: none;
+  text-align: left;
+  font-weight: 400;
+}
+
+button.outil-photo:disabled {
+  border: 1.5px dashed var(--filet-fort);
+}
+
+.texte-outil {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.texte-outil .raison-desactivee {
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.outil-photo kbd {
+  flex: 0 0 auto;
+  color: var(--texte-2);
+  font: inherit;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.rappel-choix {
+  margin: var(--e2) var(--e2) 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.titre-section-panneau {
+  margin: var(--e4) var(--e2) var(--e2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 600;
+  color: var(--texte-2);
+}
+
+.panneau-cadre .outils-selection {
+  padding: var(--e2) 0 0;
+  overflow: visible;
+}
+
+/* Écran étroit, Aide ouverte : l'Aide prend la place du panneau ; les décisions restent au-dessus d'elle. */
+.pile-droite {
+  flex: 0 0 var(--l-droit);
+  width: var(--l-droit);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pile-droite > .panneau-cadre {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.pile-droite > .panneau-aide {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+/* --- Aide : une colonne qui pousse le contenu --- */
+
+.panneau-aide {
+  flex: 0 0 var(--l-aide-cadre);
+  width: var(--l-aide-cadre);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--filet);
+}
+
+.panneau-aide .tete-col {
+  justify-content: space-between;
+}
+
+.panneau-aide .tete-col h2 {
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+}
+
+button.fermer-aide {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+}
+
+.corps-aide {
+  padding: var(--e3) var(--e5);
+  color: var(--texte-2);
+}
+
+.corps-aide p {
+  margin: 0 0 var(--e3);
+}
+
+/* --- Barre du bas : hauteur fixe ; deux lignes au plus à gauche --- */
+
+.app[data-cadre='commun'] .barre-validation {
+  height: var(--h-barre-cadre);
+  min-height: 0;
+}
+
+.app[data-cadre='commun'] .barre-validation .resume {
+  max-height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 1180px) {
+  .app[data-cadre='commun'] .barre-validation .l1 {
+    font-size: var(--t-petit);
+    line-height: var(--lh-petit);
+  }
+}
+
+/* --- Écran très bas (moins de 440 px de haut, C-7.6 bis) : la page défile en entier ; la barre du bas reste
+   fixe ; la tête de la table et le haut du panneau (avec leur bouton plein) collent en haut de la fenêtre. --- */
+@media (max-height: 439.98px) {
+  .app[data-cadre='commun'] {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .app[data-cadre='commun'] main {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .app[data-cadre='commun'] .page-cadre {
+    height: auto;
+  }
+
+  .app[data-cadre='commun'] .corps-cadre {
+    align-items: stretch;
+  }
+
+  .app[data-cadre='commun'] .corps-cadre .defile-col,
+  .app[data-cadre='commun'] .table-cadre > .grille-photos {
+    overflow: visible;
+  }
+
+  .app[data-cadre='commun'] .tete-table,
+  .app[data-cadre='commun'] .haut-panneau {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+  }
+
+  .app[data-cadre='commun'] .colonne-liste {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: calc(100vh - var(--h-barre-cadre));
+  }
+
+  .page-cadre[data-palier][data-liste='ouverte'] .colonne-liste {
+    position: absolute;
+    height: auto;
+  }
+}
+
+/* --- Doublons dans le cadre (lot 4, § 1.7) : onglets dans la barre d'outils, liste de gauche (ou son menu au
+   palier), la tête de la table avec la portée de la section, les groupes qui défilent sous leurs en-têtes collés.
+   Chaque en-tête tient sur une ligne et porte le plein, au bout à droite. --- */
+
+.page-doublons .bande-analyse {
+  flex: 0 0 auto;
+}
+
+.page-doublons .bande-analyse:empty {
+  display: none;
+}
+
+.page-doublons .bande-analyse > .encart {
+  margin: var(--e2) var(--e5);
+}
+
+.page-doublons .gauche-outils {
+  flex-wrap: nowrap;
+}
+
+/* Les onglets : le nom, et dessous ce qui reste à accepter. */
+.outils-cadre .onglets-doublons {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--e4);
+  margin: 0;
+  border: 0;
+}
+
+.outils-cadre .onglet-doublons {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  min-height: 44px;
+  padding: 0 var(--e1);
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.outils-cadre .onglet-doublons.actif {
+  border-bottom-color: var(--accent);
+}
+
+.outils-cadre .onglets-doublons .compte,
+.outils-cadre .onglets-doublons .compte.gris,
+.outils-cadre .onglets-doublons .compte.fini {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  background: none;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.outils-cadre .onglets-doublons .compte.gris {
+  color: var(--texte-2);
+  font-weight: 400;
+}
+
+.outils-cadre .onglets-doublons .compte.fini {
+  color: var(--accent-doux-texte);
+}
+
+.page-doublons .rangee-onglet {
+  display: inline-flex;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+
+/* Un menu nommé : la portée dite par son nom, ses actions dessous. */
+.menu-portee {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.menu-portee > button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  white-space: nowrap;
+}
+
+.menu-portee .menu-actions {
+  top: calc(100% + var(--e1));
+  min-width: 300px;
+  gap: 2px;
+}
+
+.menu-actions button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  white-space: normal;
+}
+
+.menu-actions button:disabled {
+  border: 1.5px dashed var(--filet-fort);
+}
+
+.menu-actions button .discret {
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 400;
+}
+
+/* La liste de gauche : ce qu'on montre en haut (fixe), les journées ou dossiers dessous (défilent). */
+.colonne-liste > .sections-doublons {
+  flex: 1 1 auto;
+}
+
+.page-doublons .sections-doublons {
+  position: relative;
+  top: auto;
+  max-height: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--filet);
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.page-doublons .sections-doublons .outils-doublons {
+  position: static;
+  display: grid;
+  gap: var(--e2);
+  margin: 0;
+  padding: var(--e3) var(--e5);
+  border-bottom: 1px solid var(--filet);
+  background: var(--surface);
+}
+
+/* « Grouper et classer », replié : la liste de gauche garde la place des journées (maquette v2). Ouvert : une
+   ligne par réglage, chaque mot au-dessus de sa liste, les deux listes alignées à gauche et de la même largeur
+   (tour 3 du lot 4 : « Grouper » à côté de sa liste et « Classer » au-dessus de la sienne ne se lisaient pas
+   pareil) ; rien ne se coupe, en anglais non plus (un <details> ne range pas ses enfants : la grille est dans le div). */
+.page-doublons .grouper-classer > .contenu-grouper {
+  display: grid;
+  gap: var(--e2);
+  margin-top: var(--e2);
+}
+
+.page-doublons .grouper-classer > .contenu-grouper > label {
+  display: grid;
+  gap: var(--e1);
+}
+
+.page-doublons .grouper-classer > .contenu-grouper select {
+  width: 100%;
+  min-width: 0;
+}
+
+.page-doublons .grouper-classer > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.page-doublons .ligne-outil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+}
+
+.page-doublons .sections-doublons .recherche-sections {
+  position: static;
+  width: auto;
+  margin: var(--e2) var(--e5) 0;
+  box-shadow: none;
+}
+
+.page-doublons .liste-sections {
+  padding: var(--e2) var(--e3) var(--e4);
+}
+
+.page-doublons .tete-table .titre-section {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.page-doublons .tete-table .detail-section {
+  flex: 0 100 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.page-doublons .tete-table > button.principal {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reste-menu {
+  margin-left: var(--e2);
+  color: var(--afaire);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 600;
+}
+
+/* La zone des groupes : la seule qui défile ; sous 700 px de haut, elle s'accroche au début des groupes. */
+.page-doublons {
+  --marge-groupes: var(--e4);
+}
+
+/* Au palier, 8 px au-dessus du premier groupe et rien sous l'en-tête : l'en-tête, la photo et sa bande
+   « À garder » tiennent ensemble à 1024×464 (tour 1 du lot 4). */
+.page-doublons[data-palier] {
+  --marge-groupes: var(--e2);
+}
+
+.page-doublons[data-palier] article.carte-doublons > header {
+  margin-bottom: 0;
+}
+
+.page-doublons .contenu-doublons {
+  display: block;
+  padding: var(--marge-groupes) var(--e5) var(--e5);
+  /* L'accroche pose le groupe là où il est au repos : sous la marge du haut, jamais sous l'en-tête collé. */
+  scroll-padding-top: var(--marge-groupes);
+}
+
+.page-doublons .contenu-doublons > .encart,
+.page-doublons .contenu-doublons > .encart-ia {
+  margin: 0 0 var(--e4);
+}
+
+.groupes-doublons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e5);
+}
+
+@media (max-height: 699.98px) {
+  .page-doublons .contenu-doublons,
+  html:has(.page-doublons) {
+    scroll-snap-type: y proximity;
+  }
+
+  .page-doublons .carte-doublons {
+    scroll-snap-align: start;
+  }
+}
+
+/* Un groupe : posé sur la table avec son filet, sans carte blanche (C-6.6 : seuls les dossiers sont des cartes) ;
+   l'en-tête collé en haut tant que le groupe se voit (chacun pousse le précédent), du fond de la table pour
+   cacher ce qui défile dessous. */
+.page-doublons article.carte-doublons,
+.page-doublons .carte-doublons.repliee {
+  background: transparent;
+}
+
+.page-doublons article.carte-doublons {
+  padding: 0 0 var(--e4);
+}
+
+.page-doublons article.carte-doublons > :not(header) {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
+.page-doublons .carte-doublons.en-cours {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.page-doublons article.carte-doublons > header {
+  position: sticky;
+  /* Collé au bord haut de la zone, pas sous sa marge de 16 px (où les photos défilaient, tour 1 du lot 4). */
+  top: calc(-1 * var(--marge-groupes));
+  z-index: 3;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--e3);
+  height: 56px;
+  margin: 0 0 var(--e1);
+  padding: 0 var(--e3) 0 18px;
+  border-radius: var(--r-objet) var(--r-objet) 0 0;
+  background: var(--table);
+}
+
+@media (max-height: 699.98px) {
+  .page-doublons article.carte-doublons > header {
+    height: 52px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .page-doublons article.carte-doublons > header {
+    height: 48px;
+  }
+}
+
+.page-doublons article.carte-doublons > header > * {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* « 10:41 · Rafale de 6 photos » : le point médian à un espace de l'heure, pas à l'écart de colonne. */
+.page-doublons article.carte-doublons > header .heure + .titre {
+  margin-left: calc(var(--e1) - var(--e3));
+}
+
+.page-doublons article.carte-doublons > header .titre {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-doublons .carte-doublons .lieu-groupe {
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.page-doublons article.carte-doublons > header .espace {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.page-doublons button.bouton-comparer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+
+.page-doublons button.bouton-comparer.icone-seule {
+  width: var(--h-btn);
+  justify-content: center;
+  padding: 0;
+}
+
+/* Le plein nomme la photo qu'il garde : sa vignette de 24 px (rayon 6), la virgule à 4 px après son liseré. */
+.page-doublons [data-action='accepter'],
+.comparateur [data-action='accepter'] {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.page-doublons article.carte-doublons > header > [data-action='accepter'] {
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+/* Le plein n'est jamais rogné (C-10.5, tour 1 du lot 4, B2) : dans la barre du bas de Comparer, il ne descend
+   pas sous la largeur de son texte ; seul le nom d'un dossier ou d'un fichier (Copies) s'y raccourcit, entier
+   dans l'infobulle ; ensuite le rappel des touches passe sur deux lignes, « Photo entière » garde son icône. */
+.comparateur .cmp-bas > [data-action='accepter'] {
+  flex: 0 8 auto;
+  min-width: 0;
+  overflow: visible;
+}
+
+.page-doublons [data-action='accepter'],
+.comparateur .cmp-bas > [data-action='accepter'] {
+  gap: 0;
+}
+
+.page-doublons [data-action='accepter'] > svg:first-child,
+.comparateur .cmp-bas > [data-action='accepter'] > svg:first-child {
+  flex: none;
+  margin-right: var(--e2);
+}
+
+/* Le rappel des touches cède la place en passant sur deux lignes, jamais coupé (C-4.10, C-10.4). */
+.comparateur .cmp-bas .touches-comparer {
+  flex: 0 1 auto;
+  /* Deux lignes au plus : « ↑ ↓ photo · » / « ← → groupe ». */
+  min-width: 7.5em;
+  white-space: normal;
+}
+
+.comparateur .cmp-bas .touches-comparer kbd {
+  white-space: nowrap;
+}
+
+@media (max-width: 1439.98px) {
+  .comparateur .cmp-bas.navigation-groupes .zoom-comparer .mot {
+    display: none;
+  }
+}
+
+@media (min-width: 1420px) and (max-width: 1599.98px) {
+  .comparateur .cmp-bas.navigation-groupes .touches-plus {
+    display: none;
+  }
+}
+
+/* Le nom du dossier dans « garder celle de « … » » : entier tant qu'il tient, raccourci sinon (infobulle). */
+.nom-libelle {
+  min-width: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-action='accepter'] img,
+[data-action='accepter'] .sans-miniature {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  max-width: none;
+  max-height: none;
+  margin: 0 var(--e1) 0 6px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+/* Après « Accepter », le plein suivant arrive en fondu ; il ignore les clics pendant ce temps (0,5 s). */
+@keyframes fondu-plein {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-doublons [data-action='accepter'].fondu {
+  animation: fondu-plein 0.5s ease-out;
+}
+
+/* La place de la photo au début de sa bande (« 4 · À garder »). */
+.place-photo {
+  flex: none;
+}
+
+/* La ligne des boutons du groupe : « Garder plusieurs photos », « Tout garder », « Autres choix », l'état,
+   et au bout « Journée suivante à accepter » sur le dernier groupe. */
+.page-doublons article.carte-doublons > footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2) var(--e3);
+  margin-top: var(--e3);
+}
+
+.page-doublons .carte-doublons .plusieurs-photos {
+  margin-left: 0;
+}
+
+.page-doublons .carte-doublons.repliee {
+  flex-wrap: wrap;
+}
+
+button.lien-suite {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  font-weight: 600;
+}
+
+/* Le clavier n'est jamais caché sous un en-tête collé (WCAG 2.4.11). */
+.page-doublons .carte-doublons :focus {
+  scroll-margin-top: 64px;
+}
+
+/* Copies exactes : la photo une fois, une ligne par exemplaire (état, dossier, nom, poids). */
+.corps-copie {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e4);
+}
+
+.photo-copie .cadre-tuile {
+  border-radius: var(--r-photo);
+  background: var(--mat);
+}
+
+.lignes-exemplaires {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  gap: var(--e2);
+}
+
+button.tuile-doublon.exemplaire {
+  display: flex;
+  align-items: stretch;
+  gap: var(--e3);
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--e3) 0 0;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-photo);
+  background: var(--surface);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 400;
+  text-align: left;
+}
+
+button.tuile-doublon.exemplaire:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--filet-fort);
+}
+
+@media (max-height: 699.98px) {
+  button.tuile-doublon.exemplaire {
+    min-height: 40px;
+  }
+}
+
+.exemplaire .bande-etat {
+  flex: 0 0 132px;
+  height: auto;
+  justify-content: flex-start;
+  padding: 0 var(--e3);
+  border-radius: var(--r-photo) 0 0 var(--r-photo);
+}
+
+.texte-exemplaire {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--e1) 0;
+}
+
+.dossier-exemplaire {
+  overflow-wrap: anywhere;
+}
+
+.dossier-exemplaire .chemin-doublon {
+  font-weight: 600;
+}
+
+.detail-exemplaire {
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  overflow-wrap: anywhere;
+}
+
+.detail-exemplaire .remarque-doublon.defaut,
+.detail-exemplaire .refus {
+  color: var(--afaire);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.poids-exemplaire {
+  flex: none;
+  align-self: center;
+  color: var(--texte-2);
+}
+
+/* Mis de côté : la grille dans la zone qui défile. */
+.page-doublons .grille-mis-de-cote {
+  margin: 0;
+}
+
+/* Écran très bas (moins de 440 px) : la page défile ; les en-têtes de groupe collent sous la tête de la table. */
+@media (max-height: 439.98px) {
+  .app[data-cadre='commun'] .page-doublons .tete-table {
+    height: 48px;
+  }
+
+  .page-doublons article.carte-doublons > header {
+    top: 48px;
+  }
+
+  /* Pas d'accroche sur la page entière : elle ramenait le défilement au début du dernier groupe, et la fin de
+     la liste (« Journée suivante à accepter ») restait sous la barre du bas (tour 1 du lot 4). */
+  html:has(.page-doublons) {
+    scroll-snap-type: none;
+    scroll-padding-top: 64px;
+  }
+
+  .page-doublons .contenu-doublons {
+    padding-bottom: calc(var(--e5) + var(--e4));
+  }
+}

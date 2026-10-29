@@ -8,7 +8,8 @@ import { useEffect, useRef } from 'preact/hooks';
 import { aTraduire, t } from '../../lib/langue';
 import { actionClavier } from '../../lib/navigation';
 import { CODES_ETAPES, nomEtape, type CodeEtape } from '../../navigateur/projet';
-import { annuler, notifier, page, retablir, session } from '../etat';
+import { page, session } from '../etat';
+import { annulerIci, retablirIci } from './CadreCommun';
 
 /** Liste des raccourcis affichée. */
 export const raccourcisOuverts = signal(false);
@@ -46,11 +47,9 @@ export function installerRaccourcis() {
         const s = session.value;
         // Sur les pages d'étape seulement : ailleurs, rien de ce qu'on voit ne changerait.
         if (page.value.nom !== 'etape' || !s) return;
-        if (action === 'annuler') {
-          if (s.historique.peutAnnuler) annuler();
-          else notifier('info', t`Rien à annuler.`);
-        } else if (s.historique.peutRetablir) retablir();
-        else notifier('info', t`Rien à rétablir.`);
+        // Sur une page passée au cadre, la règle du bouton de l'en-tête (choix 6 A) ; ailleurs, globale.
+        if (action === 'annuler') annulerIci();
+        else retablirIci();
       }
       e.preventDefault();
       e.stopPropagation();

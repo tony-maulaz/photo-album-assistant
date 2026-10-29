@@ -117,8 +117,10 @@ export interface NavigationGroupes {
   suivant?: () => void;
   /** Accepter la proposition du groupe, puis passer au suivant. */
   accepter?: () => void;
-  /** Libellé chiffré du bouton (« Accepter : garder 1, écarter 2 »), comme sur la carte du groupe. */
-  libelleAccepter?: string;
+  /** Libellé du bouton (« Accepter : garder la 1 [vignette], écarter 2 autres »), le même que sur la page (É9). */
+  libelleAccepter?: ComponentChildren;
+  /** Le même libellé, en texte entier, pour le lecteur d'écran. */
+  lecteurAccepter?: string;
   /** Avertissement avant d'accepter (aucune photo gardée : tout le groupe sera mis de côté). */
   alerte?: string;
 }
@@ -303,7 +305,10 @@ export function Comparateur({
       else if (k === '+' || k === '=') zoomer(1.25);
       else if (k === '-') zoomer(0.8);
       else if (basculer && /^[1-9]$/.test(k) && numeroVisible(Number(k))) basculer(photos[Number(k) - 1]);
-      else if (k.toLowerCase() === 'a' && navigation?.accepter) navigation.accepter();
+      else if (k.toLowerCase() === 'a' && navigation?.accepter) {
+        // Une touche gardée enfoncée ne s'accepte qu'une fois (lot 4, § 1.7).
+        if (!e.repeat) navigation.accepter();
+      }
       else return;
       e.preventDefault();
       e.stopPropagation();
@@ -568,7 +573,7 @@ export function Comparateur({
           </button>
         </span>
         {navigation?.accepter && (
-          <button type="button" class="principal" onClick={navigation.accepter} title={t`Touche A, puis groupe suivant`}>
+          <button type="button" class="principal" data-action="accepter" onClick={navigation.accepter} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && e.repeat && e.preventDefault()} aria-label={navigation.lecteurAccepter} title={t`Touche A, puis groupe suivant`}>
             <Icone nom="coche" taille={20} />
             {navigation.libelleAccepter ?? t`Accepter et groupe suivant`}
           </button>

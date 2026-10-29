@@ -310,6 +310,8 @@ export interface Modification {
   libelle: string;
   /** Le même geste avec les noms (« … vers « Vacances » ») : infobulle d'« Annuler » et messages. */
   detail?: string;
+  /** L'étape affichée quand le geste a été fait (choix 6 A du lot 4 : « Annuler » limité à l'étape affichée). */
+  etape?: number;
   avant: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
   apres: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
 }
@@ -407,6 +409,13 @@ export class Historique {
   }
   get peutRetablir() {
     return this.futur.length > 0;
+  }
+  /** L'étape du geste qu'« Annuler » défait, et de celui que « Rétablir » refait. */
+  get etapeAnnulation(): number | undefined {
+    return this.passe.at(-1)?.etape;
+  }
+  get etapeRetablissement(): number | undefined {
+    return this.futur.at(-1)?.etape;
   }
   get prochaineAnnulation(): string | undefined {
     return this.passe.at(-1)?.libelle;

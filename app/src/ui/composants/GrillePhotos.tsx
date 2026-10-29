@@ -87,7 +87,7 @@ export function Miniature({ f, taille, rotation = 0, recadrage }: { f: FichierPl
   }, [f.id, f.taille, f.modifie, taille > HAUTEUR_MINIATURE]);
 
   if (url && recadrageUtile(recadrage)) return <MiniatureRecadree url={url} taille={taille} rotation={rotation} recadrage={recadrage} />;
-  if (url) return <img src={url} alt="" draggable={false} style={{ maxWidth: `${taille}px`, maxHeight: `${taille}px`, ...(rotation ? { transform: `rotate(${rotation}deg)` } : {}) }} />;
+  if (url) return <img src={url} alt="" draggable={false} data-photo={f.id} style={{ maxWidth: `${taille}px`, maxHeight: `${taille}px`, ...(rotation ? { transform: `rotate(${rotation}deg)` } : {}) }} />;
   return <div class={`sans-miniature${url === undefined ? ' chargement' : ''}`}>{f.categorie === 'video' ? (
         <>
           <Icone nom="lecture" taille={20} />
@@ -158,6 +158,8 @@ export interface OptionsGrille {
   ouvrir?: (index: number) => void;
   /** Change quand la liste affichée change de nature : on remonte en haut. */
   cleVue?: string;
+  /** Place libre sous la dernière ligne (défaut : 72 px, pour une barre flottante). */
+  pied?: number;
   /** Glisser la sélection vers le panneau des dossiers (défaut : oui). */
   glisser?: boolean;
   taille?: number;
@@ -191,12 +193,45 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   }, [versionPlan.value, session.value]);
   const position = (i: number) => ({ x: MARGE + disposition.colonne[i] * largeurCase, y: disposition.haut[disposition.ligne[i]] });
 
+  // Racine du défilement (lot 4, C-7.6 bis) : la grille défile d'elle-même, ou bien, sur un écran très bas
+  // où la page défile en entier (`overflow: visible`), avec la fenêtre. Elle ne dessine toujours que les
+  // photos visibles ; une seule barre de défilement, jamais deux l'une dans l'autre.
+  const parFenetre = () => !!conteneur.current && getComputedStyle(conteneur.current).overflowY === 'visible';
+  /** Défilement de la grille : en pixels depuis son haut. */
+  const hautVu = () => {
+    const el = conteneur.current;
+    if (!el) return 0;
+    return parFenetre() ? Math.max(0, -el.getBoundingClientRect().top) : el.scrollTop;
+  };
+  const hauteurVue = () => {
+    const el = conteneur.current;
+    if (!el) return 0;
+    return parFenetre() ? window.innerHeight : el.clientHeight;
+  };
+  const allerA = (y: number) => {
+    const el = conteneur.current;
+    if (!el) return;
+    if (parFenetre()) window.scrollBy(0, y - hautVu());
+    else el.scrollTop = y;
+  };
+
   useLayoutEffect(() => {
     const el = conteneur.current;
     if (!el) return;
-    const obs = new ResizeObserver(() => setDims({ largeur: el.clientWidth, hauteur: el.clientHeight }));
+    const noter = () => {
+      setDims({ largeur: el.clientWidth, hauteur: hauteurVue() });
+      setDefile(hautVu());
+    };
+    const obs = new ResizeObserver(noter);
     obs.observe(el);
-    return () => obs.disconnect();
+    const fenetre = () => parFenetre() && setDefile(hautVu());
+    window.addEventListener('scroll', fenetre, { passive: true });
+    window.addEventListener('resize', noter);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener('scroll', fenetre);
+      window.removeEventListener('resize', noter);
+    };
   }, []);
 
   // Le mot de l'état ne se coupe jamais (C-10.4) : une bande trop étroite pour le mot et ses marques ↻ ✂ ▣
@@ -220,8 +255,8 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
 
   // Nouvelle vue : on remonte en haut.
   useEffect(() => {
-    if (conteneur.current) conteneur.current.scrollTop = 0;
-    setDefile(0);
+    if (conteneur.current && hautVu() > 0) allerA(0);
+    setDefile(hautVu());
   }, [options.cleVue ?? vue.value]);
 
   // Photo demandée ailleurs (« voir ») : on la fait venir au milieu de la grille, si elle y est.
@@ -230,7 +265,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     const el = conteneur.current;
     const i = aMontrer ? elements.findIndex((f) => f.id === aMontrer) : -1;
     if (!el || i < 0) return;
-    el.scrollTop = Math.max(0, position(i).y - (el.clientHeight - hauteurCase) / 2);
+    allerA(Math.max(0, position(i).y - (hauteurVue() - hauteurCase) / 2));
     photoAMontrer.value = null;
   }, [aMontrer, elements, disposition]);
 
@@ -257,8 +292,9 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         const { y } = position(i);
         // En remontant, on montre aussi le titre de la journée au-dessus de la ligne.
         const titre = disposition.titres.some((g) => g.debut === disposition.premier[disposition.ligne[i]]) ? TITRE : 0;
-        if (y - titre < el.scrollTop) el.scrollTop = y - titre - MARGE;
-        else if (y + hauteurCase > el.scrollTop + el.clientHeight) el.scrollTop = y + hauteurCase - el.clientHeight + MARGE;
+        const haut = hautVu();
+        if (y - titre < haut) allerA(y - titre - MARGE);
+        else if (y + hauteurCase > haut + hauteurVue()) allerA(y + hauteurCase - hauteurVue() + MARGE);
       }
       e.preventDefault();
     };
@@ -302,8 +338,13 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     const el = conteneur.current;
     if (!el || e.button !== 0 || (e.target as HTMLElement).closest('.tuile, button')) return;
     e.preventDefault();
-    const boite = el.getBoundingClientRect();
-    const point = (ev: MouseEvent) => ({ x: ev.clientX - boite.left, y: ev.clientY - boite.top + el.scrollTop });
+    // La boîte est relue à chaque mouvement : avec la fenêtre pour racine, la grille bouge en défilant.
+    const point = (ev: MouseEvent) => {
+      const boite = el.getBoundingClientRect();
+      return { x: ev.clientX - boite.left, y: ev.clientY - boite.top + el.scrollTop };
+    };
+    const fenetre = parFenetre();
+    const zone = () => (fenetre ? { top: 0, bottom: window.innerHeight } : el.getBoundingClientRect());
     const depart = point(e);
     const base = e.ctrlKey || e.metaKey ? new Set(choisis) : new Set<string>();
     if (!e.ctrlKey && !e.metaKey) selection.value = new Set();
@@ -324,20 +365,21 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     };
     const bouger = (ev: MouseEvent) => {
       dernier = ev;
-      if (ev.clientY > boite.bottom - 30) el.scrollTop += 24;
-      if (ev.clientY < boite.top + 30) el.scrollTop -= 24;
+      const z = zone();
+      if (ev.clientY > z.bottom - 30) allerA(hautVu() + 24);
+      if (ev.clientY < z.top + 30) allerA(Math.max(0, hautVu() - 24));
       mettreAJour(ev);
     };
     const relacher = () => {
       window.removeEventListener('mousemove', bouger);
       window.removeEventListener('mouseup', relacher);
-      el.removeEventListener('scroll', defiler);
+      (fenetre ? window : el).removeEventListener('scroll', defiler);
       setRect(null);
     };
     const defiler = () => mettreAJour(dernier);
     window.addEventListener('mousemove', bouger);
     window.addEventListener('mouseup', relacher);
-    el.addEventListener('scroll', defiler);
+    (fenetre ? window : el).addEventListener('scroll', defiler);
   };
 
   const cases = [];
@@ -421,7 +463,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
       onMouseDown={commencerRectangle}
       aria-label={t`Photos du dossier`}
     >
-      <div class="plateau" style={{ height: `${disposition.hauteur + PIED}px` }}>
+      <div class="plateau" style={{ height: `${disposition.hauteur + (options.pied ?? PIED)}px` }}>
         {titres}
         {cases}
         {rect && <div class="rectangle" style={{ left: `${rect.x0}px`, top: `${rect.y0}px`, width: `${rect.x1 - rect.x0}px`, height: `${rect.y1 - rect.y0}px` }} />}

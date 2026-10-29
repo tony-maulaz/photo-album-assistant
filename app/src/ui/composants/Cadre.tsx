@@ -5,14 +5,15 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCourtEtape, nomEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
 import { messages, page, reglages, sansSousDossiers, session, versionIA, versionPlan, versionProjet, type Page } from '../etat';
-import { montantChf, nombre } from '../format';
+import { minusculeInitiale, montantChf, nombre } from '../format';
 import { fermerProjet } from '../projets';
 import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
+import { BoutonAideCadre } from './CadreCommun';
 import { Icone } from './Icones';
 import { Logo } from './Logo';
 
 /** Ouvert / fermé, refermé par un clic ailleurs ou Échap. */
-function useDeroulant(): [boolean, (v?: boolean) => void, RefObject<HTMLDivElement | null>] {
+export function useDeroulant(): [boolean, (v?: boolean) => void, RefObject<HTMLDivElement | null>] {
   const [ouvert, setOuvert] = useState(false);
   const zone = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -193,6 +194,7 @@ export function Entete() {
           {t`IA ${nombre(depense, 2)} / ${montantChf(s.projet.budget_chf)} CHF`}
         </span>
       )}
+      <BoutonAideCadre />
       <MenuPrincipal />
     </header>
   );
@@ -248,13 +250,13 @@ export function TeteEtape({ numero, titre, cle, outils, children }: { numero?: n
  * pas sous la souris quand le geste change ; le geste avec ses noms est dans
  * l'infobulle. Sans rien à annuler, il le dit (C-4.7).
  */
-export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string }; annuler: () => void }) {
+export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string; ailleurs?: string }; annuler: () => void }) {
   const quoi = historique.prochaineAnnulation;
   if (!historique.peutAnnuler)
     return (
-      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={t`Annuler (Ctrl+Z)`}>
+      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={historique.ailleurs ?? t`Annuler (Ctrl+Z)`}>
         <Icone nom="annuler" taille={20} />
-        <span class="texte-annuler">{t`Rien à annuler`}</span>
+        <span class="texte-annuler">{historique.ailleurs ? t`Rien à annuler ici` : t`Rien à annuler`}</span>
       </button>
     );
   const detail = historique.detailAnnulation ?? quoi;
@@ -267,11 +269,11 @@ export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnul
 }
 
 /** « Rétablir » (Ctrl+Y), à côté d'« Annuler ». */
-export function BoutonRetablir({ peutRetablir, retablir }: { peutRetablir: boolean; retablir: () => void }) {
+export function BoutonRetablir({ peutRetablir, retablir, ailleurs = false }: { peutRetablir: boolean; retablir: () => void; ailleurs?: boolean }) {
   return (
     <button type="button" class="bouton-retablir" disabled={!peutRetablir} data-raison={peutRetablir ? undefined : 'libelle'} onClick={retablir} title={t`Rétablir (Ctrl+Y)`}>
       <Icone nom="retablir" taille={20} />
-      {peutRetablir ? t`Rétablir` : t`Rien à rétablir`}
+      {peutRetablir ? t`Rétablir` : ailleurs ? t`Rien à rétablir ici` : t`Rien à rétablir`}
     </button>
   );
 }
@@ -282,22 +284,27 @@ export function AnnulerRetablir({
   annuler,
   retablir,
 }: {
-  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string };
+  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string; ailleurs?: string; retablirAilleurs?: boolean };
   annuler: () => void;
   retablir: () => void;
 }) {
   return (
     <span class="annuler-retablir">
       <BoutonAnnuler historique={historique} annuler={annuler} />
-      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} />
+      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} ailleurs={historique.retablirAilleurs} />
     </span>
   );
 }
 
-/** « Déplacer 3 photos » → « déplacer 3 photos » (sauf un sigle : « IA… »). */
-function minusculeInitiale(texte: string): string {
-  return texte.length > 1 && texte[1] === texte[1].toLowerCase() ? texte[0].toLowerCase() + texte.slice(1) : texte;
+/**
+ * Sur un bouton de décision ou d'outil (Sélection, Recadreur) : un clic à la souris laisse le focus où il était
+ * (la grille) ; Espace et Entrée gardent alors le sens que la page leur donne, au lieu de refaire ce clic
+ * (proposition validée, avocat B1). Au clavier (Tab jusqu'au bouton), Espace et Entrée activent bien le bouton.
+ */
+export function garderFocus(e: MouseEvent) {
+  if (e.button === 0) e.preventDefault();
 }
+
 
 /** Raison écrite d'une commande désactivée (C-4.7), reliée au bouton par `aria-describedby`. */
 export function RaisonDesactivee({ id, raison }: { id: string; raison: string | false | null | undefined }) {
@@ -325,6 +332,7 @@ export function BarreValidation({
   raisonInactif,
   fini = true,
   ecarte = false,
+  court = false,
 }: {
   /** Ligne 1 : ce que devient ce qui reste (« 12 groupes pas encore acceptés : toutes leurs photos sont gardées »). */
   resume: ComponentChildren;
@@ -339,6 +347,8 @@ export function BarreValidation({
   fini?: boolean;
   /** On écarte des photos sur cette étape : ligne 2 « Rien n'est supprimé » (C-8.4). */
   ecarte?: boolean;
+  /** Pages du cadre commun (lot 4) : la phrase courte de 66 signes ; la suite est dans l'infobulle et l'Aide. */
+  court?: boolean;
 }) {
   const raison = valider && !validerActif ? (raisonInactif ?? '') : '';
   // Sa hauteur, lue par les messages passagers : ils se posent au-dessus d'elle, jamais sur la ligne
@@ -375,9 +385,9 @@ export function BarreValidation({
           )}
         </p>
         {ecarte && (
-          <p class="l2 rien-supprime">
+          <p class="l2 rien-supprime" title={court ? t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.` : undefined}>
             <Icone nom="bouclier" taille={16} />
-            {t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}
+            {court ? t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ».` : t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}
           </p>
         )}
       </div>

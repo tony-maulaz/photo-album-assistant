@@ -230,7 +230,11 @@ export function accepter(plan: Plan, groupes: GroupeDoublons[]): Modification | 
     if (choisies.length) modifications.push(garderAussi(plan, choisies, raisonDe(g)));
     if (deplacer) modifications.push(deplacerFichiers(plan, [r.original], r.dossier));
   }
-  return combiner(t`Accepter ${pluriel(n, 'proposition')}`, ...modifications);
+  // « Annuler : accepter 1 rafale » dit ce qu'il défait (C-8.2) : la sorte des groupes, s'ils sont tous de la même.
+  const sortes = new Set(groupes.map((g) => (g.sorte === 'dossiers' ? 'copies' : g.sorte)));
+  const sorte = sortes.size === 1 ? [...sortes][0] : null;
+  const quoi = sorte === 'rafales' ? pluriel(n, 'rafale') : sorte === 'copies' ? pluriel(n, 'copie') : pluriel(n, 'groupe');
+  return combiner(t`Accepter ${quoi}`, ...modifications);
 }
 
 /**

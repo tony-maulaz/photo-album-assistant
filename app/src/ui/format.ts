@@ -5,6 +5,11 @@ import { langue, t } from '../lib/langue';
 
 const nf = (d: number) => new Intl.NumberFormat(langue() === 'en' ? 'en-GB' : 'fr-CH', { maximumFractionDigits: d, minimumFractionDigits: d });
 
+/** « Déplacer 3 photos » → « déplacer 3 photos » (sauf un sigle : « IA… ») : un geste au milieu d'une phrase. */
+export function minusculeInitiale(texte: string): string {
+  return texte.length > 1 && texte[1] === texte[1].toLowerCase() ? texte[0].toLowerCase() + texte.slice(1) : texte;
+}
+
 export function nombre(n: number, decimales = 0): string {
   return nf(decimales).format(n);
 }

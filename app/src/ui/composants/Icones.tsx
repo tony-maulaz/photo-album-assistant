@@ -139,6 +139,13 @@ const TRACES = {
       <path d="M4 4v4.5h4.5" />
     </>
   ),
+  /** Quart de tour vers la droite (↻) : le trait de « tourner » (↺), en miroir. */
+  tournerDroite: (
+    <g transform="matrix(-1 0 0 1 24 0)">
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+      <path d="M4 4v4.5h4.5" />
+    </g>
+  ),
   /** Recadrée (✂). */
   recadrer: (
     <>

@@ -8,8 +8,8 @@ import { LIBELLES_DEFAUTS, LIBELLES_PERSONNES, LIBELLES_TYPES } from '../../lib/
 import { LIBELLES_SIGNAUX, type Signal } from '../../lib/indicateurs';
 import { cheminDossier, RACINE, type FichierPlan } from '../../lib/plan';
 import { arrivees, avancement, copiesRetenues, equilibre, groupesParJour, periodesEquilibre, redondances, type GroupeJour, type Periode } from '../../lib/selection';
-import { BarreValidation, AnnulerRetablir, RaisonDesactivee } from '../composants/Cadre';
-import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
+import { BarreValidation, garderFocus, RaisonDesactivee } from '../composants/Cadre';
+import { annulerIci, EnteteCadre, OutilsCadre, PanneauAide, retablirIci, useCadre, useMenuListe } from '../composants/CadreCommun';
 import { Comparateur } from '../composants/Comparateur';
 import { EncartAnalyse } from '../composants/Analyse';
 import { GrillePhotos, photoAMontrer } from '../composants/GrillePhotos';
@@ -17,7 +17,7 @@ import { Icone } from '../composants/Icones';
 import { PanneauDossiers, styleLargeurPanneau, TitreVue } from '../composants/PanneauDossiers';
 import { TriRapide } from '../composants/TriRapide';
 import { DialogueDeplacer } from '../composants/Visionneuse';
-import { annuler, changerAlbum, changerReglages, reglages, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
+import { changerAlbum, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { aTraduire, langue, t } from '../../lib/langue';
 import { dateHeure, jourCourt, nombre, pluriel } from '../format';
@@ -349,16 +349,46 @@ function Redondances({ photos, infos }: { photos: FichierPlan[]; infos: Map<stri
   );
 }
 
-/** Filtres du choix, en pastilles : valeur, libellé (traduit à l'affichage), photos comptées. */
+/** Filtres du choix, en pastilles dans la barre d'outils (C-4.8) : valeur, libellé (traduit à l'affichage), photos comptées. */
 const CHOIX: [Filtres['etoiles'], string, ((f: FichierPlan) => boolean) | null][] = [
   ['toutes', aTraduire('Toutes'), null],
   ['a_decider', aTraduire('À décider'), (f) => f.album === undefined],
   ['retenues', aTraduire('Dans l’album'), (f) => (f.album ?? 0) >= 1],
-  ['grandes', aTraduire('★★ Grandes'), (f) => f.album === 2],
   ['non', aTraduire('Pas pour l’album'), (f) => f.album === 0],
 ];
 
-function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map<string, InfoPhoto>; ia: ResultatsIA }) {
+/** « Afficher : Toutes · À décider · Dans l'album · Pas pour l'album », chaque pastille avec son compte. */
+function BarreChoix({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map<string, InfoPhoto>; ia: ResultatsIA }) {
+  const f = filtres.value;
+  // Chaque compte dit combien de photos donnerait la pastille, avec les autres filtres en place.
+  const avecChoix = filtrer(photos, infos, { ...f, etoiles: 'toutes' }, ia);
+  return (
+    <>
+      <span class="mot-afficher">{t`Afficher :`}</span>
+      <div class="pastilles-filtre" role="group" aria-label={t`Choix`}>
+        {CHOIX.map(([valeur, libelle, compter]) => (
+          <button key={valeur} type="button" class={`pastille-filtre${f.etoiles === valeur ? ' actif' : ''}`} aria-pressed={f.etoiles === valeur} onClick={() => (filtres.value = { ...f, etoiles: valeur })}>
+            {valeur === 'retenues' && <span class="etoiles a1">★</span>}
+            {t(libelle)}
+            <span class="compte">{nombre(compter ? avecChoix.filter(compter).length : avecChoix.length)}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** Nombre de filtres de « Filtres ▾ » en place (Grandes, Nouvelles, piles, jour, appareil…). */
+function filtresActifs(f: Filtres, piles: boolean): number {
+  return (
+    (['jour', 'appareil', 'signal', 'tri', 'personnes', 'typePhoto', 'defaut', 'arrivee'] as const).filter((k) => f[k] !== FILTRES_DEFAUT[k]).length +
+    (f.etoiles === 'grandes' ? 1 : 0) +
+    (piles ? 1 : 0)
+  );
+}
+
+/** « Filtres ▾ » déplié sous la tête de la table : Grandes, Nouvelles, piles, jour, appareil, indicateurs, ordre, IA. */
+function FiltresTable({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map<string, InfoPhoto>; ia: ResultatsIA }) {
   const etiquetees = Object.keys(ia.etiquettes).length > 0;
   const appreciees = Object.keys(ia.appreciations).length > 0;
   const f = filtres.value;
@@ -368,25 +398,22 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
   const signaux = new Set([...infos.values()].flatMap((i) => i.signaux));
   // Photos arrivées après le premier tri (mise à jour de l'inventaire, D63), par jour d'arrivée.
   const jourArrivees = arrivees(photos);
-  // Chaque compte dit combien de photos donnerait la pastille, avec les autres filtres en place.
-  const avecChoix = filtrer(photos, infos, { ...f, etoiles: 'toutes' }, ia);
+  const grandes = filtrer(photos, infos, { ...f, etoiles: 'grandes' }, ia).length;
   const nouvelles = filtrer(photos, infos, { ...f, arrivee: 'nouvelles' }, ia).length;
-  const actif = JSON.stringify(f) !== JSON.stringify(FILTRES_DEFAUT);
-  // Filtres moins courants : repliés tant qu'aucun n'est utilisé.
-  const secondaires =
-    (['jour', 'appareil', 'signal', 'tri', 'personnes', 'typePhoto', 'defaut'] as const).filter((k) => f[k] !== FILTRES_DEFAUT[k]).length + (f.arrivee && f.arrivee !== 'nouvelles' ? 1 : 0);
-  const [deplie, setDeplie] = useState(false);
-  const voirPlus = deplie || secondaires > 0;
+  const actif = JSON.stringify(f) !== JSON.stringify(FILTRES_DEFAUT) || empiler.value;
   return (
-    <div class="barre-filtres">
-      <div class="pastilles-filtre" role="group" aria-label={t`Choix`}>
-        {CHOIX.map(([valeur, libelle, compter]) => (
-          <button key={valeur} type="button" class={`pastille-filtre${f.etoiles === valeur ? ' actif' : ''}`} aria-pressed={f.etoiles === valeur} onClick={() => changer({ etoiles: valeur })}>
-            {t(libelle)}
-            {compter && <span class="compte">{nombre(avecChoix.filter(compter).length)}</span>}
-          </button>
-        ))}
-      </div>
+    <div class="filtres-table barre-filtres" role="group" aria-label={t`Filtres`}>
+      <button
+        type="button"
+        class={`pastille-filtre${f.etoiles === 'grandes' ? ' actif' : ''}`}
+        aria-pressed={f.etoiles === 'grandes'}
+        title={t`Seulement les grandes photos ★★ (pleine page)`}
+        onClick={() => changer({ etoiles: f.etoiles === 'grandes' ? 'toutes' : 'grandes' })}
+      >
+        <span class="etoiles a2">★★</span>
+        {t`Grandes`}
+        <span class="compte">{nombre(grandes)}</span>
+      </button>
       {jourArrivees.length > 0 && (
         <button
           type="button"
@@ -403,116 +430,210 @@ function BarreFiltres({ photos, infos, ia }: { photos: FichierPlan[]; infos: Map
           <span class="compte">{nombre(nouvelles)}</span>
         </button>
       )}
-      <button
-        type="button"
-        class={`pastille-filtre${empiler.value ? ' actif' : ''}`}
-        aria-pressed={empiler.value}
-        title={t`Empiler les photos semblables : une seule visible par groupe`}
-        onClick={() => (empiler.value = !empiler.value)}
-      >
-        {t`Empiler`}
-      </button>
-      {etiquetees && (
-        <input
-          type="search"
-          class="recherche-photos"
-          placeholder={t`Rechercher : « enfants sur un éléphant »`}
-          value={f.recherche}
-          onInput={(e) => changer({ recherche: e.currentTarget.value })}
-          title={t`Recherche dans les descriptions de l’IA (sur cet ordinateur, sans nouvel appel)`}
-        />
-      )}
-      <button type="button" class="lien" aria-expanded={voirPlus} disabled={secondaires > 0} aria-describedby={secondaires > 0 ? 'raison-filtres' : undefined} onClick={() => setDeplie(!deplie)}>
-        {secondaires > 0 ? t`Filtres : ${pluriel(secondaires, 'actif')}` : t`Filtres`}
-        <Icone nom={voirPlus ? 'chevronHaut' : 'chevronBas'} taille={16} />
-      </button>
-      <RaisonDesactivee id="raison-filtres" raison={secondaires > 0 && t`Effacez-les pour replier.`} />
-      {actif && (
-        <button type="button" class="lien" onClick={() => (filtres.value = FILTRES_DEFAUT)}>
-          {t`Effacer les filtres`}
-        </button>
-      )}
-      {voirPlus && (
-        <div class="filtres-secondaires">
-          <select value={f.jour} onChange={(e) => changer({ jour: e.currentTarget.value })} aria-label={t`Jour`}>
-            <option value="">{t`Tous les jours`}</option>
-            {/* Un mois choisi dans l'équilibre (barres par mois). */}
-            {f.jour.length === 7 && <option value={f.jour}>{mois(f.jour)}</option>}
-            {jours.map((j) => (
-              <option key={j} value={j}>
-                {jourCourt(j)}
+      <label class="case case-piles" title={t`Empiler les photos semblables : une seule visible par groupe`}>
+        <input type="checkbox" checked={empiler.value} onChange={(e) => (empiler.value = e.currentTarget.checked)} /> {t`Ranger les presque pareilles en pile`}
+      </label>
+      <div class="filtres-secondaires">
+        <select value={f.jour} onChange={(e) => changer({ jour: e.currentTarget.value })} aria-label={t`Jour`}>
+          <option value="">{t`Tous les jours`}</option>
+          {/* Un mois choisi dans l'équilibre (barres par mois). */}
+          {f.jour.length === 7 && <option value={f.jour}>{mois(f.jour)}</option>}
+          {jours.map((j) => (
+            <option key={j} value={j}>
+              {jourCourt(j)}
+            </option>
+          ))}
+        </select>
+        {jourArrivees.length > 1 && (
+          <select value={f.arrivee} onChange={(e) => changer({ arrivee: e.currentTarget.value })} aria-label={t`Arrivée`}>
+            <option value="">{t`Toutes les arrivées`}</option>
+            <option value="nouvelles">{t`Nouvelles seulement`}</option>
+            {jourArrivees.map((a) => (
+              <option key={a.jour} value={a.jour}>
+                {t`Arrivées le ${jourCourt(a.jour)} (${nombre(a.n)})`}
               </option>
             ))}
           </select>
-          {jourArrivees.length > 1 && (
-            <select value={f.arrivee} onChange={(e) => changer({ arrivee: e.currentTarget.value })} aria-label={t`Arrivée`}>
-              <option value="">{t`Toutes les arrivées`}</option>
-              <option value="nouvelles">{t`Nouvelles seulement`}</option>
-              {jourArrivees.map((a) => (
-                <option key={a.jour} value={a.jour}>
-                  {t`Arrivées le ${jourCourt(a.jour)} (${nombre(a.n)})`}
+        )}
+        {appareils.length > 1 && (
+          <select value={f.appareil} onChange={(e) => changer({ appareil: e.currentTarget.value })} aria-label={t`Appareil`}>
+            <option value="">{t`Tous les appareils`}</option>
+            {appareils.map((a) => (
+              <option key={a} value={a}>
+                {a || t`appareil inconnu`}
+              </option>
+            ))}
+          </select>
+        )}
+        <select value={f.signal} onChange={(e) => changer({ signal: e.currentTarget.value as Filtres['signal'] })} aria-label={t`Indicateurs`}>
+          <option value="tous">{t`Tous les indicateurs`}</option>
+          <option value="aucun">{t`Sans défaut signalé`}</option>
+          {(Object.keys(LIBELLES_SIGNAUX) as Signal[])
+            .filter((s) => signaux.has(s))
+            .map((s) => (
+              <option key={s} value={s}>
+                {t(LIBELLES_SIGNAUX[s])}
+              </option>
+            ))}
+        </select>
+        <select value={f.tri} onChange={(e) => changer({ tri: e.currentTarget.value as Filtres['tri'] })} aria-label={t`Tri`}>
+          <option value="date">{t`Par date`}</option>
+          <option value="nettete">{t`Les plus nettes d’abord`}</option>
+          {appreciees && <option value="appreciation">{t`Par appréciation (IA)`}</option>}
+        </select>
+        {etiquetees && (
+          <>
+            <select value={f.personnes} onChange={(e) => changer({ personnes: e.currentTarget.value })} aria-label={t`Personnes`}>
+              <option value="">{t`Personnes : toutes`}</option>
+              {Object.entries(LIBELLES_PERSONNES).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
                 </option>
               ))}
             </select>
-          )}
-          {appareils.length > 1 && (
-            <select value={f.appareil} onChange={(e) => changer({ appareil: e.currentTarget.value })} aria-label={t`Appareil`}>
-              <option value="">{t`Tous les appareils`}</option>
-              {appareils.map((a) => (
-                <option key={a} value={a}>
-                  {a || t`appareil inconnu`}
+            <select value={f.typePhoto} onChange={(e) => changer({ typePhoto: e.currentTarget.value })} aria-label={t`Type de photo`}>
+              <option value="">{t`Tous les types`}</option>
+              {Object.entries(LIBELLES_TYPES).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
                 </option>
               ))}
             </select>
-          )}
-          <select value={f.signal} onChange={(e) => changer({ signal: e.currentTarget.value as Filtres['signal'] })} aria-label={t`Indicateurs`}>
-            <option value="tous">{t`Tous les indicateurs`}</option>
-            <option value="aucun">{t`Sans défaut signalé`}</option>
-            {(Object.keys(LIBELLES_SIGNAUX) as Signal[])
-              .filter((s) => signaux.has(s))
-              .map((s) => (
-                <option key={s} value={s}>
-                  {t(LIBELLES_SIGNAUX[s])}
+            <select value={f.defaut} onChange={(e) => changer({ defaut: e.currentTarget.value })} aria-label={t`Défauts`}>
+              <option value="">{t`Défauts : tous`}</option>
+              <option value="aucun">{t`Sans défaut (IA)`}</option>
+              {Object.entries(LIBELLES_DEFAUTS).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
                 </option>
               ))}
-          </select>
-          <select value={f.tri} onChange={(e) => changer({ tri: e.currentTarget.value as Filtres['tri'] })} aria-label={t`Tri`}>
-            <option value="date">{t`Par date`}</option>
-            <option value="nettete">{t`Les plus nettes d’abord`}</option>
-            {appreciees && <option value="appreciation">{t`Par appréciation (IA)`}</option>}
-          </select>
-          {etiquetees && (
-            <>
-              <select value={f.personnes} onChange={(e) => changer({ personnes: e.currentTarget.value })} aria-label={t`Personnes`}>
-                <option value="">{t`Personnes : toutes`}</option>
-                {Object.entries(LIBELLES_PERSONNES).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-              <select value={f.typePhoto} onChange={(e) => changer({ typePhoto: e.currentTarget.value })} aria-label={t`Type de photo`}>
-                <option value="">{t`Tous les types`}</option>
-                {Object.entries(LIBELLES_TYPES).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-              <select value={f.defaut} onChange={(e) => changer({ defaut: e.currentTarget.value })} aria-label={t`Défauts`}>
-                <option value="">{t`Défauts : tous`}</option>
-                <option value="aucun">{t`Sans défaut (IA)`}</option>
-                {Object.entries(LIBELLES_DEFAUTS).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
+            </select>
+          </>
+        )}
+      </div>
+      {actif && (
+        <button
+          type="button"
+          class="lien"
+          onClick={() => {
+            filtres.value = FILTRES_DEFAUT;
+            empiler.value = false;
+          }}
+        >
+          {t`Effacer les filtres`}
+        </button>
       )}
     </div>
+  );
+}
+
+/** Une décision du bloc fixe : allumée quand toutes les photos choisies l'ont déjà (C-4.9). */
+function BoutonDecision({ valeur, photos, plein, classe, titre, children }: { valeur: 0 | 1 | 2 | undefined; photos: FichierPlan[]; plein?: boolean; classe: string; titre: string; children: ComponentChildren }) {
+  const on = photos.length > 0 && photos.every((f) => f.album === valeur);
+  return (
+    <button
+      type="button"
+      class={`decision ${classe}${plein ? ' principal' : ''}${on ? ' on' : ''}`}
+      aria-pressed={on}
+      title={titre}
+      onMouseDown={garderFocus}
+      onClick={() => choisir(
+        photos.map((f) => f.id),
+        valeur,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Un outil de la photo choisie, avec sa touche ; désactivé, sa raison est écrite dessous (C-4.7). */
+function OutilPhoto({ icone, libelle, touche, raison, id, titre, onClick }: { icone: 'croix' | 'tourner' | 'recadrer' | 'comparer' | 'dossierPlus'; libelle: string; touche: string; raison?: string | false; id: string; titre?: string; onClick: () => void }) {
+  return (
+    <button type="button" class="outil-photo" disabled={!!raison} aria-describedby={raison ? id : undefined} onMouseDown={garderFocus} onClick={onClick} title={titre ?? t`Touche ${touche}`}>
+      <Icone nom={icone} taille={20} />
+      <span class="texte-outil">
+        {libelle}
+        <RaisonDesactivee id={id} raison={raison} />
+      </span>
+      <kbd>{touche}</kbd>
+    </button>
+  );
+}
+
+/**
+ * Colonne de droite (C-8.7 proposée) : « N photos choisies », avec le bloc fixe des décisions (« Dans
+ * l'album » plein tant que des photos choisies n'y sont pas), puis les outils de la photo ; sans photo
+ * choisie, « L'album » : la cible, l'équilibre, les redondances et les aides de l'IA.
+ */
+function PanneauChoix({ choisies, plein, album, compact = false }: { choisies: FichierPlan[]; plein: boolean; album: ComponentChildren; compact?: boolean }) {
+  const n = choisies.length;
+  const ids = choisies.map((f) => f.id);
+  return (
+    <aside class={`panneau-cadre panneau-choix${compact ? ' compact' : ''}`} aria-label={n ? t`Photos choisies` : t`L’album`}>
+      <div class="haut-panneau">
+        <div class="tete-col">
+          <h2>{n ? pluriel(n, 'photo choisie', 'photos choisies') : t`L’album`}</h2>
+        </div>
+        {n > 0 && (
+          <div class="bloc-fixe">
+            <BoutonDecision valeur={1} photos={choisies} plein={plein} classe="album" titre={t`Touche Espace ou 1`}>
+              <span class="etoiles a1">★</span>
+              {t`Dans l’album`}
+            </BoutonDecision>
+            <div class="deux-decisions">
+              <BoutonDecision valeur={2} photos={choisies} classe="grande" titre={t`Touche 2 : pleine page`}>
+                <span class="etoiles a2">★★</span>
+                {t`Grande`}
+              </BoutonDecision>
+              <BoutonDecision valeur={undefined} photos={choisies} classe="decider" titre={t`Retour arrière ou Suppr`}>
+                {t`À décider`}
+              </BoutonDecision>
+            </div>
+            <BoutonDecision valeur={0} photos={choisies} classe="pas" titre={t`Touche X`}>
+              <Icone nom="croix" taille={20} />
+              {t`Pas pour l’album`}
+            </BoutonDecision>
+          </div>
+        )}
+      </div>
+      {!compact && (
+        <div class="defile-col">
+          {n > 0 && (
+            <div class="outils-choix" role="group" aria-label={t`Outils des photos choisies`}>
+              <OutilPhoto icone="croix" libelle={t`Ne plus choisir`} touche={t`Échap`} id="raison-ne-plus" onClick={() => (selection.value = new Set())} />
+              <OutilPhoto icone="tourner" libelle={t`Tourner`} touche="R" id="raison-tourner" titre={t`Tourner d’un quart de tour (touche R ; Maj+R : dans l’autre sens)`} onClick={() => tournerPhotos(ids, 90)} />
+              <OutilPhoto icone="recadrer" libelle={t`Recadrer et tourner…`} touche="K" id="raison-recadrer" raison={n !== 1 && t`une photo à la fois`} onClick={() => (recadrageOuvert.value = ids[0])} />
+              <OutilPhoto icone="comparer" libelle={t`Comparer en grand`} touche="C" id="raison-comparer" raison={(n < 2 || n > 4) && t`de 2 à 4 photos`} onClick={() => (comparaison.value = ids.slice(0, 4))} />
+              <OutilPhoto icone="dossierPlus" libelle={t`Déplacer vers une sortie…`} touche="M" id="raison-deplacer" onClick={() => (deplacerOuvert.value = true)} />
+              <p class="discret rappel-choix">{t`Ctrl+clic ajoute une photo ; Maj+clic choisit une suite.`}</p>
+            </div>
+          )}
+          {n > 0 && <h3 class="titre-section-panneau">{t`L’album`}</h3>}
+          {album}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/**
+ * Ligne 1 de la barre du bas (C-8.5) : ce que devient ce qui reste, en deux phrases courtes, pour tenir
+ * sur deux lignes au palier avec des nombres à 4 chiffres.
+ */
+function ResumeSelection({ retenues, aDecider, cible }: { retenues: number; aDecider: number; cible: ReturnType<typeof avancementCible> }) {
+  const c = session.value!.album.cible;
+  const reste = aDecider === 0 ? t`Plus aucune photo à décider.` : aDecider === 1 ? t`La photo à décider reste rangée, hors de l’album.` : t`Les ${nombre(aDecider)} à décider restent rangées, hors de l’album.`;
+  const dans =
+    retenues === 0
+      ? t`Aucune photo dans l’album pour l’instant.`
+      : c.mode === 'pages'
+        ? t`${pluriel(retenues, 'photo dans l’album', 'photos dans l’album')} : ${nombre(cible.valeur)} pages sur ${nombre(c.nombre)} visées.`
+        : t`${pluriel(retenues, 'photo dans l’album', 'photos dans l’album')} sur ${nombre(c.nombre)} visées.`;
+  return (
+    <>
+      <strong>{dans}</strong> {reste}
+    </>
   );
 }
 
@@ -578,8 +699,11 @@ export function PageSelection() {
       const ctrl = e.ctrlKey || e.metaKey;
       const ids = [...selection.value];
       const k = e.key;
-      if (ctrl && k.toLowerCase() === 'z' && !e.shiftKey) annuler();
-      else if (ctrl && (k.toLowerCase() === 'y' || (k.toLowerCase() === 'z' && e.shiftKey))) retablir();
+      // Espace et Entrée sur un bouton, un lien ou un menu : c'est ce bouton qui agit, pas le raccourci de la page
+      // (sinon Espace sur « Pas pour l'album » mettait les photos dans l'album ; tour 1 du lot 4).
+      if ((k === ' ' || k === 'Enter') && (e.target as HTMLElement | null)?.closest?.('button, a, summary, [role=button], [role=radio], [role=menuitem], [role=checkbox]')) return;
+      if (ctrl && k.toLowerCase() === 'z' && !e.shiftKey) annulerIci();
+      else if (ctrl && (k.toLowerCase() === 'y' || (k.toLowerCase() === 'z' && e.shiftKey))) retablirIci();
       else if (ctrl && k.toLowerCase() === 'a') selection.value = new Set(courantRef.elements.map((f) => f.id));
       else if (ctrl) return;
       else if ((k === ' ' || k === '1') && ids.length) choisir(ids, 1);
@@ -611,8 +735,23 @@ export function PageSelection() {
 
   const nonDecidees = filtrees.filter((f) => f.album === undefined).length;
   const total = avancement(toutes, { mode: 'photos', nombre: 1, photosParPage: 1 });
+  const cible = avancementCible(toutes);
+  const fini = total.retenues > 0 && (total.aDecider === 0 || cible.pourcent >= 100);
   const titreVue = v === RACINE ? t`Toutes les photos` : (plan.dossiers.get(v)?.nom ?? '');
   const comparees = comparaison.value?.map((id) => plan.fichiers.get(id)).filter((f): f is FichierPlan => !!f) ?? [];
+  const choisies = [...choisis].map((id) => plan.fichiers.get(id)).filter((f): f is FichierPlan => !!f);
+  // Un seul bouton plein (C-4.1, C-7.1 bis) : « Valider et continuer » une fois l'étape finie ; sinon « Dans
+  // l'album » tant que des photos choisies n'y sont pas ; sinon « Tri rapide », dans la tête de la table.
+  const plein = fini ? 'valider' : choisies.some((f) => (f.album ?? 0) < 1) ? 'album' : 'tri';
+  const { aide, etroit, palier } = useCadre('selection');
+  const [listeOuverte, setListeOuverte] = useState(false);
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
+  // Au palier, la liste des sorties est un menu : choisir une sortie le referme.
+  useEffect(() => setListeOuverte(false), [v, palier]);
+  useMenuListe(listeOuverte, () => setListeOuverte(false));
+  const nFiltres = filtresActifs(filtres.value, empiler.value);
+  const resumeTable = `${filtrees.length !== dansVue.length ? t`${pluriel(filtrees.length, 'photo')} sur ${nombre(dansVue.length)}` : pluriel(filtrees.length, 'photo')} · ${t`${nombre(nonDecidees)} à décider`}`;
+  const etiquetees = Object.keys(ia.etiquettes).length > 0;
 
   // Liste sur plusieurs jours : la date sous chaque photo et, triée par date, un titre par journée.
   const joursAffiches = new Set(elements.map((f) => f.date?.slice(0, 10) ?? ''));
@@ -627,155 +766,142 @@ export function PageSelection() {
     return heure ? `${jour} ${heure}` : jour;
   };
   // Après l'étiquetage (IA8), la description s'ajoute sur une seconde ligne : la date reste visible.
-  const decrites = Object.keys(ia.etiquettes).length > 0;
+  const decrites = etiquetees;
+
+  const outilsAlbum = (
+    <div class="outils-selection">
+      <Cible photos={toutes} />
+      <Equilibre photos={toutes} />
+      <Redondances photos={toutes} infos={infos} />
+      <AidesSelection />
+    </div>
+  );
+  const panneauChoix = <PanneauChoix choisies={choisies} plein={plein === 'album'} album={outilsAlbum} compact={etroit && aide} />;
+  const explication = (
+    <p>
+      {t`Choisissez les photos de l’album :`} <kbd>{t`Espace`}</kbd> {t`= ★ dans l’album,`} <kbd>2</kbd> {t`= ★★ grande photo (pleine page),`} <kbd>X</kbd>{' '}
+      {t`= pas pour l’album. Le tri rapide (`}
+      <kbd>T</kbd>
+      {t`) montre les photos une à une ; les outils à droite vous aident, sans jamais choisir à votre place.`}
+    </p>
+  );
 
   return (
-    <div class="page-organiser page-selection" style={styleLargeurPanneau()}>
-      <EnteteEtape
-        cle="selection"
-        numero={ETAPE.selection}
-        titre={nomEtape(ETAPE.selection)}
-        explication={
-          <>
-            {t`Choisissez les photos de l’album :`} <kbd>{t`Espace`}</kbd> {t`= ★ dans l’album,`} <kbd>2</kbd> {t`= ★★ grande photo (pleine page),`} <kbd>X</kbd>{' '}
-            {t`= pas pour l’album. Le tri rapide (`}
-            <kbd>T</kbd>
-            {t`) montre les photos une à une ; les outils à droite vous aident, sans jamais choisir à votre place.`}
-          </>
-        }
-      />
-      <PanneauDossiers simple />
-      <section class="contenu-organiser">
-        <div class="tete-vue">
-          {/* Le résumé sous le titre : le nom de la vue garde la place d'être lu en entier. */}
-          <div class="titre-selection">
-            <TitreVue titre={titreVue} id={v === RACINE ? undefined : v} />
-            <span class="discret resume-vue">
-              {filtrees.length !== dansVue.length ? t`${pluriel(filtrees.length, 'photo')} sur ${nombre(dansVue.length)}` : pluriel(filtrees.length, 'photo')} ·{' '}
-              {t`${nombre(nonDecidees)} à décider`}
-            </span>
-          </div>
-          <span class="espace" />
-          {/* Sur la ligne du titre : « Tri rapide », la taille et l'aide (C-8.1, C-8.3 provisoires) ; la barre
-              d'outils garde la ligne suivante pour « Annuler : … » et « Rétablir » seuls : un geste au libellé
-              plus long ne la fait jamais passer à la ligne (C-8.2). */}
-          <span class="outils-titre">
-            {/* Un seul bouton plein (C-4.1) : « Tri rapide » est un outil, en contour. */}
-            <button type="button" disabled={!elements.length} data-raison={elements.length ? undefined : 'libelle'} onClick={() => ouvrirTri()} title={t`Touche T`}>
+    <div
+      class="page-cadre page-selection"
+      data-gabarit="photos"
+      data-palier={palier ? '' : undefined}
+      data-etroit={etroit ? '' : undefined}
+      data-aide={aide ? '' : undefined}
+      data-liste={listeOuverte ? 'ouverte' : undefined}
+      style={styleLargeurPanneau()}
+    >
+      <EnteteCadre titre={nomEtape(ETAPE.selection)} consigne={choisies.length ? t`Cliquez une photo, puis « Dans l’album ».` : t`Cliquez une photo, ou faites un tri rapide.`} />
+      <OutilsCadre>
+        <BarreChoix photos={dansVue} infos={infos} ia={ia} />
+      </OutilsCadre>
+      <div class="corps-cadre">
+        <div class="colonne-liste">
+          <PanneauDossiers simple />
+        </div>
+        <section class="table-cadre" aria-label={t`Photos : ${titreVue}`}>
+          <div class="tete-col tete-table">
+            {palier ? (
+              <>
+                <button type="button" class="menu-liste" data-action="menu-liste" aria-expanded={listeOuverte} aria-haspopup="true" onClick={() => setListeOuverte(!listeOuverte)} title={t`Choisir la sortie affichée`}>
+                  <span class="nom-menu-liste">{titreVue}</span>
+                  <Icone nom={listeOuverte ? 'chevronHaut' : 'chevronBas'} taille={16} />
+                </button>
+                <span class="discret resume-table">{resumeTable}</span>
+              </>
+            ) : (
+              <TitreVue titre={titreVue} id={v === RACINE ? undefined : v} sousTitre={resumeTable} />
+            )}
+            <span class="espace" />
+            {etiquetees && (
+              <input
+                type="search"
+                class="recherche-photos"
+                placeholder={t`Rechercher : « enfants sur un éléphant »`}
+                value={filtres.value.recherche}
+                onInput={(e) => (filtres.value = { ...filtres.value, recherche: e.currentTarget.value })}
+                title={t`Recherche dans les descriptions de l’IA (sur cet ordinateur, sans nouvel appel)`}
+              />
+            )}
+            <button
+              type="button"
+              class={plein === 'tri' ? 'principal' : ''}
+              disabled={!elements.length}
+              data-raison={elements.length ? undefined : 'libelle'}
+              onClick={() => ouvrirTri()}
+              title={t`Les photos en grand, une à la fois (touche T)`}
+            >
+              <Icone nom="lecture" taille={20} />
               {elements.length ? t`Tri rapide` : t`Tri rapide : aucune photo ici`}
             </button>
-            <label class="curseur" title={t`Taille des photos (jusqu’à 600 px)`}>
-              <Icone nom="loupe" taille={16} />
-              <span>{t`Taille`}</span>
-              <input
-                type="range"
-                min="100"
-                max="600"
-                step="20"
-                value={reglages.value.tailleMiniatures}
-                onInput={(e) => changerReglages({ ...reglages.value, tailleMiniatures: Number(e.currentTarget.value) })}
-              />
-            </label>
-            <BoutonAide cle="selection" libelle={t`Aide`} />
-          </span>
-          <div class="barre-outils">
-            <AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />
-          </div>
-        </div>
-        <EncartAnalyse photos={toutes} pourquoi={t`les indicateurs (netteté, exposition), les piles et les alertes de redondance en ont besoin.`} />
-        <BarreFiltres photos={dansVue} infos={infos} ia={ia} />
-        {choisis.size > 0 && (
-          <div class="barre-action" role="toolbar" aria-label={t`Photos sélectionnées`}>
-            <span class="compte-selection">{pluriel(choisis.size, 'sélectionnée', 'sélectionnées')}</span>
-            <button type="button" class="etoile" onClick={() => choisir([...choisis], 1)} title={t`Touche Espace`}>
-              ★ {t`Dans l’album`}
-            </button>
-            <button type="button" onClick={() => choisir([...choisis], 2)} title={t`Touche 2`}>
-              ★★ {t`Grande`}
-            </button>
-            <button type="button" onClick={() => choisir([...choisis], 0)} title={t`Touche X`}>
-              {t`Pas pour l’album`}
-            </button>
-            <button type="button" onClick={() => choisir([...choisis], undefined)} title={t`Retour arrière`}>
-              {t`À décider`}
-            </button>
-            <button type="button" onClick={() => tournerPhotos([...choisis], 90)} title={t`Tourner d’un quart de tour (touche R ; Maj+R : dans l’autre sens)`}>
-              <Icone nom="tourner" taille={20} />
-              {t`Tourner`}
-            </button>
-            {choisis.size === 1 && (
-              <button type="button" onClick={() => (recadrageOuvert.value = [...choisis][0])} title={t`Recadrer ou redresser la copie de l’album (touche K)`}>
-                {t`Recadrer…`}
-              </button>
-            )}
-            {choisis.size >= 2 && choisis.size <= 4 && (
-              <button type="button" onClick={() => (comparaison.value = [...choisis].slice(0, 4))} title={t`Touche C : 2 à 4 photos`}>
-                {t`Comparer`}
-              </button>
-            )}
-            <button type="button" onClick={() => (deplacerOuvert.value = true)} title={t`Touche M`}>
-              {t`Déplacer…`}
-            </button>
-            <button type="button" class="fermer-action" onClick={() => (selection.value = new Set())} title={t`Échap`}>
-              <Icone nom="croix" taille={16} />
-              {t`Tout désélectionner`}
+            <button type="button" class="bouton-filtres" aria-expanded={filtresOuverts} onClick={() => setFiltresOuverts(!filtresOuverts)} title={t`Grandes, Nouvelles, piles, jour, appareil, indicateurs, ordre`}>
+              {nFiltres > 0 ? t`Filtres : ${pluriel(nFiltres, 'actif')}` : t`Filtres`}
+              <Icone nom={filtresOuverts ? 'chevronHaut' : 'chevronBas'} taille={16} />
             </button>
           </div>
-        )}
-        <GrillePhotos
-          elements={elements}
-          options={{
-            cleVue: `${v}|${JSON.stringify(filtres.value)}|${empiler.value}`,
-            ouvrir: (i) => ouvrirTri(i),
-            classe: (f) => (f.album === undefined ? 'a-decider' : f.album === 0 ? 'refusee' : 'retenue'),
-            groupes,
-            // L'état écrit sous chaque photo, ses marques au bout de la bande, une remarque dessous (C-9).
-            etat: (f) => etatAlbum(f.album),
-            finBande: (f) => <MarquesBande f={f} pile={pilesDe.get(f.id)} ouverte={pilesOuvertes.value.has(pilesDe.get(f.id)?.[0] ?? '')} />,
-            telleQuAlbum: true,
-            // « Pas pour l'album » tient dans la bande, même à la plus petite taille (C-10.4).
-            largeurMin: 156,
-            lignesLegende: decrites ? 2 : 1,
-            legende: (f) => (
-              <RemarqueSelection
-                quand={quand(f)}
-                signaux={infos.get(f.id)?.signaux ?? []}
-                note={ia.appreciations[f.id]?.note}
-                choixIA={ia.meilleures[f.id]?.justification}
-                description={decrites ? (ia.etiquettes[f.id]?.description ?? '') : undefined}
-              />
-            ),
-            infobulle: (f) => {
-              const info = infos.get(f.id);
-              return [
-                ...lignesIA(s, f.id),
-                ...(info?.indicateurs ? [t`Netteté ${nombre(info.indicateurs.nettete)}`] : []),
-                ...(info?.signaux.length ? [t`À vérifier : ${info.signaux.map((x) => t(LIBELLES_SIGNAUX[x])).join(', ')}`] : []),
-              ];
-            },
-          }}
-        />
-      </section>
-      <aside class="outils-selection">
-        <Cible photos={toutes} />
-        <Equilibre photos={toutes} />
-        <Redondances photos={toutes} infos={infos} />
-        <AidesSelection />
-      </aside>
-      <BarreValidation
-        resume={
+          {filtresOuverts && <FiltresTable photos={dansVue} infos={infos} ia={ia} />}
+          <EncartAnalyse photos={toutes} pourquoi={t`les indicateurs (netteté, exposition), les piles et les alertes de redondance en ont besoin.`} />
+          <GrillePhotos
+            elements={elements}
+            options={{
+              cleVue: `${v}|${JSON.stringify(filtres.value)}|${empiler.value}`,
+              ouvrir: (i) => ouvrirTri(i),
+              classe: (f) => (f.album === undefined ? 'a-decider' : f.album === 0 ? 'refusee' : 'retenue'),
+              groupes,
+              // L'état écrit sous chaque photo, ses marques au bout de la bande, une remarque dessous (C-9).
+              etat: (f) => etatAlbum(f.album),
+              finBande: (f) => <MarquesBande f={f} pile={pilesDe.get(f.id)} ouverte={pilesOuvertes.value.has(pilesDe.get(f.id)?.[0] ?? '')} />,
+              telleQuAlbum: true,
+              // « Pas pour l'album » tient dans la bande, même à la plus petite taille (C-10.4).
+              largeurMin: 156,
+              lignesLegende: decrites ? 2 : 1,
+              pied: 24,
+              legende: (f) => (
+                <RemarqueSelection
+                  quand={quand(f)}
+                  signaux={infos.get(f.id)?.signaux ?? []}
+                  note={ia.appreciations[f.id]?.note}
+                  choixIA={ia.meilleures[f.id]?.justification}
+                  description={decrites ? (ia.etiquettes[f.id]?.description ?? '') : undefined}
+                />
+              ),
+              infobulle: (f) => {
+                const info = infos.get(f.id);
+                return [
+                  ...lignesIA(s, f.id),
+                  ...(info?.indicateurs ? [t`Netteté ${nombre(info.indicateurs.nettete)}`] : []),
+                  ...(info?.signaux.length ? [t`À vérifier : ${info.signaux.map((x) => t(LIBELLES_SIGNAUX[x])).join(', ')}`] : []),
+                ];
+              },
+            }}
+          />
+        </section>
+        {etroit && aide ? (
+          <div class="pile-droite">
+            {choisies.length > 0 && panneauChoix}
+            <PanneauAide cle="selection" titre={nomEtape(ETAPE.selection)}>
+              {explication}
+            </PanneauAide>
+          </div>
+        ) : (
           <>
-            {pluriel(total.retenues, 'photo dans l’album', 'photos dans l’album')}
-            {total.grandes ? t`, dont ${pluriel(total.grandes, 'grande ★★', 'grandes ★★')}` : ''} ·{' '}
-            {total.aDecider === 0
-              ? t`aucune photo à décider`
-              : total.aDecider === 1
-                ? t`1 photo à décider : elle reste rangée, hors de l’album`
-                : t`${nombre(total.aDecider)} photos à décider : elles restent rangées, hors de l’album`}
+            {panneauChoix}
+            {aide && (
+              <PanneauAide cle="selection" titre={nomEtape(ETAPE.selection)}>
+                {explication}
+              </PanneauAide>
+            )}
           </>
-        }
-        alertes={total.retenues === 0 ? [t`Aucune photo dans l’album`] : []}
-        fini={total.retenues > 0 && (total.aDecider === 0 || avancementCible(toutes).pourcent >= 100)}
+        )}
+      </div>
+      <BarreValidation
+        resume={<ResumeSelection retenues={total.retenues} aDecider={total.aDecider} cible={cible} />}
+        fini={fini}
         revenir={() => revenirDe('selection')}
         valider={() => validerEtape('selection')}
       />
@@ -832,7 +958,7 @@ export function PageSelection() {
               </button>
               <button type="button" onClick={() => (recadrageOuvert.value = f.id)} title={t`Recadrer ou redresser la copie de l’album`}>
                 <Icone nom="recadrer" taille={20} />
-                {t`Recadrer…`}
+                {t`Recadrer et tourner…`}
               </button>
             </>
           )}
