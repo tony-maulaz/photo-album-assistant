@@ -100,7 +100,6 @@ export const TEXTES: Record<string, string> = {
   "Les séjours proches deviennent aussi des voyages.": "Nearby stays also become trips.",
   "Les voyages de plusieurs jours": "Trips of several days",
   "L’indiquer…": "Set it…",
-  "Maison": "Home",
   "Masquer les lieux": "Hide the places",
   "Nom de l’endroit": "Name of the place",
   "Pas maintenant": "Not now",

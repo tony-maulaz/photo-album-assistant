@@ -3197,6 +3197,13 @@ button.bouton-ia:hover:not(:disabled) {
   flex: 1;
 }
 
+/* Sur un petit écran, la grille descend sous la barre du bas : sa barre d'action se pose au-dessus de
+   celle-ci, sinon Sauver, Écarter et Selon le curseur restent cachés (retour du 29.10). */
+.grille-floues .barre-action {
+  position: fixed;
+  bottom: calc(var(--haut-barre-validation) + var(--e2));
+}
+
 .sous-dossiers select {
   min-width: 260px;
 }

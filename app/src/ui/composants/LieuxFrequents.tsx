@@ -75,9 +75,16 @@ export function LieuxFrequents({ fermer }: { fermer: () => void }) {
   }, [visibles.length]);
   if (!visibles.length) return null;
 
+  // « C'est notre maison » écrit le nom proposé dans le champ, comme un vrai texte que l'on peut changer :
+  // un exemple affiché ne doit jamais être enregistré à la place d'un champ vide (retour du 29.10).
+  const choisirDomicile = (cle: string) => {
+    setDomicile(cle);
+    if (!noms[cle]?.trim()) setNoms({ ...noms, [cle]: nomsSortie().maison });
+  };
+
   const enregistrer = async (lat: number, lon: number, cle: string) => {
     const estDomicile = sansDomicile && domicile === cle;
-    const nom = nomAscii(noms[cle] || (estDomicile ? nomsSortie().maison : '')).replace(/^_+|_+$/g, '');
+    const nom = nomAscii(noms[cle] ?? '').replace(/^_+|_+$/g, '');
     if (!nom) {
       notifier('erreur', t`Donnez d’abord un nom au lieu (ex. Chez_Grands_Parents).`);
       return;
@@ -170,20 +177,20 @@ export function LieuxFrequents({ fermer }: { fermer: () => void }) {
                   <input
                     type="text"
                     aria-label={t`Nom de l’endroit`}
-                    placeholder={estDomicile ? t`Maison` : t`Son nom, par exemple « Chez Mamie »`}
+                    placeholder={t`Son nom, par exemple « Chez Mamie »`}
                     value={nom}
                     onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })}
-                    onKeyDown={(e) => e.key === 'Enter' && (nom.trim() || estDomicile) && void enregistrer(l.lat, l.lon, cle)}
+                    onKeyDown={(e) => e.key === 'Enter' && nom.trim() && void enregistrer(l.lat, l.lon, cle)}
                   />
                   {/* Contour : une ligne par endroit, aucun ne prend le seul bouton plein (C-4.1) ; désactivé, il garde son nom et sa raison est écrite à côté (C-4.7). */}
-                  <button type="button" disabled={!nom.trim() && !estDomicile} aria-describedby={!nom.trim() && !estDomicile ? `raison-lieu-${cle}` : undefined} onClick={() => void enregistrer(l.lat, l.lon, cle)}>
+                  <button type="button" disabled={!nom.trim()} aria-describedby={!nom.trim() ? `raison-lieu-${cle}` : undefined} onClick={() => void enregistrer(l.lat, l.lon, cle)}>
                     {t`Enregistrer`}
                   </button>
-                  <RaisonDesactivee id={`raison-lieu-${cle}`} raison={!nom.trim() && !estDomicile && t`Donnez-lui d’abord un nom`} />
+                  <RaisonDesactivee id={`raison-lieu-${cle}`} raison={!nom.trim() && t`Donnez-lui d’abord un nom`} />
                 </div>
                 {sansDomicile && (
                   <label class="case" title={t`La maison sert à reconnaître les voyages et les sorties.`}>
-                    <input type="radio" name="domicile-propose" checked={estDomicile} onChange={() => setDomicile(cle)} /> {t`C’est notre maison`}
+                    <input type="radio" name="domicile-propose" checked={estDomicile} onChange={() => choisirDomicile(cle)} /> {t`C’est notre maison`}
                   </label>
                 )}
                 <button type="button" class="petit pas-maintenant" onClick={() => (ignores.value = new Set([...ignores.value, cle]))}>
