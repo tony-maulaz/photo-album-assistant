@@ -46,15 +46,19 @@
   --e6: 32px;
   --e7: 48px;
   --r-photo: 6px;
-  --r-commande: 10px;
+  /* Échelle sobre (retours du 29.10, question 1 a) : rayon 8 pour les commandes. */
+  --r-commande: 8px;
   --r-objet: 16px;
   --r-pastille: 999px;
   --ombre-flottant: 0 10px 30px light-dark(rgb(15 15 15 / 0.18), rgb(0 0 0 / 0.5));
 
-  /* C-4.3 : hauteurs des commandes. */
-  --h-plein: 44px;
-  --h-btn: 40px;
-  --h-puce: 36px;
+  /* C-4.3, échelle sobre (retours du 29.10) : bouton ordinaire et plein de 32 px, barre du bas de 36 px ;
+     les champs de saisie gardent 40 px (on y tape du texte de 16 px). */
+  --h-plein: 32px;
+  --h-btn: 32px;
+  --h-puce: 32px;
+  --h-bas: 36px;
+  --h-champ: 40px;
   --h-frise: 28px;
   /* Hauteur de la barre du bas, remesurée par BarreValidation (messages posés au-dessus). */
   --haut-barre-validation: 66px;
@@ -80,6 +84,9 @@
   --contour: light-dark(#7e828a, #8b9099);
   --texte: light-dark(#1c1d20, #ecebe7);
   --texte-2: light-dark(#4b505a, #b0b5bd);
+  /* Texte d'exemple d'un champ (« Par exemple : … ») : nettement plus pâle que le texte tapé, 4,5:1 au moins
+     sur --surface (C-3.7) ; la valeur sombre est celle de --contour. */
+  --texte-exemple: light-dark(#6b7079, #8b9099);
 
   /* C-3.2 : vert = agir (plein, le bouton d'action seulement), garder, fait (doux). */
   --accent: light-dark(#0f766e, #4fc1b2);
@@ -95,6 +102,11 @@
   --perte: light-dark(#b42318, #ff8a7a);
   --perte-doux: light-dark(#fdecea, #3a1d1a);
   --sur-perte: light-dark(#ffffff, #2a0d0a);
+
+  /* Bleu doux = le bouton Aide, seulement (jamais en aplat ailleurs, jamais un lien). */
+  --aide-fond: light-dark(#dbe6f9, #1f3050);
+  --aide-texte: light-dark(#1f4e96, #b7d0f5);
+  --aide-bord: light-dark(#5b85c9, #6f97d6);
 
   /* C-3.5 : ambre = ★ dans l'album, seulement. */
   --etoile: #f2b01e;
@@ -200,14 +212,15 @@ samp {
 
 /* --- Contrôles --- */
 
-/* C-4.3, C-4.4 : bouton contour de 40 px, bord 1,5 px, rayon 10 ; le plein (44 px) est le seul aplat vert. */
+/* C-4.3, C-4.4, échelle sobre (retours du 29.10) : bouton contour de 32 px, texte de 14 px en graisse 500,
+   bord 1 px, rayon 8 ; le plein (32 px, graisse 600) est le seul aplat vert. */
 button {
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   min-height: var(--h-btn);
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: var(--r-commande);
-  border: 1.5px solid var(--contour);
+  border: 1px solid var(--contour);
   background: var(--surface);
   color: var(--texte);
   cursor: pointer;
@@ -215,8 +228,8 @@ button {
     background 0.12s,
     border-color 0.12s,
     box-shadow 0.12s;
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 button:hover:not(:disabled) {
@@ -228,7 +241,7 @@ button.principal {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--sur-accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 button.principal:hover:not(:disabled) {
@@ -253,9 +266,10 @@ button.danger:disabled {
   cursor: not-allowed;
 }
 
+/* Le grand bouton de l'accueil : la taille de la barre du bas (16 px, 36 px). */
 button.grand {
-  min-height: var(--h-plein);
-  padding: 10px 22px;
+  min-height: var(--h-bas);
+  padding: 6px 20px;
   font-size: var(--t-corps);
   line-height: var(--lh-corps);
   border-radius: var(--r-commande);
@@ -268,7 +282,7 @@ button.lien {
   background: none;
   padding: 0;
   color: var(--lien);
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: underline;
   text-decoration-thickness: 1.5px;
   text-underline-offset: 4px;
@@ -285,7 +299,7 @@ input,
 select,
 textarea {
   font: inherit;
-  min-height: var(--h-btn);
+  min-height: var(--h-champ);
   padding: 6px 10px;
   border: 1.5px solid var(--contour);
   border-radius: var(--r-commande);
@@ -293,17 +307,74 @@ textarea {
   color: var(--texte);
 }
 
-/* Texte d'exemple d'un champ : gris lisible, pas le gris pâle de Chrome (C-3.7). */
+/* Une liste déroulante est une commande : la taille d'un bouton (14 px, 32 px, bord 1 px). */
+select {
+  min-height: var(--h-btn);
+  padding: 4px 8px;
+  border-width: 1px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 500;
+}
+
+/* Un champ de recherche vit dans une barre d'outils : la hauteur et le texte de ses boutons (32 px, 14 px). */
+input[type='search'] {
+  min-height: var(--h-btn);
+  padding: 4px 10px;
+  border-width: 1px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+/* Texte d'exemple d'un champ : son propre gris, nettement plus pâle que le texte tapé (C-3.7) ; jamais
+   d'italique (la police n'en a pas, le navigateur pencherait les lettres lui-même). */
 ::placeholder {
-  color: var(--texte-2);
+  color: var(--texte-exemple);
   opacity: 1;
+  font-style: normal;
 }
 
 input[type='checkbox'],
-input[type='radio'],
-input[type='range'] {
+input[type='radio'] {
   min-height: 0;
   accent-color: var(--accent);
+}
+
+/* Curseurs (taille des photos, tolérance au flou, redressement) : encre neutre, jamais le vert (C-3.2). Piste
+   de 4 px en --contour, partie parcourue (`--parcouru`, posé par la page) en --texte-2, en --texte en sombre
+   (--texte-2 sur --contour n'y fait que 1,56:1), poignée en --surface bordée. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 0;
+  height: var(--h-btn);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-photo);
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, light-dark(var(--texte-2), var(--texte)) 0 var(--parcouru, 0%), var(--contour) var(--parcouru, 0%) 100%);
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--texte);
+}
+
+input[type='range']:hover::-webkit-slider-thumb {
+  background: var(--neutre-doux);
 }
 
 /* C-9.5 : focus clavier noir 2 / jaune 3 / noir 2, dehors, au clavier seulement
@@ -321,6 +392,11 @@ input[type='range'] {
 
 input.court {
   width: 110px;
+}
+
+/* Surnom d'un appareil (Configuration) : assez large pour son exemple, « Par exemple : téléphone de Lea ». */
+input.surnom-appareil {
+  width: 260px;
 }
 
 input.large,
@@ -363,6 +439,25 @@ textarea {
   background: var(--table);
   color: var(--texte-2);
   white-space: nowrap;
+}
+
+/* « En essai » : une étape qui marche mais dont la présentation peut encore changer (Album). Gris neutre, ni
+   orange (rien à faire) ni vert (rien de fait) ; à côté du titre et dans « Étape n sur 13 ▾ ». */
+.pastille-essai {
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--e2);
+  padding: 0 var(--e2);
+  border: 1px solid var(--filet-fort);
+  border-radius: var(--r-pastille);
+  background: var(--neutre-doux);
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 500;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: help;
 }
 
 .badge.petit {
@@ -425,7 +520,7 @@ main {
   padding: 0;
   border: none;
   background: none;
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--t-corps);
   line-height: var(--lh-corps);
 }
@@ -593,7 +688,7 @@ button.etape-courante {
   border: none;
   background: none;
   color: var(--texte-2);
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -642,7 +737,7 @@ button.etape-courante:hover:not(:disabled) {
   border-radius: var(--r-commande);
   background: none;
   text-align: left;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .liste-etapes button:hover:not(:disabled) {
@@ -707,6 +802,9 @@ button.etape-courante:hover:not(:disabled) {
   display: inline-flex;
   align-items: center;
   gap: var(--e2);
+  /* Échelle sobre : Menu sans bord, un fond au survol seulement. */
+  border-color: transparent;
+  background: none;
 }
 
 .menu-deroulant {
@@ -723,7 +821,7 @@ button.etape-courante:hover:not(:disabled) {
   border-radius: var(--r-commande);
   background: none;
   text-align: left;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .menu-deroulant button:hover:not(:disabled) {
@@ -764,24 +862,30 @@ button.etape-courante:hover:not(:disabled) {
   margin-bottom: var(--e1);
 }
 
-/* Bouton « Aide » (explication repliée après la première visite) : bien visible, avec son icône. */
+/* Bouton « Aide » : un bleu doux réservé à l'Aide (fond, texte et bord de 1 px), sans clignotement ; « à lire »
+   garde sa pastille brune ; ouverte (ou explication dépliée), un filet intérieur de 2 px en tout. Le même sur
+   toutes les pages : dans la barre de l'application, ou collé au titre sur les pages pas encore passées au cadre. */
 button.bouton-aide {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: var(--h-puce);
-  padding: 3px var(--e3) 3px 9px;
-  border: 1.5px solid var(--contour);
-  border-radius: var(--r-pastille);
-  background: var(--surface);
-  color: var(--texte);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
-  font-weight: 700;
+  min-height: var(--h-btn);
+  padding: 5px var(--e3) 5px 10px;
+  border: 1px solid var(--aide-bord);
+  border-radius: var(--r-commande);
+  background: var(--aide-fond);
+  color: var(--aide-texte);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 500;
 }
 
 button.bouton-aide:hover:not(:disabled) {
-  background: var(--neutre-doux);
+  background: color-mix(in srgb, var(--aide-fond) 80%, var(--aide-bord));
+}
+
+button.bouton-aide[aria-expanded='true'] {
+  box-shadow: inset 0 0 0 1px var(--aide-bord);
 }
 
 .tete-etape h1 .bouton-aide {
@@ -922,8 +1026,8 @@ button.fleche-dossier:hover {
   min-height: var(--h-frise);
   padding: 2px var(--e3);
   border-radius: var(--r-pastille);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .pastilles-dossier button[aria-pressed='true'] {
@@ -1021,9 +1125,15 @@ button.fleche-dossier:hover {
   color: var(--accent-doux-texte);
 }
 
-/* C-4.11 : Revenir et Valider et continuer, 140 et 260 px au moins, à 44 px de haut (C-4.3). */
+/* C-4.11 : Revenir et Valider et continuer, 140 et 260 px au moins ; échelle sobre (retours du 29.10) : 16 px en
+   graisse 500, 36 px de haut, le plein compris. */
 .barre-validation .actions button {
-  min-height: var(--h-plein);
+  min-height: var(--h-bas);
+  padding-top: 5px;
+  padding-bottom: 5px;
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 500;
 }
 
 .barre-validation button.bouton-revenir {
@@ -1159,7 +1269,7 @@ button.fleche-dossier:hover {
 
 .message button {
   min-height: var(--h-btn);
-  border: 1.5px solid var(--contour);
+  border: 1px solid var(--contour);
   background: var(--neutre-doux);
   color: var(--texte);
 }
@@ -1348,7 +1458,7 @@ button.fleche-dossier:hover {
 .onglets button.actif:hover:not(:disabled) {
   border-bottom-color: var(--accent);
   color: var(--texte);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .apercu {
@@ -1444,18 +1554,21 @@ button.fleche-dossier:hover {
   display: inline-flex;
   align-items: center;
   height: var(--h-plein);
-  padding: 0 22px;
+  padding: 0 var(--e3);
   border-radius: var(--r-commande);
-  border: 1.5px solid var(--filet-fort);
+  border: 1px solid var(--filet-fort);
   background: var(--surface);
   color: var(--texte);
-  font-weight: 700;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 500;
 }
 
 .faux-bouton.principal {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--sur-accent);
+  font-weight: 600;
 }
 
 .carte-entree:hover .faux-bouton.principal {
@@ -1550,7 +1663,7 @@ button.fleche-dossier:hover {
 button.doux {
   border-color: var(--contour);
   background: var(--neutre-doux);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 button.doux:hover:not(:disabled) {
@@ -1562,9 +1675,9 @@ button.discret-bouton {
   border-color: transparent;
   background: none;
   color: var(--texte-2);
-  font-weight: 600;
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-weight: 500;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   padding: var(--e1) var(--e2);
 }
 
@@ -1841,7 +1954,7 @@ button.bouton-nouveau.cible {
 .ligne-dossier.actif {
   background: var(--accent-doux);
   color: var(--accent-doux-texte);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .ligne-dossier.cible {
@@ -1960,8 +2073,8 @@ button.bouton-nouveau.cible {
   padding-top: 0;
   padding-bottom: 0;
   white-space: nowrap;
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .actions-dossier button.bouton-icone {
@@ -2012,8 +2125,8 @@ button.bouton-nouveau.cible {
   flex: 0 0 auto;
 }
 
-.tete-vue .curseur input {
-  width: 72px;
+.tete-vue .curseur-taille {
+  width: 96px;
 }
 
 .tete-vue .barre-outils {
@@ -2089,8 +2202,8 @@ button.bouton-nouveau.cible {
 .barre-outils button {
   min-height: var(--h-btn);
   padding: var(--e1) var(--e3);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .compte-selection {
@@ -2115,17 +2228,6 @@ button.bouton-nouveau.cible {
 
 .espace {
   flex: 1;
-}
-
-.curseur {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e2);
-  color: var(--texte-2);
-}
-
-.curseur input {
-  width: 120px;
 }
 
 .grille-photos {
@@ -2550,12 +2652,12 @@ kbd {
   min-height: var(--h-puce);
   height: var(--h-puce);
   padding: 0 10px;
-  border: 1.5px solid var(--contour);
+  border: 1px solid var(--contour);
   border-radius: var(--r-pastille);
   background: var(--surface);
   color: var(--texte);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .pastille-filtre.actif,
@@ -2563,7 +2665,7 @@ kbd {
   background: var(--accent-doux);
   border-color: var(--accent);
   color: var(--accent-doux-texte);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .pastille-filtre .compte {
@@ -2610,12 +2712,12 @@ kbd {
   height: var(--h-btn);
   min-height: 0;
   padding: 0 11px;
-  border: 1.5px solid var(--contour);
+  border: 1px solid var(--contour);
   border-radius: var(--r-commande);
   background: var(--neutre-doux);
   color: var(--texte);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .barre-action button:hover:not(:disabled) {
@@ -2626,7 +2728,7 @@ kbd {
 .barre-action button.etoile {
   background: var(--etoile);
   color: var(--sur-etoile);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .barre-action button.etoile:hover:not(:disabled) {
@@ -2688,6 +2790,17 @@ kbd {
 input.tres-court {
   /* Trois chiffres et les flèches du champ (« 100 », pas « 10 »). */
   width: 82px;
+}
+
+/* Un nombre posé dans une rangée de réglages, à côté d'une liste déroulante (Cible de la Sélection, Ordre et
+   Photos par page de l'Album) : la taille de la liste (32 px, 14 px, bord 1 px), pas celle d'un champ de texte. */
+.ligne-cible input[type='number'],
+.reglages-etape input[type='number'] {
+  min-height: var(--h-btn);
+  padding: 4px 8px;
+  border-width: 1px;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .jauge-cible {
@@ -2772,7 +2885,7 @@ input.tres-court {
 .etoiles {
   display: inline-flex;
   align-items: center;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .tuile.refusee .cadre-miniature img {
@@ -3152,8 +3265,8 @@ button.bouton-ia:hover:not(:disabled) {
 
 .outil .aide-ia button.bouton-ia {
   width: 100%;
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .aide-ia .progression {
@@ -3483,7 +3596,7 @@ button.bouton-ia:hover:not(:disabled) {
   color: var(--accent-doux-texte);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
-  font-weight: 600;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -3546,8 +3659,8 @@ button.bouton-ia:hover:not(:disabled) {
   border: 0;
   border-radius: var(--r-commande);
   padding: 3px var(--e3);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   background: none;
   color: var(--texte-2);
 }
@@ -3560,7 +3673,7 @@ button.bouton-ia:hover:not(:disabled) {
 .bascule-vue button.actif {
   background: var(--surface);
   color: var(--texte);
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: inset 0 0 0 1px var(--filet-fort);
 }
 
@@ -3729,7 +3842,7 @@ button.bouton-ia:hover:not(:disabled) {
   border-width: 1px;
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .tri-ia {
@@ -3778,7 +3891,7 @@ button.bouton-ia:hover:not(:disabled) {
 /* Étape « Dossiers » : trois boutons côte à côte, le choix actif en couleur. */
 .choix-segmente {
   display: inline-flex;
-  border: 1.5px solid var(--contour);
+  border: 1px solid var(--contour);
   border-radius: var(--r-commande);
   background: var(--surface);
 }
@@ -3788,7 +3901,8 @@ button.bouton-ia:hover:not(:disabled) {
   border: 0;
   border-radius: 0;
   transition: none;
-  padding: 6px 14px;
+  min-height: calc(var(--h-btn) - 2px);
+  padding: 4px 12px;
   background: transparent;
   color: var(--texte-2);
   font-weight: 400;
@@ -3801,15 +3915,15 @@ button.bouton-ia:hover:not(:disabled) {
 }
 
 .choix-segmente button:first-child {
-  border-radius: calc(var(--r-commande) - 1.5px) 0 0 calc(var(--r-commande) - 1.5px);
+  border-radius: calc(var(--r-commande) - 1px) 0 0 calc(var(--r-commande) - 1px);
 }
 
 .choix-segmente button:last-child {
-  border-radius: 0 calc(var(--r-commande) - 1.5px) calc(var(--r-commande) - 1.5px) 0;
+  border-radius: 0 calc(var(--r-commande) - 1px) calc(var(--r-commande) - 1px) 0;
 }
 
 .choix-segmente button:only-child {
-  border-radius: calc(var(--r-commande) - 1.5px);
+  border-radius: calc(var(--r-commande) - 1px);
 }
 
 .choix-segmente button[aria-checked='true'] {
@@ -4081,7 +4195,7 @@ button.bouton-ia:hover:not(:disabled) {
 /* C-4.7 : un bouton désactivé a partout le même aspect : bord en pointillé, texte
    gris, sans aplat, même dans Comparer, le tri rapide ou la barre d'action. */
 :root button:disabled:not(.lien) {
-  border: 1.5px dashed var(--contour);
+  border: 1px dashed var(--contour);
   background: transparent;
   color: var(--contour);
   box-shadow: none;
@@ -4147,10 +4261,11 @@ button > .icone {
   white-space: nowrap;
 }
 
+/* Largeurs fixes ramenées au texte de 14 px de l'échelle sobre (272 et 156 px à 16 px) ; leur place ne change pas. */
 button.bouton-annuler {
   white-space: nowrap;
   flex: 0 0 auto;
-  min-width: 272px;
+  min-width: 240px;
   height: var(--h-btn);
   justify-content: flex-start;
 }
@@ -4158,7 +4273,7 @@ button.bouton-annuler {
 button.bouton-retablir {
   white-space: nowrap;
   flex: 0 0 auto;
-  min-width: 156px;
+  min-width: 136px;
   height: var(--h-btn);
 }
 

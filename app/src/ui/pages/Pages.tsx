@@ -8,6 +8,7 @@ import { cleApi, cleMasquee, cleMemorisee, enregistrerCleApi, oublierCleApi } fr
 import type { Reglages } from '../../navigateur/reglages';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { RaisonDesactivee, TeteEtape } from '../composants/Cadre';
+import { CurseurTaille } from '../composants/CadreCommun';
 import { Icone } from '../composants/Icones';
 import { aTraduire, langue, t } from '../../lib/langue';
 import { ChoixLangue } from '../composants/ChoixLangue';
@@ -134,7 +135,7 @@ export function PageReglages() {
         <label for="langue">{t`Langue (language)`}</label>
         <ChoixLangue />
         <label for="miniatures">{t`Taille des miniatures`}</label>
-        <input id="miniatures" type="range" min="100" max="600" step="20" value={r.tailleMiniatures} onInput={(e) => changer({ tailleMiniatures: Number(e.currentTarget.value) })} />
+        <CurseurTaille id="miniatures" />
         <label for="theme">{t`Thème`}</label>
         <select id="theme" value={r.theme} onChange={(e) => changer({ theme: e.currentTarget.value as Reglages['theme'] })}>
           <option value="auto">{t`Comme l’ordinateur`}</option>

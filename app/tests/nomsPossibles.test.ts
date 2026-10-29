@@ -198,7 +198,8 @@ describe('noms possibles', () => {
 
   it('une proposition de l’IA mal formée est ignorée', () => {
     const p = plan({ 'Lieu_A_04.07.25': ['2025-07-04T10:00:00'] }, { 'Lieu_A_04.07.25': GPS('Lieu_A') });
-    for (const ia of [{ 'd:Lieu_A_04.07.25': { nom: 42 } }, { 'd:Lieu_A_04.07.25': 'Nom' }, { 'd:Lieu_A_04.07.25': { nom: '  ' } }, { 'd:Lieu_A_04.07.25': [{ nom: 'x' }] }]) {
+    // Aussi un nom qui n'en est pas un, gardé d'avant la vérification (incident du 29.10 : une coordonnée).
+    for (const ia of [{ 'd:Lieu_A_04.07.25': { nom: 42 } }, { 'd:Lieu_A_04.07.25': 'Nom' }, { 'd:Lieu_A_04.07.25': { nom: '  ' } }, { 'd:Lieu_A_04.07.25': [{ nom: 'x' }] }, { 'd:Lieu_A_04.07.25': { nom: 'Lyon_45.7640_4.8357' } }, { 'd:Lieu_A_04.07.25': { nom: '45.8992' } }]) {
       const n = noms(p, [], ia)('Lieu_A_04.07.25');
       expect(n.ia).toBeNull();
       expect(n.propose).toBeNull();

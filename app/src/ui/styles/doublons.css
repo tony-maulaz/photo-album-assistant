@@ -120,7 +120,7 @@
 
 /* Action groupée : un contour comme les autres (C-4.4) ; le plein reste à la prochaine action utile (C-4.1). */
 .page-doublons button.contour {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Afficher, Grouper, taille, Classer : la vue seulement, sur une ligne, toujours visible en haut au défilement. */
@@ -188,10 +188,11 @@
   top: -10px;
   z-index: 1;
   width: 100%;
-  height: 36px;
+  height: var(--h-btn);
   margin-bottom: var(--e1);
-  border-color: transparent;
-  background: var(--neutre-doux);
+  border-color: var(--contour);
+  /* Sur --surface : le texte d'exemple y garde 4,5:1 (sur --neutre-doux, il tomberait à 4,36:1). */
+  background: var(--surface);
   box-shadow: 0 -10px 0 var(--surface);
 }
 
@@ -232,7 +233,7 @@
 
 .section-doublons.choisie {
   background: var(--accent-doux);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .section-doublons .reste {
@@ -244,7 +245,7 @@
 
 .section-doublons .fait {
   color: var(--accent-doux-texte);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .contenu-doublons {

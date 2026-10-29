@@ -1,5 +1,6 @@
 // Réglages propres à cet ordinateur (SPEC § 9), gardés dans le navigateur.
 
+import { cranTaille, PAS_TAILLE } from '../lib/grille';
 import type { Langue } from '../lib/langue';
 import { ecrireLocal, lireLocal } from './stockage';
 
@@ -34,7 +35,11 @@ const CLE = 'album:reglages';
 export function lireReglages(): Reglages {
   try {
     const lus = JSON.parse(lireLocal(CLE) ?? '{}') as Partial<Reglages>;
-    return { ...REGLAGES_DEFAUT, ...lus, modeles: { ...REGLAGES_DEFAUT.modeles, ...lus.modeles } };
+    const r = { ...REGLAGES_DEFAUT, ...lus, modeles: { ...REGLAGES_DEFAUT.modeles, ...lus.modeles } };
+    // Une taille de l'ancien curseur (de 20 en 20 : 220, 260…) est ramenée au cran le plus proche : la grille
+    // montre alors ce que le curseur et le lecteur d'écran annoncent (retours du 29.10, question 11).
+    const t = r.tailleMiniatures;
+    return { ...r, tailleMiniatures: typeof t === 'number' && Number.isFinite(t) ? PAS_TAILLE[cranTaille(t)] : REGLAGES_DEFAUT.tailleMiniatures };
   } catch {
     return REGLAGES_DEFAUT;
   }

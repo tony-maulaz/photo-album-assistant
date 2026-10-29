@@ -20,9 +20,9 @@
   border-radius: var(--r-pastille);
   background: var(--neutre-doux);
   color: var(--texte-2);
-  font-size: var(--t-corps);
+  font-size: var(--t-petit);
   font-weight: 400;
-  line-height: var(--lh-corps);
+  line-height: var(--lh-petit);
 }
 
 .nom-possible .icone-nom {

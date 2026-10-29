@@ -208,7 +208,7 @@ function MenuPortee({ libelle, ia = false, children }: { libelle: string; ia?: b
   return (
     <div class="menu-portee" ref={zone}>
       <button type="button" class="bouton-portee" aria-expanded={ouvert} aria-haspopup="true" onClick={() => basculer()}>
-        {ia && <Icone nom="etincelle" taille={20} />}
+        {ia && <Icone nom="etincelle" taille={16} />}
         {libelle}
         <Icone nom={ouvert ? 'chevronHaut' : 'chevronBas'} taille={16} />
       </button>
@@ -232,7 +232,7 @@ function BoutonOngletSuivant() {
   return (
     <button type="button" class="principal" data-action="onglet-suivant" onClick={aller}>
       {t`${nom} : ${nombre(reste)} à accepter`}
-      <Icone nom="chevronDroite" taille={20} />
+      <Icone nom="chevronDroite" taille={16} />
     </button>
   );
 }
@@ -1042,7 +1042,7 @@ function CarteGroupe({
         </span>
         <span class="espace" />
         <button type="button" class={`bouton-comparer${compacte ? ' icone-seule' : ''}`} data-action="comparer" onClick={comparer} aria-label={t`Comparer en grand`} title={t`Comparer en grand (touche C)`}>
-          <Icone nom="comparer" taille={20} />
+          <Icone nom="comparer" taille={16} />
           {!compacte && t`Comparer en grand`}
         </button>
         {!valide ? (
@@ -1611,7 +1611,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
             {finie && suite && (
               <button type="button" class="principal" data-action="journee-suivante" onClick={() => choisir(suite.cle)}>
                 {libelleSuite(suite)}
-                <Icone nom="chevronDroite" taille={20} />
+                <Icone nom="chevronDroite" taille={16} />
               </button>
             )}
             {finie && !suite && <BoutonOngletSuivant />}
@@ -2086,7 +2086,7 @@ export function PageDoublons() {
       </fieldset>
       <div class="actions-etape">
         <button type="button" class="bouton-ia" disabled={!!raisonIA} aria-describedby={raisonIA ? 'raison-analyse-ia' : undefined} onClick={() => void lancer(true)}>
-          <Icone nom="etincelle" taille={20} />
+          <Icone nom="etincelle" taille={16} />
           <span>
             {t`Analyser avec l’IA`}
             <span class="cout-aide"> — {cout}</span>

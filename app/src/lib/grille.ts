@@ -74,3 +74,18 @@ export function voisinVertical(d: Disposition, i: number, sens: -1 | 1): number 
   if (l < 0 || l >= d.haut.length) return i;
   return Math.min(d.premier[l] + d.colonne[i], d.premier[l + 1] - 1);
 }
+
+/** Les 12 crans du réglage « Taille » (px de la photo), de 100 à 600, les mêmes sur toutes les pages. */
+export const PAS_TAILLE: readonly number[] = [100, 120, 140, 160, 180, 200, 240, 280, 320, 400, 480, 600];
+
+/**
+ * Le cran le plus proche d'une taille réglée ; à égale distance, le plus petit. L'ancien curseur allait de 20 en
+ * 20 (220, 260…) : une telle taille enregistrée est ramenée au cran à la lecture des réglages.
+ */
+export function cranTaille(v: number): number {
+  let meilleur = 0;
+  PAS_TAILLE.forEach((x, i) => {
+    if (Math.abs(x - v) < Math.abs(PAS_TAILLE[meilleur] - v)) meilleur = i;
+  });
+  return meilleur;
+}

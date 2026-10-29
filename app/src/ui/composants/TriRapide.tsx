@@ -139,7 +139,7 @@ export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
           ) : (
             <>
               <strong class="tout-decide">
-                <Icone nom="coche" taille={20} />
+                <Icone nom="coche" taille={16} />
                 {t`Tout est décidé`}
               </strong>
               <p>{t`Chaque photo de cette liste a son choix : ★, ★★ ou pas pour l’album.`}</p>

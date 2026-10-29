@@ -250,8 +250,8 @@
 button.petit {
   min-height: var(--h-btn);
   padding: var(--e1) var(--e3);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .apercu-tri-chiffres {
@@ -646,5 +646,5 @@ button.petit {
 
 /* Un seul bouton plein par écran (C-4.1) : les autres actions en contour (C-4.4). */
 .page-tri button.contour {
-  font-weight: 600;
+  font-weight: 500;
 }

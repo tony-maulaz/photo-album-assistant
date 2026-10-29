@@ -497,7 +497,7 @@
 .comparateur .choix-photo {
   display: inline-flex;
   align-self: flex-start;
-  border: 1.5px solid var(--contour);
+  border: 1px solid var(--contour);
   border-radius: var(--r-commande);
   overflow: hidden;
   background: var(--surface);
@@ -507,18 +507,18 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 37px;
+  min-height: calc(var(--h-btn) - 2px);
   padding: 0 var(--e2);
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--texte-2);
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .comparateur .choix-photo button + button {
-  border-left: 1.5px solid var(--contour);
+  border-left: 1px solid var(--contour);
 }
 
 .comparateur .choix-photo button:hover:not(:disabled) {
@@ -531,7 +531,7 @@
 }
 
 .comparateur .choix-photo button.on {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .comparateur .choix-photo button.on.garder {
@@ -569,11 +569,11 @@
 }
 
 .comparateur .choix-photo:has(> button:nth-child(3)):not(.vertical) button:nth-child(even) {
-  border-left: 1.5px solid var(--contour);
+  border-left: 1px solid var(--contour);
 }
 
 .comparateur .choix-photo:has(> button:nth-child(3)):not(.vertical) button:nth-child(n + 3) {
-  border-top: 1.5px solid var(--contour);
+  border-top: 1px solid var(--contour);
 }
 
 /* Une à la fois : les choix l'un sous l'autre, dans la légende. */
@@ -583,13 +583,13 @@
 }
 
 .comparateur .choix-photo.vertical button {
-  min-height: 40px;
+  min-height: var(--h-btn);
   padding: 0 var(--e3);
 }
 
 .comparateur .choix-photo.vertical button + button {
   border-left: 0;
-  border-top: 1.5px solid var(--contour);
+  border-top: 1px solid var(--contour);
 }
 
 .cmp-scene.une {
@@ -748,7 +748,7 @@
 
 .cmp-bas button.carre {
   justify-content: center;
-  width: 40px;
+  width: var(--h-btn);
   padding: 0;
 }
 

@@ -537,7 +537,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
             boutons={
               // Aide IA dont le prix dépend de ce qu'on choisit : « … », le prix est dans la fenêtre avant de lancer (C-4.6).
               <button type="button" class="petit bouton-ia" onClick={() => setFenetre('gps')}>
-                <Icone nom="etincelle" taille={20} />
+                <Icone nom="etincelle" taille={16} />
                 {t`Demander à l’IA…`}
               </button>
             }

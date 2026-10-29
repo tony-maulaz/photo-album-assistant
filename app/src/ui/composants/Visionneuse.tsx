@@ -101,7 +101,7 @@ export function Visionneuse({ elements, rangement = true }: { elements: FichierP
       </div>
       {/* Quitter la vue : « Fermer », la croix SVG avec son mot (C-5.2, C-5.3). */}
       <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} title={t`Échap`}>
-        <Icone nom="croix" taille={20} />
+        <Icone nom="croix" taille={16} />
         {t`Fermer`}
       </button>
     </div>

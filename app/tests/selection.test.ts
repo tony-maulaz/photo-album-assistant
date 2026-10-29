@@ -1,6 +1,29 @@
-import { describe, expect, it } from 'vitest';
-import { disposer, elementsVisibles, voisinVertical } from '../src/lib/grille';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cranTaille, disposer, elementsVisibles, PAS_TAILLE, voisinVertical } from '../src/lib/grille';
+import { lireReglages } from '../src/navigateur/reglages';
 import { arrivees, copiesRetenues, groupesParJour, jourArrivee, periodesEquilibre } from '../src/lib/selection';
+
+describe('taille des photos : 12 crans (retours du 29.10)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('ramène une taille de l’ancien curseur au cran le plus proche', () => {
+    expect(PAS_TAILLE).toHaveLength(12);
+    expect([100, 160, 600].map(cranTaille)).toEqual([0, 3, 11]);
+    // L'ancien curseur allait de 20 en 20 : 220 est à égale distance de 200 et 240 (le plus petit), 260 aussi.
+    expect([220, 260, 300, 340, 560].map((v) => PAS_TAILLE[cranTaille(v)])).toEqual([200, 240, 280, 320, 600]);
+    expect([50, 900].map(cranTaille)).toEqual([0, 11]);
+  });
+
+  it('les réglages lus donnent une taille sur un cran : la grille montre ce que le curseur annonce', () => {
+    const stocke = (v: unknown) => vi.stubGlobal('localStorage', { getItem: () => JSON.stringify({ tailleMiniatures: v }) });
+    stocke(220);
+    expect(lireReglages().tailleMiniatures).toBe(200);
+    stocke(480);
+    expect(lireReglages().tailleMiniatures).toBe(480);
+    stocke('grand');
+    expect(lireReglages().tailleMiniatures).toBe(160);
+  });
+});
 
 describe('grille avec titres de journée', () => {
   const o = { marge: 20, case: 100, titre: 40 };

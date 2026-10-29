@@ -610,6 +610,24 @@ try {
   await page.getByRole('button', { name: 'Annuler ce choix' }).click();
   await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
   verifier(true, 'touche G : gardé seul ; « Annuler ce choix » le remet à décider');
+  // « Garder seul » entre dans l'historique (retours du 29.10) : Ctrl+Z le défait, Ctrl+Y le refait, et le lien
+  // « Annuler » de son message est l'annulation de l'historique.
+  await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
+  await page.getByRole('button', { name: 'Garder seul', exact: true }).click();
+  await page.locator('.ligne-liste-petit.fait', { hasText: premierPetit }).waitFor();
+  await page.evaluate(() => document.activeElement?.blur?.());
+  await page.keyboard.press('Control+z');
+  await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
+  await page.keyboard.press('Control+y');
+  await page.locator('.ligne-liste-petit.fait', { hasText: premierPetit }).waitFor();
+  await page.keyboard.press('Control+z');
+  await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
+  await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
+  await page.getByRole('button', { name: 'Garder seul', exact: true }).click();
+  await page.locator('.ligne-liste-petit.fait', { hasText: premierPetit }).waitFor();
+  await page.locator('.messages .message', { hasText: 'Gardé seul.' }).last().getByRole('button', { name: 'Annuler' }).click();
+  await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
+  verifier(true, '« Garder seul » : Ctrl+Z le défait, Ctrl+Y le refait, le lien « Annuler » de son message le défait aussi');
   await page.locator('[data-action=valider]').click();
   await page.locator('main[data-etape=nommage]').waitFor();
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));

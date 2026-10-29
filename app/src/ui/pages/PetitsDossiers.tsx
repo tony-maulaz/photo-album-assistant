@@ -28,13 +28,14 @@ import {
   type Voisin,
 } from '../../lib/fragments';
 import { aTraduire, t } from '../../lib/langue';
-import { avecDetail, enchainer, fusionnerDossiers, renommerDossier, type FichierPlan } from '../../lib/plan';
+import { avecDetail, enchainer, fusionnerDossiers, modificationHorsPlan, renommerDossier, type FichierPlan } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { enParallele } from '../../navigateur/workers';
 import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
-import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
+import { CurseurTaille } from '../composants/CadreCommun';
+import { Miniature } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, contexteExecution, notifier, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
@@ -353,9 +354,9 @@ function Cote({ f, v, ia, mettre, plein }: { f: Fragment; v: Voisin; ia?: Decisi
         </p>
       )}
       <button type="button" class={propose && plein ? 'principal' : ''} onClick={mettre} title={v.cote === 'avant' ? t`Touche ←` : t`Touche →`}>
-        {v.cote === 'avant' && <Icone nom="chevronGauche" taille={20} />}
+        {v.cote === 'avant' && <Icone nom="chevronGauche" taille={16} />}
         {t`Mettre avec ce dossier`}
-        {v.cote !== 'avant' && <Icone nom="chevronDroite" taille={20} />}
+        {v.cote !== 'avant' && <Icone nom="chevronDroite" taille={16} />}
       </button>
       <p class="discret apres-choix">
         {n === 1
@@ -407,10 +408,25 @@ export function PagePetitsDossiers() {
   const mettre = (f: Fragment, v: Voisin) => {
     if (rattacher(s, [{ f, cible: v.dossier.id }], t`Mettre « ${f.dossier.nom} » avec « ${v.dossier.nom} »`, t`Rangé avec « ${v.dossier.nom} ».`)) suivant();
   };
+  // « Garder seul » et « Annuler ce choix » entrent dans l'historique comme les autres gestes : Ctrl+Z et
+  // « Annuler » de l'en-tête les défont (la décision est gardée dans `.album/aides.json`, hors du plan).
   const garder = (id: string, oui: boolean) => {
-    void s.aides.set('fragments_gardes', oui ? [...gardes, id] : [...gardes].filter((x) => x !== id)).then(() => versionIA.value++);
+    const nom = elements.find((e) => e.cle === id)?.nom ?? '';
+    const ecrire = (garde: boolean) => {
+      const avant = s.aides.get<string[]>('fragments_gardes') ?? [];
+      void s.aides.set('fragments_gardes', garde ? [...new Set([...avant, id])] : avant.filter((x) => x !== id)).then(() => versionIA.value++);
+    };
+    ecrire(oui);
+    appliquer(
+      modificationHorsPlan(
+        s.plan,
+        oui ? t`Garder seul 1 petit dossier` : t`Remettre 1 petit dossier à décider`,
+        (sens) => ecrire(sens === 'annuler' ? !oui : oui),
+        oui ? t`Garder seul « ${nom} »` : t`Remettre « ${nom} » à décider`,
+      ),
+    );
     if (oui) {
-      notifier('ok', t`Gardé seul.`, { libelle: t`Annuler`, faire: () => garder(id, false) });
+      notifier('ok', t`Gardé seul.`, { libelle: t`Annuler`, faire: annuler });
       suivant();
     }
   };
@@ -445,7 +461,7 @@ export function PagePetitsDossiers() {
 
   return (
     <div class="page large avec-barre page-petits">
-      <TeteEtape numero={ETAPE.petits} titre={nomEtape(ETAPE.petits)} cle="petits" outils={<CurseurTaille />}>
+      <TeteEtape numero={ETAPE.petits} titre={nomEtape(ETAPE.petits)} cle="petits" outils={<CurseurTaille vraie={(v) => Math.round(v * 0.6)} />}>
         {t`Le tri a laissé quelques photos seules dans de petits dossiers (un arrêt en route, une photo sans position). Pour chacun, vous voyez les photos prises juste avant et juste après : mettez-le avec le bon dossier, ou gardez-le seul.`}
       </TeteEtape>
       <AideIA fonction="IA3" />

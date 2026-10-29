@@ -1458,6 +1458,49 @@ Annuler et Taille à la même place sur les 13 étapes. Code page par page
 sur de vraies photos), environ 16 jours. Proposition complète hors dépôt
 (maquettes, mesures, revues).
 
+**D112 — Retours d'essai du 29.10 : sobriété, badges d'origine, en-tête collé.**
+Après l'essai du lot 4 sur ses vraies photos, l'utilisateur fait une série de
+remarques. Cinq analyses par agents, puis une sixième sur ses réponses, avec
+maquettes et avocat du diable, donnent 22 questions. Il répond :
+(1) **boutons sobres partout** : 14 px, graisse 500, 32 px de haut ; la barre
+du bas à 16 px ; Aide et Menu sans bord ; l'Aide en bleu doux, réservé à
+l'Aide, sans clignotement ; (2) à Doublons, « Accepter → » court ;
+« Accepter » sur le dernier groupe ouvre le suivant ; plus de menus pour
+grouper, filtrer ou accepter une portée ; « toutes · aucune » après la case
+« Garder plusieurs photos » remplace « Tout garder » et « Tout écarter » ;
+(3) « Écarter » est le seul verbe partout ; « Écartées » est l'état,
+« Mis de côté » le lieu ; (4) une fenêtre de validation et l'étape en brun
+dans la frise, seulement s'il reste des copies exactes ; (5) curseur de taille
+gris, sans le mot « Taille » ; texte d'exemple plus pâle, précédé de « Par
+exemple : » ; (6) **badges d'origine sous la photo** (rien sur l'image,
+C-9.1) : le mot et sa couleur disent ce qui arrive ; l'icône dit d'où vient
+l'idée (punaise : vous ; ✓ ✕ : l'application ; ✦ : l'IA ; « ? » brun : à
+vérifier) ; plein = décidé (par un geste de l'utilisateur : clic,
+« Accepter », « Suivre l'avis de l'IA »), bordure fine = proposé. Un clic sur
+le badge donne l'autre sort, décidé par l'utilisateur ; un second clic rend
+la photo à la proposition (choix de l'utilisateur, contre la recommandation
+« second clic = l'autre sort par vous ») ; G et X fixent un sort par vous ;
+Ctrl+Z défait chaque clic. D'abord sur les photos (Floues, Doublons, Comparer,
+Sélection sans punaise, Mis de côté), plus tard sur les dossiers ;
+(7) « Écartée avant » pour une photo écartée par les anciens scripts ;
+(8) **en-tête d'étape collé (forme E) sur toutes les pages** : la page défile
+en entier ; la barre du projet (logo, frise, compteur IA) part ; la ligne de
+l'étape reste, avec le titre, les filtres (ou la vue en cours en petit menu
+s'ils ne tiennent pas), la taille, ↶ ↷ en icônes (texte en infobulle et dans
+chaque message), l'Aide et le Menu ; « Valider et continuer » reste en bas ;
+la phrase de consigne quitte les étapes (elle reste dans l'Aide). Annuler ne
+va donc pas dans la barre de l'application (la proposition du lot D est
+abandonnée) ; (9) Tri automatique : bandeau des copies restantes, bouton
+« N photos » par dossier, icône calendrier, une seule phrase sur le Nommage ;
+fenêtre des lieux en cartes, onglets « À nommer » et « Nommés » ;
+(10) Lieux et sorties, Petits dossiers et Sélection : nom puis période sur
+deux lignes, menu « … » par dossier, « Chronologie », icône « petit dossier »
+même en vrac ; (11) Nommage : Nom actuel, puis Noms proposés (en bordure),
+puis Nouveau nom ; (12) Album : pastille « En essai ». Remplace en partie
+D110 (style figé : évolution É11 de la charte) et D111 (bandes fixes,
+bouton plein qui nomme la photo, Annuler dans l'en-tête gardé). Analyses et
+maquettes hors dépôt.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

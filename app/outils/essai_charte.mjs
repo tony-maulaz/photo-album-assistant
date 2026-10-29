@@ -20,11 +20,12 @@
 //     finie (data-fini) ;
 //   - tout bouton désactivé dit pourquoi (C-4.7) : son libellé le dit
 //     (data-raison="libelle"), ou aria-describedby mène à un texte visible ;
-//   - le texte des boutons fait 16 px (C-2.2), les liens exceptés ;
+//   - échelle sobre (retours du 29.10) : le texte des boutons fait 14 px au moins, celui de Revenir et Valider
+//     et continuer 16 px, à 36 px de haut (C-2.2) ; les liens exceptés ;
 //   - aucun caractère-icône (✕ ✦ ▾ ▸ ◀ ↻ ✂ ≤ ≈ …) ni émoji dans les textes (C-1.4) ;
 //   - la barre du bas des étapes où l'on écarte dit « Rien n'est supprimé » (C-8.4) ;
 //   - les parties repliables montrent le chevron SVG, pas le triangle du navigateur (C-5.1) ;
-//   - « Annuler » et « Rétablir » tiennent sur une ligne de 40 px, même avec le plus
+//   - « Annuler » et « Rétablir » tiennent sur une ligne de 32 px, même avec le plus
 //     long geste court (sonde), sans déborder ni faire bouger la grille (C-8.2) ;
 //   - toute aide IA porte l'étincelle et son prix, ou « … » (C-4.6) ;
 //   - aucune commande coupée par le bord de l'écran (C-6.2), rien qui défile en largeur (C-7.1) ;
@@ -241,11 +242,15 @@ function mesurer() {
       });
     })
     .map((x) => `« ${nom(x) || x.title || x.className} »`);
-  // C-2.2 : texte des boutons à 16 px (les liens suivent le texte qui les entoure ; une photo n'a pas de libellé).
+  // C-2.2, échelle sobre (retours du 29.10) : texte des boutons à 14 px au moins ; Revenir et Valider et continuer
+  // à 16 px et 36 px de haut (les liens suivent le texte qui les entoure ; une photo n'a pas de libellé).
   const boutonsPetits = [...document.querySelectorAll('button')]
     .filter((x) => visible(x) && !x.matches('.lien') && !x.closest('.bandeau, .ldt-barre') && !x.matches('.ldt-barre') && !x.querySelector('img, canvas, .cadre-tuile, .sans-miniature') && (x.textContent || '').trim())
-    .filter((x) => parseFloat(getComputedStyle(x).fontSize) < 16)
-    .map((x) => `${getComputedStyle(x).fontSize} « ${nom(x)} »`);
+    .filter((x) => {
+      const bas = !!x.closest('.barre-validation .actions');
+      return parseFloat(getComputedStyle(x).fontSize) < (bas ? 16 : 14) || (bas && Math.abs(x.getBoundingClientRect().height - 36) > 1);
+    })
+    .map((x) => `${getComputedStyle(x).fontSize} ${Math.round(x.getBoundingClientRect().height)} px de haut « ${nom(x)} »`);
   // C-1.4 : aucun caractère-icône ni émoji dans les textes affichés.
   const ICONES = /[✕✖✗✘✦✧✨▣◀▶►◄▾▸▴▹▿◂◆◇○●☰⌫✂✎✏↻↺⟳≤≥≈Ø⇄⧉↔⚠ℹ‹›]|(?![★✓™©®])\p{Extended_Pictographic}/u;
   const caracteres = [];
@@ -289,10 +294,10 @@ function mesurer() {
       return (s.display === 'list-item' && s.listStyleType !== 'none') || !avant.maskImage?.includes('svg');
     })
     .map((x) => `« ${nom(x)} »`);
-  // C-8.2, C-10.4 : « Annuler : … » sur une ligne de 40 px, entier (rien ne déborde du bouton).
+  // C-8.2, C-10.4 : « Annuler : … » sur une ligne de 32 px (échelle sobre), entier (rien ne déborde du bouton).
   const annulers = [...document.querySelectorAll('button.bouton-annuler, button.bouton-retablir')]
     .filter((x) => visible(x))
-    .filter((x) => Math.abs(x.getBoundingClientRect().height - 40) > 1 || x.scrollWidth > x.clientWidth + 1)
+    .filter((x) => Math.abs(x.getBoundingClientRect().height - 32) > 1 || x.scrollWidth > x.clientWidth + 1)
     .map((x) => `${Math.round(x.getBoundingClientRect().width)}×${Math.round(x.getBoundingClientRect().height)} « ${nom(x)} »`);
   // C-4.6 : une aide IA porte l'étincelle et son prix, ou « … » quand le prix est dans la fenêtre.
   const aidesIA = [...document.querySelectorAll('button')]
@@ -554,7 +559,7 @@ try {
         if (m.barre && !m.tousPleins.length && !SANS_PLEIN.has(nomPage)) fautes.push(`${ici} : aucun bouton plein sur une page d’étape (C-4.1)`);
         if (!m.pleins.length) signalements.push(`${ici} : aucun bouton plein à l’écran${m.tousPleins.length ? ` (« ${m.tousPleins[0]} » plus bas)` : ''}`);
         if (m.marqueurs.length) fautes.push(`${ici} : triangle du navigateur au lieu du chevron SVG (C-5.1) : ${m.marqueurs.slice(0, 5).join(' ; ')}`);
-        if (m.annulers.length) fautes.push(`${ici} : « Annuler » ou « Rétablir » hors de sa ligne de 40 px, ou coupé (C-8.2) : ${m.annulers.join(' ; ')}`);
+        if (m.annulers.length) fautes.push(`${ici} : « Annuler » ou « Rétablir » hors de sa ligne de 32 px, ou coupé (C-8.2) : ${m.annulers.join(' ; ')}`);
         if (m.aidesIA.length) fautes.push(`${ici} : aide IA sans étincelle ou sans prix (C-4.6) : ${m.aidesIA.slice(0, 5).join(' ; ')}`);
         if (m.horsEcran.length) fautes.push(`${ici} : commande coupée par le bord de l’écran (C-6.2) : ${m.horsEcran.slice(0, 5).join(' ; ')}`);
         if (m.enLargeur.length || m.pageEnLargeur) fautes.push(`${ici} : défilement en largeur (C-7.1) : ${[...(m.pageEnLargeur ? ['la page'] : []), ...m.enLargeur].slice(0, 5).join(' ; ')}`);
@@ -562,11 +567,11 @@ try {
         if (m.marques.length) fautes.push(`${ici} : marque posée sur une photo (C-9.1) : ${m.marques.slice(0, 5).join(' ; ')}`);
         if (m.bandes.length) fautes.push(`${ici} : bande d’état (C-9.1, C-9.2) : ${m.bandes.slice(0, 5).join(' ; ')}`);
         if (BANDES.has(nomPage) && h >= 900 && !m.photosEtat && !m.exemplaires) fautes.push(`${ici} : aucune photo avec sa bande d’état à l’écran (C-9.1)`);
-        if (m.boutonsPetits.length) fautes.push(`${ici} : bouton sous 16 px (C-2.2) : ${m.boutonsPetits.slice(0, 5).join(' ; ')}`);
+        if (m.boutonsPetits.length) fautes.push(`${ici} : bouton sous l’échelle sobre (14 px ; 16 px et 36 px dans la barre du bas, C-2.2) : ${m.boutonsPetits.slice(0, 5).join(' ; ')}`);
         if (m.caracteres.length) fautes.push(`${ici} : caractère-icône au lieu d’une icône SVG (C-1.4) : ${m.caracteres.slice(0, 5).join(' ; ')}`);
         if (m.barre && ECARTE.has(m.etape) && !m.bouclier) fautes.push(`${ici} : barre du bas sans « Rien n’est supprimé » et son bouclier (C-8.4)`);
         console.log(`${m.petits.length || m.faibles.length || autres.length || m.desactives.length || m.vertsAilleurs.length || fautes.length > avant ? '✗' : '✓'} ${ici} : plus petit texte ${m.min} px, ${m.faibles.length} contraste(s) faible(s), ${m.pleins.length} plein(s)`);
-        // C-8.2 : avec le plus long geste court possible, « Annuler » garde sa ligne de 40 px et la barre ne bouge pas.
+        // C-8.2 : avec le plus long geste court possible, « Annuler » garde sa ligne de 32 px et la barre ne bouge pas.
         const sonde = await page.evaluate((libelle) => {
           const texte = document.querySelector('.bouton-annuler .texte-annuler');
           if (!texte) return null;
@@ -579,7 +584,7 @@ try {
           texte.textContent = avant[0];
           return r;
         }, 'Annuler : remettre 1 234 photos à décider');
-        if (sonde && (sonde.h !== 40 || sonde.deborde || sonde.dehors || sonde.bouge))
+        if (sonde && (sonde.h !== 32 || sonde.deborde || sonde.dehors || sonde.bouge))
           fautes.push(`${ici} : « Annuler » avec un long geste : ${sonde.h} px de haut${sonde.deborde ? ', texte qui déborde' : ''}${sonde.dehors ? ', hors de l’écran' : ''}${sonde.bouge ? ', la grille bouge' : ''} (C-8.2)`);
         if (CAPTURES) await page.screenshot({ path: join(CAPTURES, `${nomPage}_${w}_${theme}.png`) });
       }
@@ -844,7 +849,8 @@ try {
     await page.keyboard.press('x');
     await page.keyboard.press('r');
     await tuile.locator('.bande-etat.pas').waitFor();
-    // « Taille − + » (C-8.3) : « − » jusqu'à la plus petite taille, puis « + » autant de fois pour revenir.
+    // Taille des photos (retours du 29.10) : la petite photo jusqu'à la plus petite taille, puis la grande autant de
+    // fois pour revenir.
     const moins = page.locator('[data-place="taille"] [data-action="plus-petites"]');
     const plus = page.locator('[data-place="taille"] [data-action="plus-grandes"]');
     let pas = 0;

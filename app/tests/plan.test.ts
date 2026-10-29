@@ -10,7 +10,9 @@ import {
   ErreurPlan,
   fusionnerDossiers,
   Historique,
+  combiner,
   mettreDeCote,
+  modificationHorsPlan,
   noterAlbum,
   periodeDe,
   RACINE,
@@ -136,6 +138,29 @@ describe('opérations sur le plan', () => {
     expect([r.get(annecy)!.photos, r.get(annecy)!.au, r.get(paleo)!.photos]).toEqual([2, '2025-06-28', 2]);
     h.retablir(plan);
     expect(resumes(plan).get(annecy)!.photos).toBe(4);
+  });
+
+  it('un geste hors du plan (« Garder seul » un petit dossier) s’annule et se rétablit comme les autres', () => {
+    const plan = exemple();
+    const h = new Historique();
+    const gardes = new Set<string>();
+    const garder = (id: string) => {
+      gardes.add(id);
+      return modificationHorsPlan(plan, 'Garder seul 1 petit dossier', (sens) => (sens === 'annuler' ? gardes.delete(id) : gardes.add(id)), 'Garder seul « Lyon »');
+    };
+    h.enregistrer(garder('d:Lyon'));
+    expect([h.peutAnnuler, h.prochaineAnnulation, h.detailAnnulation]).toEqual([true, 'Garder seul 1 petit dossier', 'Garder seul « Lyon »']);
+    const avant = JSON.stringify([...plan.fichiers]);
+    h.annuler(plan);
+    expect(gardes.has('d:Lyon')).toBe(false);
+    expect(JSON.stringify([...plan.fichiers])).toBe(avant);
+    h.retablir(plan);
+    expect(gardes.has('d:Lyon')).toBe(true);
+    // Réunis avec un geste sur le plan : un seul Ctrl+Z défait les deux, l'effet compris.
+    const annecy = id(plan, 'Annecy_27-29.06.25');
+    h.enregistrer(combiner('Ranger et garder', deplacerFichiers(plan, ['Paleo_24.07.25/IMG_1.jpg'], annecy), garder('d:Paris')));
+    h.annuler(plan);
+    expect([gardes.has('d:Paris'), plan.fichiers.get('Paleo_24.07.25/IMG_1.jpg')?.dossier === annecy]).toEqual([false, false]);
   });
 
   it('la date du fichier d’une photo sans date n’étire pas la période d’un dossier', () => {

@@ -94,7 +94,8 @@ export function PageFloues() {
       </TeteEtape>
       <EncartAnalyse photos={concernees} pourquoi={t`il faut mesurer la netteté de chaque photo.`} />
       <div class="reglages-etape ligne">
-        {/* Le seuil de netteté (un nombre sans signification pour l'utilisateur) devient « plus tolérant ↔ plus strict ». */}
+        {/* Le seuil de netteté (un nombre sans signification pour l'utilisateur) devient « plus tolérant ↔ plus strict » ;
+            curseur gris, comme tous les curseurs (C-3.2). */}
         <label class="curseur-flou" title={t`Seuil de netteté : ${nombre(seuil)} (conseillé : ${SEUIL_FLOU})`}>
           <span class="bornes-curseur">
             <span>{t`Plus tolérant`}</span>
@@ -105,6 +106,8 @@ export function PageFloues() {
             min={versCurseur(5)}
             max={versCurseur(1000)}
             value={versCurseur(seuil)}
+            style={{ '--parcouru': `${((versCurseur(seuil) - versCurseur(5)) / (versCurseur(1000) - versCurseur(5))) * 100}%` }}
+            data-action="tolerance"
             aria-label={t`Tolérance au flou`}
             onInput={(e) => changerSeuil(depuisCurseur(Number(e.currentTarget.value)))}
           />

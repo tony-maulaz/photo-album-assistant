@@ -10,6 +10,7 @@ import { nomPourJournee } from '../../lib/nommage';
 import { groupesParJour } from '../../lib/selection';
 import { BarreValidation, AnnulerRetablir, RaisonDesactivee } from '../composants/Cadre';
 import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
+import { CurseurTaille } from '../composants/CadreCommun';
 import { Icone } from '../composants/Icones';
 import { GrillePhotos } from '../composants/GrillePhotos';
 import { ActionsDossier, PanneauDossiers, SEUIL_PETIT, styleLargeurPanneau, TitreVue } from '../composants/PanneauDossiers';
@@ -18,7 +19,7 @@ import { LigneDeTemps } from '../composants/LigneDeTemps';
 import { DialogueDeplacer, Visionneuse } from '../composants/Visionneuse';
 import { evenementsDesPhotos, prisePendant, type EvenementCalendrier } from '../../lib/ics';
 import { t } from '../../lib/langue';
-import { allerEtape, annuler, changerReglages, evenements, reglages, retablir, revenirDe, session, validerEtape, versionPlan } from '../etat';
+import { allerEtape, annuler, evenements, retablir, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
 import { jourCourt, nombre, nomJour, periode, pluriel } from '../format';
 import {
@@ -255,18 +256,7 @@ export function PageOrganiser() {
           <div class="barre-outils">
             <AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />
             {!temps && !enAutres && (
-              <label class="curseur" title={t`Taille des miniatures`}>
-                <Icone nom="loupe" taille={16} />
-                <span>{t`Taille`}</span>
-                <input
-                  type="range"
-                  min="100"
-                  max="600"
-                  step="20"
-                  value={reglages.value.tailleMiniatures}
-                  onInput={(e) => changerReglages({ ...reglages.value, tailleMiniatures: Number(e.currentTarget.value) })}
-                />
-              </label>
+              <CurseurTaille />
             )}
           </div>
           <BoutonAide cle="lieux" ouverte={!arborescencePrete} libelle={t`Aide`} />

@@ -38,7 +38,7 @@ incohérents**.
 | Bandeau « le dossier à trier a changé » | « Mettre à jour l'inventaire » / « Plus tard » | V | BandeauSource.tsx |
 | Annuler depuis une notification | bouton « Annuler » dans le message (Lieux, Doublons, Petits, Consolidation, Nommage, Tri, Album, Floues) | T | etat.ts, organiser.ts:110 |
 | Revenir / Valider et continuer | barre du bas, à droite, libellé variable selon la page ; lot 4 : « Valider et continuer » au même pixel sur toutes les pages (barre de 64 px à 1440×900, 56 px en dessous) | V | Cadre.tsx:244-283 |
-| **Cadre commun (lot 4, pages passées : Sélection, Doublons)** : Aide dans la barre de l'application, juste avant Menu, « à lire » tant qu'elle n'a pas été ouverte (sous 1440 px, elle ne s'ouvre pas seule) ; colonne de l'Aide (320 / 304 px) avec « Fermer » et Échap, « Tout le mode d'emploi » ; « Annuler » et « Rétablir » à droite de l'en-tête d'étape, leur libellé suit chaque geste (corrigé au tour 1 des contrôles : il restait figé) ; le bouton ne défait qu'un geste de l'étape affichée, sinon « Rien à annuler ici » avec l'étape en infobulle (tour 2, choix 6 A) ; **Ctrl+Z et Ctrl+Y suivent la même règle sur ces pages** (tour 3 : ils disent « Rien à annuler ici. Votre dernier changement est à l'étape N, … » au lieu de défaire sans le montrer un geste d'une autre étape ; rien n'est perdu : le geste s'annule à son étape, ou par le lien « Annuler » de son message ; « Y aller » au sous-lot 4a2 ; un libellé d'historique reste en français après un changement de langue) ; « Rien à rétablir ici » de même ; le message passager s'écrit dans l'en-tête, à la place de la consigne (la bulle revient dans une vue en grand ou un dialogue ; son « Annuler » est celui de l'en-tête, sauf pour un message venu d'une autre étape, qui garde le sien, tour 3 ; la zone `role=status` reste dans l'arbre d'accessibilité, même vide) ; un clic à la souris sur une décision ou un outil de la Sélection ou du Recadreur laisse le focus où il était ; « Taille − + » au bout de la barre d'outils (100 à 600 px, le même réglage que Réglages) ; au palier (1180 px de large ou moins), la liste de gauche devient un menu dans la tête de la table (ouvert, il prend le focus ; Échap ou un clic à côté le ferment et rendent le focus à son bouton) ; sous 440 px de haut, la page défile en entier | barre de l'application, en-tête d'étape, barre d'outils | V | CadreCommun.tsx, App.tsx (`data-cadre`) |
+| **Cadre commun (lot 4, pages passées : Sélection, Doublons)** : Aide dans la barre de l'application, juste avant Menu, « à lire » tant qu'elle n'a pas été ouverte (sous 1440 px, elle ne s'ouvre pas seule) ; colonne de l'Aide (320 / 304 px) avec « Fermer » et Échap, « Tout le mode d'emploi » ; « Annuler » et « Rétablir » à droite de l'en-tête d'étape, leur libellé suit chaque geste (corrigé au tour 1 des contrôles : il restait figé) ; le bouton ne défait qu'un geste de l'étape affichée, sinon « Rien à annuler ici » avec l'étape en infobulle (tour 2, choix 6 A) ; **Ctrl+Z et Ctrl+Y suivent la même règle sur ces pages** (tour 3 : ils disent « Rien à annuler ici. Votre dernier changement est à l'étape N, … » au lieu de défaire sans le montrer un geste d'une autre étape ; rien n'est perdu : le geste s'annule à son étape, ou par le lien « Annuler » de son message ; « Y aller » au sous-lot 4a2 ; un libellé d'historique reste en français après un changement de langue) ; « Rien à rétablir ici » de même ; le message passager s'écrit dans l'en-tête, à la place de la consigne (la bulle revient dans une vue en grand ou un dialogue ; son « Annuler » est celui de l'en-tête, sauf pour un message venu d'une autre étape, qui garde le sien, tour 3 ; la zone `role=status` reste dans l'arbre d'accessibilité, même vide) ; un clic à la souris sur une décision ou un outil de la Sélection ou du Recadreur laisse le focus où il était ; Taille des photos dans l'en-tête d'étape, juste à gauche d'« Annuler » : une petite photo, un curseur gris de 12 crans, une grande photo (chaque photo est un bouton d'un cran ; ← → au clavier ; 100 à 600 px, le même réglage que Réglages ; sans le mot « Taille », retours du 29.10 ; piste de 96 px au palier) ; au palier (1180 px de large ou moins), la liste de gauche devient un menu dans la tête de la table (ouvert, il prend le focus ; Échap ou un clic à côté le ferment et rendent le focus à son bouton) ; sous 440 px de haut, la page défile en entier | barre de l'application, en-tête d'étape, barre d'outils | V | CadreCommun.tsx, App.tsx (`data-cadre`) |
 
 ## 1. Écran « Reprendre » (au lancement)
 
@@ -135,7 +135,7 @@ incohérents**.
 | Fonction | Accès | Vu |
 |---|---|---|
 | Replier / rouvrir l'explication | « Replier » / « Aide » collé au titre | V |
-| Taille des photos (×0,6, n'agit que sur la ligne ouverte) | loupe à droite du titre | I |
+| Taille des photos (×0,6, n'agit que sur la ligne ouverte) | curseur à deux photos (petite et grande) à droite du titre | I |
 | Chercher un dossier (aussi par le nom d'un sous-dossier) | champ | V |
 | Ordre par nom / par période | liste | V |
 | Même choix pour tous les dossiers affichés | « Pour tous : Trier / Garder, nettoyer / Ne pas toucher » | V |
@@ -176,7 +176,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Tout l'onglet (rafales) : Choisir avec l'IA dans N rafales (IA16, prix sur la ligne) | lot 4 : menu « ✦ Toutes les rafales ▾ » de la barre d'outils | V |
 | Afficher À accepter / Acceptés / Tous (« Tous » par défaut, C-4.8) | lot 4 : haut de la liste de gauche (au palier, dans son menu) | V |
 | Grouper par journée / mois / dossier | lot 4 : « Grouper et classer », replié en haut de la liste de gauche (ouvert d'office par dossier ou par taille ; il reste ouvert quand on revient à « par journée » ; une ligne par réglage, le mot devant sa liste) | V |
-| Taille des photos | lot 4 : « Taille − + » au bout de la barre d'outils ; au palier, les photos font les trois quarts du réglage (160 → 120 px) | V |
+| Taille des photos | curseur à deux photos dans l'en-tête d'étape, juste à gauche d'« Annuler » (retours du 29.10) ; au palier, les photos font les trois quarts du réglage (160 → 120 px) | V |
 | Classer par heure / plus grands groupes d'abord | lot 4 : « Grouper et classer », replié en haut de la liste de gauche | V |
 | Liste de gauche : choisir une journée ou un dossier, ✓ ou nombre restant, chercher un dossier (Entrée = premier trouvé) | colonne de gauche ; lot 4, au palier : menu de la tête de la table (le même composant), qui porte le nom de la section et ce qui y reste | V |
 | Élargir la liste de gauche, double-clic = largeur d'origine | poignée sur le bord | G/B |
@@ -204,7 +204,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Fonction | Accès | Vu |
 |---|---|---|
 | Replier / rouvrir l'explication | bouton collé au titre | V |
-| Taille des photos (×0,6) | loupe à droite du titre | I |
+| Taille des photos (×0,6) | curseur à deux photos (petite et grande) à droite du titre | I |
 | Maison : Changer (→ page Configuration, sans retour) / L'indiquer… | liste « À faire » | V |
 | Copies en double : Voir (→ étape Doublons), Mettre de côté | liste « À faire » | V |
 | Captures d'écran : Voir (fenêtre : cocher, agrandir, voir toutes, ranger / garder), Ranger dans leur dossier | liste « À faire » + Fenetre | V |
@@ -241,7 +241,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Sélection : clic, Ctrl, Maj, rectangle, flèches (+Maj), Ctrl+A, Échap | souris/clavier | G/C |
 | Chemin du dossier : remonter à un parent | liens au-dessus du titre | V |
 | « Annuler : *le geste* » (infobulle : le geste avec ses noms) / « Rétablir » (icône et mot) | barre de la vue | V/I |
-| Taille des photos | loupe dans la barre de la vue (absente en ligne de temps et Autres fichiers) | I |
+| Taille des photos | curseur à deux photos (petite et grande) dans la barre de la vue (absente en ligne de temps et Autres fichiers) | I |
 | Vue Photos / Ligne de temps ; clic sur une barre = ouvrir le dossier | bascule | V |
 | Mis de côté, Autres fichiers | lignes spéciales du panneau | V |
 | Élargir le panneau | poignée | G/B |
@@ -252,13 +252,13 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Fonction | Accès | Vu |
 |---|---|---|
 | Replier / rouvrir l'explication | bouton collé au titre | V |
-| Taille des photos (centre ×1, côtés ×0,6) | loupe à droite du titre | I |
+| Taille des photos (centre ×1, côtés ×0,6) | curseur à deux photos (petite et grande) à droite du titre | I |
 | Proposer un rattachement avec l'IA (IA3) | bouton IA | V |
 | Petits dossiers à moins d'1 h et 10 km : les voir (fenêtre : Retirer / Remettre, Mettre les N avec leur dossier, Fermer) | bouton plein | V |
 | Accepter les propositions sûres de l'IA (8/10 et plus) | bouton | V |
 | Choisir un petit dossier | liste « Dans l'ordre du temps » | V |
 | Mettre avec le dossier d'avant / d'après | boutons « Mettre avec ce dossier » avec chevrons SVG, touches ← → | V/C |
-| Garder seul | bouton, touche G ; « Annuler » dans la notification (**pas** Ctrl+Z) | V/C/T |
+| Garder seul | bouton, touche G ; « Annuler » dans la notification, Ctrl+Z et « Annuler » de l'historique (retours du 29.10) | V/C/T |
 | Le renommer « … » (nom proposé par l'IA) | bouton | V |
 | Autre dossier… | lien → fenêtre de choix (recherche, ↑↓ Entrée, Annuler) | V |
 | Annuler ce choix (rattaché ou gardé seul) | bouton dans l'encart | V |
@@ -290,7 +290,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Fonction | Accès | Vu |
 |---|---|---|
 | Replier / rouvrir l'explication | bouton collé au titre | V |
-| Taille des photos (×0,6, au moins 96 px) | loupe à droite du titre | I |
+| Taille des photos (×0,6, au moins 96 px) | curseur à deux photos (petite et grande) à droite du titre | I |
 | Sortie coupée : écart de temps (1 h, 3 h, 6 h, la journée) et distance (1, 2, 4, 10, 20 km) | 2 boutons segmentés | V |
 | Week-ends et petits voyages (case) jusqu'à 3 j / 4 j / 1 sem. / 2 sem. | case + segmenté | V |
 | Indiquer le domicile dans la Configuration | lien (sans domicile) | V |
@@ -317,7 +317,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Tri rapide (plein écran, une photo à la fois) | bouton « Tri rapide » de la tête de la table (lot 4 : le plein quand aucune photo choisie n'attend « Dans l'album »), T ou Entrée, **double-clic sur une photo** | V/C/G |
 | Annuler (historique global) : « Annuler : *le geste* », infobulle avec les noms | bouton | V/C |
 | Rétablir | bouton « Rétablir » à côté d'« Annuler », Ctrl+Y | V/C |
-| Taille des photos | lot 4 : « Taille − + » au bout de la barre d'outils | V |
+| Taille des photos | curseur à deux photos dans l'en-tête d'étape, juste à gauche d'« Annuler » (retours du 29.10) | V |
 | Filtrer : Toutes / À décider / Dans l'album / Pas pour l'album (avec compteurs) | lot 4 : pastilles après « Afficher : » dans la barre d'outils | V |
 | Filtrer : ★★ Grandes, Nouvelles | lot 4 : pastilles de « Filtres ▾ » (tête de la table) | V |
 | Empiler les photos semblables ; déplier une pile | lot 4 : case « Ranger les presque pareilles en pile » de « Filtres ▾ » ; badge au bout de la bande | V/I |

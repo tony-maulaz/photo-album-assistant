@@ -264,7 +264,7 @@ export function Recadreur({ f, fermer }: { f: FichierPlan; fermer: () => void })
     <div class="recadreur" role="dialog" aria-label={t`Recadrer et tourner`}>
       <div class="barre-haut-recadreur">
         <button type="button" class="fermer-recadreur" onClick={fermer} title={t`Le cadre et le redressement sont abandonnés ; un quart de tour reste fait (Échap)`}>
-          <Icone nom="croix" taille={20} />
+          <Icone nom="croix" taille={16} />
           {t`Fermer sans recadrer`}
         </button>
         <strong class="titre-recadreur" title={f.nom}>
@@ -320,11 +320,11 @@ export function Recadreur({ f, fermer }: { f: FichierPlan; fermer: () => void })
             <h3>{t`Tourner`}</h3>
             <div class="quarts">
               <button type="button" data-action="quart-de-tour" onMouseDown={garderFocus} onClick={() => quartDeTour(-90)} title={t`Tourner d’un quart de tour vers la gauche, tout de suite ; Annuler le défait`}>
-                <Icone nom="tourner" taille={20} />
+                <Icone nom="tourner" taille={16} />
                 {t`À gauche`}
               </button>
               <button type="button" data-action="quart-de-tour" onMouseDown={garderFocus} onClick={() => quartDeTour(90)} title={t`Tourner d’un quart de tour vers la droite, tout de suite ; Annuler le défait`}>
-                <Icone nom="tournerDroite" taille={20} />
+                <Icone nom="tournerDroite" taille={16} />
                 {t`À droite`}
               </button>
             </div>

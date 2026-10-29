@@ -78,11 +78,13 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | Accepter | Appliquer un choix ou une proposition : un groupe de doublons, un nom, un rangement, un recadrage (C-10.1) | Accept | valider (réservé à l'étape), OK, appliquer |
 | à accepter, pas encore accepté(s) | L'état d'un groupe de doublons dont le choix n'est pas encore appliqué (un état, un mot : C-10.2) ; filtres « À accepter · Acceptés · Tous » | to accept, not accepted yet | à valider, à relire, validé |
 | Rien n'est supprimé | La phrase de la barre du bas, avec le bouclier, sur les étapes où l'on écarte : « Rien n'est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d'origine ne bougent pas. » (C-8.4) | Nothing is deleted | supprimé, effacé |
+| Par exemple : | Le début de tout texte d'exemple qui montre un contenu dans un champ, avec sa majuscule et ses deux-points (29.10, É11, réponse 12 de l’utilisateur ; C-10.7) ; jamais devant une consigne | For example: | ex., p. ex., « par exemple » en minuscule, italique |
 | environ | Un prix ou une durée estimés (« environ 0,03 CHF », « moins de 0,01 CHF ») | about | ≈, ~ |
 | Ignorer | Écarter une proposition pour de bon, sans toucher aux photos | Ignore | refuser, supprimer |
 | Aide | Le panneau d'explication de l'étape (O2) | Help | Replier, Aide et outils (deux libellés à réunir) |
-| Taille | Le réglage de la taille des miniatures (O3) | Size | zoom, loupe |
+| Taille, Taille des photos | Le réglage de la taille des miniatures (O3) : un curseur gris entre une petite et une grande photo. Depuis le 29.10 (É11, réponse 11 de l’utilisateur), le mot ne s'affiche plus ; « Taille des photos » reste son nom pour le lecteur d'écran et l'infobulle (C-8.3) | Size, Photo size | zoom, loupe, « − + » |
 | aide IA | Une fonction facultative qui envoie des photos à l'IA, coût affiché avant ; un bouton contour marqué de l'étincelle, avec son prix écrit dessus (C-4.6) | AI helper | automatique (rien n'est automatique) |
 | Menu | Le menu de l'en-tête (Fonctions IA, Configuration, Réglages, Journal, Aide), écrit en toutes lettres à côté de son icône | Menu | ☰ seul |
+| En essai | Une étape qui marche, mais dont la présentation peut encore changer ; vos réglages et vos choix sont gardés. Pastille neutre après le titre de l'étape et dans « Étape n sur 13 ▾ », avec sa bulle (29.10, É11, étape 1 des retours acceptée par l’utilisateur ; C-8.10). Aujourd'hui l'Album seul | Trial | bêta, beta, expérimental, provisoire, en test |
 | à vérifier | Une proposition peu sûre, à relire | to check | confiance basse, Conf. |
 | nouveau | Arrivé avec la mise à jour de l'inventaire | new | créé (pour un dossier du tri) |

@@ -88,9 +88,10 @@ describe('charte : échelles fermées dans les CSS de app/src/ui', () => {
     expect(style).toMatch(/font-feature-settings:\s*'cv05',\s*'cv08'/);
   });
 
-  it('graisses 400, 600, 700 seulement (C-2.3) et aucune capitale de style', () => {
+  it('graisses 400, 500, 600, 700 seulement (C-2.3) et aucune capitale de style', () => {
+    // 500 : l'échelle sobre des boutons (retours du 29.10, question 1 a) ; 600 pour le plein et ce qui est choisi.
     const fautes = TOUTES.filter(
-      (d) => (d.propriete === 'font-weight' && !['400', '600', '700', 'inherit', 'normal', 'bold', '100 900'].includes(d.valeur)) || (d.propriete === 'text-transform' && d.valeur === 'uppercase'),
+      (d) => (d.propriete === 'font-weight' && !['400', '500', '600', '700', 'inherit', 'normal', 'bold', '100 900'].includes(d.valeur)) || (d.propriete === 'text-transform' && d.valeur === 'uppercase'),
     );
     expect(fautes.map(lieu)).toEqual([]);
   });

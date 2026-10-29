@@ -159,14 +159,14 @@ export function PageNouveauProjet({ mode }: { mode: Projet['mode'] }) {
         )}
 
         <label for="nom-projet">{t`Nom du projet`}</label>
-        <input id="nom-projet" class="large" value={nom} placeholder={t`par exemple : Photos 2025`} onInput={(e) => setNom(e.currentTarget.value)} />
+        <input id="nom-projet" class="large" value={nom} placeholder={t`Par exemple : Photos 2025`} onInput={(e) => setNom(e.currentTarget.value)} />
 
         <label for="contexte">{t`Contexte (facultatif)`}</label>
         <textarea
           id="contexte"
           rows={3}
           value={contexte}
-          placeholder={t`Vacances au bord de la mer en famille, 2 adultes et 2 enfants, juillet 2026`}
+          placeholder={t`Par exemple : vacances au bord de la mer, juillet 2026`}
           onInput={(e) => setContexte(e.currentTarget.value)}
         />
         <p class="aide-champ">{t`Transmis aux aides IA (quand vous les lancerez) pour mieux nommer et décrire les photos.`}</p>

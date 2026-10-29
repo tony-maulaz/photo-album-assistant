@@ -75,10 +75,7 @@ body:has(.app[data-cadre='commun']) {
 
 button.aide-cadre {
   flex: 0 0 auto;
-  min-height: var(--h-btn);
   margin-right: calc(var(--e2) - var(--e3));
-  padding: 0 var(--e3) 0 10px;
-  border-radius: var(--r-commande);
 }
 
 /* « à lire » : l'Aide de l'étape n'a pas encore été ouverte (brun = reste à faire, C-3.3). */
@@ -139,6 +136,14 @@ button.aide-cadre {
   margin-left: auto;
 }
 
+/* La Taille, « Annuler » et « Rétablir » restent sur la ligne du titre, à la même hauteur, même quand un long
+   message passe sur deux lignes et grandit l'en-tête (76 px, contenu de 56 : 12 px au-dessus de 32 px). */
+.entete-cadre > .taille-cadre,
+.entete-cadre > .annuler-retablir {
+  align-self: flex-start;
+  margin-top: var(--e3);
+}
+
 /* Message passager des pages du cadre : dans l'en-tête, à la place de la consigne, à côté d'« Annuler » ; jamais
    sur les photos, le plein ou la barre du bas (tour 2 du lot 4). Sans message, l'élément reste là, vide, pour
    le lecteur d'écran (role=status) : masqué à l'écran seulement, jamais `display: none`, qui le sortirait de
@@ -196,6 +201,11 @@ body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
     padding-bottom: 6px;
   }
 
+  .entete-cadre > .taille-cadre,
+  .entete-cadre > .annuler-retablir {
+    margin-top: var(--e1);
+  }
+
   .titre-cadre {
     flex-direction: row;
     flex-wrap: nowrap;
@@ -225,6 +235,10 @@ body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
 
   .entete-cadre button.bouton-retablir {
     min-width: 132px;
+  }
+
+  .titre-cadre {
+    column-gap: var(--e3);
   }
 }
 
@@ -262,8 +276,7 @@ body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
   gap: var(--e2);
 }
 
-.mot-afficher,
-.mot-taille {
+.mot-afficher {
   color: var(--texte-2);
   white-space: nowrap;
 }
@@ -274,21 +287,52 @@ body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
   gap: var(--e2);
 }
 
-/* « Taille − + » au bout de la barre d'outils (C-8.3). */
+/* Taille des photos (retours du 29.10, question 11) : une petite photo, un curseur de 12 crans, une grande photo,
+   en encre neutre ; les deux photos sont des boutons bordés dès le repos (« on clique, on ne tire pas »). Même
+   composant sur toutes les pages : dans l'en-tête de l'étape, à gauche d'« Annuler ». */
 .taille-cadre {
   flex: 0 0 auto;
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: var(--e2);
+  gap: var(--e1);
 }
 
-button.bouton-taille {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--h-btn);
+button.bout-taille {
+  width: 30px;
   padding: 0;
+  border-color: var(--filet-fort);
+  color: var(--texte-2);
+}
+
+button.bout-taille:hover:not(:disabled) {
+  color: var(--texte);
+}
+
+.curseur-taille {
+  width: 120px;
+}
+
+/* Au palier (contenu de 1180 px ou moins, Aide déduite : à 1280 et 1440 avec l'Aide ouverte), la piste passe à
+   96 px (proposition du 29.10, § 7). */
+.page-cadre[data-palier] .curseur-taille {
+  width: 96px;
+}
+
+/* Fenêtre elle-même de 1180 px ou moins (1024) : la place manque encore à l'en-tête tant qu'« Annuler » garde sa
+   largeur ; restent les deux photos (28 px), un cran chacune, à 8 px de la consigne et d'« Annuler » au lieu de 16.
+   En anglais, « Click the photo to keep, then “Accept”. » tient alors sur la ligne du titre à côté de « Nothing to
+   undo here » et « Nothing to redo here » (C-10.4, tour 1). Provisoire, à revoir avec la place d'« Annuler » (autre
+   analyse en cours). */
+.page-cadre[data-etroit] .curseur-taille {
+  display: none;
+}
+
+.page-cadre[data-etroit] .entete-cadre > .taille-cadre {
+  margin-inline: calc(var(--e2) - var(--e4));
+}
+
+.page-cadre[data-etroit] button.bout-taille {
+  width: 28px;
 }
 
 /* Le corps : les colonnes côte à côte, chacune défile de son côté. */
@@ -394,9 +438,18 @@ button.bouton-taille {
   white-space: nowrap;
 }
 
-.tete-table .recherche-photos {
+.tete-table .champ-recherche {
   flex: 0 1 260px;
   min-width: 120px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  color: var(--texte-2);
+}
+
+.tete-table .recherche-photos {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* Au palier, la liste de gauche est un menu dans la tête de la table : le même panneau, en un seul exemplaire. */
@@ -553,7 +606,7 @@ button.outil-photo {
 }
 
 button.outil-photo:disabled {
-  border: 1.5px dashed var(--filet-fort);
+  border: 1px dashed var(--filet-fort);
 }
 
 .texte-outil {
@@ -820,7 +873,7 @@ button.fermer-aide {
 }
 
 .menu-actions button:disabled {
-  border: 1.5px dashed var(--filet-fort);
+  border: 1px dashed var(--filet-fort);
 }
 
 .menu-actions button .discret {
@@ -1187,7 +1240,7 @@ button.lien-suite {
   display: inline-flex;
   align-items: center;
   gap: var(--e1);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* Le clavier n'est jamais caché sous un en-tête collé (WCAG 2.4.11). */

@@ -12,7 +12,8 @@ import { estDossierMois } from '../../lib/tri';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { lancerAnalyseDossier } from '../analyseDossier';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
-import { CurseurTaille, Miniature } from '../composants/GrillePhotos';
+import { CurseurTaille } from '../composants/CadreCommun';
+import { Miniature } from '../composants/GrillePhotos';
 import { Visionneuse } from '../composants/Visionneuse';
 import { appliquer, reglages, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { jourCourt, nombre, periode, pluriel } from '../format';
@@ -193,7 +194,7 @@ export function PageDossiers() {
 
   return (
     <div class="page avec-barre">
-      <TeteEtape numero={ETAPE.dossiers} titre={nomEtape(ETAPE.dossiers)} cle="dossiers" outils={<CurseurTaille />}>
+      <TeteEtape numero={ETAPE.dossiers} titre={nomEtape(ETAPE.dossiers)} cle="dossiers" outils={<CurseurTaille vraie={(v) => Math.round(v * 0.6)} />}>
         {t`Votre dossier contient déjà des sous-dossiers. Les ${pluriel(racine.photos + racine.videos, 'élément')} en vrac à la racine seront triés par lieux et sorties ; pour chaque sous-dossier, choisissez ce qu’il devient. Rien n’est modifié dans le dossier d’origine.`}{' '}
         {t`Cliquez sur un dossier pour voir ses photos.`}
       </TeteEtape>

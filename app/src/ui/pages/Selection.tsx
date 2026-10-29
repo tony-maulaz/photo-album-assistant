@@ -551,7 +551,7 @@ function BoutonDecision({ valeur, photos, plein, classe, titre, children }: { va
 function OutilPhoto({ icone, libelle, touche, raison, id, titre, onClick }: { icone: 'croix' | 'tourner' | 'recadrer' | 'comparer' | 'dossierPlus'; libelle: string; touche: string; raison?: string | false; id: string; titre?: string; onClick: () => void }) {
   return (
     <button type="button" class="outil-photo" disabled={!!raison} aria-describedby={raison ? id : undefined} onMouseDown={garderFocus} onClick={onClick} title={titre ?? t`Touche ${touche}`}>
-      <Icone nom={icone} taille={20} />
+      <Icone nom={icone} taille={16} />
       <span class="texte-outil">
         {libelle}
         <RaisonDesactivee id={id} raison={raison} />
@@ -591,7 +591,7 @@ function PanneauChoix({ choisies, plein, album, compact = false }: { choisies: F
               </BoutonDecision>
             </div>
             <BoutonDecision valeur={0} photos={choisies} classe="pas" titre={t`Touche X`}>
-              <Icone nom="croix" taille={20} />
+              <Icone nom="croix" taille={16} />
               {t`Pas pour l’album`}
             </BoutonDecision>
           </div>
@@ -818,15 +818,19 @@ export function PageSelection() {
               <TitreVue titre={titreVue} id={v === RACINE ? undefined : v} sousTitre={resumeTable} />
             )}
             <span class="espace" />
+            {/* La consigne (la loupe, le nom lu) et l'exemple (« Par exemple : … ») séparés (C-10.7). */}
             {etiquetees && (
-              <input
-                type="search"
-                class="recherche-photos"
-                placeholder={t`Rechercher : « enfants sur un éléphant »`}
-                value={filtres.value.recherche}
-                onInput={(e) => (filtres.value = { ...filtres.value, recherche: e.currentTarget.value })}
-                title={t`Recherche dans les descriptions de l’IA (sur cet ordinateur, sans nouvel appel)`}
-              />
+              <label class="champ-recherche" title={t`Recherche dans les descriptions de l’IA (sur cet ordinateur, sans nouvel appel)`}>
+                <Icone nom="loupe" taille={16} />
+                <input
+                  type="search"
+                  class="recherche-photos"
+                  aria-label={t`Rechercher dans les photos`}
+                  placeholder={t`Par exemple : enfants sur un éléphant`}
+                  value={filtres.value.recherche}
+                  onInput={(e) => (filtres.value = { ...filtres.value, recherche: e.currentTarget.value })}
+                />
+              </label>
             )}
             <button
               type="button"
@@ -836,7 +840,7 @@ export function PageSelection() {
               onClick={() => ouvrirTri()}
               title={t`Les photos en grand, une à la fois (touche T)`}
             >
-              <Icone nom="lecture" taille={20} />
+              <Icone nom="lecture" taille={16} />
               {elements.length ? t`Tri rapide` : t`Tri rapide : aucune photo ici`}
             </button>
             <button type="button" class="bouton-filtres" aria-expanded={filtresOuverts} onClick={() => setFiltresOuverts(!filtresOuverts)} title={t`Grandes, Nouvelles, piles, jour, appareil, indicateurs, ordre`}>
@@ -953,11 +957,11 @@ export function PageSelection() {
           outils={(f) => (
             <>
               <button type="button" onClick={() => tournerPhotos([f.id], 90)} title={t`Tourner d’un quart de tour`}>
-                <Icone nom="tourner" taille={20} />
+                <Icone nom="tourner" taille={16} />
                 {t`Tourner`}
               </button>
               <button type="button" onClick={() => (recadrageOuvert.value = f.id)} title={t`Recadrer ou redresser la copie de l’album`}>
-                <Icone nom="recadrer" taille={20} />
+                <Icone nom="recadrer" taille={16} />
                 {t`Recadrer et tourner…`}
               </button>
             </>

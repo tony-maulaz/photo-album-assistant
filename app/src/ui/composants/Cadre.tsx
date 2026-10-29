@@ -12,6 +12,23 @@ import { BoutonAideCadre } from './CadreCommun';
 import { Icone } from './Icones';
 import { Logo } from './Logo';
 
+/** Étapes dont la présentation peut encore changer : la pastille « En essai » suit leur titre et la frise. */
+const ETAPES_EN_ESSAI: ReadonlySet<number> = new Set([ETAPE.album]);
+
+/**
+ * « En essai » (gris neutre, ni orange ni vert) : l'étape marche, sa présentation peut changer ; la phrase est dans
+ * la bulle, et lue après le titre (`lue`) ; dans « Étape n sur 13 ▾ », le mot seul.
+ */
+export function PastilleEssai({ lue = true }: { lue?: boolean }) {
+  const phrase = t`Cette étape marche, mais sa présentation peut encore changer. Vos réglages et vos choix sont gardés.`;
+  return (
+    <span class="pastille-essai" title={phrase}>
+      {t`En essai`}
+      {lue && <span class="texte-masque">{` : ${phrase}`}</span>}
+    </span>
+  );
+}
+
 /** Ouvert / fermé, refermé par un clic ailleurs ou Échap. */
 export function useDeroulant(): [boolean, (v?: boolean) => void, RefObject<HTMLDivElement | null>] {
   const [ouvert, setOuvert] = useState(false);
@@ -92,6 +109,7 @@ function Avancement() {
         {courante ? (
           <>
             {t`Étape ${courante} sur ${ETAPES.length}`} · <strong>{nomCourtEtape(courante)}</strong>
+            {ETAPES_EN_ESSAI.has(courante) && <PastilleEssai lue={false} />}
           </>
         ) : (
           t`Étapes`
@@ -134,7 +152,7 @@ function MenuPrincipal() {
   return (
     <div class="menu-principal" ref={zone}>
       <button type="button" class="bouton-menu" aria-haspopup="menu" aria-expanded={ouvert} onClick={() => basculer()}>
-        <Icone nom="menu" taille={20} />
+        <Icone nom="menu" taille={16} />
         {t`Menu`}
       </button>
       {ouvert && (
@@ -231,6 +249,7 @@ export function TeteEtape({ numero, titre, cle, outils, children }: { numero?: n
       <h1>
         {numero !== undefined && <span class="numero-etape">{t`Étape ${numero}`}</span>}
         {titre}
+        {numero !== undefined && ETAPES_EN_ESSAI.has(numero) && <PastilleEssai />}
         {cle && (
           <button type="button" class="bouton-aide" aria-expanded={ouverte} onClick={() => ouvrirExplication(cle, !ouverte)} title={ouverte ? t`Replier l’explication` : t`Afficher l’explication de l’étape`}>
             <Icone nom="aide" taille={16} />
@@ -255,14 +274,14 @@ export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnul
   if (!historique.peutAnnuler)
     return (
       <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={historique.ailleurs ?? t`Annuler (Ctrl+Z)`}>
-        <Icone nom="annuler" taille={20} />
+        <Icone nom="annuler" taille={16} />
         <span class="texte-annuler">{historique.ailleurs ? t`Rien à annuler ici` : t`Rien à annuler`}</span>
       </button>
     );
   const detail = historique.detailAnnulation ?? quoi;
   return (
     <button type="button" class="bouton-annuler" onClick={annuler} title={detail ? t`Annuler : ${minusculeInitiale(detail)} (Ctrl+Z)` : t`Annuler (Ctrl+Z)`}>
-      <Icone nom="annuler" taille={20} />
+      <Icone nom="annuler" taille={16} />
       <span class="texte-annuler">{quoi ? t`Annuler : ${minusculeInitiale(quoi)}` : t`Annuler`}</span>
     </button>
   );
@@ -272,7 +291,7 @@ export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnul
 export function BoutonRetablir({ peutRetablir, retablir, ailleurs = false }: { peutRetablir: boolean; retablir: () => void; ailleurs?: boolean }) {
   return (
     <button type="button" class="bouton-retablir" disabled={!peutRetablir} data-raison={peutRetablir ? undefined : 'libelle'} onClick={retablir} title={t`Rétablir (Ctrl+Y)`}>
-      <Icone nom="retablir" taille={20} />
+      <Icone nom="retablir" taille={16} />
       {peutRetablir ? t`Rétablir` : ailleurs ? t`Rien à rétablir ici` : t`Rien à rétablir`}
     </button>
   );
@@ -408,7 +427,7 @@ export function BarreValidation({
             onClick={valider}
           >
             {libelleValider}
-            <Icone nom="fleche" taille={20} />
+            <Icone nom="fleche" taille={16} />
           </button>
         )}
       </div>

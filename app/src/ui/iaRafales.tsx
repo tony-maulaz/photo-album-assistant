@@ -167,7 +167,7 @@ export function BoutonIARafales({ cibles, libelle }: { cibles: GroupeDoublons[];
   if (!cibles.length) return null;
   return (
     <button type="button" class="bouton-ia" onClick={() => void choisirAvecIA(s, cibles)} title={t`L’IA choisit la meilleure photo de chaque rafale (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous acceptez.`}>
-      <Icone nom="etincelle" taille={20} />
+      <Icone nom="etincelle" taille={16} />
       <span>
         {libelle}
         <span class="cout-aide"> — {texteCout(estimationIA(s, cibles))}</span>

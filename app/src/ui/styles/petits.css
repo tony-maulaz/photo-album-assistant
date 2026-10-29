@@ -53,7 +53,7 @@
 
 .ligne-liste-petit.choisie {
   background: var(--accent-doux);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .ligne-liste-petit.fait {

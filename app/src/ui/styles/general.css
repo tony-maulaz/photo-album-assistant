@@ -53,8 +53,8 @@
 
 button.bouton-retour {
   margin: -10px 0 6px -6px;
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 /* --- Aide : l'essentiel pour commencer --- */

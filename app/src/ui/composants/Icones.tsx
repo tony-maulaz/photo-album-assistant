@@ -194,7 +194,7 @@ const TRACES = {
 
 export type NomIcone = keyof typeof TRACES;
 
-/** 20 dans un bouton, 16 dans le texte, 14 dans une remarque (C-5.1). */
+/** 16 dans un bouton (échelle sobre, retours du 29.10) et dans le texte, 20 sur une carte ou une ligne de liste, 14 dans une remarque (C-5.1). */
 export type TailleIcone = 14 | 16 | 20;
 
 /**

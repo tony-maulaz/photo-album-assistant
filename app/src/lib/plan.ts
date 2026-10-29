@@ -314,6 +314,11 @@ export interface Modification {
   etape?: number;
   avant: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
   apres: { dossiers: Etat<DossierPlan>; fichiers: Etat<FichierPlan>; prochainId: number };
+  /**
+   * Ce que le geste change hors du plan (une décision gardée dans `.album/aides.json`, comme « Garder seul » un
+   * petit dossier) : défait par « Annuler », refait par « Rétablir », après le plan.
+   */
+  effet?: (sens: 'annuler' | 'retablir') => void;
 }
 
 /** Note la valeur précédente de chaque élément touché, pour pouvoir l'annuler. */
@@ -392,6 +397,7 @@ export class Historique {
     const m = this.passe.pop();
     if (!m) return null;
     appliquer(plan, m.avant);
+    m.effet?.('annuler');
     this.futur.push(m);
     return m;
   }
@@ -400,6 +406,7 @@ export class Historique {
     const m = this.futur.pop();
     if (!m) return null;
     appliquer(plan, m.apres);
+    m.effet?.('retablir');
     this.passe.push(m);
     return m;
   }
@@ -595,6 +602,15 @@ export function enchainer(plan: Plan, libelle: string, etapes: (() => Modificati
   return combiner(libelle, ...faites);
 }
 
+/**
+ * Un geste qui ne touche pas le plan mais doit s'annuler comme les autres (règle d'or 7, choix 6 A) : `effet`
+ * le défait et le refait ; l'appelant le fait lui-même une première fois.
+ */
+export function modificationHorsPlan(plan: Plan, libelle: string, effet: (sens: 'annuler' | 'retablir') => void, detail?: string): Modification {
+  const rien = { dossiers: [], fichiers: [], prochainId: plan.prochainId };
+  return { libelle, ...(detail ? { detail } : {}), avant: rien, apres: { ...rien }, effet };
+}
+
 /** Donne à une modification son geste avec les noms (voir `Modification.detail`). */
 export function avecDetail(m: Modification | null, detail: string): Modification | null {
   if (m) m.detail = detail;
@@ -615,10 +631,13 @@ export function combiner(libelle: string, ...modifications: (Modification | null
     for (const [id, d] of m.apres.dossiers) apresD.set(id, d);
     for (const [id, f] of m.apres.fichiers) apresF.set(id, f);
   }
+  // Les effets hors du plan : refaits dans l'ordre, défaits à rebours.
+  const effets = liste.flatMap((m) => (m.effet ? [m.effet] : []));
   return {
     libelle,
     avant: { dossiers: [...avantD], fichiers: [...avantF], prochainId: liste[0].avant.prochainId },
     apres: { dossiers: [...apresD], fichiers: [...apresF], prochainId: liste.at(-1)!.apres.prochainId },
+    ...(effets.length ? { effet: (sens: 'annuler' | 'retablir') => (sens === 'annuler' ? [...effets].reverse() : effets).forEach((e) => e(sens)) } : {}),
   };
 }
 

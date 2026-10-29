@@ -454,7 +454,7 @@ try {
     `panneau « Par taille » : ${tailles.length} dossiers à plat, les plus petits d’abord, le dossier parent sous le nom`,
   );
   await page.locator('.options-panneau select').selectOption('arbre');
-  // « Taille − + » (lot 4, C-8.3) : un pas à la fois, jusqu'à la taille voulue.
+  // Taille des photos (retours du 29.10) : un cran à la fois (petite ou grande photo), jusqu’à la taille voulue.
   const taillePhotos = async (px) => {
     const reglage = page.locator('.page-selection [data-place="taille"]');
     for (let i = 0; i < 20; i++) {

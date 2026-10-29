@@ -404,7 +404,7 @@ export function PageConfiguration() {
                         <input class="court" value={a.decalage} onChange={(e) => modifier((b) => (b.appareils[i].decalage = e.currentTarget.value))} />
                       </td>
                       <td>
-                        <input value={a.surnom} placeholder={t`téléphone d’Anna`} onChange={(e) => modifier((b) => (b.appareils[i].surnom = e.currentTarget.value))} />
+                        <input class="surnom-appareil" value={a.surnom} placeholder={t`Par exemple : téléphone de Lea`} onChange={(e) => modifier((b) => (b.appareils[i].surnom = e.currentTarget.value))} />
                       </td>
                       <td>
                         <button type="button" onClick={() => modifier((b) => b.appareils.splice(i, 1))}>

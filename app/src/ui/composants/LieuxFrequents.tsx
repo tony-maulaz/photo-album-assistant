@@ -177,7 +177,7 @@ export function LieuxFrequents({ fermer }: { fermer: () => void }) {
                   <input
                     type="text"
                     aria-label={t`Nom de l’endroit`}
-                    placeholder={t`Son nom, par exemple « Chez Mamie »`}
+                    placeholder={t`Par exemple : Chez Mamie`}
                     value={nom}
                     onInput={(e) => setNoms({ ...noms, [cle]: e.currentTarget.value })}
                     onKeyDown={(e) => e.key === 'Enter' && nom.trim() && void enregistrer(l.lat, l.lon, cle)}

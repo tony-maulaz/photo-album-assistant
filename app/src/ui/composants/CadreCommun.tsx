@@ -1,7 +1,7 @@
 // Cadre commun des pages d'étape (lot 4 de la charte, D111) : des bandes de hauteur fixe (barre de
 // l'application, en-tête d'étape, barre d'outils, barre du bas) ; seule la zone de contenu défile, chaque
-// colonne de son côté. « Aide » est dans la barre de l'application, juste avant Menu ; « Annuler » et
-// « Rétablir » à droite de l'en-tête d'étape ; « Taille − + » au bout de la barre d'outils. Sous 440 px
+// colonne de son côté. « Aide » est dans la barre de l'application, juste avant Menu ; la Taille des photos,
+// « Annuler » et « Rétablir » à droite de l'en-tête d'étape. Sous 440 px
 // de haut, la page défile en entier et seule la barre du bas reste en place.
 //
 // Les pages passent au cadre une par une (`PAGES_CADRE`) : `.app` porte alors `data-cadre="commun"`, les
@@ -10,6 +10,7 @@
 import { signal } from '@preact/signals';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect } from 'preact/hooks';
+import { cranTaille, PAS_TAILLE } from '../../lib/grille';
 import { t } from '../../lib/langue';
 import { CODES_ETAPES, nomEtape, type CodeEtape } from '../../navigateur/projet';
 import { annuler, changerReglages, messages, notifier, page, reglages, retablir, session, versionPlan, versionProjet } from '../etat';
@@ -119,7 +120,7 @@ export function BoutonAideCadre() {
       onClick={() => ouvrirAide(cle, !ouverte)}
       title={ouverte ? t`Fermer l’aide de l’étape (Échap)` : t`Ouvrir l’aide de l’étape`}
     >
-      <Icone nom="aide" taille={20} />
+      <Icone nom="aide" taille={16} />
       {t`Aide`}
       {aLire && <span class="marque-a-lire">{t`à lire`}</span>}
     </button>
@@ -168,7 +169,10 @@ export function retablirIci() {
   else notifier('info', t`Rien à rétablir.`);
 }
 
-/** En-tête d'étape : le titre (24 px, à 24 px du bord), la consigne d'une ligne, « Annuler : … » et « Rétablir » à droite. */
+/**
+ * En-tête d'étape : le titre (24 px, à 24 px du bord), la consigne d'une ligne, puis à droite la Taille des photos,
+ * « Annuler : … » et « Rétablir ».
+ */
 export function EnteteCadre({ titre, consigne }: { titre: string; consigne: ComponentChildren }) {
   const s = session.value!;
   // L'historique est modifié sur place : sans lire ces signaux, @preact/signals sauterait le rendu (props
@@ -226,39 +230,75 @@ export function EnteteCadre({ titre, consigne }: { titre: string; consigne: Comp
           )}
         </p>
       </div>
+      <CurseurTaille />
       <AnnulerRetablir historique={historique} annuler={annuler} retablir={retablir} />
     </header>
   );
 }
 
-/** Pas du réglage « Taille − + » (px de la photo), de 100 à 600. */
-const PAS_TAILLE = [100, 120, 140, 160, 180, 200, 240, 280, 320, 400, 480, 600];
-
-/** « Taille − + » au bout de la barre d'outils (C-8.3) : un seul réglage pour toutes les étapes. */
-export function TailleCadre() {
-  const v = reglages.value.tailleMiniatures;
-  const plusPetite = [...PAS_TAILLE].reverse().find((x) => x < v);
-  const plusGrande = PAS_TAILLE.find((x) => x > v);
-  const changer = (x: number | undefined) => x !== undefined && changerReglages({ ...reglages.value, tailleMiniatures: x });
+/**
+ * Taille des photos (retours du 29.10, question 11) : une petite photo, un curseur gris de 12 crans, une grande
+ * photo ; les deux photos sont des boutons d'un cran, le clavier passe par le curseur (← → un cran, Origine, Fin).
+ * Un seul réglage pour toutes les étapes, au même endroit sur chaque page : dans l'en-tête de l'étape, à gauche
+ * d'« Annuler ». `vraie` : la taille réellement montrée (vignettes de dossier à 0,6), lue dans l'infobulle et
+ * par le lecteur d'écran ; `id` : celui du curseur, pour une étiquette de formulaire (Réglages).
+ */
+export function CurseurTaille({ vraie, id }: { vraie?: (v: number) => number; id?: string }) {
+  const i = cranTaille(reglages.value.tailleMiniatures);
+  const dernier = PAS_TAILLE.length - 1;
+  const v = PAS_TAILLE[i];
+  const n = vraie ? vraie(v) : v;
+  const changer = (j: number) => {
+    if (j >= 0 && j <= dernier && PAS_TAILLE[j] !== reglages.value.tailleMiniatures) changerReglages({ ...reglages.value, tailleMiniatures: PAS_TAILLE[j] });
+  };
   return (
-    <div class="taille-cadre" data-place="taille" role="group" aria-label={t`Taille des photos`} title={t`Taille des photos : ${v} px (de 100 à 600)`} data-valeur={v}>
-      <span class="mot-taille">{t`Taille`}</span>
-      <button type="button" class="bouton-taille" data-action="plus-petites" disabled={plusPetite === undefined} data-raison={plusPetite === undefined ? 'libelle' : undefined} aria-label={plusPetite === undefined ? t`Photos plus petites : déjà la plus petite taille` : t`Photos plus petites`} onClick={() => changer(plusPetite)}>
-        <Icone nom="moins" taille={20} />
+    <div class="taille-cadre" data-place="taille" role="group" aria-label={t`Taille des photos`} title={vraie ? t`Taille des vignettes : ${n} px` : t`Taille des photos : ${v} px (de 100 à 600)`} data-valeur={v}>
+      <button
+        type="button"
+        class="bout-taille"
+        data-action="plus-petites"
+        disabled={i === 0}
+        data-raison={i === 0 ? 'libelle' : undefined}
+        aria-label={i === 0 ? t`Photos plus petites : déjà la plus petite taille` : t`Photos plus petites`}
+        title={i === 0 ? t`Photos plus petites : déjà la plus petite taille` : t`Photos plus petites`}
+        onClick={() => changer(i - 1)}
+      >
+        <Icone nom="photo" taille={14} />
       </button>
-      <button type="button" class="bouton-taille" data-action="plus-grandes" disabled={plusGrande === undefined} data-raison={plusGrande === undefined ? 'libelle' : undefined} aria-label={plusGrande === undefined ? t`Photos plus grandes : déjà la plus grande taille` : t`Photos plus grandes`} onClick={() => changer(plusGrande)}>
-        <Icone nom="plus" taille={20} />
+      <input
+        type="range"
+        id={id}
+        class="curseur-taille"
+        min={0}
+        max={dernier}
+        step={1}
+        value={i}
+        aria-label={t`Taille des photos`}
+        aria-valuetext={vraie ? t`vignettes de ${n} px` : t`${n} px`}
+        style={{ '--parcouru': `${(i / dernier) * 100}%` }}
+        onInput={(e) => changer(Number(e.currentTarget.value))}
+      />
+      <button
+        type="button"
+        class="bout-taille"
+        data-action="plus-grandes"
+        disabled={i === dernier}
+        data-raison={i === dernier ? 'libelle' : undefined}
+        aria-label={i === dernier ? t`Photos plus grandes : déjà la plus grande taille` : t`Photos plus grandes`}
+        title={i === dernier ? t`Photos plus grandes : déjà la plus grande taille` : t`Photos plus grandes`}
+        onClick={() => changer(i + 1)}
+      >
+        <Icone nom="photo" taille={20} />
       </button>
     </div>
   );
 }
 
-/** Barre d'outils : onglets ou filtres à gauche, « Taille − + » au bout à droite. */
-export function OutilsCadre({ children, taille = true }: { children: ComponentChildren; taille?: boolean }) {
+/** Barre d'outils : onglets ou filtres (la Taille est dans l'en-tête de l'étape). */
+export function OutilsCadre({ children }: { children: ComponentChildren }) {
   return (
     <nav class="outils-cadre" aria-label={t`Outils`}>
       <div class="gauche-outils">{children}</div>
-      {taille && <TailleCadre />}
     </nav>
   );
 }
@@ -281,7 +321,7 @@ export function PanneauAide({ cle, titre, children }: { cle: string; titre: stri
       <div class="tete-col">
         <h2>{t`Aide : ${titre}`}</h2>
         <button type="button" class="fermer-aide" onClick={() => ouvrirAide(cle, false)} title={t`Échap`}>
-          <Icone nom="croix" taille={20} />
+          <Icone nom="croix" taille={16} />
           {t`Fermer`}
         </button>
       </div>

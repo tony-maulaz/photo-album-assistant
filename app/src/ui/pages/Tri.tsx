@@ -13,7 +13,7 @@ import { resultatDuPlan, resultatPropose } from '../../lib/resultatTri';
 import { optionsDuProjet, type OptionsTri } from '../../lib/tri';
 import { ETAPE } from '../../navigateur/projet';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
-import { CurseurTaille } from '../composants/GrillePhotos';
+import { CurseurTaille } from '../composants/CadreCommun';
 import { ResultatTri } from '../composants/ResultatTri';
 import { dossiersProposes, memesReglages, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';

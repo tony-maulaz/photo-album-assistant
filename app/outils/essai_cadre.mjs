@@ -21,7 +21,8 @@
 //            bas, Valider) ne bouge pas quand une colonne défile ; barre du bas de 64 / 56 / 56 px, même avec
 //            des nombres à 4 chiffres ; Valider au même pixel sur toutes les pages, à chaque taille ;
 //   places : Aide dans la barre de l'application, juste avant Menu ; Annuler et Rétablir à droite de l'en-tête
-//            d'étape (Rétablir à 24 px du bord) ; Taille au bout à droite de la barre d'outils ; le titre de
+//            d'étape (Rétablir à 24 px du bord) ; Taille dans l'en-tête d'étape, juste à gauche d'Annuler, à la
+//            même hauteur (retours du 29.10) ; Annuler, Rétablir et les boutons de l'en-tête à 32 px ; le titre de
 //            l'étape à 24 px du bord et au même pixel d'une page à l'autre ;
 //   plein  : exactement un bouton plein entier et non recouvert (elementFromPoint), à l'arrivée, à mi-course
 //            et en bas de chaque colonne qui défile (et de la page sous 440 px) ;
@@ -60,7 +61,7 @@
 // largeur). Une page qui porte data-cadre="commun" reçoit tous les contrôles du cadre.
 //
 // Repères attendus de l'application (sous-lot 2) : data-cadre="commun" (page passée au cadre ; « ancien » ou
-// absent sinon) ; [data-place=aide] et [data-place=taille] (repli : .bouton-aide, label.curseur) ;
+// absent sinon) ; [data-place=aide] et [data-place=taille] (repli : .bouton-aide) ;
 // [data-action=accepter] et [data-action=comparer] (existants) ; [data-action=journee-suivante] ;
 // [data-action=menu-liste] ; [data-action=quart-de-tour] (repli : libellé « quart de tour » ou « Tourner ») ;
 // .bande-etat.choisie / .gardee (À garder) ; .chemin-doublon sur la ligne de chaque exemplaire.
@@ -265,7 +266,7 @@ function bibliotheque() {
     document.scrollingElement.scrollTop = 0;
   };
   C.aide = () => document.querySelector('[data-place="aide"]') ?? [...document.querySelectorAll('.bouton-aide')].find((b) => C.affiche(b) && C.horsVue(b)) ?? null;
-  C.taille = () => [...document.querySelectorAll('[data-place="taille"], label.curseur')].find((b) => C.affiche(b) && C.horsVue(b)) ?? null;
+  C.taille = () => [...document.querySelectorAll('[data-place="taille"]')].find((b) => C.affiche(b) && C.horsVue(b)) ?? null;
   C.titre = () => [...document.querySelectorAll('main h1')].find((h) => C.affiche(h)) ?? null;
   const boite = (e) => {
     if (!C.affiche(e)) return null;
@@ -359,10 +360,20 @@ function bibliotheque() {
     else if (!C.vu(ann)) f.push('« Annuler » caché ou recouvert');
     if (ret && Math.abs(ret.getBoundingClientRect().right - (W - 24)) > 2) f.push(`« Rétablir » à ${Math.round(W - ret.getBoundingClientRect().right)} px du bord droit (24 attendus)`);
     if (ann && ret && ann.getBoundingClientRect().right > ret.getBoundingClientRect().left + 1) f.push('« Annuler » n’est pas juste avant « Rétablir »');
+    // Échelle sobre (retours du 29.10) : Annuler et Rétablir à 32 px de haut.
+    for (const b of [ann, ret]) if (b && Math.abs(b.getBoundingClientRect().height - 32) > 1) f.push(`« ${norm(b.textContent).slice(0, 30)} » à ${Math.round(b.getBoundingClientRect().height)} px de haut (32 attendus)`);
     if (photos) {
+      // La Taille dans l'en-tête de l'étape, juste à gauche d'« Annuler » et à sa hauteur (retours du 29.10, question 11).
       const t = C.taille();
       if (!t) f.push('pas de réglage « Taille »');
-      else if (Math.abs(t.getBoundingClientRect().right - (W - 24)) > 2) f.push(`« Taille » n’est pas au bout à droite de la barre d’outils (à ${Math.round(W - t.getBoundingClientRect().right)} px du bord)`);
+      else {
+        const r = t.getBoundingClientRect();
+        const a = ann?.getBoundingClientRect();
+        if (!t.closest('.entete-cadre')) f.push('« Taille » n’est pas dans l’en-tête de l’étape');
+        else if (a && (r.right > a.left + 1 || a.left - r.right > 24 || Math.abs((r.top + r.bottom) / 2 - (a.top + a.bottom) / 2) > 4))
+          f.push(`« Taille » n’est pas juste à gauche d’« Annuler » (à ${Math.round(a.left - r.right)} px, décalée de ${Math.round((r.top + r.bottom) / 2 - (a.top + a.bottom) / 2)} px)`);
+        if (/\bTaille\b/.test(norm(t.textContent))) f.push('le mot « Taille » est écrit à côté du curseur (retiré, question 11)');
+      }
     }
     const h = C.titre();
     if (!h) f.push('pas de titre d’étape (h1) à l’écran');
@@ -1561,9 +1572,9 @@ try {
     await page.evaluate(() => __c.remonter());
     await attendre(300);
     let p = null;
-    for (let k = 0; k < 16 && !p; k++) {
+    for (let k = 0; k < 32 && !p; k++) {
       p = await page.evaluate(() => __c.pointAutreGroupe());
-      if (!p)
+      if (!p && k < 16)
         // Le premier autre groupe (les groupes acceptés restent repliés au-dessus) : son haut, puis plus bas.
         await page.evaluate((k) => {
           const plein = __c.articlePlein();
@@ -1574,6 +1585,24 @@ try {
           // Son en-tête juste sous le haut de la zone, pas encore collé (un collé n'est pas « un autre groupe à l'écran »).
           z.scrollTop += a.getBoundingClientRect().top - haut - 90 + k * 25;
         }, k);
+      else if (!p)
+        // Sinon, un autre groupe : son en-tête amené en bas de la zone, au-dessus de la barre du bas, puis 30 px plus
+        // haut à chaque essai ; d'abord les groupes qui suivent le plein, puis ceux d'avant. Sous 700 px de haut, un
+        // groupe peut être presque aussi haut que la zone : un autre en-tête ne se voit alors qu'en bas, sous le groupe
+        // du plein ; amené en haut, ce groupe prend le plein (il suit le défilement) et son en-tête passe pour collé
+        // (tour 1 des retours du 29.10 : à 1280×580, la première recherche ne trouvait plus que par hasard).
+        await page.evaluate((k) => {
+          const plein = __c.articlePlein();
+          const arts = __c.articles();
+          const i = arts.indexOf(plein);
+          const autres = [...arts.slice(i + 1), ...arts.slice(0, Math.max(i, 0)).reverse()];
+          const a = autres[Math.floor(k / 4)] ?? autres[0];
+          if (!a) return;
+          const z = __c.zoneDe(a);
+          const { bas } = __c.basColles(z);
+          const h = a.querySelector(':scope > header') ?? a;
+          z.scrollTop += h.getBoundingClientRect().bottom - (bas - 8 - (k % 4) * 30);
+        }, k - 16);
       await attendre(250);
     }
     if (!p) return faute(G, `${ici} : aucun autre groupe cliquable à l’écran`);

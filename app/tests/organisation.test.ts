@@ -50,6 +50,7 @@ import {
   MOTIF_AUTO,
   MOTIF_DATE_SEULE,
   lireNommage,
+  nomIAValable,
   normaliserNom,
   outilRechercheWeb,
   requeteNommage,
@@ -202,6 +203,21 @@ describe('nommage (étape 6, script 04)', () => {
     expect(lireNommage(null)).toBeNull();
     expect(lireNommage({ nom: '???' })).toBeNull();
     expect(lireNommage({ nom: 'Ski_Verbier_02.02.25', confiance: 42 })?.confiance).toBe(10);
+  });
+
+  it('refuse une proposition qui n’est pas un nom : coordonnée, chiffres seuls, reste de JSON (règle d’or 6)', () => {
+    // Incident du 29.10 : l'IA a recopié la position reçue dans le nom proposé.
+    expect(lireNommage({ nom: 'Balade_45.7640_4.8357_09.06.25', confiance: 8 })).toBeNull();
+    expect(lireNommage({ nom: '45.8992', confiance: 8 })).toBeNull();
+    expect(nomIAValable('Annecy 45,8992 6,1294')).toBe(false);
+    expect(nomIAValable('Lyon 45° 45′ N')).toBe(false);
+    expect(nomIAValable('12_06_25')).toBe(false);
+    expect(nomIAValable('{"nom": "Paris"}')).toBe(false);
+    expect(nomIAValable(42)).toBe(false);
+    expect(nomIAValable('x'.repeat(121))).toBe(false);
+    // Les dates de la convention restent permises, même avec l'année entière.
+    expect(nomIAValable('Fete_Lea_Annecy_27-29.06.25')).toBe(true);
+    expect(lireNommage({ nom: 'Marche Lyon 09.06.2025' })?.nom).toBe('Marche_Lyon_09.06.25');
   });
 
   it('ramène les noms à la convention', () => {

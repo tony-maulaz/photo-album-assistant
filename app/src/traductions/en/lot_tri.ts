@@ -112,7 +112,6 @@ export const TEXTES: Record<string, string> = {
   "Reconnues à leur nom de fichier, à leurs dimensions d’écran et à l’absence de marque d’appareil.": "Recognised by their file name, screen dimensions and the lack of a camera brand.",
   "Sans GPS, elles sont rangées avec les photos prises juste avant ou après. Une aide IA peut proposer mieux ; son coût est affiché avant de la lancer.": "Without GPS, they are arranged with the photos taken just before or after. An AI aid can suggest better; its cost is shown before starting it.",
   "Seulement les départs lointains ; le reste devient des sorties.": "Only distant departures; the rest becomes outings.",
-  "Son nom, par exemple « Chez Mamie »": "Its name, for example “At Grandma’s”",
   "Tout le voyage dans un seul dossier": "The whole trip in one folder",
   "Toutes ses photos ensemble.": "All its photos together.",
   "Un nom enregistré sert à tous vos albums. « Pas maintenant » : l’endroit n’est plus proposé pendant cette séance. L’adresse vient d’OpenStreetMap : seule la position est envoyée.": "A saved name is used for all your albums. “Not now”: the place is no longer suggested during this session. The address comes from OpenStreetMap: only the position is sent.",

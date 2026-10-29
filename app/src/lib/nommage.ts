@@ -365,11 +365,28 @@ export interface NomPropose {
   monuments: string[];
 }
 
+/**
+ * Une proposition de nom de l'IA est-elle un nom de dossier (règle d'or 6) ? Refusées : une coordonnée
+ * (« 45.7640 », « 45° 46′ » : l'IA recopie parfois la position reçue), un texte sans mot (des chiffres seuls),
+ * un reste de JSON ou de balise, un texte trop long pour un nom. Les dates de la convention (« 09.06.25 »,
+ * « 27-29.06.25 ») restent permises.
+ */
+export function nomIAValable(brut: unknown): brut is string {
+  if (typeof brut !== 'string') return false;
+  const s = brut.trim();
+  if (!s || [...s].length > 120) return false;
+  // Une coordonnée : un nombre à 3 décimales ou plus qui ne suit pas un jour ou un mois (« 09.06.2025 » est une date).
+  if (/(?<![\d.,])\d{1,3}[.,]\d{3,}/.test(s) || /\d\s*[°º]/.test(s)) return false;
+  if (/[{}[\]<>\n\r]/.test(s)) return false;
+  return /\p{L}{2,}/u.test(s);
+}
+
 /** Réponse du nommage validée champ par champ ; `null` si aucun nom exploitable. */
 export function lireNommage(v: unknown): NomPropose | null {
   const r = premierObjet(v);
   if (!r) return null;
   const brut = texteCourt(r.nom, 200);
+  if (!nomIAValable(brut)) return null;
   const nom = normaliserNom(brut);
   if (!nom) return null;
   return {
@@ -608,8 +625,9 @@ export function nomsPossibles(plan: Plan, cibles: CibleNommage[], evts: Evenemen
       durees.push(dureeEvenement(evenement));
     }
 
+    // Lue d'un fichier (une réponse gardée d'avant cette vérification) : un nom refusé n'est pas proposé.
     const brutIA = estObjet(ia[c.dossier]) ? (ia[c.dossier] as Record<string, unknown>).nom : undefined;
-    const nomIA = typeof brutIA === 'string' && brutIA.trim() ? brutIA.trim() : null;
+    const nomIA = nomIAValable(brutIA) ? brutIA.trim() : null;
     // Le plus précis des candidats (« 18 ans de Lea » plutôt que le voyage qui l'entoure), sauf égalité parfaite.
     const exAequo = calendrier.length > 1 && Math.abs(calendrier[0].part - calendrier[1].part) < 1e-9 && durees[0] === durees[1];
     const meilleur = calendrier[0] && !calendrier[0].long && !exAequo ? calendrier[0] : null;

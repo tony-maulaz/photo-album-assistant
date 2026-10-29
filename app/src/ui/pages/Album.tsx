@@ -329,7 +329,7 @@ function PanneauPhoto({ f, fermer }: { f: FichierPlan; fermer: () => void }) {
             </button>
           )}
           <button type="button" onClick={() => appliquer(tourner(s.plan, [f.id], 90))}>
-            <Icone nom="tourner" taille={20} />
+            <Icone nom="tourner" taille={16} />
             {t`Tourner`}
           </button>
           <button type="button" onClick={() => changerAlbum({ couverture: config.couverture === f.id ? undefined : f.id })}>

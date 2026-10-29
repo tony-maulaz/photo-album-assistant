@@ -467,7 +467,7 @@ export function Comparateur({
     <div class="comparateur" role="dialog" aria-modal="true" aria-label={titre} tabIndex={-1} ref={racine} data-annulable data-presentation={presentation ?? undefined}>
       <header class="comparateur-tete">
         <button type="button" class="fermer-comparateur" onClick={fermer} title={t`Échap`}>
-          <Icone nom="croix" taille={20} />
+          <Icone nom="croix" taille={16} />
           {t`Fermer`}
         </button>
         <span class="separateur" />
@@ -497,11 +497,11 @@ export function Comparateur({
               onClick={() => setChoisie('cote')}
               title={t`Entrée : basculer`}
             >
-              <Icone nom="comparer" taille={20} />
+              <Icone nom="comparer" taille={16} />
               {t`Côte à côte`}
             </button>
             <button type="button" role="radio" aria-checked={presentation === 'une'} onClick={() => setChoisie('une')} title={t`Entrée : basculer`}>
-              <Icone nom="une" taille={20} />
+              <Icone nom="une" taille={16} />
               {t`Une à la fois`}
             </button>
           </span>
@@ -532,12 +532,12 @@ export function Comparateur({
             {/* Désactivé, le bouton garde son nom ; sa raison est écrite dans le titre, « Groupe 1 sur 5 » (C-4.7).
                 Au palier « texte agrandi », le mot cède sa place au rappel des flèches (exception nommée de C-5.2 : son nom reste dans aria-label). */}
             <button type="button" class="bouton-groupe" disabled={!navigation.precedent} aria-describedby={navigation.precedent ? undefined : 'position-groupe'} onClick={navigation.precedent} aria-label={t`Groupe précédent`} title={t`Groupe précédent (← ou Page préc.)`}>
-              <Icone nom="chevronGauche" taille={20} />
+              <Icone nom="chevronGauche" taille={16} />
               <span class="mot">{t`Groupe précédent`}</span>
             </button>
             <button type="button" class="bouton-groupe" disabled={!navigation.suivant} aria-describedby={navigation.suivant ? undefined : 'position-groupe'} onClick={navigation.suivant} aria-label={t`Groupe suivant`} title={t`Groupe suivant (→ ou Page suiv.)`}>
               <span class="mot">{t`Groupe suivant`}</span>
-              <Icone nom="chevronDroite" taille={20} />
+              <Icone nom="chevronDroite" taille={16} />
             </button>
           </>
         )}
@@ -562,19 +562,19 @@ export function Comparateur({
         <span class="espace" />
         <span class="zoom-comparer">
           <button type="button" class="carre" onClick={() => zoomer(0.8)} aria-label={t`Zoom arrière (−)`} title={t`Zoom arrière (touche −)`}>
-            <Icone nom="moins" taille={20} />
+            <Icone nom="moins" taille={16} />
           </button>
           <button type="button" onClick={() => setVue(VUE_ENTIERE)} aria-label={t`Photo entière`} title={t`Photo entière (touche 0)`}>
-            <Icone nom="entier" taille={20} />
+            <Icone nom="entier" taille={16} />
             <span class="mot">{t`Photo entière`}</span>
           </button>
           <button type="button" class="carre" onClick={() => zoomer(1.25)} aria-label={t`Zoom avant (+)`} title={t`Zoom avant (touche +)`}>
-            <Icone nom="plus" taille={20} />
+            <Icone nom="plus" taille={16} />
           </button>
         </span>
         {navigation?.accepter && (
           <button type="button" class="principal" data-action="accepter" onClick={navigation.accepter} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && e.repeat && e.preventDefault()} aria-label={navigation.lecteurAccepter} title={t`Touche A, puis groupe suivant`}>
-            <Icone nom="coche" taille={20} />
+            <Icone nom="coche" taille={16} />
             {navigation.libelleAccepter ?? t`Accepter et groupe suivant`}
           </button>
         )}

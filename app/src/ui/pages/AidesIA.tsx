@@ -234,7 +234,7 @@ function BoutonAideIA({ fonction, options, children }: { fonction: string; optio
         onClick={() => void lancer()}
         title={t`${t(a.description)} Envoyé : ${t(a.envoi)}.`}
       >
-        <Icone nom="etincelle" taille={20} />
+        <Icone nom="etincelle" taille={16} />
         <span>
           {t(a.nom)}
           <span class="cout-aide"> — {enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : texteCout(e)}</span>
