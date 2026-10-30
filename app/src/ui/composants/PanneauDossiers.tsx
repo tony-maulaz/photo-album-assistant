@@ -13,7 +13,7 @@ import { cleNom } from '../../lib/noms';
 import { dossiersNouveaux } from '../../lib/rangement';
 import { cheminDossier, estDescendant, fusionnerDossiers, gardeSaPlace, nePasToucher, renommerDossier, resumes, RACINE, supprimerDossierVide, type DossierPlan, type FichierPlan, type Modification, type Plan, type ResumeDossier } from '../../lib/plan';
 import { minutes } from '../../lib/selection';
-import { appliquer, changerReglages, evenements, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
+import { annuler, appliquer, changerReglages, evenements, notifier, reglages, session, texteErreur, versionPlan } from '../etat';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { nombre, periode, pluriel } from '../format';
 import {
@@ -391,7 +391,7 @@ async function fusionner(source: string, cible: string) {
   try {
     appliquer(fusionnerDossiers(s.plan, source, cible));
     if (vue.value === source) choisirVue(cible);
-    notifier('ok', t`« ${a.nom} » réuni dans « ${b.nom} ».`);
+    notifier('ok', t`« ${a.nom} » réuni dans « ${b.nom} ».`, { libelle: t`Annuler`, faire: annuler });
   } catch (err) {
     notifier('erreur', texteErreur(err));
   }

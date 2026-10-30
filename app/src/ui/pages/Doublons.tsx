@@ -44,7 +44,7 @@ import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { analyseEnCours, lancerAnalyseDossier, rafalesAChercher } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
 import { BarreProgression, BarreValidation, RaisonDesactivee, useDeroulant } from '../composants/Cadre';
-import { EnteteCadre, largeurFenetre, OutilsCadre, PanneauAide, useCadre, useMenuListe } from '../composants/CadreCommun';
+import { bornesFenetre, largeurFenetre, LigneEtape, OutilsCadre, PanneauAide, useCadre, useMenuListe } from '../composants/CadreCommun';
 import { Comparateur, type NavigationGroupes, type PresentationGardee } from '../composants/Comparateur';
 import { confirmer } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
@@ -237,17 +237,17 @@ function BoutonOngletSuivant() {
   );
 }
 
-/** La zone qui défile vraiment : la colonne des groupes, ou la page sous 440 px de haut. */
+/** La zone qui défile vraiment : la page entière (forme E, D112), sauf si la colonne des groupes défile d'elle-même. */
 function defileur(z: HTMLElement): HTMLElement | null {
   return getComputedStyle(z).overflowY === 'visible' ? null : z;
 }
 
-/** Ce qu'on voit de la zone des groupes : sous la tête de la table, au-dessus de la barre du bas. */
+/** Ce qu'on voit de la zone des groupes : sous la ligne de l'étape et la tête de la table (collées), au-dessus de la barre du bas. */
 function bornesVisibles(z: HTMLElement): { haut: number; bas: number } {
   const r = z.getBoundingClientRect();
   const tete = z.closest('.table-cadre')?.querySelector('.tete-table')?.getBoundingClientRect();
-  const barre = document.querySelector('.barre-validation')?.getBoundingClientRect();
-  return { haut: Math.max(r.top, 0, tete ? tete.bottom : 0), bas: Math.min(r.bottom, innerHeight, barre ? barre.top : innerHeight) };
+  const fenetre = bornesFenetre();
+  return { haut: Math.max(r.top, fenetre.haut, tete ? tete.bottom : 0), bas: Math.min(r.bottom, fenetre.bas) };
 }
 
 function entier(e: Element | null | undefined, haut: number, bas: number): boolean {
@@ -261,11 +261,15 @@ function entier(e: Element | null | undefined, haut: number, bas: number): boole
  * `commeArrivee` : sous la marge du haut, là où le premier groupe est à l'arrivée (après « Accepter »).
  */
 function amenerEnHaut(z: HTMLElement, e: Element, commeArrivee = false) {
-  const { haut } = bornesVisibles(z);
+  const zone = defileur(z);
+  // La page défile en entier (forme E) : la ligne de l'étape et la tête de la table bougent avec elle jusqu'à se
+  // coller ; on vise donc leur bas une fois collées, pas leur place du moment.
+  const tete = z.closest('.table-cadre')?.querySelector<HTMLElement>('.tete-table');
+  const ligne = document.querySelector('.ligne-etape')?.getBoundingClientRect().height ?? 0;
+  const haut = zone ? bornesVisibles(z).haut : tete ? (parseFloat(getComputedStyle(tete).top) || 0) + tete.getBoundingClientRect().height : ligne;
   const marge = commeArrivee ? parseFloat(getComputedStyle(z).paddingTop) || 0 : 0;
   const d = e.getBoundingClientRect().top - haut - marge;
   if (Math.abs(d) < 1) return;
-  const zone = defileur(z);
   if (zone) zone.scrollTop += d;
   else window.scrollBy(0, d);
 }
@@ -2152,7 +2156,7 @@ export function PageDoublons() {
     : null;
 
   // Cadre commun (lot 4, D111) : bandes fixes, seule la zone de contenu défile ; Aide « à lire » sous 1440 px.
-  const { aide, etroit, palier } = useCadre('doublons');
+  const { aide, palier } = useCadre('doublons');
   const [listeOuverte, setListeOuverte] = useState(false);
   useEffect(() => setListeOuverte(false), [onglet, palier]);
   useMenuListe(listeOuverte, () => setListeOuverte(false));
@@ -2196,8 +2200,6 @@ export function PageDoublons() {
       <p>{t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}</p>
     </>
   );
-  const consigne =
-    onglet === 'copies' ? t`Gardez un exemplaire, puis « Accepter ».` : onglet === 'mis_de_cote' ? t`Un clic remet une photo à sa place.` : t`Cliquez la photo à garder, puis « Accepter ».`;
   const seul = (contenu: ComponentChildren) => (
     <>
       <OutilsCadre>{onglets}</OutilsCadre>
@@ -2211,12 +2213,18 @@ export function PageDoublons() {
         class="page-cadre page-doublons"
         data-gabarit="photos"
         data-palier={palier ? '' : undefined}
-        data-etroit={etroit ? '' : undefined}
         data-aide={aide ? '' : undefined}
         data-liste={listeOuverte ? 'ouverte' : undefined}
         style={styleLargeurPanneau()}
       >
-        <EnteteCadre titre={nomEtape(ETAPE.doublons)} consigne={consigne} />
+        {/* Forme E (D112) : la ligne de l'étape reste en haut ; les onglets partent avec la page, l'onglet affiché
+            reste écrit dans la ligne (« Rafales ▾ »), on en change sans remonter. */}
+        <LigneEtape
+          titre={nomEtape(ETAPE.doublons)}
+          aide={{ cle: 'doublons', colonne: true }}
+          taille
+          vue={{ nom: t`Sortes de doublons`, choix: ONGLETS.map(([o, nom]) => ({ cle: o, libelle: nom })), actuelle: onglet, choisir: (o) => choisirOnglet(s.projet.nom, o as Onglet) }}
+        />
 
         {/* L'analyse en cours et la recherche des rafales (avec « Arrêter ») : une bande sous la barre d'outils. */}
         <div class="bande-analyse">

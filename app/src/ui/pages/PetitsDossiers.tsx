@@ -33,8 +33,8 @@ import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { enParallele } from '../../navigateur/workers';
-import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
-import { CurseurTaille } from '../composants/CadreCommun';
+import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Miniature } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { Visionneuse } from '../composants/Visionneuse';
@@ -461,9 +461,10 @@ export function PagePetitsDossiers() {
 
   return (
     <div class="page large avec-barre page-petits">
-      <TeteEtape numero={ETAPE.petits} titre={nomEtape(ETAPE.petits)} cle="petits" outils={<CurseurTaille vraie={(v) => Math.round(v * 0.6)} />}>
+      <LigneEtape titre={nomEtape(ETAPE.petits)} aide={{ cle: 'petits' }} taille={(v) => Math.round(v * 0.6)} />
+      <AideEtape cle="petits">
         {t`Le tri a laissé quelques photos seules dans de petits dossiers (un arrêt en route, une photo sans position). Pour chacun, vous voyez les photos prises juste avant et juste après : mettez-le avec le bon dossier, ou gardez-le seul.`}
-      </TeteEtape>
+      </AideEtape>
       <AideIA fonction="IA3" />
       {(listeEvidents.length > 0 || surs.length > 0) && (
         <div class="actions bandeau-petits">

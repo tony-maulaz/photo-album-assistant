@@ -13,9 +13,10 @@
 
 .liste-petits {
   position: sticky;
-  top: 72px;
+  /* Sous la ligne de l'étape, collée en haut (forme E, D112), jusqu'au-dessus de la barre du bas. */
+  top: calc(var(--h-ligne-etape) + var(--e3));
   flex: 0 0 240px;
-  max-height: calc(100vh - 220px);
+  max-height: calc(var(--haut-visible) - var(--e5));
   overflow-y: auto;
   padding: 10px;
   border: 1px solid var(--filet);

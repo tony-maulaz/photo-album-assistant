@@ -29,16 +29,17 @@ incohérents**.
 | Aller à une étape | clic sur un des 13 rectangles de la frise ; état et nom seulement en infobulle | I/B | Cadre.tsx:76-87 |
 | Liste des étapes avec leur état | « Étape n sur 13 · Nom ▾ » → menu déroulant | V | Cadre.tsx:89-111 |
 | Budget IA dépensé | pastille à anneau « IA x / y CHF », détail en infobulle ; **pas cliquable** (l'infobulle renvoie au Journal) | V/B | Cadre.tsx:185-192 |
-| Menu (icône et mot « Menu ») : Fonctions IA, Configuration, Réglages, Journal (projet ouvert), Aide, Fermer le projet | bouton « Menu » | I | Cadre.tsx:117-164 |
-| Annuler la dernière modification | Ctrl+Z (pages d'étape seulement, **pas quand une fenêtre est ouverte** ; lot 4, tour 3 : sur les pages passées au cadre, seulement un geste de l'étape affichée, sinon un message nomme l'étape — `annulerIci`) | C | Raccourcis.tsx, CadreCommun.tsx |
+| Menu (icône et mot « Menu ») : Fonctions IA, Configuration, Réglages, Journal (projet ouvert), Aide, Fermer le projet | bouton « Menu » : sur les 13 étapes, au bout de la ligne de l'étape (forme E, D112) ; hors étapes, dans la barre de l'application | I | Cadre.tsx:117-164, CadreCommun.tsx (`LigneEtape`) |
+| Annuler la dernière modification | Ctrl+Z (pages d'étape seulement, **pas quand une fenêtre est ouverte** ; sur les 13 étapes (forme E, D112 ; avant : pages du cadre commun seulement), seulement un geste de l'étape affichée, sinon « Rien à annuler ici » nomme l'étape avec « Y aller » — `annulerIci`) | C | Raccourcis.tsx, CadreCommun.tsx |
 | Rétablir | Ctrl+Y ou Ctrl+Maj+Z (mêmes limites) | C | idem |
+| Revenir en haut de la page (barre du projet, frise, onglets) | touche Origine (hors champ, curseur, menu) ; ou remonter la page (forme E, D112) | C | Raccourcis.tsx |
 | Liste des raccourcis | touche « ? » ; **aucun bouton** ne l'ouvre (seule la page Aide le dit) | C | Raccourcis.tsx:397, 484 |
 | Fermer menu / fenêtre | Échap, clic à côté | C/G | Cadre.tsx:15-34 |
 | Précédent du navigateur | reste dans l'application | G | navigation.ts |
 | Bandeau « le dossier à trier a changé » | « Mettre à jour l'inventaire » / « Plus tard » | V | BandeauSource.tsx |
-| Annuler depuis une notification | bouton « Annuler » dans le message (Lieux, Doublons, Petits, Consolidation, Nommage, Tri, Album, Floues) | T | etat.ts, organiser.ts:110 |
+| Annuler depuis un message | forme E (D112) : plus de bouton dans le message ; il finit par « ↶ ou Ctrl+Z pour l'annuler » (↶ de la ligne le défait) ; un message venu d'une autre étape garde le lien « Y aller » | T | CadreCommun.tsx (`MessageLigne`), etat.ts |
 | Revenir / Valider et continuer | barre du bas, à droite, libellé variable selon la page ; lot 4 : « Valider et continuer » au même pixel sur toutes les pages (barre de 64 px à 1440×900, 56 px en dessous) | V | Cadre.tsx:244-283 |
-| **Cadre commun (lot 4, pages passées : Sélection, Doublons)** : Aide dans la barre de l'application, juste avant Menu, « à lire » tant qu'elle n'a pas été ouverte (sous 1440 px, elle ne s'ouvre pas seule) ; colonne de l'Aide (320 / 304 px) avec « Fermer » et Échap, « Tout le mode d'emploi » ; « Annuler » et « Rétablir » à droite de l'en-tête d'étape, leur libellé suit chaque geste (corrigé au tour 1 des contrôles : il restait figé) ; le bouton ne défait qu'un geste de l'étape affichée, sinon « Rien à annuler ici » avec l'étape en infobulle (tour 2, choix 6 A) ; **Ctrl+Z et Ctrl+Y suivent la même règle sur ces pages** (tour 3 : ils disent « Rien à annuler ici. Votre dernier changement est à l'étape N, … » au lieu de défaire sans le montrer un geste d'une autre étape ; rien n'est perdu : le geste s'annule à son étape, ou par le lien « Annuler » de son message ; « Y aller » au sous-lot 4a2 ; un libellé d'historique reste en français après un changement de langue) ; « Rien à rétablir ici » de même ; le message passager s'écrit dans l'en-tête, à la place de la consigne (la bulle revient dans une vue en grand ou un dialogue ; son « Annuler » est celui de l'en-tête, sauf pour un message venu d'une autre étape, qui garde le sien, tour 3 ; la zone `role=status` reste dans l'arbre d'accessibilité, même vide) ; un clic à la souris sur une décision ou un outil de la Sélection ou du Recadreur laisse le focus où il était ; Taille des photos dans l'en-tête d'étape, juste à gauche d'« Annuler » : une petite photo, un curseur gris de 12 crans, une grande photo (chaque photo est un bouton d'un cran ; ← → au clavier ; 100 à 600 px, le même réglage que Réglages ; sans le mot « Taille », retours du 29.10 ; piste de 96 px au palier) ; au palier (1180 px de large ou moins), la liste de gauche devient un menu dans la tête de la table (ouvert, il prend le focus ; Échap ou un clic à côté le ferment et rendent le focus à son bouton) ; sous 440 px de haut, la page défile en entier | barre de l'application, en-tête d'étape, barre d'outils | V | CadreCommun.tsx, App.tsx (`data-cadre`) |
+| **Ligne de l'étape (forme E, D112, sur les 13 étapes)** : la page entière défile, avec une seule barre de défilement ; la barre du projet (logo, nom, frise, « Étape n sur 13 ▾ », compteur IA) et la barre d'outils (onglets, filtres) partent avec elle (touche Origine pour les retrouver) ; la ligne de l'étape reste collée en haut : titre, vue en cours en petit menu écrit quand les onglets ou les filtres sont partis (« Rafales ▾ » à Doublons, « Toutes ▾ » à Sélection, « À nommer ▾ » à Nommage ; on change de vue sans remonter), message passager (deux lignes au plus, ce qui s'est passé en gras), Taille des photos (place vide gardée sur une page qui n'en a pas), ↶ ↷ en icônes seules (le geste dans l'infobulle et le nom lu, Ctrl+Z / Ctrl+Y ; « Rien à annuler ici », grisé, quand le dernier geste est à une autre étape), Aide (« à lire » tant qu'elle n'a pas été ouverte) et Menu ; ↶ au même pixel sur chaque page. La phrase de consigne de chaque étape est dans son Aide (ouverte à la première visite, puis rouverte par « Aide »). **Cadre commun (lot 4, pages passées : Sélection, Doublons)** : colonne de l'Aide (320 / 304 px) avec « Fermer » et Échap, « Tout le mode d'emploi » ; liste de gauche, panneau de droite, Aide et têtes de table collés sous la ligne de l'étape ; un clic à la souris sur une décision ou un outil de la Sélection ou du Recadreur laisse le focus où il était ; Taille des photos : une petite photo, un curseur gris de 12 crans, une grande photo (chaque photo est un bouton d'un cran ; ← → au clavier ; 100 à 600 px, le même réglage que Réglages ; piste de 96 px au palier) ; au palier (1180 px de large ou moins), la liste de gauche devient un menu dans la tête de la table (ouvert, il prend le focus ; Échap ou un clic à côté le ferment et rendent le focus à son bouton) | ligne de l'étape, barre d'outils | V/I | CadreCommun.tsx, App.tsx (`data-ligne`, `data-cadre`) |
 
 ## 1. Écran « Reprendre » (au lancement)
 
@@ -81,6 +82,7 @@ incohérents**.
 | Aller à Configuration / Réglages | liens dans l'encart | V |
 | Changer nom, contexte, budget | champs (enregistrés à la sortie du champ) | V |
 | Continuer | barre du bas ; **pas de « Revenir »** | V |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 
 ## 5. Configuration (menu ☰, et liens depuis les étapes 1, 2, 6, 10)
 
@@ -119,7 +121,7 @@ incohérents**.
 | Fonction | Accès | Vu |
 |---|---|---|
 | Lancer / arrêter l'inventaire | boutons (pendant le calcul) | V |
-| Mettre à jour l'inventaire (photos arrivées depuis) | lien à droite du titre (à la place où d'autres pages ont la loupe) | V |
+| Mettre à jour l'inventaire (photos arrivées depuis) | lien sous la ligne de l'étape, au début de la page (forme E) | V |
 | Dossier déjà trié : sauter vers Doublons, Lieux, Nommage, Sélection | 4 boutons dans un encart | V |
 | Enregistrer un appareil dans la configuration | lien « Enregistrer » | V |
 | Mesurer le décalage d'horloge entre deux appareils, l'enregistrer | lien + bouton | V/B |
@@ -127,15 +129,15 @@ incohérents**.
 | Choisir ou créer le dossier de configuration sur place | lien → bloc ChoixConfiguration | V |
 | Photos par mois | histogramme, nombre en infobulle | B |
 | Refaire l'inventaire (perd l'arborescence, les noms, la sélection) | « Repartir de zéro » replié → bouton rouge + confirmation | V |
-| Explication repliable | **absente** (pas de bouton Aide sur cette page) | — |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 | Valider (grisé pendant l'analyse, le résumé dit pourquoi) | barre du bas | V |
 
 ## 8. Étape 3 « Dossiers »
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | « Replier » / « Aide » collé au titre | V |
-| Taille des photos (×0,6, n'agit que sur la ligne ouverte) | curseur à deux photos (petite et grande) à droite du titre | I |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
+| Taille des photos (×0,6, n'agit que sur la ligne ouverte) | curseur à deux photos (petite et grande) dans la ligne de l'étape | I |
 | Chercher un dossier (aussi par le nom d'un sous-dossier) | champ | V |
 | Ordre par nom / par période | liste | V |
 | Même choix pour tous les dossiers affichés | « Pour tous : Trier / Garder, nettoyer / Ne pas toucher » | V |
@@ -151,11 +153,11 @@ incohérents**.
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 | Tolérance au flou (plus tolérant ↔ plus strict), valeur en infobulle | curseur | V/B |
 | Revenir au réglage conseillé | lien (grisé s'il l'est déjà) | V |
 | Voir toutes les photos / seulement celles qui seront écartées | liste | V |
-| Annuler (historique **global**, toutes étapes) ; Rétablir | « Annuler : *le geste* » (verbe et nombre, une ligne ; le geste avec ses noms en infobulle) et « Rétablir », dans l'en-tête de l'étape (lot 2 de la charte) | V/C |
+| Annuler un geste de l'étape ; Rétablir | ↶ ↷ de la ligne de l'étape, en icônes (« Annuler : *le geste* » dans l'infobulle et le nom lu), Ctrl+Z / Ctrl+Y (forme E) | I/C |
 | Faire juger les cas limites par l'IA (IA1), suivre son avis | bouton IA + bouton « Suivre l'avis… » | V |
 | Sélectionner : clic, Ctrl+clic, Maj+clic, rectangle, flèches | souris/clavier | G/C |
 | Sauver / Écarter / Selon le curseur / désélectionner | barre noire flottante en bas, touches S, X ou Suppr, Échap | V/C |
@@ -166,17 +168,17 @@ incohérents**.
 
 ## 10. Étape 5 « Doublons »
 
-Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : bandes fixes, seule la zone des groupes (et la liste de gauche) défile.
+Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; forme E (D112) : la page entière défile, la ligne de l'étape reste collée en haut, la liste de gauche, la tête de la table et l'en-tête du groupe (avec « Accepter ») se collent dessous.
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Explication de l'étape et de l'onglet, rappel des clics et du clavier, « Vos photos d'origine ne bougent pas » | lot 4 : « Aide » dans la barre de l'application (« à lire » sous 1440 px), colonne de l'Aide | V |
+| Explication de l'étape et de l'onglet, rappel des clics et du clavier, « Vos photos d'origine ne bougent pas » | « Aide » dans la ligne de l'étape (« à lire » sous 1440 px), colonne de l'Aide | V |
 | Onglets Copies exactes / Rafales / Même scène (IA) / Mis de côté, avec ce qui reste à accepter (dessous) | lot 4 : barre d'outils ; « Acceptés : x sur y » dans l'infobulle du menu de l'onglet | V/B |
 | Tout l'onglet (copies) : Accepter les N propositions, Garder tous les exemplaires | lot 4 : menu « Toutes les copies ▾ » de la barre d'outils | V |
 | Tout l'onglet (rafales) : Choisir avec l'IA dans N rafales (IA16, prix sur la ligne) | lot 4 : menu « ✦ Toutes les rafales ▾ » de la barre d'outils | V |
 | Afficher À accepter / Acceptés / Tous (« Tous » par défaut, C-4.8) | lot 4 : haut de la liste de gauche (au palier, dans son menu) | V |
 | Grouper par journée / mois / dossier | lot 4 : « Grouper et classer », replié en haut de la liste de gauche (ouvert d'office par dossier ou par taille ; il reste ouvert quand on revient à « par journée » ; une ligne par réglage, le mot devant sa liste) | V |
-| Taille des photos | curseur à deux photos dans l'en-tête d'étape, juste à gauche d'« Annuler » (retours du 29.10) ; au palier, les photos font les trois quarts du réglage (160 → 120 px) | V |
+| Taille des photos | curseur à deux photos dans la ligne de l'étape, juste à gauche de ↶ (retours du 29.10) ; au palier, les photos font les trois quarts du réglage (160 → 120 px) | V |
 | Classer par heure / plus grands groupes d'abord | lot 4 : « Grouper et classer », replié en haut de la liste de gauche | V |
 | Liste de gauche : choisir une journée ou un dossier, ✓ ou nombre restant, chercher un dossier (Entrée = premier trouvé) | colonne de gauche ; lot 4, au palier : menu de la tête de la table (le même composant), qui porte le nom de la section et ce qui y reste | V |
 | Élargir la liste de gauche, double-clic = largeur d'origine | poignée sur le bord | G/B |
@@ -197,14 +199,14 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Même scène : Prudent / Strict, Analyser avec l'IA (coût dans le bouton), Arrêter | encart (lot 4 : dans la zone qui défile ; l'analyse en cours sous la barre d'outils) | V |
 | Réglages avancés IA : modèle, redemander les réponses illisibles | replié | V |
 | Mis de côté : Grouper (haut de la liste de gauche), taille (barre d'outils), Tout remettre (N) (tête de la table), clic = remettre / écarter de nouveau ; plein vers le prochain onglet qui reste à accepter | onglet (« Mis de côté », avec « N photos » dessous) | V |
-| Annuler : *le geste* / Rétablir | lot 4 : à droite de l'en-tête d'étape (avant : notification ou Ctrl+Z seulement) ; après « Accepter », le message « N photos écartées : dans « Mis de côté » » s'écrit dans l'en-tête (compté avant le geste : il disait « 0 photo écartée » au tour 2) et le groupe suivant vient en haut de la zone, sa bande « À garder » entière ; le focus (s'il était dans la table) va sur la photo gardée de ce groupe, pas sur son plein : → et Espace y gardent leur sens (tour 3) ; une annulation qui rouvre un groupe lui rend le plein et le montre en haut de la zone (tour 3) ; « Tout garder », « Tout écarter », la section et l'onglet passent par la même garde de 0,5 s (un double-clic sur « Tout garder » n'accepte plus le groupe suivant, tour 3) | V/C |
+| Annuler : *le geste* / Rétablir | ↶ ↷ de la ligne de l'étape (avant le lot 4 : notification ou Ctrl+Z seulement) ; après « Accepter », le message « N photos écartées : dans « Mis de côté » » s'écrit dans la ligne de l'étape, suivi de « ↶ ou Ctrl+Z pour l'annuler » (compté avant le geste : il disait « 0 photo écartée » au tour 2) et le groupe suivant vient en haut de la zone, sa bande « À garder » entière ; le focus (s'il était dans la table) va sur la photo gardée de ce groupe, pas sur son plein : → et Espace y gardent leur sens (tour 3) ; une annulation qui rouvre un groupe lui rend le plein et le montre en haut de la zone (tour 3) ; « Tout garder », « Tout écarter », la section et l'onglet passent par la même garde de 0,5 s (un double-clic sur « Tout garder » n'accepte plus le groupe suivant, tour 3) | V/C |
 
 ## 11. Étape 6 « Tri automatique » (refaite par D107, relevée pour cohérence)
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
-| Taille des photos (×0,6) | curseur à deux photos (petite et grande) à droite du titre | I |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
+| Taille des photos (×0,6) | curseur à deux photos (petite et grande) dans la ligne de l'étape | I |
 | Maison : Changer (→ page Configuration, sans retour) / L'indiquer… | liste « À faire » | V |
 | Copies en double : Voir (→ étape Doublons), Mettre de côté | liste « À faire » | V |
 | Captures d'écran : Voir (fenêtre : cocher, agrandir, voir toutes, ranger / garder), Ranger dans leur dossier | liste « À faire » + Fenetre | V |
@@ -220,7 +222,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Explication : « Replier » en haut à droite (1re visite), puis « Aide » au bout de la barre de la vue | 2 places différentes | V |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte tant que l'arborescence n'est pas calculée), « Fermer » la replie | V |
 | Aller au tri automatique (arborescence pas calculée) | bouton dans l'explication | V |
 | Panneau : chercher (aussi par événement du calendrier) | champ | V |
 | Panneau : ordre par nom / période / taille | liste | V |
@@ -240,8 +242,8 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Toute la journée / Toute l'heure de la dernière photo cliquée | barre | V |
 | Sélection : clic, Ctrl, Maj, rectangle, flèches (+Maj), Ctrl+A, Échap | souris/clavier | G/C |
 | Chemin du dossier : remonter à un parent | liens au-dessus du titre | V |
-| « Annuler : *le geste* » (infobulle : le geste avec ses noms) / « Rétablir » (icône et mot) | barre de la vue | V/I |
-| Taille des photos | curseur à deux photos (petite et grande) dans la barre de la vue (absente en ligne de temps et Autres fichiers) | I |
+| ↶ ↷ (« Annuler : *le geste* » dans l'infobulle et le nom lu) | ligne de l'étape (forme E) | I/C |
+| Taille des photos | curseur à deux photos (petite et grande) dans la ligne de l'étape (absente en ligne de temps et Autres fichiers) | I |
 | Vue Photos / Ligne de temps ; clic sur une barre = ouvrir le dossier | bascule | V |
 | Mis de côté, Autres fichiers | lignes spéciales du panneau | V |
 | Élargir le panneau | poignée | G/B |
@@ -251,14 +253,14 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
-| Taille des photos (centre ×1, côtés ×0,6) | curseur à deux photos (petite et grande) à droite du titre | I |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
+| Taille des photos (centre ×1, côtés ×0,6) | curseur à deux photos (petite et grande) dans la ligne de l'étape | I |
 | Proposer un rattachement avec l'IA (IA3) | bouton IA | V |
 | Petits dossiers à moins d'1 h et 10 km : les voir (fenêtre : Retirer / Remettre, Mettre les N avec leur dossier, Fermer) | bouton plein | V |
 | Accepter les propositions sûres de l'IA (8/10 et plus) | bouton | V |
 | Choisir un petit dossier | liste « Dans l'ordre du temps » | V |
 | Mettre avec le dossier d'avant / d'après | boutons « Mettre avec ce dossier » avec chevrons SVG, touches ← → | V/C |
-| Garder seul | bouton, touche G ; « Annuler » dans la notification, Ctrl+Z et « Annuler » de l'historique (retours du 29.10) | V/C/T |
+| Garder seul | bouton, touche G ; message « Gardé seul. » qui finit par « ↶ ou Ctrl+Z pour l'annuler », ↶ de la ligne de l'étape, Ctrl+Z et « Annuler » de l'historique (retours du 29.10) | V/C/T |
 | Le renommer « … » (nom proposé par l'IA) | bouton | V |
 | Autre dossier… | lien → fenêtre de choix (recherche, ↑↓ Entrée, Annuler) | V |
 | Annuler ce choix (rattaché ou gardé seul) | bouton dans l'encart | V |
@@ -270,7 +272,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 | Tous les dossiers (pas seulement les noms automatiques) | case | V |
 | Recherche web (cochée par défaut, plus chère) | case | V |
 | Nommer les sorties avec l'IA (IA4), coût dans le bouton | bouton IA | V |
@@ -289,8 +291,8 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
-| Taille des photos (×0,6, au moins 96 px) | curseur à deux photos (petite et grande) à droite du titre | I |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
+| Taille des photos (×0,6, au moins 96 px) | curseur à deux photos (petite et grande) dans la ligne de l'étape | I |
 | Sortie coupée : écart de temps (1 h, 3 h, 6 h, la journée) et distance (1, 2, 4, 10, 20 km) | 2 boutons segmentés | V |
 | Week-ends et petits voyages (case) jusqu'à 3 j / 4 j / 1 sem. / 2 sem. | case + segmenté | V |
 | Indiquer le domicile dans la Configuration | lien (sans domicile) | V |
@@ -313,11 +315,12 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Explication | lot 4 : « Aide » dans la barre de l'application (« à lire »), colonne de l'Aide | V |
+| Explication (dont « Cliquez une photo, puis « Dans l'album ». ») | « Aide » dans la ligne de l'étape (« à lire »), colonne de l'Aide | V |
 | Tri rapide (plein écran, une photo à la fois) | bouton « Tri rapide » de la tête de la table (lot 4 : le plein quand aucune photo choisie n'attend « Dans l'album »), T ou Entrée, **double-clic sur une photo** | V/C/G |
-| Annuler (historique global) : « Annuler : *le geste* », infobulle avec les noms | bouton | V/C |
-| Rétablir | bouton « Rétablir » à côté d'« Annuler », Ctrl+Y | V/C |
-| Taille des photos | curseur à deux photos dans l'en-tête d'étape, juste à gauche d'« Annuler » (retours du 29.10) | V |
+| Annuler un geste de l'étape : ↶ de la ligne (« Annuler : *le geste* » dans l'infobulle), Ctrl+Z | icône | I/C |
+| Rétablir | ↷ à côté de ↶, Ctrl+Y | I/C |
+| Taille des photos | curseur à deux photos dans la ligne de l'étape, juste à gauche de ↶ (retours du 29.10) | V |
+| Vue en cours (Toutes, Choisies, …) quand les filtres sont partis avec la page | petit menu écrit dans la ligne de l'étape (« Toutes ▾ ») | V |
 | Filtrer : Toutes / À décider / Dans l'album / Pas pour l'album (avec compteurs) | lot 4 : pastilles après « Afficher : » dans la barre d'outils | V |
 | Filtrer : ★★ Grandes, Nouvelles | lot 4 : pastilles de « Filtres ▾ » (tête de la table) | V |
 | Empiler les photos semblables ; déplier une pile | lot 4 : case « Ranger les presque pareilles en pile » de « Filtres ▾ » ; badge au bout de la bande | V/I |
@@ -351,7 +354,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Fonction | Accès | Vu |
 |---|---|---|
-| Replier / rouvrir l'explication | bouton collé au titre | V |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 | Ordre (par journée puis sortie / chronologique) | liste | V |
 | Photos par page ; chaque section sur une nouvelle page ; cible (pages) | champs | V |
 | Un sous-dossier par section dans « Album » | « Réglages avancés » | V |
@@ -376,7 +379,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | Mettre à jour l'inventaire (si la source a changé) | lien dans le bilan | V |
 | Ouvrir le rapport | bouton | V |
 | Vérifier à nouveau | barre du bas (après écriture) | V |
-| Explication repliable | **absente** | — |
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 
 ---
 
@@ -386,8 +389,8 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 |---|---|---|
 | **Recadrer / redresser** | Sélection : barre flottante (1 photo) et touche K | Tri rapide (vue en grand), Comparateur, Album (qui sait tourner), visionneuse des autres étapes |
 | **Tourner** | Sélection (↻, R), Tri rapide (R), Album (« Tourner ») | Comparateur, visionneuse de l'étape 7 ; la grille de l'étape 7 n'affiche même pas la rotation décidée à l'étape 11 (`GrillePhotos.tsx:318` : rotation seulement si la page passe des badges) |
-| **Bouton « Annuler : … »** | Floues (en-tête d'étape), Lieux, Sélection | Doublons, Petits dossiers, Nommage, Consolidation, Album, Tri (notification ou Ctrl+Z seulement) |
-| **Bouton Rétablir** | Floues, Lieux, Sélection (icône et mot) | partout ailleurs (Ctrl+Y) |
+| **Bouton « Annuler : … »** | ↶ de la ligne de l'étape, sur les 13 étapes (forme E, D112) | — (corrigé) |
+| **Bouton Rétablir** | ↷ de la ligne de l'étape, sur les 13 étapes (forme E, D112 ; icône seule, « Rétablir » dans l'infobulle et le nom lu) ; Comparer en grand et Recadreur (icône et mot) ; Ctrl+Y | — (corrigé) |
 | **Ctrl+Z** | pages d'étape | Tri rapide, Comparateur, Recadreur, Fenetre (rien ne se passe) |
 | **Voir en grand** | Dossiers, Floues, Lieux, Petits (centre), Consolidation, captures | Sélection (le double-clic ouvre le Tri rapide), Nommage, Album, Doublons (seulement « Comparer en grand ») |
 | **Boutons dans la vue en grand** | Tri rapide (8 boutons) | Visionneuse (aucun : M, Suppr seulement au clavier) |
@@ -395,7 +398,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 | **Taille des photos** | Dossiers, Doublons, Tri, Lieux, Petits, Consolidation, Sélection, Réglages | Floues, Nommage, Album, ligne de temps, onglet Rafales vide |
 | **Ctrl+A** | Lieux, Sélection | Floues |
 | **Liste des raccourcis « ? »** | Floues, Lieux, Doublons, Sélection | Dossiers, Tri, Petits, Nommage, Consolidation, Album (alors que Petits et Consolidation ont des touches) |
-| **Explication repliable** | étapes 3 à 12 | Inventaire, Sortie, étape 1 |
+| **Explication repliable** | « Aide » de la ligne de l'étape, sur les 13 étapes (forme E, D112) | — (corrigé) |
 | **← Retour** | Réglages, Journal, Fonctions IA, Aide | Configuration (où mènent pourtant les étapes 1, 2, 6, 10) |
 | **Chercher un dossier** | Lieux, Sélection, Dossiers, Doublons | listes de Petits et Consolidation |
 | **Clic sur le budget IA → Journal** | annoncé dans l'infobulle | pas cliquable |
@@ -406,8 +409,8 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) : 
 
 | Doublon | Variantes | Problème |
 |---|---|---|
-| **« Annuler »** | (1) bouton Annuler des étapes 4, 7, 11 = dernière action **de n'importe quelle étape** ; (2) Ctrl+Z, idem, mais muet dans les fenêtres plein écran ; (3) « Annuler » des notifications = même historique, sauf à Petits dossiers « Gardé seul » où il défait autre chose (hors historique) ; (4) « Annuler ce choix » (Petits, Consolidation) = défait un élément précis ; (5) « Défaire » (Consolidation) ; (6) « Annuler » des fenêtres (Recadreur, confirmation, Autre dossier…, noms en attente) = fermer sans rien faire ; (7) « Annuler les changements » (Configuration) = oublier le brouillon | même mot pour « défaire » et « fermer » (anti-modèle 3) ; l'utilisateur ne sait ni quoi ni sur quelle étape |
-| **Aide** | bouton « Replier »/« Aide » collé au titre (étapes 3-6, 8-10, 12) ; « Replier » en haut à droite puis « Aide » en bout de barre (7, 11) ; touche « ? » (raccourcis, aucun bouton) ; menu ☰ → Aide ; lignes grises « Clavier : … » (Doublons, Petits, Consolidation) ; infobulles | 4 places, 2 libellés, contenus différents |
+| **« Annuler »** | (1) ↶ de la ligne de l'étape (13 étapes, forme E) = dernier geste **de l'étape affichée** (sinon « Rien à annuler ici » et « Y aller ») ; (2) Ctrl+Z, idem, mais muet dans les fenêtres plein écran ; (3) le rappel « ↶ ou Ctrl+Z pour l'annuler » qui finit chaque message après un geste de la page (même historique) ; un message venu d'une autre étape commence par son nom et porte « Y aller », qui y mène ; (4) « Annuler ce choix » (Petits, Consolidation) = défait un élément précis ; (5) « Défaire » (Consolidation) ; (6) « Annuler » des fenêtres (Recadreur, confirmation, Autre dossier…, noms en attente) = fermer sans rien faire ; (7) « Annuler les changements » (Configuration) = oublier le brouillon | même mot pour « défaire » et « fermer » (anti-modèle 3) ; l'utilisateur ne sait ni quoi ni sur quelle étape |
+| **Aide** | forme E (D112) : « Aide » dans la ligne de l'étape sur les 13 étapes (ci-après, l'état relevé avant) ; bouton « Replier »/« Aide » collé au titre (étapes 3-6, 8-10, 12) ; « Replier » en haut à droite puis « Aide » en bout de barre (7, 11) ; touche « ? » (raccourcis, aucun bouton) ; menu ☰ → Aide ; lignes grises « Clavier : … » (Doublons, Petits, Consolidation) ; infobulles | 4 places, 2 libellés, contenus différents |
 | **Taille des photos** | composant `CurseurTaille` (3, 5, 6, 8, 10) ; curseur recopié à la main (7, 11, infobulles différentes) ; curseur de Réglages ; facteur 0,6 aux étapes 3, 6, 8, 10 | même position du curseur = tailles différentes selon la page |
 | **Vue en grand** | Visionneuse (aucun bouton, M/Suppr) ; Tri rapide (boutons de choix, R) ; Comparateur « une à une » ; « Comparer en grand » (Doublons) | quatre visionneuses, quatre jeux de touches ; Comparer : ↑ ↓ photo, ← → groupe, alors que la visionneuse et le Tri rapide gardent ← → pour la photo (touche à deux sens, à aligner au lot 4) |
 | **Explication** | `TeteEtape` (bouton dans le titre) ; `EnteteEtape` + `BoutonAide` (7, 11) | deux mécanismes, deux places |

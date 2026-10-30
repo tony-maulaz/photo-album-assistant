@@ -1,5 +1,6 @@
 // Raccourcis clavier communs à toutes les pages : Ctrl+Z annule, Ctrl+Y (ou
-// Ctrl+Maj+Z) rétablit, « ? » affiche la liste des raccourcis. Un seul
+// Ctrl+Maj+Z) rétablit, Origine remonte en haut de la page (barre du projet,
+// onglets), « ? » affiche la liste des raccourcis. Un seul
 // gestionnaire, posé avant tous les autres : les pages qui écoutaient déjà
 // Ctrl+Z ne le reçoivent plus, rien n'est donc annulé deux fois.
 
@@ -40,6 +41,16 @@ export function installerRaccourcis() {
   window.addEventListener(
     'keydown',
     (e) => {
+      // Origine : la barre du projet, la frise et les onglets sont partis avec la page (forme E, D112) ; la touche
+      // les ramène, sauf dans un champ, un curseur ou une liste qui s'en sert (son premier élément).
+      if (e.key === 'Home' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && !e.defaultPrevented) {
+        const cible = e.target as HTMLElement | null;
+        if (cible?.closest?.('input, select, textarea, [contenteditable="true"], [role="menu"], [role="listbox"]')) return;
+        if (document.querySelector('[role="dialog"], .comparateur, .visionneuse, .tri-rapide, .recadreur')) return;
+        window.scrollTo(0, 0);
+        e.preventDefault();
+        return;
+      }
       const action = actionClavier(e);
       if (!action || e.defaultPrevented || estChampDeSaisie(e.target) || fenetreOuverte(action)) return;
       if (action === 'raccourcis') raccourcisOuverts.value = true;
@@ -47,7 +58,7 @@ export function installerRaccourcis() {
         const s = session.value;
         // Sur les pages d'étape seulement : ailleurs, rien de ce qu'on voit ne changerait.
         if (page.value.nom !== 'etape' || !s) return;
-        // Sur une page passée au cadre, la règle du bouton de l'en-tête (choix 6 A) ; ailleurs, globale.
+        // La règle de ↶ ↷ de la ligne de l'étape (choix 6 A, sur les 13 étapes) : rien d'une autre étape.
         if (action === 'annuler') annulerIci();
         else retablirIci();
       }
@@ -67,6 +78,7 @@ const LT = (touche: string, effet: string): Ligne => [touche, effet, true];
 const COMMUNS: Ligne[] = [
   L('Ctrl+Z', aTraduire('Annuler la dernière modification (pages des étapes)')),
   LT(aTraduire('Ctrl+Y ou Ctrl+Maj+Z'), aTraduire('Rétablir ce qui a été annulé')),
+  LT(aTraduire('Origine'), aTraduire('Revenir en haut de la page : frise des étapes, budget de l’IA, onglets')),
   L('?', aTraduire('Afficher cette liste')),
   LT(aTraduire('Échap'), aTraduire('Fermer une fenêtre, désélectionner')),
 ];

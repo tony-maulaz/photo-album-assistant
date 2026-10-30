@@ -41,9 +41,9 @@ import { defaireReunion, rangerEnVoyage, reunionEnPlace, reunirEnUn, type Reunio
 import { estDossierMois } from '../../lib/tri';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
-import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
+import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
 import { Icone } from '../composants/Icones';
-import { CurseurTaille } from '../composants/CadreCommun';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Miniature } from '../composants/GrillePhotos';
 import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, configuration, contexteExecution, evenements, notifier, page, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
@@ -607,9 +607,10 @@ export function PageConsolidation() {
 
   return (
     <div class="page large avec-barre page-consolidation">
-      <TeteEtape numero={ETAPE.consolidation} titre={nomEtape(ETAPE.consolidation)} cle="consolidation" outils={<CurseurTaille vraie={(v) => Math.max(96, Math.round(v * 0.6))} />}>
+      <LigneEtape titre={nomEtape(ETAPE.consolidation)} aide={{ cle: 'consolidation' }} taille={(v) => Math.max(96, Math.round(v * 0.6))} />
+      <AideEtape cle="consolidation">
         {t`Le tri coupe parfois une sortie en plusieurs dossiers (une balade qui passe par deux villages) et range un week-end en un dossier par endroit. Choisissez ce qui doit être proposé, puis, pour chaque proposition, réunissez les dossiers ou laissez-les séparés. Rien n’est réuni sans votre accord.`}
-      </TeteEtape>
+      </AideEtape>
       <Reglages r={r} changer={changerReglages} resume={resume} sansMaison={!c.maison} refusees={refus.length + refusesIA.size} reproposer={reproposer} />
       <AideIA fonction="IA6" />
       <DossiersExclus />

@@ -27,6 +27,9 @@ import { installerRaccourcis } from './composants/Raccourcis';
 import { finDemarrage, installerNavigation } from './navigation';
 import { autorisationsEnAttente, chargerConfiguration, ouvrirProjet } from './projets';
 
+// La page entière défile (forme E, D112) : chaque page s'ouvre en haut, l'application le décide (`App`).
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 effect(() => {
   const t = reglages.value.theme;
   if (t === 'auto') delete document.documentElement.dataset.theme;

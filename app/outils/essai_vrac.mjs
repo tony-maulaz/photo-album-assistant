@@ -209,7 +209,7 @@ try {
   await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
   const aVerifier = await page.locator('.a-verifier').innerText();
   verifier(aVerifier.includes('2 sous-dossiers') && aVerifier.includes('2 copies exactes'), `inventaire : ce qui attend aux étapes suivantes (${aVerifier.split('\n').slice(1, 3).join(' / ')})`);
-  verifier((await page.locator('.outils-etape').innerText()).includes('Mettre à jour l’inventaire'), '« Mettre à jour l’inventaire » en haut de la page');
+  verifier((await page.locator('main[data-etape=inventaire] .outils-page').innerText()).includes('Mettre à jour l’inventaire'), '« Mettre à jour l’inventaire » en haut de la page, sous la ligne de l’étape');
   verifier((await page.locator('#copies, #captures, .sous-dossiers').count()) === 0, 'ni copies, ni captures, ni sous-dossiers à l’inventaire (D61)');
   await capturer(page, 'v1_inventaire');
   await page.locator('[data-action=valider]').click();
@@ -428,11 +428,11 @@ try {
   await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons:not(.repliee)').length === n - 1, aRelire);
   const resteLa = (await page.locator('.carte-doublons').count()) === toutes;
   // L'en-tête dit le geste à défaire (« Annuler : accepter 1 copie »), actif (tour 1 du lot 4, B1).
-  const annulerEntete = await page.locator('.entete-cadre .bouton-annuler').evaluate((b) => ({ texte: b.textContent.replace(/\s+/g, ' ').trim(), actif: !b.disabled }));
+  const annulerEntete = await page.locator('.ligne-etape .bouton-annuler').evaluate((b) => ({ texte: b.textContent.replace(/\s+/g, ' ').trim(), actif: !b.disabled }));
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
   await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons:not(.repliee)').length === n, aRelire);
-  const retablirEntete = await page.locator('.entete-cadre .bouton-retablir').evaluate((b) => !b.disabled);
+  const retablirEntete = await page.locator('.ligne-etape .bouton-retablir').evaluate((b) => !b.disabled);
   verifier(resteLa, '« À accepter » : un groupe accepté se replie à sa place, Ctrl+Z le rouvre');
   verifier(annulerEntete.actif && /^Annuler : accepter 1 /.test(annulerEntete.texte) && retablirEntete, `en-tête : « ${annulerEntete.texte} » actif après « Accepter », « Rétablir » actif après Ctrl+Z`);
   // Les rafales sont cherchées avec l'analyse (D81) : elles sont déjà là.
@@ -545,9 +545,10 @@ try {
   // Les dossiers créés par le tri portent « nouveau » ; ceux de la source, non (D89).
   const ligneDe = (nom) => page.locator('.ligne-dossier', { has: page.locator('.nom-dossier', { hasText: new RegExp(`^${nom}`) }) }).first();
   verifier((await ligneDe('Ko_Samui').locator('.badge.cree').count()) === 1 && (await ligneDe('BESTOF').locator('.badge.cree').count()) === 0, 'étape 7 : « nouveau » sur les dossiers du tri, pas sur ceux de la source');
-  verifier((await page.locator('.tete-organiser').count()) === 1, 'première visite : l’explication de l’étape est ouverte');
-  await page.locator('.replier-entete').click();
-  verifier((await page.locator('.tete-organiser').count()) === 0 && (await page.locator('.tete-vue').getByRole('button', { name: /^Aide/ }).count()) === 1, 'repliée, l’explication laisse un bouton « Aide » au bout de la ligne du titre');
+  // Forme E (D112) : l'explication est l'Aide de l'étape, sous la ligne ; « Aide » reste dans la ligne de l'étape.
+  verifier((await page.locator('main[data-etape=lieux] .aide-etape').count()) === 1, 'première visite : l’explication de l’étape est ouverte');
+  await page.locator('.aide-etape .fermer-aide').click();
+  verifier((await page.locator('.aide-etape').count()) === 0 && (await page.locator('.ligne-etape [data-place=aide][aria-expanded=false]').count()) === 1, 'repliée, l’explication laisse « Aide » dans la ligne de l’étape');
   await page.getByRole('button', { name: 'Ligne de temps' }).click();
   const barres = await page.locator('.ldt-barre').count();
   await capturer(page, 'v3b_ligne_de_temps');
@@ -625,9 +626,13 @@ try {
   await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
   await page.getByRole('button', { name: 'Garder seul', exact: true }).click();
   await page.locator('.ligne-liste-petit.fait', { hasText: premierPetit }).waitFor();
-  await page.locator('.messages .message', { hasText: 'Gardé seul.' }).last().getByRole('button', { name: 'Annuler' }).click();
+  // Forme E (D112) : le message est dans la ligne de l'étape et finit par « ↶ ou Ctrl+Z pour l'annuler » ; ↶ le défait.
+  const messageGarde = page.locator('.ligne-etape .message-entete', { hasText: 'Gardé seul.' });
+  await messageGarde.locator('.rappel-annuler').waitFor();
+  const rappel = (await messageGarde.innerText()).replace(/\s+/g, ' ');
+  await page.locator('.ligne-etape .bouton-annuler').click();
   await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
-  verifier(true, '« Garder seul » : Ctrl+Z le défait, Ctrl+Y le refait, le lien « Annuler » de son message le défait aussi');
+  verifier(/Ctrl\+Z pour l’annuler/.test(rappel), `« Garder seul » : Ctrl+Z le défait, Ctrl+Y le refait ; son message (« ${rappel} ») renvoie à ↶, qui le défait aussi`);
   await page.locator('[data-action=valider]').click();
   await page.locator('main[data-etape=nommage]').waitFor();
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));

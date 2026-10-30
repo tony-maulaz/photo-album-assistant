@@ -16,16 +16,18 @@
 // en clair et en sombre.
 //
 // Pages du pilote (toujours contrôlées) :
-//   cadre  : la page ne défile pas (h ≥ 440) ; sous 440 px de haut, la page entière défile et la barre du bas
-//            reste fixe ; ce qui n'est pas la zone de contenu (titre, Annuler, Aide, Taille, onglets, barre du
-//            bas, Valider) ne bouge pas quand une colonne défile ; barre du bas de 64 / 56 / 56 px, même avec
+//   cadre  : forme E (retours du 29.10, D112) : la page défile en entier, une seule barre de défilement (aucune
+//            zone de photos ne défile dans une autre) ; à mi-course et en bas de la page, la ligne de l'étape est
+//            collée en haut (titre, Annuler, Aide, Taille au même x), la barre du projet est partie, la vue en
+//            cours reste écrite dans la ligne (« Rafales ▾ »), la barre du bas et Valider ne bougent pas ; la fin
+//            des colonnes collées (liste, panneau, Aide) se voit ; barre du bas de 64 / 56 / 56 px, même avec
 //            des nombres à 4 chiffres ; Valider au même pixel sur toutes les pages, à chaque taille ;
-//   places : Aide dans la barre de l'application, juste avant Menu ; Annuler et Rétablir à droite de l'en-tête
-//            d'étape (Rétablir à 24 px du bord) ; Taille dans l'en-tête d'étape, juste à gauche d'Annuler, à la
-//            même hauteur (retours du 29.10) ; Annuler, Rétablir et les boutons de l'en-tête à 32 px ; le titre de
-//            l'étape à 24 px du bord et au même pixel d'une page à l'autre ;
+//   places : dans la ligne de l'étape, Aide juste avant Menu (un seul Menu à l'écran) ; ↶ à 284 px du bord
+//            droit (x 996 à 1280, 1156 à 1440), ↷ juste après, en icônes seules avec leur nom lu et leur
+//            infobulle ; Taille juste à gauche de ↶, à la même hauteur ; ↶ et ↷ à 32 px ; le titre de l'étape
+//            à 24 px du bord et au même pixel d'une page à l'autre ;
 //   plein  : exactement un bouton plein entier et non recouvert (elementFromPoint), à l'arrivée, à mi-course
-//            et en bas de chaque colonne qui défile (et de la page sous 440 px) ;
+//            et en bas de la page, et de chaque colonne collée qui défile ;
 //   aide   : sous 1440 px, l'Aide ne s'ouvre pas seule à la première visite et porte « à lire » ; à 1440, elle
 //            s'ouvre seule (choix 5) ;
 //   liste  : au palier (1024), la liste de gauche devient un menu (un seul exemplaire dans la page) ;
@@ -34,8 +36,8 @@
 //   avec le texte le plus long ; la place de chaque photo au début de sa bande (« 4 · À garder ») ; le plein
 //   nomme ce qu'il garde (« garder la 4, écarter 5 autres », « garder 3 photos, écarter 9 autres », Copies :
 //   « garder celle de « dossier » ») et sa vignette est la photo gardée ; aucun nombre nu ; à chaque position,
-//   ce que le plein garde se voit ou se lit ; Copies exactes : la photo une seule fois ; défilement accroché sous
-//   700 px de haut ; « Journée suivante à accepter » entière sur la ligne du dernier groupe après la molette ;
+//   ce que le plein garde se voit ou se lit ; Copies exactes : la photo une seule fois ; plus d'accroche du
+//   défilement (forme E) ; « Journée suivante à accepter » entière sur la ligne du dernier groupe après la molette ;
 //   « Rien n'est supprimé » court.
 // Gestes (Doublons) : un clic dans un autre groupe lui donne le plein sans défilement, A vise ce groupe ;
 //   double-clic sur le plein, A deux fois en 150 ms, A gardée enfoncée : un seul groupe accepté (garde de
@@ -91,7 +93,7 @@ const TAILLES = [
 const THEMES = ['light', 'dark'];
 /** Pages du pilote (sous-lot 2) : contrôlées même sans data-cadre="commun". */
 const PILOTE = ['doublons', 'selection', 'recadreur'];
-/** Pages où une colonne doit vraiment défiler, sinon le jeu d'essai est trop petit (à h ≥ 440). */
+/** Pages qui doivent vraiment défiler (200 px au moins), sinon le jeu d'essai est trop petit. */
 const DEFILE_ATTENDU = new Set(['doublons-rafales', 'selection']);
 /** Rien n'est supprimé, en court (É-C-8.4, choix 1). */
 const RIEN_SUPPRIME = 'Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ».';
@@ -267,7 +269,14 @@ function bibliotheque() {
   };
   C.aide = () => document.querySelector('[data-place="aide"]') ?? [...document.querySelectorAll('.bouton-aide')].find((b) => C.affiche(b) && C.horsVue(b)) ?? null;
   C.taille = () => [...document.querySelectorAll('[data-place="taille"]')].find((b) => C.affiche(b) && C.horsVue(b)) ?? null;
-  C.titre = () => [...document.querySelectorAll('main h1')].find((h) => C.affiche(h)) ?? null;
+  C.titre = () => [...document.querySelectorAll('.ligne-etape h1, main h1')].find((h) => C.affiche(h)) ?? null;
+  /** Forme E (D112) : le bas de ce qui est collé en haut (ligne de l'étape, tête de la table), le haut de la barre du bas. */
+  C.bornes = () => {
+    const ligne = document.querySelector('.ligne-etape')?.getBoundingClientRect();
+    const tete = [...document.querySelectorAll('.tete-table')].find((x) => C.affiche(x) && C.horsVue(x))?.getBoundingClientRect();
+    const barre = document.querySelector('.barre-validation')?.getBoundingClientRect();
+    return { haut: Math.max(0, ligne ? ligne.bottom : 0, tete ? tete.bottom : 0), bas: Math.min(innerHeight, barre && barre.height ? barre.top : innerHeight) };
+  };
   const boite = (e) => {
     if (!C.affiche(e)) return null;
     const r = e.getBoundingClientRect();
@@ -281,7 +290,6 @@ function bibliotheque() {
       annuler: [...document.querySelectorAll('.bouton-annuler')].find((x) => C.horsVue(x) && C.affiche(x)),
       aide: C.aide(),
       taille: C.taille(),
-      onglets: document.querySelector('.onglets-doublons'),
       barre: document.querySelector('.barre-validation'),
       valider: document.querySelector('[data-action=valider]'),
     };
@@ -331,7 +339,7 @@ function bibliotheque() {
     return {
       cadre: racineCadre?.dataset.cadre ?? '',
       vue: vue ? C.nom(vue).slice(0, 20) : '',
-      pageDefile: document.scrollingElement.scrollHeight > innerHeight + 1,
+      pageDefile: Math.max(0, document.scrollingElement.scrollHeight - innerHeight),
       pageLargeur: document.scrollingElement.scrollWidth > innerWidth + 1,
       barreH: barre && C.affiche(barre) ? Math.round(barre.getBoundingClientRect().height) : null,
       valider: val && C.affiche(val) ? { x: Math.round(val.getBoundingClientRect().left), y: Math.round(val.getBoundingClientRect().top), vu: C.vu(val) } : null,
@@ -341,25 +349,42 @@ function bibliotheque() {
       marques: C.marques(),
     };
   };
-  /** Places fixes (C-8, nouvelle version) : Aide, Annuler et Rétablir, Taille, titre. */
+  /**
+   * Places fixes (forme E, D112) : dans la ligne de l'étape, Aide juste avant Menu ; ↶ à 284 px du bord droit (x 996
+   * à 1280, 1156 à 1440), ↷ juste après ; Taille juste à gauche de ↶ ; le titre à 24 px du bord. Le bord droit est
+   * celui de la page, où finit la ligne de l'étape : la place de la barre de défilement est gardée sur toute étape
+   * (`scrollbar-gutter: stable`, 15 px dans Chromium, même masquée ; `clientWidth` ne la compte pas), pour que ↶ ne
+   * bouge pas entre une page qui défile et une qui ne défile pas.
+   */
   C.places = (photos) => {
-    const W = innerWidth;
+    const W = document.querySelector('.ligne-etape')?.getBoundingClientRect().right ?? innerWidth;
     const f = [];
+    if (Math.abs(W - (document.querySelector('.app')?.getBoundingClientRect().right ?? W)) > 1) f.push(`la ligne de l’étape finit à x = ${Math.round(W)}, avant le bord de la page`);
     const aide = C.aide();
-    const menu = document.querySelector('.bouton-menu');
+    const menus = [...document.querySelectorAll('.bouton-menu')].filter((x) => C.affiche(x));
+    const menu = menus[0];
+    if (menus.length !== 1) f.push(`${menus.length} boutons « Menu » à l’écran (1 attendu, dans la ligne de l’étape)`);
     if (!aide) f.push('pas de bouton « Aide » sur la page');
     else if (menu) {
       const a = aide.getBoundingClientRect();
       const m = menu.getBoundingClientRect();
-      if (!aide.closest('header.entete') || a.right > m.left + 1 || m.left - a.right > 24 || Math.abs((a.top + a.bottom) / 2 - (m.top + m.bottom) / 2) > 4)
-        f.push(`« Aide » n’est pas juste avant « Menu » dans la barre de l’application (x = ${Math.round(a.left)}, y = ${Math.round(a.top)})`);
+      if (!aide.closest('.ligne-etape') || !menu.closest('.ligne-etape') || a.right > m.left + 1 || m.left - a.right > 24 || Math.abs((a.top + a.bottom) / 2 - (m.top + m.bottom) / 2) > 4)
+        f.push(`« Aide » n’est pas juste avant « Menu » dans la ligne de l’étape (x = ${Math.round(a.left)}, y = ${Math.round(a.top)})`);
     }
     const ann = [...document.querySelectorAll('.bouton-annuler')].find((x) => C.horsVue(x) && C.affiche(x));
     const ret = [...document.querySelectorAll('.bouton-retablir')].find((x) => C.horsVue(x) && C.affiche(x));
     if (!ann) f.push('pas de bouton « Annuler » sur la page');
     else if (!C.vu(ann)) f.push('« Annuler » caché ou recouvert');
-    if (ret && Math.abs(ret.getBoundingClientRect().right - (W - 24)) > 2) f.push(`« Rétablir » à ${Math.round(W - ret.getBoundingClientRect().right)} px du bord droit (24 attendus)`);
-    if (ann && ret && ann.getBoundingClientRect().right > ret.getBoundingClientRect().left + 1) f.push('« Annuler » n’est pas juste avant « Rétablir »');
+    else if (!ann.closest('.ligne-etape')) f.push('« Annuler » n’est pas dans la ligne de l’étape');
+    else if (Math.abs(W - ann.getBoundingClientRect().left - 284) > 2) f.push(`« Annuler » à x = ${Math.round(ann.getBoundingClientRect().left)} (${W - 284} attendu : 284 px du bord droit)`);
+    if (ann && ret && (ann.getBoundingClientRect().right > ret.getBoundingClientRect().left + 1 || ret.getBoundingClientRect().left - ann.getBoundingClientRect().right > 8)) f.push('« Annuler » n’est pas juste avant « Rétablir »');
+    // ↶ ↷ en icônes seules (D112) : le geste dans le nom lu et l'infobulle, rien d'écrit à l'écran.
+    for (const b of [ann, ret]) {
+      if (!b) continue;
+      const ecrit = [...b.childNodes].some((n) => (n.nodeType === 3 && norm(n.textContent)) || (n.nodeType === 1 && !n.matches('svg, .texte-masque') && norm(n.textContent)));
+      if (ecrit) f.push(`« ${norm(b.textContent).slice(0, 30)} » : du texte écrit à l’écran (icône seule attendue)`);
+      if (!norm(b.textContent) || !b.title) f.push(`« ${b.className} » sans nom lu ou sans infobulle`);
+    }
     // Échelle sobre (retours du 29.10) : Annuler et Rétablir à 32 px de haut.
     for (const b of [ann, ret]) if (b && Math.abs(b.getBoundingClientRect().height - 32) > 1) f.push(`« ${norm(b.textContent).slice(0, 30)} » à ${Math.round(b.getBoundingClientRect().height)} px de haut (32 attendus)`);
     if (photos) {
@@ -369,7 +394,7 @@ function bibliotheque() {
       else {
         const r = t.getBoundingClientRect();
         const a = ann?.getBoundingClientRect();
-        if (!t.closest('.entete-cadre')) f.push('« Taille » n’est pas dans l’en-tête de l’étape');
+        if (!t.closest('.ligne-etape')) f.push('« Taille » n’est pas dans la ligne de l’étape');
         else if (a && (r.right > a.left + 1 || a.left - r.right > 24 || Math.abs((r.top + r.bottom) / 2 - (a.top + a.bottom) / 2) > 4))
           f.push(`« Taille » n’est pas juste à gauche d’« Annuler » (à ${Math.round(a.left - r.right)} px, décalée de ${Math.round((r.top + r.bottom) / 2 - (a.top + a.bottom) / 2)} px)`);
         if (/\bTaille\b/.test(norm(t.textContent))) f.push('le mot « Taille » est écrit à côté du curseur (retiré, question 11)');
@@ -378,6 +403,37 @@ function bibliotheque() {
     const h = C.titre();
     if (!h) f.push('pas de titre d’étape (h1) à l’écran');
     else if (Math.abs(h.getBoundingClientRect().left - 24) > 2) f.push(`titre de l’étape à x = ${Math.round(h.getBoundingClientRect().left)} (24 attendu)`);
+    return f;
+  };
+  /**
+   * Forme E (D112), sur toute étape : la ligne de l'étape, ↶ à 284 px du bord droit, Aide et un seul Menu dans la
+   * ligne, aucune photo qui défile dans une boîte de la page (les colonnes collées défilent de leur côté) ; en bas
+   * de la page, la ligne collée en haut et la barre du projet partie. La page est remise en haut.
+   */
+  C.formeE = () => {
+    const f = [];
+    const ligne = document.querySelector('.ligne-etape');
+    if (!ligne || !C.affiche(ligne)) return ['pas de ligne d’étape'];
+    const x = () => Math.round(ligne.querySelector('.bouton-annuler')?.getBoundingClientRect().left ?? -1);
+    const x0 = x();
+    const W = ligne.getBoundingClientRect().right;
+    if (Math.abs(W - (document.querySelector('.app')?.getBoundingClientRect().right ?? W)) > 1) f.push(`la ligne de l’étape finit à x = ${Math.round(W)}, avant le bord de la page`);
+    if (Math.abs(W - x0 - 284) > 2) f.push(`↶ à x = ${x0} (${W - 284} attendu : 284 px du bord droit de la page)`);
+    const menus = [...document.querySelectorAll('.bouton-menu')].filter((m) => C.affiche(m));
+    if (menus.length !== 1 || !menus[0].closest('.ligne-etape')) f.push(`${menus.length} « Menu » à l’écran, ${menus.filter((m) => m.closest('.ligne-etape')).length} dans la ligne de l’étape (1 attendu)`);
+    const aide = ligne.querySelector('[data-place=aide]');
+    if (!aide) f.push('pas d’« Aide » dans la ligne de l’étape');
+    const boites = C.zones().filter((z) => z.querySelector('img, canvas') && !/colonne-liste|panneau|aide|arbre|sections|liste-petits|resultat-tri|ligne-de-temps/.test(C.nomZone(z)));
+    if (boites.length) f.push(`des photos défilent dans une boîte de la page : ${boites.map((z) => C.nomZone(z)).join(', ')}`);
+    const d = document.scrollingElement;
+    const projet = document.querySelector('header.entete')?.getBoundingClientRect().height ?? 0;
+    d.scrollTop = d.scrollHeight;
+    if (scrollY >= projet + 1) {
+      if (Math.round(ligne.getBoundingClientRect().top) !== 0) f.push(`en bas de la page, la ligne de l’étape n’est pas collée en haut (y ${Math.round(ligne.getBoundingClientRect().top)})`);
+      if ((document.querySelector('header.entete')?.getBoundingClientRect().bottom ?? 0) > 0) f.push('en bas de la page, la barre du projet ne part pas');
+      if (x() !== x0) f.push(`en bas de la page, ↶ bouge (x ${x0} → ${x()})`);
+    }
+    d.scrollTop = 0;
     return f;
   };
   /** Au palier, la liste de gauche devient un menu (un seul exemplaire dans la page). */
@@ -424,7 +480,7 @@ function bibliotheque() {
   };
   /** Bas des en-têtes collés en haut de la zone des groupes. */
   C.basColles = (z) => {
-    const zr = z === document.scrollingElement ? { top: 0, bottom: innerHeight } : z.getBoundingClientRect();
+    const zr = z === document.scrollingElement ? { top: C.bornes().haut, bottom: C.bornes().bas } : z.getBoundingClientRect();
     let hb = Math.max(zr.top, 0);
     for (const h of document.querySelectorAll('article.carte-doublons > header')) {
       const q = h.getBoundingClientRect();
@@ -508,7 +564,7 @@ function bibliotheque() {
     });
     // L'en-tête du groupe du plein entier dans ce qu'on voit (à l'arrivée sur ce groupe, sa bande doit suivre).
     const tete = a.querySelector(':scope > header')?.getBoundingClientRect();
-    const zr = C.zoneDe(a) === document.scrollingElement ? { top: 0, bottom: innerHeight } : C.zoneDe(a).getBoundingClientRect();
+    const zr = C.zoneDe(a) === document.scrollingElement ? { top: C.bornes().haut, bottom: C.bornes().bas } : C.zoneDe(a).getBoundingClientRect();
     // … et le premier groupe qui commence dans ce qu'on voit (sinon ce n'est pas l'arrivée sur ce groupe).
     const premier = C.articles().find((x) => x.getBoundingClientRect().top >= zr.top - 1) === a;
     const entete = premier && !!tete && tete.top >= zr.top - 1 && tete.bottom <= Math.min(zr.bottom, bas) + 1;
@@ -588,7 +644,7 @@ function bibliotheque() {
     }
     return out;
   };
-  /** Sous 700 px de haut, le défilement de la liste s'accroche au début des groupes (proximité). */
+  /** Accroche du défilement au début des groupes : retirée avec la forme E (une seule barre, celle de la page). */
   C.accroche = () => {
     const a = C.articles()[0];
     if (!a) return null;
@@ -634,14 +690,17 @@ function bibliotheque() {
         return t.left < q.left - 1 || t.right > q.right + 1;
       })
       .map((b) => `« ${C.nom(b)} » (${b.scrollWidth} px pour ${b.clientWidth})`);
-  /** Rien ne se voit au-dessus d'un en-tête de groupe collé : il colle au bord haut de la zone qui défile. */
+  /**
+   * Rien ne se voit au-dessus d'un en-tête de groupe collé : il colle au bord haut de la zone qui défile, ou, la
+   * page défilant en entier (forme E), juste sous la ligne de l'étape et la tête de la table.
+   */
   C.colles = () => {
     const out = [];
     for (const a of C.articles()) {
       const h = a.querySelector(':scope > header');
       const z = C.zoneDe(a);
-      if (!h || z === document.scrollingElement) continue;
-      const zq = z.getBoundingClientRect();
+      if (!h) continue;
+      const zq = z === document.scrollingElement ? { top: C.bornes().haut } : z.getBoundingClientRect();
       const q = h.getBoundingClientRect();
       // Collé : le groupe a commencé au-dessus de la zone.
       if (a.getBoundingClientRect().top >= zq.top - 1 || q.bottom <= zq.top) continue;
@@ -738,15 +797,16 @@ try {
    * ('rafales', 'copies') ; `photos` : la page montre des photos (Taille, liste de gauche) ; `ecarte` : on y
    * écarte (« Rien n'est supprimé ») ; `anglais` : l'interface est en anglais (les libellés ne sont pas lus).
    */
-  const controlerCadre = async (nomPage, ici, w, h, { sorte = null, photos = false, ecarte = false, anglais = false, liste = null, thm = 'light' } = {}) => {
+  const controlerCadre = async (nomPage, ici, w, h, { sorte = null, photos = false, ecarte = false, anglais = false, liste = null, thm = 'light', vue = true } = {}) => {
     await page.evaluate(() => __c.remonter());
     await attendre(250);
     const e = await page.evaluate(() => __c.etat());
     noterValider(nomPage, w, h, e.valider);
     // Le jeu d'essai : une colonne défile vraiment.
-    if (DEFILE_ATTENDU.has(nomPage) && h >= 440 && !e.zones.some((z) => z.photos && z.defile >= 200)) faute(nomPage, `${ici} : aucune colonne de photos ne défile de 200 px (jeu d’essai trop petit) : ${e.zones.map((z) => `${z.nom} ${z.defile}`).join(', ') || 'aucune zone'}`);
-    if (h >= 440 && e.pageDefile) faute(nomPage, `${ici} : la page entière défile ; seule la zone de contenu doit défiler (bandes fixes)`);
-    if (h < 440 && !e.pageDefile) faute(nomPage, `${ici} : écran très bas, la page entière devrait défiler (C-7.6 bis)`);
+    // Forme E (D112) : une seule barre de défilement, celle de la page ; aucune zone de photos ne défile dans une autre.
+    const dansUneBoite = e.zones.filter((z) => z.photos && !/colonne-liste|panneau|aide|arbre|sections/.test(z.nom));
+    if (dansUneBoite.length) faute(nomPage, `${ici} : des photos défilent dans une boîte de la page (une seule barre de défilement attendue) : ${dansUneBoite.map((z) => `${z.nom} ${z.defile}`).join(', ')}`);
+    if (DEFILE_ATTENDU.has(nomPage) && e.pageDefile < 200) faute(nomPage, `${ici} : la page ne défile que de ${e.pageDefile} px (200 au moins : jeu d’essai trop petit)`);
     if (e.pageLargeur) faute(nomPage, `${ici} : la page défile en largeur (C-7.1)`);
     const hBarre = w >= 1440 && h >= 700 ? 64 : 56;
     if (e.barreH !== null && Math.abs(e.barreH - hBarre) > 1) faute(nomPage, `${ici} : barre du bas de ${e.barreH} px (${hBarre} attendus)`);
@@ -754,6 +814,8 @@ try {
     else if (!e.valider.vu) faute(nomPage, `${ici} : « Valider et continuer » caché ou recouvert`);
     const places = await page.evaluate((p) => __c.places(p), photos);
     for (const p of places) faute(nomPage, `${ici} : ${p}`);
+    for (const x of await page.evaluate(() => __c.formeE())) faute(nomPage, `${ici} : ${x}`);
+    await attendre(150);
     if (ecarte && !anglais) {
       const r = await page.evaluate(() => __c.norm(document.querySelector('.barre-validation .rien-supprime')?.textContent));
       if (r !== RIEN_SUPPRIME) faute(nomPage, `${ici} : « Rien n’est supprimé » n’est pas la phrase courte (${r.length} signes : « ${r.slice(0, 50)}… »)`);
@@ -809,18 +871,21 @@ try {
         const c = await page.evaluate(() => __c.copiesUneFois());
         if (c.length) faute(nomPage, `${ici} : Copies exactes, la photo doit être montrée une fois : ${c.slice(0, 2).join(' | ')}`);
       }
-      if (h < 700) {
-        const a = await page.evaluate(() => __c.accroche());
-        // « y proximity » se lit « y » : la proximité est la valeur par défaut (Chrome ne l'écrit pas).
-        // Sous 440 px, la page entière défile, sans accroche (elle cachait la fin de la liste, tour 1 du lot 4).
-        if (h >= 440 && a !== null && !(/y|block/.test(a) && !/mandatory/.test(a))) faute(nomPage, `${ici} : le défilement ne s’accroche pas au début des groupes (scroll-snap-type : ${a})`);
-      }
+      // Plus d'accroche (forme E) : sur une page qui défile en entier, elle ramenait le défilement au début du dernier
+      // groupe et cachait la fin de la liste (tour 1 du lot 4).
+      const a = await page.evaluate(() => __c.accroche());
+      if (a !== null && a !== 'none') faute(nomPage, `${ici} : le défilement s’accroche encore au début des groupes (scroll-snap-type : ${a})`);
     }
-    // À mi-course et en bas de chaque colonne (ou de la page sous 440 px).
+    // Forme E (D112) : la page à mi-course et en bas, puis chaque colonne collée qui défile (liste, panneau, Aide), à
+    // mi-course et en bas. La ligne de l'étape reste collée en haut, ses commandes au même x ; la barre du bas et « Valider » ne
+    // bougent pas ; la barre du projet est partie ; la vue en cours reste écrite ; la fin des colonnes collées se voit.
     const avant = e.fixes;
+    // Où était la ligne de l'étape au départ : jusqu'à se coller en haut, elle remonte exactement du défilement de la page.
+    const depart = await page.evaluate(() => ({ y: scrollY, ligne: Math.round(document.querySelector('.ligne-etape')?.getBoundingClientRect().top ?? NaN) }));
     const positions = [];
-    if (h >= 440) for (let i = 0; i < e.zones.length; i++) for (const part of [0.5, 1]) positions.push({ i, part });
-    else for (const part of [0.5, 1]) positions.push({ i: -1, part });
+    for (const part of [0.5, 1]) positions.push({ i: -1, part });
+    const colonnes = e.zones.filter((z) => /colonne-liste|panneau|aide|arbre|sections/.test(z.nom)).length;
+    for (let i = 0; i < e.zones.length && colonnes; i++) for (const part of [0.5, 1]) positions.push({ i, part });
     for (const { i, part } of positions) {
       const ou =
         i < 0
@@ -836,10 +901,42 @@ try {
       const m = await page.evaluate(() => __c.etat());
       const n = m.pleins.filter((p) => p.vu).length;
       if (n !== 1) faute(nomPage, `${ici}${lieu} : ${n} bouton(s) plein(s) entier(s), 1 attendu${m.pleins.length ? ` (${m.pleins.map((p) => `« ${p.texte} »${p.vu ? '' : ' caché'}`).join(' ; ')})` : ''}`);
+      const haut = await page.evaluate(() => ({
+        y: scrollY,
+        ligne: Math.round(document.querySelector('.ligne-etape')?.getBoundingClientRect().top ?? -1),
+        projet: Math.round(document.querySelector('header.entete')?.getBoundingClientRect().bottom ?? 0),
+        projetH: Math.round(document.querySelector('header.entete')?.getBoundingClientRect().height ?? 0),
+      }));
+      // Collée dès que la page a défilé de la hauteur au-dessus de la ligne (barre du projet et bandeaux éventuels).
+      const colle = Number.isNaN(depart.ligne) ? haut.y >= haut.projetH : haut.y >= depart.ligne + depart.y;
+      if (colle && haut.ligne !== 0) faute(nomPage, `${ici}${lieu} : la ligne de l’étape n’est pas collée en haut (y ${haut.ligne})`);
+      if (colle && haut.projet > 0) faute(nomPage, `${ici}${lieu} : la barre du projet n’est pas partie avec la page`);
+      // Avant de se coller, la ligne remonte d'autant que la page a défilé (a.y ≈ b.y − scrollY), puis reste à y 0.
+      const ligneAttendue = Number.isNaN(depart.ligne) ? null : Math.max(0, depart.ligne + depart.y - haut.y);
+      if (ligneAttendue !== null && Math.abs(haut.ligne - ligneAttendue) > 1) faute(nomPage, `${ici}${lieu} : la ligne de l’étape ne suit pas le défilement (y ${haut.ligne}, ${ligneAttendue} attendu)`);
       for (const [k, b] of Object.entries(avant)) {
-        if (i < 0 && !['barre', 'valider'].includes(k)) continue;
         const a = m.fixes[k];
-        if (!a || Math.abs(a.y - b.y) > 1 || Math.abs(a.x - b.x) > 1) faute(nomPage, `${ici}${lieu} : « ${k} » ${a ? `bouge (y ${b.y} → ${a.y})` : 'disparaît'} : ce n’est pas une bande fixe`);
+        // Les commandes de la ligne gardent leur x et la suivent en y ; la barre du bas et « Valider » ne bougent pas.
+        const dansLigne = !['barre', 'valider'].includes(k);
+        const yAttendu = dansLigne && ligneAttendue !== null ? b.y - (depart.ligne - ligneAttendue) : b.y;
+        if (!a) faute(nomPage, `${ici}${lieu} : « ${k} » disparaît`);
+        else if (Math.abs(a.x - b.x) > 1 || Math.abs(a.y - yAttendu) > 1)
+          faute(nomPage, `${ici}${lieu} : « ${k} » bouge (x ${b.x} → ${a.x}, y ${b.y} → ${a.y}, ${yAttendu} attendu)`);
+      }
+      // Les onglets ou les filtres sont partis : la vue en cours reste écrite dans la ligne (C-4.12).
+      if (vue && haut.y >= haut.projetH + 8) {
+        const v = await page.evaluate(() => { const b = document.querySelector('.ligne-etape [data-action=menu-vue]'); return b && __c.vu(b) ? __c.norm(b.textContent) : null; });
+        if (!v) faute(nomPage, `${ici}${lieu} : la vue en cours n’est pas écrite dans la ligne de l’étape (menu « … ▾ » attendu)`);
+      }
+      // La fin des colonnes collées (liste, panneau, Aide) se voit, au-dessus de la barre du bas.
+      if (part === 1) {
+        const coupees = await page.evaluate(() =>
+          [...document.querySelectorAll('.colonne-liste, .corps-cadre > .panneau-cadre, .corps-cadre > .panneau-aide, .pile-droite')]
+            .filter((c) => __c.affiche(c) && getComputedStyle(c).position === 'sticky')
+            .filter((c) => c.getBoundingClientRect().bottom > __c.bornes().bas + 1 || c.getBoundingClientRect().top < (document.querySelector('.ligne-etape')?.getBoundingClientRect().bottom ?? 0) - 1)
+            .map((c) => `.${[...c.classList].join('.')} (${Math.round(c.getBoundingClientRect().top)} → ${Math.round(c.getBoundingClientRect().bottom)})`),
+        );
+        if (coupees.length) faute(nomPage, `${ici}${lieu} : colonne collée qui sort de ce qu’on voit (sous la ligne, au-dessus de la barre du bas) : ${coupees.join(', ')}`);
       }
       const cadres = await page.evaluate(() => __c.cadreJaune());
       if (cadres.length) faute(nomPage, `${ici}${lieu} : cadre jaune et noir allumé après le défilement (${cadres[0]})`);
@@ -910,6 +1007,8 @@ try {
           const e = await page.evaluate(() => __c.etat());
           noterValider(nomPage, w, h, e.valider);
           if (e.valider && !e.valider.vu && !e.vue) faute(nomPage, `${nomPage} ${ici} : « Valider et continuer » caché ou recouvert`);
+          // La forme E vaut sur les 13 étapes, au cadre commun ou non (D112).
+          if (!e.vue) for (const x of await page.evaluate(() => __c.formeE())) faute(nomPage, `${nomPage} ${ici} : ${x}`);
           if (e.marques.length) faute(nomPage, `${nomPage} ${ici} : posé sur une photo (C-9.1) : ${e.marques.slice(0, 3).join(' ; ')}`);
           // Au palier (1024), la largeur relève du cadre commun (C-7.6) : signalée seulement.
           if (e.pageLargeur && w > 1180) faute(nomPage, `${nomPage} ${ici} : la page défile en largeur (C-7.1)`);
@@ -917,7 +1016,7 @@ try {
           if (thm === 'light') resume.push(e.valider ? `${w}×${h} (${e.valider.x}, ${e.valider.y})` : `${w}×${h} sans Valider`);
         }
       }
-      console.log(`\n[${temps()}] ${nomPage} : pas encore passée au cadre (contrôles généraux) · Valider : ${resume.join(' · ')}`);
+      console.log(`\n[${temps()}] ${nomPage} : pas encore passée au cadre (contrôles généraux et forme E) · Valider : ${resume.join(' · ')}`);
     }
     await page.evaluate(() => delete document.documentElement.dataset.theme);
     await taille(1440, 900);
@@ -1217,8 +1316,8 @@ try {
     const A = 'doublons-annuler';
     const lireA = () =>
       page.evaluate(() => {
-        const a = document.querySelector('.entete-cadre .bouton-annuler');
-        const r = document.querySelector('.entete-cadre .bouton-retablir');
+        const a = document.querySelector('.ligne-etape .bouton-annuler');
+        const r = document.querySelector('.ligne-etape .bouton-retablir');
         return { texte: __c.norm(a?.textContent), actif: !!a && !a.disabled, retablir: !!r && !r.disabled };
       });
     await page.evaluate(() => __c.remonter());
@@ -1321,7 +1420,7 @@ try {
           }
           const plein = a?.querySelector('[data-action=accepter]');
           return {
-            msg: __c.norm(document.querySelector('.entete-cadre .message-entete .texte-message')?.textContent),
+            msg: __c.norm(document.querySelector('.ligne-etape .message-entete .texte-message')?.textContent),
             bulles: [...document.querySelectorAll('.messages .message')].filter((m) => __c.affiche(m)).length,
             accepte: cle ? __c.estAccepte(cle) : false,
             cle: a?.dataset.cle ?? null,
@@ -1551,7 +1650,7 @@ try {
         await attendre(250);
       }
       // Le clic du début sur une photo (le seul geste qui reste, avant le premier A) : défait aussi.
-      if (/^Annuler : choisir/.test(await page.evaluate(() => __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent)))) {
+      if (/^Annuler : choisir/.test(await page.evaluate(() => __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent)))) {
         await page.keyboard.press('Control+z');
         await attendre(250);
       }
@@ -1917,7 +2016,7 @@ try {
   // Tour 3 du lot 4 (choix 6 A, accessibilité N2) : à l'arrivée, le dernier geste est à une autre étape ; Ctrl+Z suit
   // le bouton de l'en-tête : il ne défait rien et le dit (« Rien à annuler ici… »).
   {
-    const lireZ = () => page.evaluate(() => ({ bouton: __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent), msg: __c.norm(document.querySelector('.entete-cadre .message-entete .texte-message')?.textContent) }));
+    const lireZ = () => page.evaluate(() => ({ bouton: __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent), msg: __c.norm(document.querySelector('.ligne-etape .message-entete .texte-message')?.textContent) }));
     const z0 = await lireZ();
     if (!/^Rien à annuler ici/.test(z0.bouton)) signalements.push(`selection-ctrl-z : à l’arrivée, « ${z0.bouton} » (pas de geste d’une autre étape à essayer)`);
     else {
@@ -1959,8 +2058,8 @@ try {
       await attendre(300);
       const lire = () =>
         page.evaluate(() => {
-          const a = document.querySelector('.entete-cadre .bouton-annuler');
-          const r = document.querySelector('.entete-cadre .bouton-retablir');
+          const a = document.querySelector('.ligne-etape .bouton-annuler');
+          const r = document.querySelector('.ligne-etape .bouton-retablir');
           return {
             outils: Math.round(document.querySelector('.outils-cadre').getBoundingClientRect().top),
             titre: Math.round(__c.titre().getBoundingClientRect().top),
@@ -2014,7 +2113,7 @@ try {
     {
       const lireS = () =>
         page.evaluate(() => ({
-          annuler: __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent),
+          annuler: __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent),
           album: document.querySelector('.panneau-choix .decision.album')?.getAttribute('aria-pressed'),
           focusBouton: !!document.activeElement?.closest('.panneau-choix button'),
         }));
@@ -2168,7 +2267,7 @@ try {
       await page.locator('.recadreur .fermer-recadreur').focus();
       await page.keyboard.press('Enter');
       await page.locator('.recadreur').waitFor({ state: 'detached', timeout: 5000 }).catch(() => undefined);
-      const apres = await page.evaluate(() => ({ ouvert: !!document.querySelector('.recadreur'), annuler: __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent) }));
+      const apres = await page.evaluate(() => ({ ouvert: !!document.querySelector('.recadreur'), annuler: __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent) }));
       if (apres.ouvert) faute('recadreur', 'Entrée sur « Fermer sans recadrer » ne ferme pas la vue');
       else {
         if (/recadr/i.test(apres.annuler)) faute('recadreur', `Entrée sur « Fermer sans recadrer » a accepté le recadrage (« ${apres.annuler} »)`);
@@ -2200,12 +2299,12 @@ try {
         const ferme = await page.locator('.recadreur').waitFor({ state: 'detached', timeout: 3000 }).then(() => true).catch(() => false);
         if (focusBouton) faute('recadreur', 'clic sur « À droite » : le focus reste sur le bouton');
         if (!ferme) faute('recadreur', 'clic sur « À droite » puis Entrée : la vue ne se ferme pas (Entrée refait le quart de tour au lieu d’accepter)');
-        const ann = await page.evaluate(() => __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent));
+        const ann = await page.evaluate(() => __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent));
         console.log(`  recadreur « Déjà la photo entière » ${rem.inactif ? 'désactivé' : 'ACTIF'} ; clic « À droite » puis Entrée : ${ferme ? 'fermé' : 'RESTÉ OUVERT'}, en-tête « ${ann} »`);
         if (!ferme) await page.keyboard.press('Escape');
         await page.evaluate(() => document.activeElement?.blur?.());
         for (let k = 0; k < 3; k++) {
-          const a = await page.evaluate(() => __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent));
+          const a = await page.evaluate(() => __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent));
           if (!/recadr|tourner/i.test(a)) break;
           await page.keyboard.press('Control+z');
           await attendre(300);
@@ -2242,7 +2341,7 @@ try {
   }
 
   // ---- Tour 3 du lot 4 (en anglais, à la fin : le geste de Floues change les rafales) : le message venu de Floues
-  //      (« N photos set aside… · Undo ») garde son lien sur Doublons, où le bouton de l'en-tête dit « Nothing to undo
+  //      (« Blurry: N photos set aside… ») garde son lien sur Doublons, où le bouton de l'en-tête dit « Nothing to undo
   //      here » (testeur M2, gardien-demandes M1) ; Ctrl+Z ne défait pas le geste de Floues (choix 6 A) ; la zone
   //      role=status de l'en-tête est dans l'arbre d'accessibilité, même vide (WCAG 4.1.3, accessibilité N1). ----
   pagesFaites.push('doublons-message-arrivee');
@@ -2267,17 +2366,22 @@ try {
       await attendre(500);
       const lire = () =>
         page.evaluate(() => {
-          const lien = document.querySelector('.entete-cadre .message-entete button.lien');
+          const lien = document.querySelector('.ligne-etape .message-entete [data-action=y-aller]');
           return {
-            msg: __c.norm(document.querySelector('.entete-cadre .message-entete .texte-message')?.textContent),
+            msg: __c.norm(document.querySelector('.ligne-etape .message-entete .texte-message')?.textContent),
             lien: lien ? __c.norm(lien.textContent) : null,
             lienVu: !!lien && __c.vu(lien),
-            bouton: __c.norm(document.querySelector('.entete-cadre .bouton-annuler')?.textContent),
+            bouton: __c.norm(document.querySelector('.ligne-etape .bouton-annuler')?.textContent),
             mis: __c.norm(document.querySelectorAll('.onglet-doublons')[3]?.textContent),
           };
         });
       const a0 = await lire();
-      if (!a0.lien || !a0.lienVu) faute(M, `arrivée sur Doublons après Floues (« ${n} ») : le message « ${a0.msg} » n’a pas de lien « Undo » visible (bouton de l’en-tête : « ${a0.bouton} »)`);
+      // Choix 6 de D111, forme E : le message venu d'une autre étape garde son lien « Y aller » (« Go there »), qui mène
+      // à l'étape du geste ; le bouton ↶ de la ligne dit « Rien à annuler ici ».
+      if (!a0.lien || !a0.lienVu) faute(M, `arrivée sur Doublons après Floues (« ${n} ») : le message « ${a0.msg} » n’a pas de lien « Go there » visible (bouton de la ligne : « ${a0.bouton} »)`);
+      // Il commence par le nom court de l'étape du geste (É12 g : « Floues : 6 photos écartées… »).
+      if (!/^Blurry: /.test(a0.msg)) faute(M, `arrivée sur Doublons après Floues : le message « ${a0.msg} » ne commence pas par le nom de l’étape (« Blurry: … » attendu)`);
+      if (/\bCtrl\+Z\b/.test(a0.msg)) faute(M, `arrivée sur Doublons après Floues : le message « ${a0.msg} » propose Ctrl+Z, qui ne le défait pas ici`);
       await page.evaluate(() => document.activeElement?.blur?.());
       await page.keyboard.press('Control+z');
       await attendre(500);
@@ -2285,9 +2389,18 @@ try {
       if (a1.mis !== a0.mis || a1.bouton !== a0.bouton) faute(M, `Ctrl+Z sur Doublons a défait le geste de Floues (« ${a0.mis} » → « ${a1.mis} », bouton « ${a0.bouton} » → « ${a1.bouton} »)`);
       console.log(`\n[${temps()}] ${M} : Floues « ${n} » → Doublons « ${a0.msg} » (lien ${a0.lien ? (a0.lienVu ? 'visible' : 'CACHÉ') : 'ABSENT'}), bouton « ${a0.bouton} » ; Ctrl+Z → « ${a1.msg} »`);
       await capture('doublons-message-arrivee_1440x900');
+      // « Go there » mène à Floues, où ↶ défait le geste.
+      if (a0.lien) {
+        // Après Ctrl+Z, le message « Rien à annuler ici… » porte lui aussi « Go there ».
+        await page.locator('.ligne-etape .message-entete button.lien').filter({ hasText: 'Go there' }).click().catch(() => undefined);
+        const ici = await page.locator('main[data-etape=floues]').waitFor({ timeout: 10_000 }).then(() => true, () => false);
+        const ann = ici ? await page.evaluate(() => { const b = document.querySelector('.ligne-etape .bouton-annuler'); return b && !b.disabled ? __c.norm(b.textContent) : ''; }) : '';
+        if (!ici || !/^Undo/.test(ann)) faute(M, `« Go there » ne mène pas à Floues avec ↶ prêt à défaire le geste (${ici ? `↶ « ${ann} »` : 'pas sur Floues'})`);
+        console.log(`  ${M} : « Go there » → ${ici ? 'Floues' : 'AILLEURS'}, ↶ « ${ann} »`);
+      }
     }
     // La zone role=status de l'en-tête, vide, est dans l'arbre d'accessibilité.
-    await page.waitForFunction(() => !document.querySelector('.entete-cadre .message-entete')?.textContent, null, { timeout: 15_000 }).catch(() => undefined);
+    await page.waitForFunction(() => !document.querySelector('.ligne-etape .message-entete')?.textContent, null, { timeout: 15_000 }).catch(() => undefined);
     const cdp = await page.context().newCDPSession(page);
     const { nodes } = await cdp.send('Accessibility.getFullAXTree');
     let present = false;
@@ -2298,7 +2411,7 @@ try {
       vus.push(`${result.value}${x.ignored ? ' (ignoré)' : ''}`);
       if (!x.ignored && /message-entete/.test(result.value)) present = true;
     }
-    const vide = await page.evaluate(() => { const e = document.querySelector('.entete-cadre .message-entete'); return e ? !e.textContent : null; });
+    const vide = await page.evaluate(() => { const e = document.querySelector('.ligne-etape .message-entete'); return e ? !e.textContent : null; });
     if (!present) faute(M, `la zone role=status de l’en-tête${vide ? ', vide,' : ''} n’est pas dans l’arbre d’accessibilité (un message qui y arrive ne serait pas lu) ; status vus : ${vus.join(' ; ') || 'aucun'}`);
     console.log(`  ${M} : zone role=status ${vide ? 'vide' : 'NON VIDE'} ${present ? 'présente' : 'ABSENTE'} dans l’arbre d’accessibilité (status vus : ${vus.join(' ; ') || 'aucun'})`);
   }

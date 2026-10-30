@@ -266,7 +266,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
       // Même compte que la barre du bas : les photos rangées dans les dossiers du tri.
       const resume = resumes(s.plan);
       const photos = nouvelles ? liste.filter((f) => f.categorie === 'photo').length : dossiersProposes(s.plan).reduce((a, x) => a + resume.get(x.id)!.photos, 0);
-      notifier('ok', t`${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(nb, 'dossier')} : voyez-les à droite.`);
+      // ↶ de la ligne défait le rangement : le message le rappelle (« ↶ ou Ctrl+Z pour l'annuler »).
+      notifier('ok', t`${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(nb, 'dossier')} : voyez-les à droite.`, { libelle: t`Annuler`, faire: annuler });
       if (sansNoms)
         notifier(
           'info',

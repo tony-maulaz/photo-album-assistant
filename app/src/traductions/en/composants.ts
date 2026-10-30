@@ -77,8 +77,6 @@ export const TEXTES: Record<string, string> = {
     'AI spending for the project: {0} CHF out of a budget of {1} CHF (rate {2} CHF per USD). Details in the Log.',
   'IA {0} / {1} CHF': 'AI {0} / {1} CHF',
   'Étape {0}': 'Step {0}',
-  'Replier l’explication': 'Hide the explanation',
-  'Afficher l’explication de l’étape': 'Show the explanation of this step',
   Replier: 'Hide',
   'Valider et continuer': 'Confirm and continue',
   Revenir: 'Back',
@@ -111,9 +109,6 @@ export const TEXTES: Record<string, string> = {
   Changer: 'Change',
   'Pour que les fenêtres de choix s’ouvrent toujours au même endroit :': 'To make selection windows always open in the same place:',
   'choisir un dossier de départ': 'choose a starting folder',
-
-  // EnteteEtape.tsx
-  'Aide et outils': 'Help and tools',
 
   // ExtrasInventaire.tsx
   'Captures d’écran': 'Screenshots',

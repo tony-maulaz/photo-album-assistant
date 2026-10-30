@@ -15,7 +15,8 @@ import { combiner, renommerDossier, type FichierPlan, type Modification, type Pl
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { enParallele } from '../../navigateur/workers';
-import { BarreValidation, RaisonDesactivee, TeteEtape } from '../composants/Cadre';
+import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { confirmer } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { Icone, type NomIcone } from '../composants/Icones';
@@ -464,12 +465,27 @@ export function PageNommage() {
 
   return (
     <div class="page large avec-barre page-nommage">
-      <TeteEtape numero={ETAPE.nommage} titre={t`Nommage`} cle="nommage">
+      {/* Forme E (D112) : la case « Tous les dossiers » part avec la page ; la vue en cours reste écrite dans la ligne (« À nommer ▾ »). */}
+      <LigneEtape
+        titre={t`Nommage`}
+        aide={{ cle: 'nommage' }}
+        vue={{
+          nom: t`Dossiers montrés`,
+          choix: [
+            { cle: 'a_nommer', libelle: t`À nommer` },
+            { cle: 'tous', libelle: t`Tous les dossiers` },
+          ],
+          actuelle: tous ? 'tous' : 'a_nommer',
+          choisir: (v) => setTous(v === 'tous'),
+          repere: '.reglages-nommage',
+        }}
+      />
+      <AideEtape cle="nommage">
         {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Sous chaque nom, un clic choisit :`} <Icone nom="calendrier" taille={16} />{' '}
         {t`un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »),`} <Icone nom="lieu" taille={16} /> {t`le lieu, ou`} <Icone nom="etincelle" taille={16} />{' '}
         {t`la proposition de l’IA, qui regarde quelques photos, le lieu, le calendrier et le contexte du projet. Vous pouvez aussi écrire le vôtre : vous gardez le dernier mot.`}
-      </TeteEtape>
-      <div class="reglages-etape ligne">
+      </AideEtape>
+      <div class="reglages-etape ligne reglages-nommage">
         <label class="case">
           <input type="checkbox" checked={tous} onChange={(e) => setTous(e.currentTarget.checked)} />{' '}
           {t`Tous les dossiers (pas seulement les noms automatiques comme « Ko_Samui_18.07.26 »)`}

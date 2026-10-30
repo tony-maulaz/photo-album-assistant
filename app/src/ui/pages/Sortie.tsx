@@ -7,7 +7,8 @@ import { genererRapport, phraseBilan, texteDisparus } from '../../lib/rapport';
 import { type ActionSynchro, type EtatSortie, langueDeLaSortie, nomsSortie, octetsACopier, planifierSynchro, sourceRelue, type SourceRelue } from '../../lib/sortie';
 import { actionsAlbum, synchroniserAlbum, titreDossier, type ResultatAlbum } from '../../navigateur/album';
 import { listerSortie, synchroniser, type ProgressionSynchro, type ResultatSynchro } from '../../navigateur/synchro';
-import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreProgression, BarreValidation } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { confirmer } from '../composants/Dialogues';
 import { allerEtape, changementsSource, changerEtape, configuration, enregistrerMaintenant, journal, notifier, revenirDe, session, texteErreur, versionPlan } from '../etat';
 import { miseAJourDemandee } from '../composants/BandeauSource';
@@ -214,9 +215,10 @@ export function PageSortie() {
 
   return (
     <div class="page etroite avec-barre">
-      <TeteEtape numero={ETAPE.sortie} titre={nomEtape(ETAPE.sortie)}>
+      <LigneEtape titre={nomEtape(ETAPE.sortie)} aide={{ cle: 'sortie' }} />
+      <AideEtape cle="sortie">
         {t`L’application écrit le résultat dans le dossier de sortie, puis vérifie que chaque fichier du dossier à trier s’y retrouve. Vous pouvez la relancer à tout moment : seul ce qui a changé est copié ou déplacé.`}
-      </TeteEtape>
+      </AideEtape>
 
       <h2>{t`Ce qui sera dans « ${s.sortie.racine.name} »`}</h2>
       <table class="tableau">

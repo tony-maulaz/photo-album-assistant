@@ -8,9 +8,8 @@ import { cheminDossier, contenu, resumes, RACINE, type DossierPlan, type Fichier
 import { premierDossierAvecPhotos } from '../../lib/rangement';
 import { nomPourJournee } from '../../lib/nommage';
 import { groupesParJour } from '../../lib/selection';
-import { BarreValidation, AnnulerRetablir, RaisonDesactivee } from '../composants/Cadre';
-import { BoutonAide, EnteteEtape } from '../composants/EnteteEtape';
-import { CurseurTaille } from '../composants/CadreCommun';
+import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Icone } from '../composants/Icones';
 import { GrillePhotos } from '../composants/GrillePhotos';
 import { ActionsDossier, PanneauDossiers, SEUIL_PETIT, styleLargeurPanneau, TitreVue } from '../composants/PanneauDossiers';
@@ -201,27 +200,21 @@ export function PageOrganiser() {
 
   return (
     <div class="page-organiser" style={styleLargeurPanneau()}>
-      <EnteteEtape
-        cle="lieux"
-        numero={ETAPE.lieux}
-        titre={t`Lieux et sorties`}
-        ouverte={!arborescencePrete}
-        explication={
-          <>
-            {t`Voici les dossiers prévus. Corrigez ce qui est mal rangé : cliquez sur des photos, puis glissez-les sur le bon dossier à gauche (ou « Déplacer… »). Rien n’est copié avant l’étape ${ETAPE.sortie}, et « Annuler » défait la dernière action.`}
-            {s.projet.mode === 'vrac' && <> {t`Les petits dossiers, les noms et les regroupements viennent aux étapes suivantes : inutile de tout régler ici.`}</>}
-          </>
-        }
-      >
-        {!arborescencePrete && (
-          <p class="encart attention">
-            {t`L’arborescence n’est pas encore calculée : les photos sont encore en vrac.`}{' '}
-            <button type="button" class="principal" onClick={() => allerEtape('tri')}>
-              {t`Aller au tri automatique`}
-            </button>
-          </p>
-        )}
-      </EnteteEtape>
+      {/* Forme E (D112) : la ligne de l'étape reste en haut (Taille, ↶ ↷, Aide, Menu) ; le panneau des dossiers se
+          colle dessous, les photos suivent la page. */}
+      <LigneEtape titre={t`Lieux et sorties`} aide={{ cle: 'lieux', ouverte: !arborescencePrete }} taille={!temps && !enAutres} />
+      <AideEtape cle="lieux" ouverte={!arborescencePrete}>
+        {t`Voici les dossiers prévus. Corrigez ce qui est mal rangé : cliquez sur des photos, puis glissez-les sur le bon dossier à gauche (ou « Déplacer… »). Rien n’est copié avant l’étape ${ETAPE.sortie}, et « Annuler » défait la dernière action.`}
+        {s.projet.mode === 'vrac' && <> {t`Les petits dossiers, les noms et les regroupements viennent aux étapes suivantes : inutile de tout régler ici.`}</>}
+      </AideEtape>
+      {!arborescencePrete && (
+        <p class="encart attention tete-lieux">
+          {t`L’arborescence n’est pas encore calculée : les photos sont encore en vrac.`}{' '}
+          <button type="button" class="principal" onClick={() => allerEtape('tri')}>
+            {t`Aller au tri automatique`}
+          </button>
+        </p>
+      )}
       <PanneauDossiers />
       <section class="contenu-organiser">
         <div class="tete-vue">
@@ -252,14 +245,6 @@ export function PageOrganiser() {
             }
           />
           {!enMisDeCote && !enAutres && <ActionsDossier />}
-          <span class="espace" />
-          <div class="barre-outils">
-            <AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />
-            {!temps && !enAutres && (
-              <CurseurTaille />
-            )}
-          </div>
-          <BoutonAide cle="lieux" ouverte={!arborescencePrete} libelle={t`Aide`} />
         </div>
         {choisis.size > 0 && !enAutres && !temps && (
           <div class="barre-action" role="toolbar" aria-label={t`Photos sélectionnées`}>

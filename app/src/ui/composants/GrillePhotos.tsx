@@ -19,6 +19,7 @@ import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../.
 import { reglages, serviceMiniatures, session, versionPlan } from '../etat';
 import { dateHeure, jourCourt, pluriel } from '../format';
 import { ancre, glisse, selection, visionneuse, vue, VUE_MIS_DE_COTE } from '../organiser';
+import { bornesFenetre } from './CadreCommun';
 import { Icone } from './Icones';
 
 const MARGE = 20;
@@ -169,10 +170,13 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     return s ? arrivees([...s.plan.fichiers.values()]).at(-1)?.jour : undefined;
   }, [versionPlan.value, session.value]);
   const position = (i: number) => ({ x: MARGE + disposition.colonne[i] * largeurCase, y: disposition.haut[disposition.ligne[i]] });
+  /** Ce qu'on peut défiler sans redessiner la grille (voir l'écouteur de la fenêtre). */
+  const pasDefile = useRef(0);
+  pasDefile.current = hauteurCase / 2;
 
-  // Racine du défilement (lot 4, C-7.6 bis) : la grille défile d'elle-même, ou bien, sur un écran très bas
-  // où la page défile en entier (`overflow: visible`), avec la fenêtre. Elle ne dessine toujours que les
-  // photos visibles ; une seule barre de défilement, jamais deux l'une dans l'autre.
+  // Racine du défilement : la page entière (forme E, D112 : `overflow: visible`), ou la grille elle-même si une
+  // page la met dans une boîte. Elle ne dessine toujours que les photos visibles ; une seule barre de
+  // défilement, jamais deux l'une dans l'autre.
   const parFenetre = () => !!conteneur.current && getComputedStyle(conteneur.current).overflowY === 'visible';
   /** Défilement de la grille : en pixels depuis son haut. */
   const hautVu = () => {
@@ -184,6 +188,16 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     const el = conteneur.current;
     if (!el) return 0;
     return parFenetre() ? window.innerHeight : el.clientHeight;
+  };
+  /** Ce qu'on voit vraiment de la grille (en px depuis son haut) : sous la ligne de l'étape et la tête de table collées, au-dessus de la barre du bas. */
+  const vueReelle = () => {
+    const el = conteneur.current;
+    if (!el || !parFenetre()) return { haut: hautVu(), hauteur: hauteurVue() };
+    const r = el.getBoundingClientRect();
+    const { haut, bas } = bornesFenetre();
+    const tete = el.closest('.table-cadre')?.querySelector('.tete-table')?.getBoundingClientRect();
+    const dessus = Math.max(haut, tete && tete.height ? tete.bottom : 0);
+    return { haut: dessus - r.top, hauteur: Math.max(0, bas - dessus) };
   };
   const allerA = (y: number) => {
     const el = conteneur.current;
@@ -201,11 +215,23 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     };
     const obs = new ResizeObserver(noter);
     obs.observe(el);
-    const fenetre = () => parFenetre() && setDefile(hautVu());
+    // La page défile (forme E) : une mesure par image, et un nouveau rendu seulement quand on a bougé d'une
+    // demi-case (les photos dessinées débordent de deux rangées de part et d'autre de ce qu'on voit).
+    let attente = 0;
+    const mesurer = () => {
+      attente = 0;
+      if (!parFenetre()) return;
+      const y = hautVu();
+      setDefile((d) => (Math.abs(y - d) < pasDefile.current ? d : y));
+    };
+    const fenetre = () => {
+      if (!attente) attente = requestAnimationFrame(mesurer);
+    };
     window.addEventListener('scroll', fenetre, { passive: true });
     window.addEventListener('resize', noter);
     return () => {
       obs.disconnect();
+      cancelAnimationFrame(attente);
       window.removeEventListener('scroll', fenetre);
       window.removeEventListener('resize', noter);
     };
@@ -230,9 +256,10 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     if (nouvelles.size !== serrees.size || [...nouvelles].some((id) => !serrees.has(id))) setSerrees(nouvelles);
   });
 
-  // Nouvelle vue : on remonte en haut.
+  // Nouvelle vue : on remonte au haut de la grille, juste sous la ligne de l'étape et la tête de table collées.
   useEffect(() => {
-    if (conteneur.current && hautVu() > 0) allerA(0);
+    const vu = vueReelle();
+    if (conteneur.current && vu.haut > 0) allerA(hautVu() - vu.haut);
     setDefile(hautVu());
   }, [options.cleVue ?? vue.value]);
 
@@ -269,9 +296,11 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         const { y } = position(i);
         // En remontant, on montre aussi le titre de la journée au-dessus de la ligne.
         const titre = disposition.titres.some((g) => g.debut === disposition.premier[disposition.ligne[i]]) ? TITRE : 0;
-        const haut = hautVu();
-        if (y - titre < haut) allerA(y - titre - MARGE);
-        else if (y + hauteurCase > haut + hauteurVue()) allerA(y + hauteurCase - hauteurVue() + MARGE);
+        // La photo choisie reste entière, jamais sous la ligne de l'étape ni sous la barre du bas.
+        const vu = vueReelle();
+        const decalage = hautVu() - vu.haut;
+        if (y - titre < vu.haut) allerA(y - titre - MARGE + decalage);
+        else if (y + hauteurCase > vu.haut + vu.hauteur) allerA(y + hauteurCase - vu.hauteur + MARGE + decalage);
       }
       e.preventDefault();
     };
@@ -321,7 +350,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
       return { x: ev.clientX - boite.left, y: ev.clientY - boite.top + el.scrollTop };
     };
     const fenetre = parFenetre();
-    const zone = () => (fenetre ? { top: 0, bottom: window.innerHeight } : el.getBoundingClientRect());
+    const zone = () => (fenetre ? { top: bornesFenetre().haut, bottom: bornesFenetre().bas } : el.getBoundingClientRect());
     const depart = point(e);
     const base = e.ctrlKey || e.metaKey ? new Set(choisis) : new Set<string>();
     if (!e.ctrlKey && !e.metaKey) selection.value = new Set();

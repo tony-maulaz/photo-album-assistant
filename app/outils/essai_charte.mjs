@@ -26,7 +26,8 @@
 //   - la barre du bas des étapes où l'on écarte dit « Rien n'est supprimé » (C-8.4) ;
 //   - les parties repliables montrent le chevron SVG, pas le triangle du navigateur (C-5.1) ;
 //   - « Annuler » et « Rétablir » tiennent sur une ligne de 32 px, même avec le plus
-//     long geste court (sonde), sans déborder ni faire bouger la grille (C-8.2) ;
+//     long geste court (sonde), sans déborder ni faire bouger la grille (C-8.2) ; dans la ligne de
+//     l'étape (forme E, D112), ↶ en icône seule garde 32 × 32 px, la ligne 48 px, et ↶ ne bouge pas ;
 //   - toute aide IA porte l'étincelle et son prix, ou « … » (C-4.6) ;
 //   - aucune commande coupée par le bord de l'écran (C-6.2), rien qui défile en largeur (C-7.1) ;
 //   - rien n'est posé sur une photo : ni pastille, ni étoile, ni marque, ni pseudo-élément écrit (C-9.1) ;
@@ -304,6 +305,8 @@ function mesurer() {
     .filter((x) => visible(x) && !x.matches('.lien'))
     .filter((x) => !x.matches('[role="tab"], .onglet-doublons'))
     .filter((x) => x.matches('.bouton-ia') || /\bIA\b|\bl’IA\b/.test(x.textContent || ''))
+    // Désactivée, elle dit ce qui lui manque à la place du prix (C-4.6, C-4.7) : le prix revient dès qu'elle peut servir.
+    .filter((x) => !(x.disabled && x.dataset.raison === 'libelle' && x.querySelector('[data-icone="etincelle"]')))
     .filter((x) => !x.querySelector('[data-icone="etincelle"]') || !/CHF|…|gratuit|rien à faire|en cours|déjà fait/.test(x.textContent || ''))
     .map((x) => `« ${nom(x)} »`);
   // C-6.2, C-7.1 : aucune commande coupée par le bord de l'écran, aucune colonne qui défile en largeur.
@@ -317,7 +320,7 @@ function mesurer() {
     .map((x) => `« ${nom(x) || x.className} »`);
   // Une commande d'une barre (en-tête de vue, barre du bas, en-tête de Comparer) ne déborde pas de sa barre
   // sur la colonne voisine (barre d'outils qui ne passe pas à la ligne).
-  for (const barre of document.querySelectorAll('.tete-vue, .tete-etape, .barre-validation, .comparateur-tete, .barre-action, .entete-cadre, .outils-cadre, .tete-col, .barre-haut-recadreur, .barre-bas-recadreur')) {
+  for (const barre of document.querySelectorAll('.tete-vue, .tete-etape, .barre-validation, .comparateur-tete, .barre-action, .ligne-etape, .outils-cadre, .tete-col, .barre-haut-recadreur, .barre-bas-recadreur')) {
     const bb = barre.getBoundingClientRect();
     if (!bb.width || !bb.height) continue;
     for (const x of barre.querySelectorAll('button, label, input, select')) {
@@ -572,6 +575,22 @@ try {
         if (m.barre && ECARTE.has(m.etape) && !m.bouclier) fautes.push(`${ici} : barre du bas sans « Rien n’est supprimé » et son bouclier (C-8.4)`);
         console.log(`${m.petits.length || m.faibles.length || autres.length || m.desactives.length || m.vertsAilleurs.length || fautes.length > avant ? '✗' : '✓'} ${ici} : plus petit texte ${m.min} px, ${m.faibles.length} contraste(s) faible(s), ${m.pleins.length} plein(s)`);
         // C-8.2 : avec le plus long geste court possible, « Annuler » garde sa ligne de 32 px et la barre ne bouge pas.
+        // Forme E (D112) : ↶ de la ligne de l'étape est une icône seule ; son nom lu prend le geste, le bouton garde
+        // 32 × 32 px, la ligne ses 48 px, et ↶ ne bouge pas.
+        const sondeLigne = await page.evaluate((libelle) => {
+          const texte = document.querySelector('.ligne-etape .bouton-annuler .texte-masque');
+          if (!texte) return null;
+          const bouton = texte.closest('button');
+          const ligne = bouton.closest('.ligne-etape');
+          const avant = [texte.textContent, bouton.getBoundingClientRect().left];
+          texte.textContent = libelle;
+          const b = bouton.getBoundingClientRect();
+          const r = { h: Math.round(b.height), l: Math.round(b.width), ligne: Math.round(ligne.getBoundingClientRect().height), bouge: Math.abs(b.left - avant[1]) > 0.5, dehors: b.right > innerWidth };
+          texte.textContent = avant[0];
+          return r;
+        }, 'Annuler : remettre 1 234 photos à décider');
+        if (sondeLigne && (sondeLigne.h !== 32 || sondeLigne.l !== 32 || sondeLigne.ligne !== 48 || sondeLigne.bouge || sondeLigne.dehors))
+          fautes.push(`${ici} : ↶ de la ligne de l’étape avec un long geste : ${sondeLigne.l}×${sondeLigne.h} px, ligne de ${sondeLigne.ligne} px${sondeLigne.bouge ? ', ↶ bouge' : ''}${sondeLigne.dehors ? ', hors de l’écran' : ''} (32 × 32 et 48 attendus)`);
         const sonde = await page.evaluate((libelle) => {
           const texte = document.querySelector('.bouton-annuler .texte-annuler');
           if (!texte) return null;

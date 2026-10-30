@@ -11,9 +11,8 @@ import { t } from '../../lib/langue';
 import { resumes } from '../../lib/plan';
 import { resultatDuPlan, resultatPropose } from '../../lib/resultatTri';
 import { optionsDuProjet, type OptionsTri } from '../../lib/tri';
-import { ETAPE } from '../../navigateur/projet';
-import { BarreValidation, TeteEtape } from '../composants/Cadre';
-import { CurseurTaille } from '../composants/CadreCommun';
+import { BarreValidation } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { ResultatTri } from '../composants/ResultatTri';
 import { dossiersProposes, memesReglages, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
@@ -25,9 +24,8 @@ export function PageTri() {
   if (s.projet.mode === 'deja_trie')
     return (
       <div class="page etroite">
-        <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique`}>
-          {t`Ce dossier est déjà trié : ses sous-dossiers sont les sorties, il n’y a rien à calculer. Vous pouvez les réorganiser à l’étape suivante.`}
-        </TeteEtape>
+        <LigneEtape titre={t`Tri automatique`} />
+        <p>{t`Ce dossier est déjà trié : ses sous-dossiers sont les sorties, il n’y a rien à calculer. Vous pouvez les réorganiser à l’étape suivante.`}</p>
         <button type="button" class="principal" onClick={() => allerEtape('lieux')}>
           {t`Aller aux lieux et sorties`}
         </button>
@@ -50,9 +48,10 @@ function PageTriVrac() {
 
   return (
     <div class="page avec-barre page-tri">
-      <TeteEtape numero={ETAPE.tri} titre={t`Tri automatique`} cle="tri" outils={<CurseurTaille />}>
+      <LigneEtape titre={t`Tri automatique`} aide={{ cle: 'tri' }} taille />
+      <AideEtape cle="tri">
         {t`Rangez vos photos en dossiers : un par voyage, un par sortie, et la maison mois par mois. Vos photos d’origine ne bougent pas : l’application prépare un plan, la copie se fait à la dernière étape.`}
-      </TeteEtape>
+      </AideEtape>
       <div class="colonnes-tri">
         <TriAuto e={e} o={o} setO={setO} ap={ap} apercu={apercu} actuel={actuel} />
         <ResultatTri r={actuel ?? apercu} apercu={!actuel} />

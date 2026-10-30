@@ -21,4 +21,13 @@ export const TEXTES: Record<string, string> = {
   'Remettre 1 petit dossier à décider': 'Put 1 small folder back to decide',
   'Garder seul « {0} »': 'Keep “{0}” on its own',
   'Remettre « {0} » à décider': 'Put “{0}” back to decide',
+  // Étape 2a : la ligne de l'étape collée en haut (forme E), ↶ ↷ en icônes, Origine, vue en cours en menu.
+  'ou Ctrl+Z pour l’annuler': 'or Ctrl+Z to undo it',
+  'Y aller': 'Go there',
+  'Aller à l’étape {0}, {1}, pour l’annuler': 'Go to step {0}, {1}, to undo it',
+  'Origine': 'Home',
+  'Revenir en haut de la page : frise des étapes, budget de l’IA, onglets': 'Back to the top of the page: step bar, AI budget, tabs',
+  'Dossiers montrés': 'Folders shown',
+  'À nommer': 'To name',
+  'Tous les dossiers': 'All folders',
 };

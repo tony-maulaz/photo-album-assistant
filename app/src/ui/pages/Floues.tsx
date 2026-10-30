@@ -8,12 +8,12 @@ import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { lancerAnalyseDossier } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
-import { BarreValidation, AnnulerRetablir, TeteEtape } from '../composants/Cadre';
+import { BarreValidation } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { GrillePhotos } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, notifier, planifierEnregistrement, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
-import { ETAPE } from '../../navigateur/projet';
 import { nombre, pluriel } from '../format';
 import { selection, visionneuse } from '../organiser';
 import { verdictsIA1 } from '../composants/AidesTri';
@@ -88,10 +88,11 @@ export function PageFloues() {
 
   return (
     <div class="page large avec-barre page-floues">
-      {/* « Annuler : … » et « Rétablir » dans l'en-tête de l'étape (C-8.2) : la ligne des réglages ne passe plus à la ligne. */}
-      <TeteEtape numero={ETAPE.floues} titre={t`Photos floues`} cle="floues" outils={<AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />}>
+      {/* Forme E (D112) : la ligne de l'étape reste en haut (↶ ↷, Aide, Menu) ; la grille suit la page. */}
+      <LigneEtape titre={t`Photos floues`} aide={{ cle: 'floues' }} />
+      <AideEtape cle="floues">
         {t`Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « Mis de côté ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.`}
-      </TeteEtape>
+      </AideEtape>
       <EncartAnalyse photos={concernees} pourquoi={t`il faut mesurer la netteté de chaque photo.`} />
       <div class="reglages-etape ligne">
         {/* Le seuil de netteté (un nombre sans signification pour l'utilisateur) devient « plus tolérant ↔ plus strict » ;

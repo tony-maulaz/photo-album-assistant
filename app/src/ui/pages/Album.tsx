@@ -7,7 +7,8 @@ import { useState } from 'preact/hooks';
 import { cibleEnPages, conseilCible, doublesAlbum, ordreAlbum, paginer, photosAlbum, sections, type ConseilCible, type Page, type Section } from '../../lib/album';
 import { changerLegende, combiner, noterAlbum, periodeDe, tourner, type FichierPlan } from '../../lib/plan';
 import { titreAlbum, titreDossier } from '../../navigateur/album';
-import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreValidation } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Icone } from '../composants/Icones';
 import { demander } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
@@ -444,9 +445,10 @@ export function PageAlbum() {
 
   return (
     <div class="page large avec-barre page-album">
-      <TeteEtape numero={ETAPE.album} titre={nomEtape(ETAPE.album)} cle="album">
+      <LigneEtape titre={nomEtape(ETAPE.album)} aide={{ cle: 'album' }} />
+      <AideEtape cle="album">
         {t`Voici l’album tel qu’il sera préparé pour ifolor : les photos retenues dans l’ordre des journées, regroupées en sections. Modifiez les titres, ajoutez des légendes, découpez ou regroupez les sections ; cliquez une photo pour la modifier.`}
-      </TeteEtape>
+      </AideEtape>
 
       <div class="reglages-etape ligne">
         <label>

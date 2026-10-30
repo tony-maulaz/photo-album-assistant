@@ -3,6 +3,7 @@
 export const TEXTES: Record<string, string> = {
   // Cadre commun : Aide, Taille, barre d'outils.
   'Fermer l’aide de l’étape (Échap)': 'Close the help for this step (Esc)',
+  'Fermer l’aide de l’étape': 'Close the help for this step',
   'Ouvrir l’aide de l’étape': 'Open the help for this step',
   'à lire': 'to read',
   'Taille des photos': 'Photo size',
@@ -89,9 +90,6 @@ export const TEXTES: Record<string, string> = {
   'Toutes les copies': 'All copies',
   'Accepter : aucune photo choisie dans ces groupes': 'Accept: no photo chosen in these groups',
   'Facultatif : l’IA repère la même scène photographiée plusieurs fois (pas seulement les rafales), puis vérifie chaque groupe en grand.': 'Optional: the AI finds the same scene photographed several times (not only bursts), then checks each group in full size.',
-  'Gardez un exemplaire, puis « Accepter ».': 'Keep one copy, then “Accept”.',
-  'Un clic remet une photo à sa place.': 'A click puts a photo back in its place.',
-  'Cliquez la photo à garder, puis « Accepter ».': 'Click the photo to keep, then “Accept”.',
   // Tour 1 des contrôles du lot 4 : Copies d'un même dossier, nom lu, onglet suivant, liste de gauche.
   'Accepter : garder « ': 'Accept: keep “',
   'Accepter : garder « {0} », écarter {1}': 'Accept: keep “{0}”, set aside {1}',
@@ -101,7 +99,6 @@ export const TEXTES: Record<string, string> = {
   '{0} : {1} à accepter': '{0}: {1} to accept',
   '{0}, aucun accepté': '{0}, none accepted',
   'Grouper et classer': 'Group and sort',
-  'Cliquez une photo, ou faites un tri rapide.': 'Click a photo, or do a quick sort.',
   // Tour 2 des contrôles du lot 4 : exemplaires (masculin), Annuler limité à l'étape affichée.
   gardés: 'kept',
   écarté: 'set aside',

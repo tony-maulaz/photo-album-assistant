@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import { aTraduire, t } from '../../lib/langue';
 import { avecDetail, cheminDossier, creerDossier, combiner, deplacerFichiers, type FichierPlan } from '../../lib/plan';
 import { verifierNomDossier } from '../../lib/noms';
-import { appliquer, notifier, session, texteErreur, versionPlan } from '../etat';
+import { annuler, appliquer, notifier, session, texteErreur, versionPlan } from '../etat';
 import { dateHeure, pluriel, taille as tailleTexte } from '../format';
 import { deplacerOuvert, deplacerVers, recents, recentsValides, selection, simplifier, visionneuse } from '../organiser';
 import { lignesIA } from '../pages/AidesPhotos';
@@ -143,7 +143,7 @@ export function DialogueDeplacer() {
         appliquer(avecDetail(combiner(t`Créer 1 dossier`, modification, deplacerFichiers(s.plan, ids, id)), t`Nouveau dossier « ${o.chemin} »`));
         recents.value = [id, ...recents.value].slice(0, 9);
         selection.value = new Set();
-        notifier('ok', t`Dossier « ${o.chemin} » créé avec ${ids.length} élément(s).`);
+        notifier('ok', t`Dossier « ${o.chemin} » créé avec ${ids.length} élément(s).`, { libelle: t`Annuler`, faire: annuler });
       } catch (err) {
         notifier('erreur', texteErreur(err));
       }

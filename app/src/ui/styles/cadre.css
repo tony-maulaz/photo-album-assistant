@@ -1,8 +1,9 @@
-/* Lot 4 de la charte (D111) : le cadre commun des pages d'étape, PROVISOIRE (C-7, C-8) jusqu'à l'essai de
-   l'utilisateur sur de vraies photos. Les pages passées au cadre portent `data-cadre="commun"` sur `.app` :
-   bandes de hauteur fixe, seule la zone de contenu défile, chaque colonne de son côté ; sous 440 px de haut,
-   la page défile en entier et seule la barre du bas reste en place. Les autres pages (`data-cadre="ancien"`)
-   gardent leur défilement d'avant. Chargé en dernier. */
+/* Forme E (retours du 29.10, D112 point 8) sur les 13 étapes, et le cadre commun du lot 4 (D111) sur les pages
+   qui y sont passées (`data-cadre="commun"` : liste, table, panneau, colonne d'Aide). La page défile en entier,
+   avec une seule barre de défilement ; la barre du projet part avec elle ; la ligne de l'étape (`.ligne-etape`,
+   48 px) reste collée en haut, la barre du bas en bas. Ce qui se colle sous la ligne (liste de gauche, panneau,
+   Aide ouverte, têtes de table et de groupe) prend la hauteur de ce qu'on voit (`--haut-visible`, remesurée) :
+   sa fin reste atteignable, même sur une page courte. Hors des étapes, rien ne change. Chargé en dernier. */
 
 /* « Valider et continuer » au même pixel sur toutes les pages : la barre du bas fait 56 px sous 1440 px de
    large ou sous 700 px de haut, le bouton à 6 px du bord (centré dans 56 px). */
@@ -14,7 +15,7 @@
   }
 }
 
-.app[data-cadre='commun'] {
+.app[data-ligne] {
   --h-app-cadre: var(--h-app);
   --h-barre-cadre: var(--h-barre-bas);
   --l-droit: var(--l-panneau-droit);
@@ -22,132 +23,299 @@
 }
 
 @media (max-width: 1439.98px) {
-  .app[data-cadre='commun'] {
+  .app[data-ligne] {
     --l-droit: var(--l-panneau-droit-petit);
     --l-aide-cadre: var(--l-aide-petit);
   }
 }
 
 @media (max-width: 1439.98px), (max-height: 699.98px) {
-  .app[data-cadre='commun'] {
+  .app[data-ligne] {
     --h-barre-cadre: var(--h-barre-bas-petit);
   }
 }
 
 @media (max-width: 1180px), (max-height: 699.98px) {
-  .app[data-cadre='commun'] {
+  .app[data-ligne] {
     --h-app-cadre: var(--h-app-petit);
+  }
+
+  /* Têtes de colonne de 48 px sous 700 px de haut et au palier. */
+  :root {
+    --h-tete-col: var(--h-tete-col-petit);
   }
 }
 
-/* Le cadre tient dans la fenêtre, jusqu'au palier de 1024 px (C-7.6) : rien ne défile en largeur. */
-body:has(.app[data-cadre='commun']) {
+/* Les étapes tiennent dans la fenêtre, jusqu'au palier de 1024 px (C-7.6) : la ligne de l'étape n'en sort pas. */
+body:has(.app[data-ligne]) {
   min-width: 0;
 }
 
-.app[data-cadre='commun'] main {
-  overflow: hidden;
+/* La place de la barre de défilement est toujours gardée (Chrome et Edge sous Windows) : ↶ et « Valider » restent
+   au même pixel, que la page défile ou non. */
+html:has(.app[data-ligne]) {
+  scrollbar-gutter: stable;
 }
 
-/* --- Barre de l'application : hauteur fixe ; Aide juste avant Menu ; au palier, frise et nom du projet masqués --- */
+/* Ce qu'on fait venir à l'écran (focus, « voir ») s'arrête sous la ligne de l'étape et au-dessus de la barre du bas.
+   La marge est sur les contenus, jamais sur la fenêtre (`scroll-padding`) : la ligne collée, posée dans cette marge,
+   s'y croirait cachée, et chaque commande qui y prend le focus ferait remonter la page (tour 1, D1). Ce qui est déjà
+   collé sous la ligne ou au bas (colonnes, têtes, barres) n'en a pas : il est toujours en vue. Spécificité nulle :
+   les marges propres d'un élément passent avant. */
+:where(.app[data-ligne] main) * {
+  scroll-margin-top: calc(var(--h-ligne-etape) + var(--e2));
+  scroll-margin-bottom: calc(var(--haut-barre-validation) + var(--e2));
+}
 
-.app[data-cadre='commun'] .entete {
+:where(
+    .app[data-ligne]
+      :is(
+        .colonne-liste,
+        .panneau-cadre,
+        .panneau-aide,
+        .pile-droite,
+        .tete-table,
+        .carte-doublons > header,
+        .panneau-dossiers,
+        .liste-petits,
+        .resultat-tri,
+        .panneau-photo,
+        .barre-validation,
+        .barre-action
+      )
+  )
+  * {
+  scroll-margin: 0;
+}
+
+/* La barre du bas avant d'être mesurée (BarreValidation) : sa hauteur en CSS. */
+@media (max-width: 1439.98px), (max-height: 699.98px) {
+  :root {
+    --haut-barre-validation: var(--h-barre-bas-petit);
+  }
+}
+
+/* --- Barre du projet : elle part avec la page ; au palier, frise et nom du projet masqués --- */
+
+.app[data-ligne] .entete {
   height: var(--h-app-cadre);
   gap: var(--e3);
   padding-right: var(--e5);
 }
 
-.app[data-cadre='commun'] .entete .projet {
+.app[data-ligne] .entete .projet {
   flex: 0 1 auto;
   min-width: 0;
 }
 
-.app[data-cadre='commun'] .avancement-etapes {
+.app[data-ligne] .avancement-etapes {
   flex: 1 1 auto;
 }
 
 @media (max-width: 1180px) {
-  .app[data-cadre='commun'] .entete .projet,
-  .app[data-cadre='commun'] .bandeau {
+  .app[data-ligne] .entete .projet,
+  .app[data-ligne] .bandeau {
     display: none;
   }
 }
 
-button.aide-cadre {
-  flex: 0 0 auto;
-  margin-right: calc(var(--e2) - var(--e3));
+/* Hors des étapes (accueil, configuration, réglages…), la barre de l'application ne change pas : elle reste en haut. */
+.app:not([data-ligne]) > .entete {
+  position: sticky;
+  top: 0;
 }
 
-/* « à lire » : l'Aide de l'étape n'a pas encore été ouverte (brun = reste à faire, C-3.3). */
-.marque-a-lire {
-  margin-left: var(--e1);
-  padding: 0 var(--e2);
-  border-radius: var(--r-pastille);
-  background: var(--afaire-doux);
-  color: var(--afaire);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  font-weight: 600;
+/* --- La ligne de l'étape : collée en haut, sur une ligne de 48 px --- */
+
+.haut-etape {
+  position: sticky;
+  top: 0;
+  z-index: 35;
 }
 
-/* --- La page : en-tête d'étape, barre d'outils, corps (seule partie qui défile), barre du bas --- */
-
-.page-cadre {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  padding-bottom: var(--h-barre-cadre);
-}
-
-.entete-cadre {
-  flex: 0 0 auto;
+.ligne-etape {
   display: flex;
   align-items: center;
   gap: var(--e4);
-  min-height: 76px;
-  padding: 10px var(--e5);
+  height: var(--h-ligne-etape);
+  padding: 0 var(--e4) 0 var(--e5);
   background: var(--surface);
+  border-bottom: 1px solid var(--filet);
 }
 
-.titre-cadre {
+.gauche-ligne {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--e4);
 }
 
-.titre-cadre h1 {
+/* Le titre ne cède jamais sa place. */
+.ligne-etape h1 {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
   margin: 0;
   font-size: var(--t-titre);
   line-height: var(--lh-titre);
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.consigne {
-  margin: 0;
-  color: var(--texte-2);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
+/* À droite, toujours dans le même ordre et aux mêmes largeurs : ↶ est à 284 px du bord droit sur chaque page
+   (x 996 à 1280, x 1156 à 1440). */
+.droite-ligne {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
 }
 
-.entete-cadre .annuler-retablir {
+.place-taille {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  width: 188px;
+}
+
+.separateur-ligne {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 6px;
+  background: var(--filet);
+}
+
+.annuler-retablir.icones-seules {
+  display: inline-flex;
+  gap: var(--e1);
+}
+
+.ligne-etape button.icone-seule {
+  width: 32px;
+  min-width: 0;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-color: transparent;
+  background: none;
+  color: var(--texte);
+}
+
+.ligne-etape button.icone-seule:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--neutre-doux);
+}
+
+.ligne-etape button.aide-ligne {
+  position: relative;
+  width: 83px;
+  justify-content: center;
+}
+
+.place-aide {
+  flex: none;
+  width: 83px;
+}
+
+.ligne-etape .bouton-menu {
+  width: 92px;
+  justify-content: center;
+}
+
+/* « à lire » : un point bleu sur le bouton Aide tant que l'Aide de l'étape n'a pas été ouverte ; le mot est lu. */
+.point-a-lire {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aide-bord);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Taille des photos (retours du 29.10, question 11) : une petite photo, un curseur de 12 crans, une grande photo,
+   en encre neutre ; les deux photos sont des boutons bordés dès le repos (« on clique, on ne tire pas »). Même
+   composant sur toutes les pages : dans la ligne de l'étape, à gauche de ↶. */
+.taille-cadre {
   flex: 0 0 auto;
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
 }
 
-/* La Taille, « Annuler » et « Rétablir » restent sur la ligne du titre, à la même hauteur, même quand un long
-   message passe sur deux lignes et grandit l'en-tête (76 px, contenu de 56 : 12 px au-dessus de 32 px). */
-.entete-cadre > .taille-cadre,
-.entete-cadre > .annuler-retablir {
-  align-self: flex-start;
-  margin-top: var(--e3);
+button.bout-taille {
+  width: 30px;
+  padding: 0;
+  border-color: var(--filet-fort);
+  color: var(--texte-2);
 }
 
-/* Message passager des pages du cadre : dans l'en-tête, à la place de la consigne, à côté d'« Annuler » ; jamais
-   sur les photos, le plein ou la barre du bas (tour 2 du lot 4). Sans message, l'élément reste là, vide, pour
-   le lecteur d'écran (role=status) : masqué à l'écran seulement, jamais `display: none`, qui le sortirait de
-   l'arbre d'accessibilité (tour 3, WCAG 4.1.3). Dans une vue en grand ou un dialogue, la bulle d'avant revient. */
+button.bout-taille:hover:not(:disabled) {
+  color: var(--texte);
+}
+
+.curseur-taille {
+  width: 120px;
+}
+
+/* Fenêtre de 1180 px ou moins (1024) : la piste passe à 96 px. */
+@media (max-width: 1180px) {
+  .place-taille {
+    width: 164px;
+  }
+
+  .ligne-etape .curseur-taille {
+    width: 96px;
+  }
+}
+
+/* « Rafales ▾ » : la vue en cours, quand les onglets ou les filtres sont partis avec la page (C-4.12). */
+.menu-vue {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+button.bouton-vue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  max-width: 220px;
+  padding: 0 var(--e2);
+  border-color: transparent;
+  background: none;
+  font-weight: 600;
+}
+
+button.bouton-vue:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--neutre-doux);
+}
+
+.nom-vue {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menu-vue .menu-deroulant {
+  left: 0;
+  right: auto;
+  top: calc(100% + 6px);
+}
+
+/* Message passager : dans la ligne, à droite du titre ; deux lignes de 14 px au plus, ce qui s'est passé en gras ;
+   entier dans l'infobulle. Sans message, l'élément reste là, vide, pour le lecteur d'écran (role=status) : masqué
+   à l'écran seulement, jamais `display: none` (tour 3, WCAG 4.1.3). Dans une vue en grand ou un dialogue, la
+   bulle d'avant revient. */
 .message-entete:empty {
   position: absolute;
   width: 1px;
@@ -163,12 +331,15 @@ button.aide-cadre {
 }
 
 .message-entete {
+  flex: 1 1 0;
   display: flex;
   align-items: center;
   gap: var(--e2);
   min-width: 0;
+  margin: 0;
   color: var(--texte);
-  font-weight: 600;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
   animation: apparition 0.18s ease-out;
 }
 
@@ -180,66 +351,67 @@ button.aide-cadre {
   -webkit-line-clamp: 2;
 }
 
-.message-entete.erreur .pastille-message {
-  background: var(--perte);
-  color: var(--sur-perte);
+.message-entete strong {
+  font-weight: 700;
+}
+
+.message-entete.erreur strong,
+.message-entete.erreur .icone {
+  color: var(--perte);
+}
+
+.rappel-annuler {
+  color: var(--texte-2);
+}
+
+.rappel-annuler svg {
+  vertical-align: -2px;
 }
 
 .message-entete button.lien {
   flex: none;
 }
 
-body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
+body:not(:has([role='dialog'])) .app[data-ligne] .messages {
   display: none;
 }
 
-/* Sous 700 px de haut : la consigne sur la ligne du titre (52 px). */
-@media (max-height: 699.98px) {
-  .entete-cadre {
-    min-height: 52px;
-    padding-top: 6px;
-    padding-bottom: 6px;
-  }
-
-  .entete-cadre > .taille-cadre,
-  .entete-cadre > .annuler-retablir {
-    margin-top: var(--e1);
-  }
-
-  .titre-cadre {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: baseline;
-    column-gap: var(--e4);
-  }
-
-  .titre-cadre h1 {
-    flex: none;
-    white-space: nowrap;
-  }
+/* L'Aide d'une étape pas encore passée au cadre commun : son texte, sous la ligne, au début de la page. */
+.aide-etape {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--e4);
+  margin: 0 0 var(--e4);
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
+  background: var(--surface);
+  color: var(--texte-2);
 }
 
-/* Palier sous 700 px de haut : la consigne, « Annuler : … » et « Rétablir » en 14 px, pour que l'en-tête reste
-   sur une ligne de 52 px d'un geste à l'autre (la page ne descend pas au clic) ; rien n'est coupé (C-10.4, C-8.2) :
-   si la place manque encore, la consigne passe dessous (tour 1 du lot 4). */
-@media (max-width: 1180px) and (max-height: 699.98px) {
-  .entete-cadre .consigne,
-  .entete-cadre .annuler-retablir button {
-    font-size: var(--t-petit);
-    line-height: var(--lh-petit);
-  }
+.texte-aide-etape {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 960px;
+}
 
-  .entete-cadre button.bouton-annuler {
-    min-width: 300px;
-  }
+.bas-aide-etape {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+}
 
-  .entete-cadre button.bouton-retablir {
-    min-width: 132px;
-  }
+.outils-page {
+  margin: 0 0 var(--e3);
+}
 
-  .titre-cadre {
-    column-gap: var(--e3);
-  }
+/* --- Le cadre commun : barre d'outils, corps (la liste, la table, le panneau, l'Aide), barre du bas --- */
+
+.page-cadre {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--h-barre-cadre);
 }
 
 .outils-cadre {
@@ -287,64 +459,24 @@ body:not(:has([role='dialog'])) .app[data-cadre='commun'] .messages {
   gap: var(--e2);
 }
 
-/* Taille des photos (retours du 29.10, question 11) : une petite photo, un curseur de 12 crans, une grande photo,
-   en encre neutre ; les deux photos sont des boutons bordés dès le repos (« on clique, on ne tire pas »). Même
-   composant sur toutes les pages : dans l'en-tête de l'étape, à gauche d'« Annuler ». */
-.taille-cadre {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e1);
-}
-
-button.bout-taille {
-  width: 30px;
-  padding: 0;
-  border-color: var(--filet-fort);
-  color: var(--texte-2);
-}
-
-button.bout-taille:hover:not(:disabled) {
-  color: var(--texte);
-}
-
-.curseur-taille {
-  width: 120px;
-}
-
-/* Au palier (contenu de 1180 px ou moins, Aide déduite : à 1280 et 1440 avec l'Aide ouverte), la piste passe à
-   96 px (proposition du 29.10, § 7). */
-.page-cadre[data-palier] .curseur-taille {
-  width: 96px;
-}
-
-/* Fenêtre elle-même de 1180 px ou moins (1024) : la place manque encore à l'en-tête tant qu'« Annuler » garde sa
-   largeur ; restent les deux photos (28 px), un cran chacune, à 8 px de la consigne et d'« Annuler » au lieu de 16.
-   En anglais, « Click the photo to keep, then “Accept”. » tient alors sur la ligne du titre à côté de « Nothing to
-   undo here » et « Nothing to redo here » (C-10.4, tour 1). Provisoire, à revoir avec la place d'« Annuler » (autre
-   analyse en cours). */
-.page-cadre[data-etroit] .curseur-taille {
-  display: none;
-}
-
-.page-cadre[data-etroit] .entete-cadre > .taille-cadre {
-  margin-inline: calc(var(--e2) - var(--e4));
-}
-
-.page-cadre[data-etroit] button.bout-taille {
-  width: 28px;
-}
-
-/* Le corps : les colonnes côte à côte, chacune défile de son côté. */
+/* Le corps : les colonnes côte à côte ; la table suit la page, la liste, le panneau et l'Aide se collent sous
+   la ligne de l'étape, à la hauteur de ce qu'on voit. Le corps fait au moins cette hauteur : on peut toujours
+   défiler jusqu'à ce qu'ils soient collés, et leur fin se voit. */
 .corps-cadre {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 0 auto;
+  min-height: var(--haut-visible);
   display: flex;
+  align-items: flex-start;
   position: relative;
 }
 
-.corps-cadre > * {
-  min-height: 0;
+.colonne-liste,
+.corps-cadre > .panneau-cadre,
+.corps-cadre > .panneau-aide,
+.pile-droite {
+  position: sticky;
+  top: var(--h-ligne-etape);
+  height: var(--haut-visible);
 }
 
 .colonne-liste {
@@ -352,6 +484,7 @@ button.bout-taille:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .colonne-liste > .panneau-dossiers {
@@ -360,26 +493,32 @@ button.bout-taille:hover:not(:disabled) {
 
 .table-cadre {
   flex: 1 1 0;
+  align-self: stretch;
   min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--table);
 }
 
-/* Tête d'une colonne : 52 px (48 sous 700 px de haut et au palier), fixe au-dessus de ce qui défile. */
+.table-cadre > .defile-col,
+.table-cadre > .grille-photos {
+  flex: 1 0 auto;
+  overflow: visible;
+}
+
+/* Tête d'une colonne : 52 px (48 sous 700 px de haut et au palier), au-dessus de ce qui défile. */
 .tete-col {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--e3);
-  min-height: 52px;
+  min-height: var(--h-tete-col);
   padding: 6px var(--e5);
   border-bottom: 1px solid var(--filet);
 }
 
 @media (max-height: 699.98px), (max-width: 1180px) {
   .tete-col {
-    min-height: 48px;
     padding-top: var(--e1);
     padding-bottom: var(--e1);
   }
@@ -395,7 +534,12 @@ button.bout-taille:hover:not(:disabled) {
   text-overflow: ellipsis;
 }
 
+/* La tête de la table, collée sous la ligne de l'étape ; sa hauteur est fixe : les en-têtes de groupe se collent dessous. */
 .tete-table {
+  position: sticky;
+  top: var(--h-ligne-etape);
+  z-index: 6;
+  height: var(--h-tete-col);
   background: var(--surface);
   flex-wrap: nowrap;
   padding-top: 2px;
@@ -470,13 +614,15 @@ button.menu-liste {
   display: none;
 }
 
+/* Ouverte, elle se pose sous la ligne de l'étape, jusqu'à la barre du bas (le corps est d'abord amené sous la ligne). */
 .page-cadre[data-palier][data-liste='ouverte'] .colonne-liste {
   display: flex;
-  position: absolute;
+  position: fixed;
   z-index: 30;
-  top: 0;
-  bottom: 0;
+  top: var(--h-ligne-etape);
+  bottom: var(--haut-barre-validation);
   left: 0;
+  height: auto;
   width: min(340px, 80vw);
   box-shadow: var(--ombre-flottant);
 }
@@ -498,9 +644,6 @@ button.menu-liste {
   margin: var(--e2) var(--e5);
 }
 
-.table-cadre > .grille-photos {
-  flex: 1 1 auto;
-}
 
 /* --- Panneau de droite : « N photos choisies » (C-8.7 proposée) --- */
 
@@ -723,52 +866,6 @@ button.fermer-aide {
   }
 }
 
-/* --- Écran très bas (moins de 440 px de haut, C-7.6 bis) : la page défile en entier ; la barre du bas reste
-   fixe ; la tête de la table et le haut du panneau (avec leur bouton plein) collent en haut de la fenêtre. --- */
-@media (max-height: 439.98px) {
-  .app[data-cadre='commun'] {
-    height: auto;
-    min-height: 100vh;
-  }
-
-  .app[data-cadre='commun'] main {
-    flex: 0 0 auto;
-    overflow: visible;
-  }
-
-  .app[data-cadre='commun'] .page-cadre {
-    height: auto;
-  }
-
-  .app[data-cadre='commun'] .corps-cadre {
-    align-items: stretch;
-  }
-
-  .app[data-cadre='commun'] .corps-cadre .defile-col,
-  .app[data-cadre='commun'] .table-cadre > .grille-photos {
-    overflow: visible;
-  }
-
-  .app[data-cadre='commun'] .tete-table,
-  .app[data-cadre='commun'] .haut-panneau {
-    position: sticky;
-    top: 0;
-    z-index: 6;
-  }
-
-  .app[data-cadre='commun'] .colonne-liste {
-    position: sticky;
-    top: 0;
-    align-self: flex-start;
-    height: calc(100vh - var(--h-barre-cadre));
-  }
-
-  .page-cadre[data-palier][data-liste='ouverte'] .colonne-liste {
-    position: absolute;
-    height: auto;
-  }
-}
-
 /* --- Doublons dans le cadre (lot 4, § 1.7) : onglets dans la barre d'outils, liste de gauche (ou son menu au
    palier), la tête de la table avec la portée de la section, les groupes qui défilent sous leurs en-têtes collés.
    Chaque en-tête tient sur une ligne et porte le plein, au bout à droite. --- */
@@ -987,7 +1084,8 @@ button.fermer-aide {
   font-weight: 600;
 }
 
-/* La zone des groupes : la seule qui défile ; sous 700 px de haut, elle s'accroche au début des groupes. */
+/* La zone des groupes : elle suit la page (forme E, D112) ; plus d'accroche au début des groupes, qui ramenait le
+   défilement au début du dernier groupe sur une page qui défile en entier (tour 1 du lot 4). */
 .page-doublons {
   --marge-groupes: var(--e4);
 }
@@ -1004,9 +1102,7 @@ button.fermer-aide {
 
 .page-doublons .contenu-doublons {
   display: block;
-  padding: var(--marge-groupes) var(--e5) var(--e5);
-  /* L'accroche pose le groupe là où il est au repos : sous la marge du haut, jamais sous l'en-tête collé. */
-  scroll-padding-top: var(--marge-groupes);
+  padding: var(--marge-groupes) var(--e5) calc(var(--e5) + var(--e4));
 }
 
 .page-doublons .contenu-doublons > .encart,
@@ -1020,20 +1116,9 @@ button.fermer-aide {
   gap: var(--e5);
 }
 
-@media (max-height: 699.98px) {
-  .page-doublons .contenu-doublons,
-  html:has(.page-doublons) {
-    scroll-snap-type: y proximity;
-  }
-
-  .page-doublons .carte-doublons {
-    scroll-snap-align: start;
-  }
-}
-
 /* Un groupe : posé sur la table avec son filet, sans carte blanche (C-6.6 : seuls les dossiers sont des cartes) ;
-   l'en-tête collé en haut tant que le groupe se voit (chacun pousse le précédent), du fond de la table pour
-   cacher ce qui défile dessous. */
+   l'en-tête collé sous la ligne de l'étape et la tête de la table tant que le groupe se voit (chacun pousse le
+   précédent), du fond de la table pour cacher ce qui défile dessous. */
 .page-doublons article.carte-doublons,
 .page-doublons .carte-doublons.repliee {
   background: transparent;
@@ -1055,8 +1140,7 @@ button.fermer-aide {
 
 .page-doublons article.carte-doublons > header {
   position: sticky;
-  /* Collé au bord haut de la zone, pas sous sa marge de 16 px (où les photos défilaient, tour 1 du lot 4). */
-  top: calc(-1 * var(--marge-groupes));
+  top: calc(var(--h-ligne-etape) + var(--h-tete-col));
   z-index: 3;
   display: flex;
   flex-wrap: nowrap;
@@ -1243,9 +1327,19 @@ button.lien-suite {
   font-weight: 500;
 }
 
-/* Le clavier n'est jamais caché sous un en-tête collé (WCAG 2.4.11). */
+/* Sans tête de table (un onglet sans liste, hors palier), l'en-tête de groupe se colle juste sous la ligne. */
+.page-doublons .table-cadre:not(:has(> .tete-table)) article.carte-doublons > header {
+  top: var(--h-ligne-etape);
+}
+
+/* Le clavier n'est jamais caché sous un en-tête collé (WCAG 2.4.11) : la page s'arrête sous la ligne de l'étape,
+   la tête de la table et l'en-tête du groupe. L'en-tête lui-même, collé, est toujours en vue. */
 .page-doublons .carte-doublons :focus {
-  scroll-margin-top: 64px;
+  scroll-margin-top: calc(var(--h-ligne-etape) + var(--h-tete-col) + 64px);
+}
+
+.page-doublons article.carte-doublons > header :focus {
+  scroll-margin-top: 0;
 }
 
 /* Copies exactes : la photo une fois, une ligne par exemplaire (état, dossier, nom, poids). */
@@ -1342,26 +1436,4 @@ button.tuile-doublon.exemplaire:hover:not(:disabled) {
 /* Mis de côté : la grille dans la zone qui défile. */
 .page-doublons .grille-mis-de-cote {
   margin: 0;
-}
-
-/* Écran très bas (moins de 440 px) : la page défile ; les en-têtes de groupe collent sous la tête de la table. */
-@media (max-height: 439.98px) {
-  .app[data-cadre='commun'] .page-doublons .tete-table {
-    height: 48px;
-  }
-
-  .page-doublons article.carte-doublons > header {
-    top: 48px;
-  }
-
-  /* Pas d'accroche sur la page entière : elle ramenait le défilement au début du dernier groupe, et la fin de
-     la liste (« Journée suivante à accepter ») restait sous la barre du bas (tour 1 du lot 4). */
-  html:has(.page-doublons) {
-    scroll-snap-type: none;
-    scroll-padding-top: 64px;
-  }
-
-  .page-doublons .contenu-doublons {
-    padding-bottom: calc(var(--e5) + var(--e4));
-  }
 }

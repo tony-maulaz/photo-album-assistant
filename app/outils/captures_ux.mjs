@@ -1,8 +1,10 @@
 // Captures d'écran de toute l'application, pour une revue de l'interface
 // (convivialité, cohérence des pages) : parcours « Trier un nouveau dossier »
 // des 13 étapes dans Chromium sans affichage, chaque page en 1440×900 (écran
-// visible et pleine page) et en 1280×720, plus les états intéressants
-// (dialogues, visionneuse, Tri rapide, recadrage, propositions de l'IA…).
+// visible et pleine page), en 1280×720 et en 1280×580 (place réelle d'un petit
+// écran) ; la page entière défile (forme E, D112) : une page qui défile est
+// aussi prise à mi-course, ligne de l'étape collée en haut. Plus les états
+// intéressants (dialogues, visionneuse, Tri rapide, recadrage, propositions de l'IA…).
 //
 // Le script construit lui-même un build figé de l'application (vite build,
 // aucun serveur de développement), le sert en statique sur un port libre et
@@ -21,7 +23,8 @@
 //
 // Résultat dans DOSSIER_CAPTURES : les captures (PNG), INDEX.md (liste
 // commentée), mesures.json (position du bouton d'aide, du curseur de taille,
-// des boutons « Annuler » et du bouton principal sur chaque page, plus
+// des boutons « Annuler » (↶ de la ligne de l'étape compris), de la ligne de
+// l'étape et de la barre du projet, et du bouton principal sur chaque page, plus
 // quelques mesures propres au Nommage et à la Sélection), erreurs_console.json,
 // et le build capturé dans .build/.
 //
@@ -244,7 +247,7 @@ function lieuSimule(lat, lon) {
 // ---------- Captures et mesures ----------
 
 const index = [];
-const mesures = { genere_le: new Date().toISOString(), viewports: ['1440x900', '1280x720'], etapes: ETAPES ? [...ETAPES].sort((a, b) => a - b) : 'toutes', pages: {} };
+const mesures = { genere_le: new Date().toISOString(), viewports: ['1440x900', '1280x720', '1280x580'], etapes: ETAPES ? [...ETAPES].sort((a, b) => a - b) : 'toutes', pages: {} };
 const erreurs = [];
 const manques = [];
 let pageCourante = 'démarrage';
@@ -288,11 +291,19 @@ async function mesurer() {
       };
     });
     const loupes = curseurs.filter((c) => c.avec_loupe || /Taille/.test(c.libelle));
-    const bouton = (b) => ({ texte: b.innerText.replace(/\s+/g, ' ').trim().slice(0, 80), title: b.title || null, desactive: b.disabled, parent: classeParent(b), ...boite(b) });
-    const annuler = [...document.querySelectorAll('button')].filter(visible).filter((b) => /^\W*Annuler\b/.test(b.innerText.trim()));
+    const bouton = (b) => ({ texte: b.textContent.replace(/\s+/g, ' ').trim().slice(0, 80), title: b.title || null, desactive: b.disabled, parent: classeParent(b), ...boite(b) });
+    // ↶ de la ligne de l'étape est une icône seule (forme E, D112) : son nom est dans le texte masqué.
+    const annuler = [...document.querySelectorAll('button')].filter(visible).filter((b) => b.matches('[data-place="annuler"]') || /^\W*Annuler\b/.test(b.innerText.trim()));
     const principaux = [...document.querySelectorAll('button.principal')].filter(visible);
     const titres = [...document.querySelectorAll('h1')].filter(visible).map((h) => ({ texte: h.innerText.replace(/\s+/g, ' ').trim(), ...boite(h) }));
     const teteVue = document.querySelector('.tete-vue');
+    // La ligne de l'étape, collée en haut, et la barre du projet, qui part avec la page (forme E).
+    const ligne = document.querySelector('.ligne-etape');
+    const dansLigne = (s) => {
+      const e = ligne?.querySelector(s);
+      return e && visible(e) ? boite(e) : null;
+    };
+    const entete = document.querySelector('header.entete');
     // Plus grand conteneur qui défile à l'intérieur de la page.
     let interne = null;
     for (const e of document.querySelectorAll('body *')) {
@@ -303,6 +314,18 @@ async function mesurer() {
     return {
       viewport: `${innerWidth}x${innerHeight}`,
       hauteur_document: document.scrollingElement.scrollHeight,
+      defilement_page: Math.round(document.scrollingElement.scrollTop),
+      ligne_etape: ligne
+        ? {
+            ...boite(ligne),
+            annuler: dansLigne('[data-place="annuler"]'),
+            taille: dansLigne('[data-place="taille"]'),
+            aide: dansLigne('[data-place="aide"]'),
+            menu_vue: dansLigne('.menu-vue'),
+            message: ligne.querySelector('.message-entete')?.textContent.replace(/\s+/g, ' ').trim() || null,
+          }
+        : null,
+      barre_projet: entete ? boite(entete) : null,
       defilement_interne: interne,
       titres_h1: titres,
       tete_vue: teteVue ? { texte: teteVue.innerText.replace(/\s+/g, ' ').trim().slice(0, 200), ...boite(teteVue) } : null,
@@ -323,8 +346,9 @@ async function retailler(l, h) {
 }
 
 /**
- * Pleine page : la page elle-même ne défile pas (le contenu défile dans <main> ou dans la grille) ;
- * on agrandit donc la fenêtre à la hauteur du contenu (au plus 5000 px), le temps de la capture.
+ * Pleine page : sur les étapes, la page entière défile (forme E, D112) : capture de toute la page. Ailleurs, si
+ * le contenu défile dans un conteneur, on agrandit la fenêtre à la hauteur du contenu (au plus 5000 px), le temps
+ * de la capture.
  */
 async function pleinePage(fichier, m) {
   const d = m.defilement_interne;
@@ -351,7 +375,28 @@ async function capturerElement(selecteur, fichier) {
   if (h > 900) await retailler(1440, 900);
 }
 
-/** Écran visible 1440 + pleine page 1440 + écran visible 1280, avec mesures. */
+/**
+ * La page à mi-course (au moins 330 px plus bas), si elle défile : capture et mesures, puis retour en haut. La
+ * barre du projet et les onglets sont partis, la ligne de l'étape est collée en haut (forme E, D112).
+ */
+async function capturerDefilee(fichier, description, m, cle) {
+  const d = await page.evaluate(() => {
+    const max = document.scrollingElement.scrollHeight - innerHeight;
+    if (max < 20) return null;
+    const y = Math.min(max, Math.max(330, Math.round(max / 2)));
+    window.scrollTo({ top: y, behavior: 'instant' });
+    return { y, max };
+  });
+  if (!d) return;
+  await attendre(400);
+  await page.screenshot({ path: join(SP, fichier) });
+  index.push([fichier, `${description} (défilée de ${d.y} px sur ${d.max})`]);
+  m[cle] = await mesurer();
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await attendre(200);
+}
+
+/** Écran visible 1440 (et défilé) + pleine page 1440 + écran visible 1280×720 + 1280×580 (et défilé), avec mesures. */
 async function capturer(nom, description, { pleine = true, petit = true } = {}) {
   if (!actif()) return;
   pageCourante = nom;
@@ -360,6 +405,7 @@ async function capturer(nom, description, { pleine = true, petit = true } = {}) 
   await page.screenshot({ path: join(SP, `${nom}_1440.png`) });
   index.push([`${nom}_1440.png`, `${description} (écran visible 1440×900)`]);
   m['1440x900'] = await mesurer();
+  await capturerDefilee(`${nom}_1440_defile.png`, `${description} (écran visible 1440×900, page défilée)`, m, '1440x900_defile');
   if (pleine) {
     const remarque = await pleinePage(`${nom}_1440_pleine.png`, m['1440x900']);
     index.push([`${nom}_1440_pleine.png`, `${description} (${remarque})`]);
@@ -369,6 +415,11 @@ async function capturer(nom, description, { pleine = true, petit = true } = {}) 
     await page.screenshot({ path: join(SP, `${nom}_1280.png`) });
     index.push([`${nom}_1280.png`, `${description} (écran visible 1280×720)`]);
     m['1280x720'] = await mesurer();
+    await retailler(1280, 580);
+    await page.screenshot({ path: join(SP, `${nom}_1280x580.png`) });
+    index.push([`${nom}_1280x580.png`, `${description} (écran visible 1280×580)`]);
+    m['1280x580'] = await mesurer();
+    await capturerDefilee(`${nom}_1280x580_defile.png`, `${description} (écran visible 1280×580, page défilée)`, m, '1280x580_defile');
     await retailler(1440, 900);
   }
   mesures.pages[nom] = { description, ...m };
@@ -647,7 +698,8 @@ try {
     await page.waitForFunction(() => document.querySelectorAll('.tuile img').length >= 5, null, { timeout: 30_000 }).catch(() => undefined);
     await attendre(1500);
     await capturer('15_etape07_lieux_premiere_visite', 'Étape 7 Lieux et sorties : première visite (explication ouverte)');
-    if (await page.locator('.replier-entete').count()) await page.locator('.replier-entete').click();
+    // L'Aide de l'étape, ouverte à la première visite, se ferme par « Aide » de la ligne de l'étape (forme E).
+    if (await page.locator('.ligne-etape [data-place="aide"][aria-expanded="true"]').count()) await page.locator('.ligne-etape [data-place="aide"]').click();
     await capturer('16_etape07_lieux_aide_repliee', 'Étape 7 Lieux et sorties : explication repliée');
     // Le plus gros dossier.
     const lignes = await page.locator('.arbre .ligne-dossier').all();
@@ -814,7 +866,8 @@ try {
     await page.waitForFunction(() => document.querySelectorAll('.page-selection .tuile img').length >= 8, null, { timeout: 60_000 }).catch(() => undefined);
     await attendre(2000);
     await capturer('34_etape11_selection_premiere_visite', 'Étape 11 Sélection : état initial, première visite (explication ouverte)');
-    if (await page.locator('.replier-entete').count()) await page.locator('.replier-entete').click();
+    // L'Aide de l'étape, ouverte à la première visite, se ferme par « Aide » de la ligne de l'étape (forme E).
+    if (await page.locator('.ligne-etape [data-place="aide"][aria-expanded="true"]').count()) await page.locator('.ligne-etape [data-place="aide"]').click();
     await capturer('35_etape11_selection_aide_repliee', 'Étape 11 Sélection : explication repliée');
     // Tri rapide.
     await page.getByRole('button', { name: 'Tri rapide' }).click();
@@ -987,9 +1040,11 @@ function indexMd() {
     '- **Simulés (aucun appel réseau)** : OpenStreetMap (grande ville à moins de 25 km, sinon « Lieu lat lon » arrondi au dixième de degré) et l’API Claude (Nommage : noms plausibles, confiance 5 à 9 ; Consolidation : une fusion par répertoire). Clé factice le temps des boutons IA.',
     `- **Polices** : ${env.FONTCONFIG_FILE ? 'dossier POLICES_EMOJI ajouté aux polices du système' : 'polices du système seulement (emoji peut-être en carrés : voir POLICES_EMOJI)'}.`,
     '',
-    '**Pleine page** : la page elle-même ne défile pas (c’est `<main>` ou la grille qui défile) ; les fichiers `_pleine` sont pris en agrandissant la fenêtre à la hauteur du contenu (au plus 5000 px ; mention exacte sur chaque ligne).',
+    '**Défilement** : sur les étapes, la page entière défile, avec une seule barre (forme E, D112) ; la barre du projet et les onglets partent avec elle, la ligne de l’étape reste collée en haut. Les fichiers `_defile` montrent une page qui défile à mi-course (au moins 330 px plus bas).',
     '',
-    `Annexes : \`mesures.json\` (titres, défilement, bouton d’aide, curseur de taille, boutons « Annuler », bouton principal, par page et par taille), \`erreurs_console.json\` (${erreurs.length} messages).`,
+    '**Pleine page** : la page entière quand elle défile ; sinon, si un conteneur défile à l’intérieur, la fenêtre est agrandie à la hauteur de son contenu (au plus 5000 px ; mention exacte sur chaque ligne).',
+    '',
+    `Annexes : \`mesures.json\` (titres, défilement, ligne de l’étape et barre du projet, bouton d’aide, curseur de taille, boutons « Annuler », bouton principal, par page et par taille), \`erreurs_console.json\` (${erreurs.length} messages).`,
     '',
     '## Captures',
     '',

@@ -9,7 +9,7 @@ import { LIBELLES_SIGNAUX, type Signal } from '../../lib/indicateurs';
 import { cheminDossier, RACINE, type FichierPlan } from '../../lib/plan';
 import { arrivees, avancement, copiesRetenues, equilibre, groupesParJour, periodesEquilibre, redondances, type GroupeJour, type Periode } from '../../lib/selection';
 import { BarreValidation, garderFocus, RaisonDesactivee } from '../composants/Cadre';
-import { annulerIci, EnteteCadre, OutilsCadre, PanneauAide, retablirIci, useCadre, useMenuListe } from '../composants/CadreCommun';
+import { annulerIci, LigneEtape, OutilsCadre, PanneauAide, retablirIci, useCadre, useMenuListe } from '../composants/CadreCommun';
 import { Comparateur } from '../composants/Comparateur';
 import { EncartAnalyse } from '../composants/Analyse';
 import { GrillePhotos, photoAMontrer } from '../composants/GrillePhotos';
@@ -706,6 +706,9 @@ export function PageSelection() {
       else if (ctrl && (k.toLowerCase() === 'y' || (k.toLowerCase() === 'z' && e.shiftKey))) retablirIci();
       else if (ctrl && k.toLowerCase() === 'a') selection.value = new Set(courantRef.elements.map((f) => f.id));
       else if (ctrl) return;
+      // Un menu ouvert (« Toutes ▾ », Menu) garde ses touches : Échap le ferme sans vider la sélection, X, 1 et 2
+      // n'agissent pas sur les photos (comme à Doublons).
+      else if (document.querySelector('.menu-deroulant')) return;
       else if ((k === ' ' || k === '1') && ids.length) choisir(ids, 1);
       else if (k === '2' && ids.length) choisir(ids, 2);
       else if (k.toLowerCase() === 'x' && ids.length) choisir(ids, 0);
@@ -777,9 +780,10 @@ export function PageSelection() {
     </div>
   );
   const panneauChoix = <PanneauChoix choisies={choisies} plein={plein === 'album'} album={outilsAlbum} compact={etroit && aide} />;
+  // La consigne a quitté l'en-tête (D112, question 21) : elle ouvre l'Aide.
   const explication = (
     <p>
-      {t`Choisissez les photos de l’album :`} <kbd>{t`Espace`}</kbd> {t`= ★ dans l’album,`} <kbd>2</kbd> {t`= ★★ grande photo (pleine page),`} <kbd>X</kbd>{' '}
+      {t`Cliquez une photo, puis « Dans l’album ».`} {t`Choisissez les photos de l’album :`} <kbd>{t`Espace`}</kbd> {t`= ★ dans l’album,`} <kbd>2</kbd> {t`= ★★ grande photo (pleine page),`} <kbd>X</kbd>{' '}
       {t`= pas pour l’album. Le tri rapide (`}
       <kbd>T</kbd>
       {t`) montre les photos une à une ; les outils à droite vous aident, sans jamais choisir à votre place.`}
@@ -791,12 +795,23 @@ export function PageSelection() {
       class="page-cadre page-selection"
       data-gabarit="photos"
       data-palier={palier ? '' : undefined}
-      data-etroit={etroit ? '' : undefined}
       data-aide={aide ? '' : undefined}
       data-liste={listeOuverte ? 'ouverte' : undefined}
       style={styleLargeurPanneau()}
     >
-      <EnteteCadre titre={nomEtape(ETAPE.selection)} consigne={choisies.length ? t`Cliquez une photo, puis « Dans l’album ».` : t`Cliquez une photo, ou faites un tri rapide.`} />
+      {/* Forme E (D112) : les filtres partent avec la page ; le filtre en cours reste écrit dans la ligne (« Toutes ▾ »). */}
+      <LigneEtape
+        titre={nomEtape(ETAPE.selection)}
+        aide={{ cle: 'selection', colonne: true }}
+        taille
+        vue={{
+          nom: t`Choix`,
+          choix: CHOIX.map(([valeur, libelle]) => ({ cle: valeur, libelle: t(libelle) })),
+          actuelle: filtres.value.etoiles,
+          libelle: t`Grandes`,
+          choisir: (v) => (filtres.value = { ...filtres.value, etoiles: v as Filtres['etoiles'] }),
+        }}
+      />
       <OutilsCadre>
         <BarreChoix photos={dansVue} infos={infos} ia={ia} />
       </OutilsCadre>

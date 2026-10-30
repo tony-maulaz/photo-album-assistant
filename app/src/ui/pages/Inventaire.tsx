@@ -9,7 +9,8 @@ import { heureLocale } from '../../lib/source';
 import type { Progression } from '../../navigateur/inventaire';
 import { ETAPE, nomEtape, type CodeEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
-import { BarreProgression, BarreValidation, TeteEtape } from '../composants/Cadre';
+import { BarreProgression, BarreValidation } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Icone } from '../composants/Icones';
 import { confirmer } from '../composants/Dialogues';
 import { ProgressionAnalyse } from '../composants/Analyse';
@@ -171,9 +172,10 @@ export function PageInventaire() {
     const p = progression;
     return (
       <div class="page etroite">
-        <TeteEtape numero={ETAPE.inventaire} titre={nomEtape(ETAPE.inventaire)}>
-          {t`L’application lit chaque fichier du dossier à trier : taille, date de prise de vue, appareil. Rien n’est modifié.`}
-        </TeteEtape>
+        {/* Une clé à part : quitter cette vue (inventaire fini) ne doit pas replier l'Aide de l'inventaire fini, que
+            l'on n'a pas encore lue. */}
+        <LigneEtape titre={nomEtape(ETAPE.inventaire)} aide={{ cle: 'inventaire-lancer' }} />
+        <AideEtape cle="inventaire-lancer">{t`L’application lit chaque fichier du dossier à trier : taille, date de prise de vue, appareil. Rien n’est modifié.`}</AideEtape>
         {p && (
           <>
             <BarreProgression
@@ -216,17 +218,16 @@ export function PageInventaire() {
 
   return (
     <div class="page avec-barre">
-      <TeteEtape
-        numero={ETAPE.inventaire}
-        titre={nomEtape(ETAPE.inventaire)}
-        outils={
-          <button type="button" class="lien" onClick={() => void mettreAJour()} title={t`Ajoute les photos arrivées dans le dossier depuis l’inventaire, sans rien changer à ce qui est décidé`}>
-            {t`Mettre à jour l’inventaire`}
-          </button>
-        }
-      >
+      <LigneEtape titre={nomEtape(ETAPE.inventaire)} aide={{ cle: 'inventaire' }} />
+      <AideEtape cle="inventaire">
         {t`Voici ce que contient « ${s.source.racine.name} ». L’application analyse maintenant les photos (netteté, ressemblance, copies, rafales) : c’est gratuit, cela se fait sur cet ordinateur et ne modifie rien.`}
-      </TeteEtape>
+      </AideEtape>
+      {/* Une action rare de l'étape : sous la ligne, au début de la page (elle était à droite du titre). */}
+      <p class="outils-page">
+        <button type="button" class="lien" onClick={() => void mettreAJour()} title={t`Ajoute les photos arrivées dans le dossier depuis l’inventaire, sans rien changer à ce qui est décidé`}>
+          {t`Mettre à jour l’inventaire`}
+        </button>
+      </p>
       <AVerifier />
 
       <div class="tableau-bord">

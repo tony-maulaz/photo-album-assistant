@@ -7,13 +7,11 @@ import { aTraduire, t } from '../../lib/langue';
 import { messages, page, reglages, sansSousDossiers, session, versionIA, versionPlan, versionProjet, type Page } from '../etat';
 import { minusculeInitiale, montantChf, nombre } from '../format';
 import { fermerProjet } from '../projets';
-import { explicationOuverte, ouvrirExplication, useExplicationVue } from '../explications';
-import { BoutonAideCadre } from './CadreCommun';
 import { Icone } from './Icones';
 import { Logo } from './Logo';
 
 /** Étapes dont la présentation peut encore changer : la pastille « En essai » suit leur titre et la frise. */
-const ETAPES_EN_ESSAI: ReadonlySet<number> = new Set([ETAPE.album]);
+export const ETAPES_EN_ESSAI: ReadonlySet<number> = new Set([ETAPE.album]);
 
 /**
  * « En essai » (gris neutre, ni orange ni vert) : l'étape marche, sa présentation peut changer ; la phrase est dans
@@ -133,8 +131,8 @@ function Avancement() {
   );
 }
 
-/** Menu (trois traits) : les pages consultées de temps en temps, et fermer le projet. */
-function MenuPrincipal() {
+/** Menu (trois traits) : les pages consultées de temps en temps, et fermer le projet ; sur une étape, au bout de sa ligne. */
+export function MenuPrincipal() {
   const s = session.value;
   const p = page.value;
   const [ouvert, basculer, zone] = useDeroulant();
@@ -184,9 +182,13 @@ function MenuPrincipal() {
   );
 }
 
-/** En-tête sur une seule ligne : logo (accueil), projet, avancement des étapes, budget IA, menu. */
+/**
+ * Barre du projet, sur une seule ligne : logo (accueil), projet, avancement des étapes, budget IA ; Menu au bout,
+ * sauf sur une étape, où Aide et Menu sont dans la ligne de l'étape et cette barre part avec la page (D112).
+ */
 export function Entete() {
   const s = session.value;
+  const surEtape = page.value.nom === 'etape' && !!s;
   versionProjet.value;
   versionIA.value;
   const depense = s ? s.ia.depenseCHF() : 0;
@@ -212,8 +214,7 @@ export function Entete() {
           {t`IA ${nombre(depense, 2)} / ${montantChf(s.projet.budget_chf)} CHF`}
         </span>
       )}
-      <BoutonAideCadre />
-      <MenuPrincipal />
+      {!surEtape && <MenuPrincipal />}
     </header>
   );
 }
@@ -238,27 +239,16 @@ export function Messages() {
   );
 }
 
-/** Explication en deux phrases en tête de chaque page d'étape (§ 5.2). */
-/** En-tête d'une étape ; `outils` : actions rares, discrètes, à droite du titre (« Refaire l'inventaire »). */
-export function TeteEtape({ numero, titre, cle, outils, children }: { numero?: number; titre: string; cle?: string; outils?: ComponentChildren; children: ComponentChildren }) {
-  // Avec `cle`, l'explication s'ouvre à la première visite, puis se replie derrière un bouton « Aide ».
-  useExplicationVue(cle);
-  const ouverte = !cle || explicationOuverte(cle);
+/** En-tête des pages sans ligne d'étape (Configuration, Réglages, Journal…) et de la création du projet : le titre et une phrase. */
+export function TeteEtape({ numero, titre, children }: { numero?: number; titre: string; children: ComponentChildren }) {
   return (
     <div class="tete-etape">
       <h1>
         {numero !== undefined && <span class="numero-etape">{t`Étape ${numero}`}</span>}
         {titre}
         {numero !== undefined && ETAPES_EN_ESSAI.has(numero) && <PastilleEssai />}
-        {cle && (
-          <button type="button" class="bouton-aide" aria-expanded={ouverte} onClick={() => ouvrirExplication(cle, !ouverte)} title={ouverte ? t`Replier l’explication` : t`Afficher l’explication de l’étape`}>
-            <Icone nom="aide" taille={16} />
-            {ouverte ? t`Replier` : t`Aide`}
-          </button>
-        )}
-        {outils && <span class="outils-etape">{outils}</span>}
       </h1>
-      {ouverte && <p class="explication">{children}</p>}
+      <p class="explication">{children}</p>
     </div>
   );
 }
@@ -269,13 +259,13 @@ export function TeteEtape({ numero, titre, cle, outils, children }: { numero?: n
  * pas sous la souris quand le geste change ; le geste avec ses noms est dans
  * l'infobulle. Sans rien à annuler, il le dit (C-4.7).
  */
-export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string; ailleurs?: string }; annuler: () => void }) {
+export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string }; annuler: () => void }) {
   const quoi = historique.prochaineAnnulation;
   if (!historique.peutAnnuler)
     return (
-      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={historique.ailleurs ?? t`Annuler (Ctrl+Z)`}>
+      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={t`Annuler (Ctrl+Z)`}>
         <Icone nom="annuler" taille={16} />
-        <span class="texte-annuler">{historique.ailleurs ? t`Rien à annuler ici` : t`Rien à annuler`}</span>
+        <span class="texte-annuler">{t`Rien à annuler`}</span>
       </button>
     );
   const detail = historique.detailAnnulation ?? quoi;
@@ -288,29 +278,29 @@ export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnul
 }
 
 /** « Rétablir » (Ctrl+Y), à côté d'« Annuler ». */
-export function BoutonRetablir({ peutRetablir, retablir, ailleurs = false }: { peutRetablir: boolean; retablir: () => void; ailleurs?: boolean }) {
+export function BoutonRetablir({ peutRetablir, retablir }: { peutRetablir: boolean; retablir: () => void }) {
   return (
     <button type="button" class="bouton-retablir" disabled={!peutRetablir} data-raison={peutRetablir ? undefined : 'libelle'} onClick={retablir} title={t`Rétablir (Ctrl+Y)`}>
       <Icone nom="retablir" taille={16} />
-      {peutRetablir ? t`Rétablir` : ailleurs ? t`Rien à rétablir ici` : t`Rien à rétablir`}
+      {peutRetablir ? t`Rétablir` : t`Rien à rétablir`}
     </button>
   );
 }
 
-/** « Annuler : … » et « Rétablir », toujours ensemble et sans passer à la ligne entre eux (C-8.2). */
+/** « Annuler : … » et « Rétablir », toujours ensemble et sans passer à la ligne entre eux (C-8.2) : Comparer en grand et Recadreur (sur les étapes, ↶ ↷ de la ligne). */
 export function AnnulerRetablir({
   historique,
   annuler,
   retablir,
 }: {
-  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string; ailleurs?: string; retablirAilleurs?: boolean };
+  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string };
   annuler: () => void;
   retablir: () => void;
 }) {
   return (
     <span class="annuler-retablir">
       <BoutonAnnuler historique={historique} annuler={annuler} />
-      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} ailleurs={historique.retablirAilleurs} />
+      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} />
     </span>
   );
 }

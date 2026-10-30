@@ -54,13 +54,14 @@ Node 24 (fichier `.nvmrc`) : `source ~/.nvm/nvm.sh && nvm use`, puis :
   textes, « Rien n'est supprimé » dans la barre du bas des étapes où l'on
   écarte, contour du clavier à chaque Tab ; `light-dark()` intact dans le
   build ; signale (sans échouer) les écrans sans bouton plein.
-- `node outils/essai_cadre.mjs` : le cadre commun du lot 4 de la charte (D111) sur le fichier construit,
-  à 1440×900, 1280×580, 1024×464 et 1024×400, en clair et en sombre, avec 110 photos fabriquées pour
-  que les colonnes défilent : bandes fixes, un seul bouton plein visible à l'arrivée, à mi-course et en
-  bas de chaque colonne, places de l'Aide, d'Annuler et de Taille, « Valider et continuer » au même
-  pixel sur toutes les pages, Sélection (« N photos choisies »), Recadreur, Doublons et ses gestes. Les
-  pages pas encore passées au cadre (`data-cadre="ancien"`) n'ont que les contrôles généraux. Il échoue
-  tant que Doublons n'est pas passé au cadre.
+- `node outils/essai_cadre.mjs` : le cadre des étapes sur le fichier construit, à 1440×900, 1280×580,
+  1024×464 et 1024×400, en clair et en sombre, avec 110 photos fabriquées pour que la page défile : forme E
+  (D112 : la page défile en entier, une seule barre de défilement ; la ligne de l'étape collée en haut, ↶ au
+  même pixel, Aide et Menu dedans ; la barre du projet part ; la vue en cours écrite dans la ligne ; la fin des
+  colonnes collées visible), sur les 13 étapes ; un seul bouton plein visible à l'arrivée, à mi-course et en bas
+  de la page et de chaque colonne collée, « Valider et continuer » au même pixel sur toutes les pages, Sélection (« N photos choisies »),
+  Recadreur, Doublons et ses gestes. Les pages pas encore passées au cadre commun (`data-cadre="ancien"`) n'ont
+  que les contrôles généraux et ceux de la forme E.
 - `node outils/essai_echelle.mjs DOSSIER [CAPTURES]` : même parcours sur un
   vrai dossier trié (copié dans le stockage du navigateur), avec les durées ;
   `VRAC=1` pour tout retrier par lieux.

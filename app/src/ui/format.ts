@@ -95,3 +95,15 @@ export function dateHeure(d?: string): string {
   const jour = `${d.slice(8, 10)}.${d.slice(5, 7)}.${d.slice(0, 4)}`;
   return d.length > 10 ? t`${jour} à ${d.slice(11, 16)}` : jour;
 }
+
+/**
+ * Un message passager en deux parties : ce qui s'est passé (écrit en gras), puis la suite. La coupure est au
+ * premier « : », « ; », « — » ou à la fin de la première phrase ; « 13:40 » ne coupe pas. Sans coupure, tout
+ * le message est ce qui s'est passé.
+ */
+export function decouperMessage(texte: string): [string, string] {
+  const m = /^(.*?\S)(?:([\s  ]?[:;]\s)|(\.)\s|(\s[—–]\s))/su.exec(texte);
+  if (!m) return [texte, ''];
+  const gras = m[3] ? `${m[1]}.` : m[1];
+  return [gras, texte.slice(gras.length)];
+}

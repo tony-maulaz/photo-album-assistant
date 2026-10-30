@@ -6,6 +6,7 @@ import { ETAPE, type Projet } from '../../navigateur/projet';
 import { cleApi } from '../../navigateur/cle';
 import { langue, LANGUES, t, type Langue } from '../../lib/langue';
 import { BarreValidation, TeteEtape } from '../composants/Cadre';
+import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { confirmer } from '../composants/Dialogues';
 import { RappelDossierDepart } from '../composants/DossierDepart';
 import { allerEtape, configuration, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionProjet } from '../etat';
@@ -219,9 +220,8 @@ export function PageEtape1() {
   };
   return (
     <div class="page etroite avec-barre">
-      <TeteEtape numero={ETAPE.projet} titre={t`Projet`}>
-        {t`Les réglages généraux du projet. Le dossier à trier et le dossier de sortie sont fixés à la création.`}
-      </TeteEtape>
+      <LigneEtape titre={t`Projet`} aide={{ cle: 'projet' }} />
+      <AideEtape cle="projet">{t`Les réglages généraux du projet. Le dossier à trier et le dossier de sortie sont fixés à la création.`}</AideEtape>
       <EtatConfiguration />
       <div class="formulaire">
         <label>{t`Dossier à trier`}</label>

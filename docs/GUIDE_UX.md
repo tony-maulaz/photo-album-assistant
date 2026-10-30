@@ -53,6 +53,13 @@ hypothèse de travail, qu'une meilleure proposition remplace.
 └ Barre de validation : résumé chiffré               [Revenir] [Valider et continuer] ┘
 ```
 
+Depuis le 29.10.2026 (D112 point 8, forme E), ce schéma est remplacé sur les
+pages d'étape par `docs/ux/CHARTE.md` (É12, C-7.1, C-8.1, C-8.2) : la page
+défile en entier ; la barre de l'application et la barre au-dessus des photos
+partent avec elle ; la ligne de l'étape reste collée en haut (titre, message,
+taille, ↶ ↷, Aide, Menu ; la consigne est dans l'Aide) ; la barre de
+validation reste en bas. O2, O3 et O4 sont remplacées sur ces points.
+
 - **O1** Une page ne crée pas son propre gabarit : elle remplit ces zones.
   Le titre de l'étape est au même x, y sur toutes les étapes.
 - **O2** « ? Aide » a une seule place, en haut à droite de la barre de
@@ -80,6 +87,13 @@ hypothèse de travail, qu'une meilleure proposition remplace.
 - **O9** À 1280×580 (et à 1440×900), à la première visite (explication visible), la première
   photo ou la première décision de l'étape est visible sans défiler ; aucune
   barre ne passe sur deux lignes ; au moins 4 colonnes de photos.
+- **O10** **Une zone de photos ne défile jamais dans une autre zone qui
+  défile** : la grille suit la page, avec une seule barre de défilement
+  (D112). Seules les colonnes collées (liste de gauche, panneau de droite,
+  Aide ouverte) peuvent défiler seules ; leur fin reste atteignable et une
+  suite cachée se signale. Test : aucun ancêtre d'une grille de photos n'a de
+  `overflow` qui défile, hors la page ; la molette sur les photos fait
+  avancer les photos dès l'arrivée.
 
 ## 2. Photos, sélection, vue en grand
 

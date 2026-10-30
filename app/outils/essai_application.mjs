@@ -456,7 +456,8 @@ try {
   await page.locator('.options-panneau select').selectOption('arbre');
   // Taille des photos (retours du 29.10) : un cran à la fois (petite ou grande photo), jusqu’à la taille voulue.
   const taillePhotos = async (px) => {
-    const reglage = page.locator('.page-selection [data-place="taille"]');
+    // Forme E (D112) : Taille est dans la ligne de l'étape, posée hors de la page (portail).
+    const reglage = page.locator('.ligne-etape [data-place="taille"]');
     for (let i = 0; i < 20; i++) {
       const v = Number(await reglage.getAttribute('data-valeur'));
       if (v === px || (v < px && (await reglage.locator('[data-action="plus-grandes"]').isDisabled())) || (v > px && (await reglage.locator('[data-action="plus-petites"]').isDisabled()))) break;
@@ -582,6 +583,103 @@ try {
   verifier(album.length === attendues - 1 && album.every((p, i) => p.startsWith(`Album/${String(i + 1).padStart(4, '0')}_`)), 'photo retirée : Album/ renuméroté sans trou ni ancienne copie');
   await page.getByRole('button', { name: 'Vérifier à nouveau' }).waitFor();
   verifier(true, 'troisième passage : sortie et album à jour');
+
+  // Forme E (D112), sur les 13 étapes à 1280×580 : une seule barre de défilement (aucune photo dans une boîte qui
+  // défile, hors colonnes collées) ; ↶ à 284 px du bord droit, au même pixel sur chaque étape ; en bas de la page,
+  // la ligne de l'étape collée en haut, la barre du projet partie, ↶ immobile ; Origine ramène en haut.
+  await page.setViewportSize({ width: 1280, height: 580 });
+  const formeE = () =>
+    page.evaluate(() => {
+      const ligne = document.querySelector('.ligne-etape');
+      const x = () => Math.round(ligne?.querySelector('.bouton-annuler')?.getBoundingClientRect().left ?? -1);
+      const colle = (e) => {
+        for (let a = e; a; a = a.parentElement) if (/^(sticky|fixed)$/.test(getComputedStyle(a).position)) return true;
+        return false;
+      };
+      const boites = [...document.querySelectorAll('body *')].filter((e) => {
+        const st = getComputedStyle(e);
+        return /(auto|scroll)/.test(st.overflowY) && e.scrollHeight > e.clientHeight + 1 && e.querySelector('img, canvas') && !colle(e);
+      });
+      const d = document.scrollingElement;
+      const projet = document.querySelector('header.entete')?.getBoundingClientRect().height ?? 0;
+      // Le bord droit de la page, où finit la ligne : la place de la barre de défilement est gardée sur toute étape
+      // (scrollbar-gutter : 15 px dans Chromium, même masquée).
+      const r = { ligne: !!ligne, x0: x(), largeur: Math.round(ligne?.getBoundingClientRect().right ?? innerWidth), boites: boites.map((e) => e.className || e.tagName), defile: d.scrollHeight - innerHeight, projet };
+      d.scrollTop = d.scrollHeight;
+      r.bas = { y: scrollY, ligne: Math.round(ligne?.getBoundingClientRect().top ?? -1), projet: Math.round(document.querySelector('header.entete')?.getBoundingClientRect().bottom ?? 0), x: x() };
+      document.activeElement?.blur?.();
+      return r;
+    });
+  const xAnnuler = new Set();
+  const etapesDefilees = [];
+  const nEtapes = await page.locator('.bandeau > li').count();
+  for (let n = 1; n <= nEtapes; n++) {
+    await page.locator(`.bandeau > li:nth-child(${n}) > button`).click();
+    await page.locator('.ligne-etape').waitFor();
+    await page.waitForTimeout(400);
+    const code = (await page.locator('main').getAttribute('data-etape')) ?? `étape ${n}`;
+    const r = await formeE();
+    verifier(r.ligne && Math.abs(r.largeur - r.x0 - 284) <= 2 && r.boites.length === 0, `forme E, ${code} : ligne de l’étape, ↶ à x = ${r.x0} (${r.largeur - 284} attendu, 284 px du bord droit de la page), aucune photo dans une boîte qui défile${r.boites.length ? ` (${r.boites.join(', ')})` : ''}`);
+    xAnnuler.add(r.x0);
+    if (r.bas.y >= r.projet + 1) {
+      etapesDefilees.push(code);
+      verifier(r.bas.ligne === 0 && r.bas.projet <= 0 && r.bas.x === r.x0, `forme E, ${code} : en bas de la page, ligne collée en haut (y ${r.bas.ligne}), barre du projet partie, ↶ immobile (x ${r.bas.x})`);
+      await page.keyboard.press('Home');
+      await page.waitForFunction(() => scrollY === 0, null, { timeout: 2000 }).catch(() => {});
+      const haut = await page.evaluate(() => ({ y: scrollY, projet: Math.round(document.querySelector('header.entete')?.getBoundingClientRect().top ?? -1) }));
+      verifier(haut.y === 0 && haut.projet === 0, `forme E, ${code} : Origine ramène en haut, la barre du projet revient (y ${haut.y})`);
+    }
+  }
+  verifier(nEtapes === 13 && xAnnuler.size === 1, `forme E : ↶ au même pixel sur les ${nEtapes} étapes (x ${[...xAnnuler].join(', ')})`);
+  verifier(etapesDefilees.length >= 3, `forme E : le défilement et Origine contrôlés sur ${etapesDefilees.length} étapes (${etapesDefilees.join(', ')})`);
+
+  // Sélection, page longue, à mi-course : ouvrir « Toutes ▾ » de la ligne (le focus va sur la vue en cours) ne fait
+  // pas bouger la page ; la ligne étant collée, rien de ce qu'elle porte n'a à être amené à l'écran.
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
+  await page.locator('.ligne-etape').waitFor();
+  await page.waitForTimeout(400);
+  const yMilieu = await page.evaluate(() => {
+    const d = document.scrollingElement;
+    d.scrollTop = Math.round((d.scrollHeight - innerHeight) * 0.6);
+    return scrollY;
+  });
+  await page.locator('.ligne-etape [data-action=menu-vue]').waitFor({ timeout: 3000 });
+  await page.waitForTimeout(300);
+  await page.locator('.ligne-etape [data-action=menu-vue]').click();
+  await page.waitForTimeout(400);
+  const apresMenu = await page.evaluate(() => ({ y: scrollY, ouvert: !!document.querySelector('.ligne-etape .menu-vue [role=menu]') }));
+  verifier(yMilieu > 300 && Math.abs(apresMenu.y - yMilieu) <= 2 && apresMenu.ouvert, `Sélection à mi-course : ouvrir le menu de la vue ne fait pas défiler la page (y ${yMilieu} → ${apresMenu.y}, menu ${apresMenu.ouvert ? 'ouvert' : 'fermé'})`);
+  await page.keyboard.press('Escape');
+
+  // Doublons après défilement : les onglets sont partis avec la page, la vue en cours reste écrite dans la ligne
+  // (« Rafales ▾ », C-4.12) et s'y change sans remonter.
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Doublons$/ }).click();
+  await page.locator('main[data-etape=doublons] .onglets-doublons').waitFor();
+  const ongletActif = async () => (await page.locator('.onglet-doublons.actif .nom-onglet').innerText()).trim();
+  const vueAvant = await ongletActif();
+  const vueLigne = page.locator('.ligne-etape [data-action=menu-vue]');
+  verifier((await vueLigne.count()) === 0, `Doublons en haut de la page : les onglets sont visibles, pas de menu de vue dans la ligne`);
+  const descendu = await page.evaluate(() => {
+    const d = document.scrollingElement;
+    d.scrollTop = d.scrollHeight;
+    return scrollY;
+  });
+  if (descendu < 150) {
+    // Trop peu de photos pour défiler à 1280×580 : une fenêtre plus basse.
+    await page.setViewportSize({ width: 1024, height: 464 });
+    await page.evaluate(() => (document.scrollingElement.scrollTop = document.scrollingElement.scrollHeight));
+  }
+  await vueLigne.waitFor({ timeout: 3000 });
+  const libelle = (await vueLigne.locator('.nom-vue').innerText()).trim();
+  verifier(libelle === vueAvant && (await vueLigne.getAttribute('aria-label')).includes(vueAvant) && (await vueLigne.locator('svg').count()) === 1, `Doublons après défilement : la vue en cours écrite dans la ligne (« ${libelle} ▾ »)`);
+  await vueLigne.click();
+  const autre = page.locator('.ligne-etape .menu-vue [role=menuitemradio][aria-checked=false]').first();
+  const nomAutre = (await autre.innerText()).trim();
+  await autre.click();
+  await page.waitForTimeout(300);
+  verifier((await ongletActif()) === nomAutre, `menu de la ligne : « ${nomAutre} » choisi sans remonter, l’onglet suit`);
+  await page.locator('.onglet-doublons', { hasText: vueAvant }).click();
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   if (CAPTURES) {
     await page.emulateMedia({ colorScheme: 'dark' });

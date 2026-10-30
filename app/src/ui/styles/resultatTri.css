@@ -14,8 +14,9 @@
 
 .colonnes-tri > .resultat-tri {
   position: sticky;
-  top: 12px;
-  max-height: calc(100vh - 170px);
+  /* Sous la ligne de l'étape, collée en haut (forme E, D112), jusqu'au-dessus de la barre du bas. */
+  top: calc(var(--h-ligne-etape) + var(--e3));
+  max-height: calc(var(--haut-visible) - var(--e5));
   margin-top: 0;
   overflow-y: auto;
   padding-right: var(--e1);
