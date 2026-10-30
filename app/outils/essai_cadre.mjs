@@ -923,9 +923,13 @@ try {
         else if (Math.abs(a.x - b.x) > 1 || Math.abs(a.y - yAttendu) > 1)
           faute(nomPage, `${ici}${lieu} : « ${k} » bouge (x ${b.x} → ${a.x}, y ${b.y} → ${a.y}, ${yAttendu} attendu)`);
       }
-      // Les onglets ou les filtres sont partis : la vue en cours reste écrite dans la ligne (C-4.12).
+      // Les onglets ou les filtres sont partis : la vue en cours reste écrite dans la ligne (C-4.12) ; ou les filtres
+      // sont dans la ligne elle-même, le filtre en cours enfoncé (Floues au-dessus de 1180 px, D112).
       if (vue && haut.y >= haut.projetH + 8) {
-        const v = await page.evaluate(() => { const b = document.querySelector('.ligne-etape [data-action=menu-vue]'); return b && __c.vu(b) ? __c.norm(b.textContent) : null; });
+        const v = await page.evaluate(() => {
+          const b = document.querySelector('.ligne-etape [data-action=menu-vue]') ?? document.querySelector('.ligne-etape .filtres-floues [aria-pressed=true]');
+          return b && __c.vu(b) ? __c.norm(b.textContent) : null;
+        });
         if (!v) faute(nomPage, `${ici}${lieu} : la vue en cours n’est pas écrite dans la ligne de l’étape (menu « … ▾ » attendu)`);
       }
       // La fin des colonnes collées (liste, panneau, Aide) se voit, au-dessus de la barre du bas.
@@ -992,7 +996,12 @@ try {
         await taille(w, h);
         for (const thm of THEMES) {
           await theme(thm);
-          await controlerCadre(nomPage, `${w}×${h} ${thm === 'light' ? 'clair' : 'sombre'}`, w, h, { ...opts, thm });
+          const ici = `${w}×${h} ${thm === 'light' ? 'clair' : 'sombre'}`;
+          const avant = fautes.length;
+          await controlerCadre(nomPage, ici, w, h, { ...opts, thm });
+          if (opts.gestes) for (const x of await opts.gestes(ici)) faute(nomPage, `${ici} : ${x}`);
+          console.log(`  ${fautes.length > avant ? '✗' : '✓'} ${ici} : ${fautes.length - avant} écart(s)`);
+          await capture(`${nomPage}_${w}x${h}_${thm}`);
         }
       }
     } else {
@@ -1083,6 +1092,116 @@ try {
   await page.fill('#nom-projet', 'Essai cadre');
   await page.getByRole('button', { name: 'Créer le projet' }).click();
 
+  /**
+   * Badges de Floues (D112) : une bande de 28 px sous chaque photo, son mot jamais coupé ; seule la bande montre la
+   * main ; au survol, le mot dit l'effet du clic (« Garder », « Revenir à la proposition ») ; la bande n'est pas un
+   * arrêt de Tab ; un clic ne choisit pas la photo, Ctrl+Z le défait ; les filtres de la ligne tiennent sans déborder.
+   */
+  const badgesFloues = async (ici) => {
+    const f = [];
+    // Vitrine (captures seulement) : un réglage strict pour voir « À écarter », « ? » et les décisions par vous.
+    if (CAPTURES && /^(1280×580|1024×464)/.test(ici)) {
+      await page.evaluate(() => {
+        const r = document.querySelector('[data-action=tolerance]');
+        if (r) {
+          r.value = String(Math.round(Math.log(500) * 100));
+          r.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        __c.remonter();
+      });
+      await attendre(300);
+      const bandes = page.locator('.page-floues .tuile .badge-photo[data-cliquable] button');
+      await bandes.nth(1).click();
+      await attendre(600);
+      await bandes.nth(4).click();
+      await attendre(300);
+      await page.mouse.move(2, 300);
+      await capture(`floues-vitrine_${ici.replace('×', 'x').replace(' clair', '_light').replace(' sombre', '_dark')}`);
+      await bandes.nth(2).hover();
+      await attendre(200);
+      await capture(`floues-survol_${ici.replace('×', 'x').replace(' clair', '_light').replace(' sombre', '_dark')}`);
+      await page.mouse.move(2, 300);
+      await page.keyboard.press('Control+z');
+      await page.keyboard.press('Control+z');
+      // Retour au réglage conseillé (60), même quand l'Aide a pris la place du panneau.
+      await page.evaluate(() => {
+        const r = document.querySelector('[data-action=tolerance]');
+        if (!r) return;
+        r.value = String(Math.round(Math.log(60) * 100));
+        r.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await attendre(300);
+    }
+    await page.evaluate(() => __c.remonter());
+    const b = page.locator('.page-floues .tuile .badge-photo[data-cliquable]').first();
+    if (!(await b.count())) return ['aucun badge cliquable sous les photos de Floues'];
+    const m = await page.evaluate(() => {
+      const r = [];
+      for (const x of [...document.querySelectorAll('.page-floues .badge-photo')].slice(0, 40)) {
+        const rb = x.getBoundingClientRect();
+        if (!rb.width) continue;
+        if (Math.abs(rb.height - 28) > 1) r.push(`bande de ${Math.round(rb.height)} px`);
+        const mot = x.querySelector('.etat-badge .mot-badge');
+        if (mot && mot.scrollWidth > mot.clientWidth + 1) r.push(`mot coupé « ${mot.textContent} »`);
+        if (x.querySelector('button')?.tabIndex !== -1) r.push('bande arrêt de Tab');
+      }
+      const img = document.querySelector('.page-floues .tuile .cadre-miniature');
+      if (img && getComputedStyle(img).cursor === 'pointer') r.push('la photo montre la main (seule la bande la montre)');
+      const btn = document.querySelector('.page-floues .badge-photo[data-cliquable] button');
+      if (btn && getComputedStyle(btn).cursor !== 'pointer') r.push('la bande ne montre pas la main');
+      const filtres = document.querySelector('.ligne-etape .filtres-floues');
+      const ligne = document.querySelector('.ligne-etape');
+      if (filtres && (ligne.scrollWidth > ligne.clientWidth + 1 || filtres.getBoundingClientRect().right > (document.querySelector('.ligne-etape .droite-ligne')?.getBoundingClientRect().left ?? innerWidth) + 1)) r.push('les filtres débordent de la ligne de l’étape');
+      return [...new Set(r)];
+    });
+    f.push(...m);
+    // § B : les filtres sont dans la ligne de titre, de toute la largeur de la fenêtre, Aide ouverte ou non ; ils ne
+    // descendent dans la barre d'outils que sous 1180 px.
+    const place = await page.evaluate(() => ({
+      largeur: innerWidth,
+      aide: !!document.querySelector('.page-floues[data-aide]'),
+      ligne: !!document.querySelector('.ligne-etape .filtres-floues'),
+      outils: !!document.querySelector('.page-floues .filtres-floues:not(.ligne-etape *)'),
+    }));
+    if (place.largeur > 1180 && !place.ligne) f.push(`les filtres ne sont pas dans la ligne de titre à ${place.largeur} px${place.aide ? ', Aide ouverte' : ''}`);
+    if (place.largeur <= 1180 && !place.outils) f.push(`les filtres ne sont pas dans la barre d’outils à ${place.largeur} px`);
+    await b.scrollIntoViewIfNeeded();
+    await b.hover();
+    await attendre(150);
+    const survol = await b.evaluate((x) => ({
+      etat: getComputedStyle(x.querySelector('.etat-badge')).display,
+      effet: x.querySelector('.effet-badge') && getComputedStyle(x.querySelector('.effet-badge')).display,
+      mot: x.querySelector('.effet-badge')?.textContent?.trim(),
+      // La forme de bouton (§ A.4) : le fond et le contour de la bande se voient, le bouton intérieur ne les couvre pas.
+      fondBouton: getComputedStyle(x.querySelector('button')).backgroundColor,
+      contour: getComputedStyle(x).boxShadow,
+    }));
+    if (survol.etat !== 'none' || survol.effet === 'none' || !/Garder|Écarter|Revenir/.test(survol.mot ?? '')) f.push(`au survol, la bande ne dit pas l’effet du clic (${JSON.stringify(survol)})`);
+    if (!/rgba\(0, 0, 0, 0\)|transparent/.test(survol.fondBouton) || !/1\.5px/.test(survol.contour)) f.push(`au survol, la bande ne prend pas la forme d’un bouton (fond du bouton ${survol.fondBouton}, contour ${survol.contour})`);
+    const avant = await b.evaluate((x) => x.dataset.sort + (x.hasAttribute('data-decide') ? ' décidé' : ''));
+    await b.click();
+    await attendre(150);
+    const apres = await page.evaluate(() => {
+      const x = document.querySelector('.page-floues .tuile .badge-photo[data-cliquable]');
+      return { etat: x.dataset.sort + (x.hasAttribute('data-decide') ? ' décidé' : ''), origine: x.dataset.origine, choisie: !!x.closest('.tuile.choisie'), focus: !!document.activeElement?.closest('.badge-photo') };
+    });
+    if (apres.etat === avant || apres.origine !== 'vous') f.push(`clic sur la bande : « ${avant} » → « ${apres.etat} » (${apres.origine}), l’autre sort par vous attendu`);
+    if (apres.choisie) f.push('clic sur la bande : la photo est choisie');
+    // Sans focus, la photo écartée se délave dès que la souris s'en va, et Entrée reste à la photo choisie.
+    if (apres.focus) f.push('clic sur la bande : elle prend le focus');
+    await page.mouse.move(2, 300);
+    await page.keyboard.press('Control+z');
+    await attendre(150);
+    const defait = await page.evaluate(() => {
+      const x = document.querySelector('.page-floues .tuile .badge-photo[data-cliquable]');
+      return x.dataset.sort + (x.hasAttribute('data-decide') ? ' décidé' : '');
+    });
+    if (defait !== avant) f.push(`Ctrl+Z ne défait pas le clic sur la bande (« ${defait} », « ${avant} » attendu)`);
+    await page.evaluate(() => __c.remonter());
+    await attendre(600);
+    return f;
+  };
+
   const valider = async (etape) => {
     await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 120_000 });
     await page.locator('[data-action=valider]').click();
@@ -1096,7 +1215,8 @@ try {
     await controlerAilleurs('dossiers');
     await valider('floues');
   });
-  await controlerAilleurs('floues');
+  // Floues dans le cadre commun (D112) : les badges sous la photo, à chaque taille et dans les deux thèmes.
+  await controlerAilleurs('floues', { photos: true, ecarte: true, gestes: badgesFloues });
 
   // ---- Doublons : première visite à 1280×580 (choix 5) ----
   await taille(1280, 580);

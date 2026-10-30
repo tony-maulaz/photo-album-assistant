@@ -15,6 +15,23 @@ export const RACINE = 'racine';
 export type RaisonMiseDeCote = 'floues' | 'doublons' | 'doublons_exacts' | 'autres';
 export type OrigineDate = 'exif' | 'nom' | 'video' | 'fichier';
 
+/**
+ * D'où vient une décision prise sur une photo (D112, badges sous la photo) : l'utilisateur (un clic, G, X, la
+ * punaise), l'application (une proposition acceptée, comme un groupe de doublons), l'IA (un avis suivi) ou les
+ * anciens scripts (une photo déjà écartée dans la source, « Écartée avant »).
+ */
+export type OrigineDecision = 'vous' | 'application' | 'ia' | 'avant';
+/** Les étapes où une photo reçoit une décision dont on garde l'origine. */
+export type CleDecision = 'flou' | 'doublons' | 'doublons_exacts';
+
+/** La photo avec l'origine de sa décision à l'étape `cle` (`undefined` : retirée, la photo revient à la proposition). */
+export function avecOrigine<F extends FichierPlan>(f: F, cle: CleDecision, origine: OrigineDecision | undefined): F {
+  const { origine: actuelle, ...reste } = f;
+  const { [cle]: _ancienne, ...autres } = actuelle ?? {};
+  const nouvelles: Partial<Record<CleDecision, OrigineDecision>> = origine ? { ...autres, [cle]: origine } : autres;
+  return (Object.keys(nouvelles).length ? { ...reste, origine: nouvelles } : reste) as F;
+}
+
 export interface DossierPlan {
   id: string;
   nom: string;
@@ -83,8 +100,15 @@ export interface FichierPlan {
   empreinte?: string;
   /** Décalage d'horloge de l'appareil déjà appliqué à `date` (« +HH:MM », étape 2). */
   decalage?: string;
-  /** Étape 3 : écartée par le seuil de netteté (« auto »), sauvée ou écartée à la main. */
+  /** Étape 3 : écartée par le seuil de netteté (« auto »), gardée ou écartée par une décision (son origine : `origine.flou`). */
   flou?: 'auto' | 'sauvee' | 'ecartee';
+  /**
+   * Étape 3 : écartée comme floue par les anciens scripts (`_a_supprimer`), et laissée écartée (« Écartée avant »,
+   * D112 question 9). Noté dès qu'on décide pour elle : revenir à la proposition la rend « Écartée avant », pas au réglage.
+   */
+  avant?: true;
+  /** D'où vient sa décision, étape par étape (D112) ; absente : la proposition de l'étape, ou une décision d'avant les badges. */
+  origine?: Partial<Record<CleDecision, OrigineDecision>>;
   /** Choix pour l'album (étape « Sélection ») : 0 = pas dans l'album, 1 = ★, 2 = ★★ grande photo ; absent = à décider. */
   album?: 0 | 1 | 2;
   /** Rotation à appliquer à la copie dans Album/ (degrés, sens horaire). */
@@ -440,8 +464,14 @@ function dossierExistant(plan: Plan, id: string): DossierPlan {
   return d;
 }
 
-/** Range des fichiers dans `tx`, avec un nom libre dans le dossier cible. */
-function ranger(plan: Plan, tx: Transaction, ids: string[], cible: string) {
+/**
+ * Range des fichiers dans `tx`, avec un nom libre dans le dossier cible. Une photo écartée pour flou que l'utilisateur
+ * remet (ou déplace) devient « Gardée par vous » (D112) ; quand l'étape Floues la remet elle-même (`garderAvant`),
+ * elle ne change pas. Une autre photo qui quitte « Mis de côté » perd la marque « Écartée avant ». Un doublon qui
+ * en sort sans être gardé volontairement (`protegee`, « Garder aussi ») n'a plus de décision de Doublons : son
+ * origine tombe avec elle (origine absente = proposition).
+ */
+function ranger(plan: Plan, tx: Transaction, ids: string[], cible: string, garderAvant = false) {
   const deplaces = new Set(ids);
   const pris = nomsPris(plan, cible, deplaces);
   for (const id of ids) {
@@ -453,7 +483,19 @@ function ranger(plan: Plan, tx: Transaction, ids: string[], cible: string) {
     }
     const nom = nomLibre(f.nom, pris);
     pris.add(cleNom(nom));
-    tx.fichier({ ...f, dossier: cible, statut: 'archive', raison: undefined, nom });
+    let base = f;
+    if (f.statut === 'mis_de_cote') {
+      if (f.raison === 'floues' && !garderAvant) {
+        // Remise à la main : elle vaut « Gardée par vous », comme un clic sur sa bande (D112) ;
+        // elle garde sa marque « Écartée avant », que « Retirer mon choix » lui rendra.
+        base = avecOrigine({ ...base, flou: 'sauvee' }, 'flou', 'vous');
+      } else if (!garderAvant) {
+        const { avant: _a, ...sansAvant } = base;
+        base = sansAvant;
+      }
+      if (!f.protegee && (f.raison === 'doublons' || f.raison === 'doublons_exacts')) base = avecOrigine(avecOrigine(base, 'doublons', undefined), 'doublons_exacts', undefined);
+    }
+    tx.fichier({ ...base, dossier: cible, statut: 'archive', raison: undefined, nom });
   }
 }
 
@@ -474,8 +516,11 @@ export function mettreDeCote(plan: Plan, ids: string[], raison: RaisonMiseDeCote
   return tx.terminer(t`Mettre de côté ${pluriel(ids.length, 'élément')}`);
 }
 
-/** Remet des éléments mis de côté dans leur dossier d'origine (ou la racine s'il a disparu). */
-export function remettre(plan: Plan, ids: string[]): Modification | null {
+/**
+ * Remet des éléments mis de côté dans leur dossier d'origine (ou la racine s'il a disparu). `garderAvant` : seulement
+ * pour l'étape Floues, qui remet elle-même ses photos sans en faire des « Gardée par vous ».
+ */
+export function remettre(plan: Plan, ids: string[], garderAvant = false): Modification | null {
   const tx = new Transaction(plan);
   const parDossier = new Map<string, string[]>();
   for (const id of ids) {
@@ -484,7 +529,7 @@ export function remettre(plan: Plan, ids: string[]): Modification | null {
     const d = plan.dossiers.has(f.dossier) ? f.dossier : RACINE;
     parDossier.set(d, [...(parDossier.get(d) ?? []), id]);
   }
-  for (const [d, liste] of parDossier) ranger(plan, tx, liste, d);
+  for (const [d, liste] of parDossier) ranger(plan, tx, liste, d, garderAvant);
   return tx.terminer(t`Remettre ${pluriel(ids.length, 'élément')}`);
 }
 
@@ -732,7 +777,10 @@ export function changerLegende(plan: Plan, id: string, legende: string): Modific
  * raison et, pour un doublon, la photo gardée à sa place. Une photo gardée
  * volontairement peut l'être aussi : c'est l'utilisateur qui change d'avis.
  */
-export function ecarterDoublons(plan: Plan, decisions: { id: string; raison: 'doublons' | 'doublons_exacts'; doublon?: InfoDoublon }[]): Modification | null {
+export function ecarterDoublons(
+  plan: Plan,
+  decisions: { id: string; raison: 'doublons' | 'doublons_exacts'; doublon?: InfoDoublon; origine?: OrigineDecision }[],
+): Modification | null {
   const tx = new Transaction(plan);
   let n = 0;
   for (const d of decisions) {
@@ -740,7 +788,10 @@ export function ecarterDoublons(plan: Plan, decisions: { id: string; raison: 'do
     // Déjà écartée par cette étape : seul son choix en attente s'efface.
     if (f && f.statut === 'mis_de_cote' && f.raison === d.raison && f.choixDoublons?.[d.raison] !== undefined) tx.fichier(sansChoixDoublons(f, d.raison));
     if (!f || f.categorie !== 'photo' || f.statut !== 'archive') continue;
-    const { protegee: _p, doublon: _d, ...reste } = sansChoixDoublons(f, d.raison);
+    // L'origine de la décision (D112) : un groupe accepté (application ou IA), ou le geste de l'utilisateur. Une photo
+    // gardée volontairement perd cette décision (`protegee`) avec son origine, de l'une ou l'autre famille.
+    const sansGarde = avecOrigine(avecOrigine(sansChoixDoublons(f, d.raison), 'doublons', undefined), 'doublons_exacts', undefined);
+    const { protegee: _p, doublon: _d, ...reste } = avecOrigine(sansGarde, d.raison, d.origine ?? 'vous');
     tx.fichier(d.doublon ? { ...reste, statut: 'mis_de_cote', raison: d.raison, doublon: d.doublon } : { ...reste, statut: 'mis_de_cote', raison: d.raison });
     n++;
   }
@@ -751,13 +802,15 @@ export function ecarterDoublons(plan: Plan, decisions: { id: string; raison: 'do
  * « Garder aussi » : le doublon revient dans son dossier et ne sera plus jamais proposé (I10) ; son choix
  * en attente (de la famille `raison`, sinon tous) est appliqué, donc effacé.
  */
-export function garderAussi(plan: Plan, ids: string[], raison?: 'doublons' | 'doublons_exacts'): Modification | null {
+export function garderAussi(plan: Plan, ids: string[], raison?: 'doublons' | 'doublons_exacts', origine: OrigineDecision = 'vous'): Modification | null {
   const tx = new Transaction(plan);
   const aRanger: string[] = [];
   for (const id of ids) {
     const f = plan.fichiers.get(id);
     if (!f) continue;
-    const { doublon: _d, ...reste } = sansChoixDoublons(f, raison);
+    // L'origine va à la famille du groupe, sinon à celle qui l'avait écartée (onglet « Écartées »).
+    const cle = raison ?? (f.raison === 'doublons' || f.raison === 'doublons_exacts' ? f.raison : 'doublons');
+    const { doublon: _d, ...reste } = avecOrigine(sansChoixDoublons(f, raison), cle, origine);
     tx.fichier({ ...reste, protegee: true });
     if (f.statut === 'mis_de_cote') aRanger.push(id);
   }

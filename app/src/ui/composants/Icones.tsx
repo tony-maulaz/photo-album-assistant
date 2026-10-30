@@ -190,6 +190,30 @@ const TRACES = {
       <path d="M9 3v18" />
     </>
   ),
+  /** Décidé par vous (D112) : une punaise, penchée. */
+  punaise: (
+    <g transform="rotate(40 12 12)">
+      <path d="M12 15.5V22" />
+      <path d="M8.5 3h7" />
+      <path d="M9.6 3v6.2L6.5 12.6v2.9h11v-2.9l-3.1-3.4V3" />
+    </g>
+  ),
+  /** À vérifier (D112) : un point d'interrogation nu, jamais cerclé (le cercle est celui de l'Aide). */
+  question: (
+    <>
+      <path d="M8.5 8.5a3.5 3.5 0 0 1 7 0c0 2.2-3.5 2.8-3.5 5.3" />
+      <path d="M12 18.5h.01" />
+    </>
+  ),
+  /** L'autre sort (⇄) : l'effet d'un clic sur la bande d'une photo proposée. */
+  echanger: <path d="M7 7h12l-3-3M17 17H5l3 3" />,
+  /** Revenir à la proposition (↺) : l'effet d'un clic sur la bande d'une photo décidée. */
+  revenir: (
+    <>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+      <path d="M4 4v4.5h4.5" />
+    </>
+  ),
 } as const;
 
 export type NomIcone = keyof typeof TRACES;

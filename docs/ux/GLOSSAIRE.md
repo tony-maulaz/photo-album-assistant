@@ -50,6 +50,20 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | Album | Étape 12 : la mise en page du livre photo | Album | livre, ifolor (marque) |
 | Création de la sortie **(à résoudre)** | Étape 13 : écrire le dossier de sortie et le bilan | Creating the output | export, synchronisation |
 
+## La bande sous la photo : proposé ou décidé (30.10.2026, É13, D112)
+
+Le mot et sa couleur disent ce qui arrive à la photo ; l'icône dit d'où vient
+l'idée ; le plein dit que c'est décidé (CHARTE C-9.2). D'abord à Floues ;
+Doublons, Comparer, la Sélection et « Mis de côté » suivront à leur sous-lot.
+
+| Mot | Sens | Anglais | À éviter |
+|---|---|---|---|
+| proposé ; À garder, À écarter | Ce que l'application (le réglage, le groupe) ou l'IA propose pour une photo ; cela peut encore changer sans vous (si vous bougez le réglage). Bande en bordure fine, le mot à l'infinitif (« À garder », « À écarter »), icône ✓ ✕ ou ✦ ; « Valider et continuer » suit la proposition | suggested ; To keep, To set aside | automatique (rien n'est automatique), conseillé (réservé au réglage conseillé), à valider |
+| par vous ; Gardée par vous, Écartée par vous | Décidé par votre geste : un clic sur la bande, G (ou S à Floues), X. La photo ne bouge plus avec le réglage. Bande pleine, avec la punaise ; quand la place manque, « Gardée » / « Écartée » avec la punaise, « par vous » dans l'infobulle et le nom lu. Filtre « Par vous » | by you ; Kept by you, Set aside by you | forcé, manuel, épinglé, sauvée, « Sauver » (devenu « Garder ») |
+| Écartée avant | Une photo écartée par les anciens scripts, que le réglage d'aujourd'hui garderait : elle reste écartée, rien ne change dans ce qui sort (question 9). Bande pleine grise, ✕ | Set aside earlier | écartée par un script, ancienne, archivée |
+| à vérifier, « ? » | Une proposition peu sûre, à relire : proche du réglage, ou l'IA n'est pas du même avis. Un « ? » brun, nu, toujours suivi du mot (« ? À écarter ») ; jamais sur une décision. Filtre « ? » de Floues ; « dont 3 à vérifier » dans la barre du bas | to check | confiance basse, Conf., incertain, douteux, l'icône Aide (« ? » cerclé, bleu) |
+| Retirer mon choix | Enlever votre décision sur une photo : la punaise s'en va, la photo revient à la proposition (à Floues, au réglage). Touche Suppr ; un second clic sur une bande « par vous » fait de même (« ↺ Revenir à la proposition » au survol). À ne pas confondre avec « Annuler » (Ctrl+Z), qui défait le dernier geste | Remove my choice ; Back to the suggestion | Selon le curseur, Selon le réglage, réinitialiser, Annuler, Ne plus choisir (sens : ne plus sélectionner) |
+
 ## Décisions sur une photo (Sélection, Album)
 
 | Mot | Sens | Anglais | À éviter |
@@ -86,5 +100,4 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | aide IA | Une fonction facultative qui envoie des photos à l'IA, coût affiché avant ; un bouton contour marqué de l'étincelle, avec son prix écrit dessus (C-4.6) | AI helper | automatique (rien n'est automatique) |
 | Menu | Le menu de l'en-tête (Fonctions IA, Configuration, Réglages, Journal, Aide), écrit en toutes lettres à côté de son icône | Menu | ☰ seul |
 | En essai | Une étape qui marche, mais dont la présentation peut encore changer ; vos réglages et vos choix sont gardés. Pastille neutre après le titre de l'étape et dans « Étape n sur 13 ▾ », avec sa bulle (29.10, É11, étape 1 des retours acceptée par l’utilisateur ; C-8.10). Aujourd'hui l'Album seul | Trial | bêta, beta, expérimental, provisoire, en test |
-| à vérifier | Une proposition peu sûre, à relire | to check | confiance basse, Conf. |
 | nouveau | Arrivé avec la mise à jour de l'inventaire | new | créé (pour un dossier du tri) |

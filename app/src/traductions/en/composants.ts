@@ -18,8 +18,6 @@ export const TEXTES: Record<string, string> = {
   'Les photos juste autour du seuil de netteté : flou artistique, mouvement voulu, ou ratée ? L’IA donne son avis, vous décidez.':
     'Photos just around the sharpness threshold: artistic blur, intended motion, or a failed shot? The AI gives its opinion, you decide.',
   'planches des photos à la limite (6 par appel, 520 px)': 'contact sheets of the borderline photos (6 per call, 520 px)',
-  'photo à la limite': 'borderline photo',
-  'photos à la limite': 'borderline photos',
   '{0} avis sur les cas limites : voir les badges « IA ».': 'AI opinions on the borderline cases: {0}. See the “AI” badges.',
   'Situer les photos sans GPS avec l’IA': 'Locate the photos without GPS with the AI',
   'Pour les photos sans position, l’IA compare leur contenu aux photos prises juste avant et après, et propose un dossier.':

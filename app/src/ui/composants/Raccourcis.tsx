@@ -90,7 +90,16 @@ const GRILLE: Ligne[] = [
 
 /** Raccourcis propres à certaines étapes (les autres n'en ont pas). */
 const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
-  floues: [...GRILLE, L('S', aTraduire('Sauver les photos sélectionnées')), LT(aTraduire('X ou Suppr'), aTraduire('Écarter les photos sélectionnées'))],
+  // Badges (D112) : G et X décident « par vous », Suppr rend la photo à la proposition ; un clic sur la bande fait l'autre sort.
+  floues: [
+    ...GRILLE,
+    LT(aTraduire('G ou S'), aTraduire('Garder les photos choisies (par vous : le réglage n’y touche plus)')),
+    L('X', aTraduire('Écarter les photos choisies (par vous)')),
+    LT(aTraduire('Retour arrière ou Suppr'), aTraduire('Retirer mon choix : la photo revient à la proposition')),
+    LT(aTraduire('Clic sur la bande'), aTraduire('L’autre sort, décidé par vous ; un second clic revient à la proposition')),
+    L('Ctrl+A', aTraduire('Tout sélectionner')),
+    LT(aTraduire('Entrée'), aTraduire('Voir la photo en grand (← → : la suivante)')),
+  ],
   lieux: [
     ...GRILLE,
     L('Ctrl+A', aTraduire('Tout sélectionner')),

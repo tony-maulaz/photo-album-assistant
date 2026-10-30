@@ -428,7 +428,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.floues)}</strong>
-          {t` : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider et continuer ».`}
+          {t` : tirez le réglage du flou ; sous chaque photo, ce qui lui arrivera (bordure : proposé, plein : décidé). Un clic sur la bande lui donne l’autre sort, décidé par vous, un second clic la rend à la proposition ; G garde, X écarte, Suppr retire votre choix. Rien n’est écarté avant « Valider et continuer ».`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.doublons)}</strong>

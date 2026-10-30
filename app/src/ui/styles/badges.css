@@ -1,0 +1,408 @@
+/* Badges d'origine sous la photo (D112) et Photos floues dans le cadre commun. Chargé en dernier.
+   La bande commune (`BandeBadge`) : le mot et sa couleur disent ce qui arrive (vert, elle reste ; gris, elle part) ;
+   l'icône dit d'où vient l'idée ; plein franc = décidé, bordure fine et pâle = proposé ; le brun = à vérifier.
+   Les bandes des autres pages (`.bande-etat` sans `.badge-photo`) ne changent pas. */
+
+/* ---------- La bande commune ---------- */
+
+.bande-etat.badge-photo {
+  position: relative;
+  padding: 0;
+  background: var(--surface);
+  font-weight: 500;
+}
+
+.badge-photo .clic-badge {
+  /* La cible est toute la bande (28 px × la largeur de la photo) ; un bouton seulement au survol. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0 var(--e2);
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+
+.badge-photo:not([data-cliquable]) {
+  padding: 0 var(--e2);
+}
+
+.badge-photo .etat-badge,
+.badge-photo .effet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.badge-photo .mot-badge {
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.badge-photo .fin-badge {
+  margin-left: var(--e1);
+  font-weight: 700;
+}
+
+.badge-photo .effet-badge {
+  display: none;
+}
+
+/* Proposé : blanc, bordure de 1 px, pâle ; le mot porte le sens. */
+.badge-photo[data-sort='garder'] {
+  box-shadow: inset 0 0 0 1px var(--badge-garde-bord);
+  color: var(--badge-garde-texte);
+}
+
+.badge-photo[data-sort='ecarter'] {
+  box-shadow: inset 0 0 0 1px var(--badge-part-bord);
+  color: var(--badge-part-texte);
+}
+
+/* À vérifier : le « ? » nu et le mot en brun, bordure brune pâle. */
+.badge-photo[data-origine='verifier'] {
+  box-shadow: inset 0 0 0 1px var(--badge-verifier-bord);
+  color: var(--badge-verifier-texte);
+}
+
+/* Décidé : plein franc, en gras. */
+.badge-photo[data-decide] {
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.badge-photo[data-decide][data-sort='garder'] {
+  background: var(--badge-garde-plein);
+  color: var(--badge-garde-plein-texte);
+}
+
+.badge-photo[data-decide][data-sort='ecarter'] {
+  background: var(--badge-part-plein);
+  color: var(--badge-part-plein-texte);
+}
+
+/* Au survol, la bande prend la forme d'un bouton et son mot dit l'effet du clic (« ⇄ Garder »). */
+.badge-photo[data-cliquable]:hover {
+  background: var(--surface);
+  color: var(--texte);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1.5px var(--contour);
+}
+
+/* Le bouton intérieur reste transparent au survol : la règle générale des boutons (fond --neutre-doux) couvrirait
+   le fond et le contour de la bande. */
+.badge-photo .clic-badge:hover:not(:disabled) {
+  background: transparent;
+}
+
+.badge-photo[data-cliquable]:hover .etat-badge {
+  display: none;
+}
+
+.badge-photo[data-cliquable]:hover .effet-badge {
+  display: inline-flex;
+}
+
+/* Seule la bande montre la main : la photo se choisit, elle ne se « clique » pas. */
+.page-floues .tuile {
+  cursor: default;
+}
+
+/* ---------- Ce qui part : un peu délavé, entier au survol, au focus et une fois choisi ---------- */
+
+.tuile.delavee .cadre-miniature :is(img, canvas) {
+  filter: saturate(0.3) contrast(0.7);
+  transition: filter 120ms ease-out;
+}
+
+.tuile.delavee:is(:hover, :focus-within, .choisie) .cadre-miniature :is(img, canvas) {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuile.delavee .cadre-miniature :is(img, canvas) {
+    transition: none;
+  }
+}
+
+/* ---------- Floues : les filtres, dans la ligne de l'étape ou dans la barre d'outils ---------- */
+
+.filtres-floues {
+  flex: 0 0 auto;
+  display: inline-flex;
+  border: 1px solid var(--filet-fort);
+  border-radius: var(--r-commande);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.filtres-floues button.filtre-floues {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid var(--filet-fort);
+  border-radius: 0;
+  background: transparent;
+  color: var(--texte);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.filtres-floues button.filtre-floues:first-child {
+  border-left: 0;
+}
+
+.filtres-floues .compte-filtre {
+  color: var(--texte-2);
+  font-weight: 400;
+}
+
+.filtres-floues button.filtre-verifier {
+  color: var(--badge-verifier-texte);
+}
+
+.filtres-floues button.filtre-verifier .compte-filtre {
+  color: inherit;
+}
+
+.filtres-floues button.filtre-floues[aria-pressed='true'] {
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-weight: 600;
+}
+
+.filtres-floues button.filtre-floues[aria-pressed='true'] .compte-filtre {
+  color: inherit;
+}
+
+.ligne-etape .filtres-floues {
+  margin-left: calc(-1 * var(--e2));
+}
+
+/* ---------- Floues : la grille sur la table, le panneau à droite ---------- */
+
+.page-floues .table-cadre {
+  position: relative;
+}
+
+.page-floues .titre-groupe strong {
+  font-weight: 600;
+}
+
+.page-floues .remarque .choix-ia {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.panneau-floues .defile-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding-top: var(--e3);
+}
+
+.panneau-floues .encart {
+  margin: 0;
+}
+
+.reglage-flou {
+  display: grid;
+  gap: var(--e1);
+}
+
+.reglage-flou .titre-reglage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--e2);
+  margin: 0;
+  color: var(--texte);
+}
+
+/* Le lien passe à la ligne entier plutôt que de se couper (panneau étroit, Aide ouverte). */
+.reglage-flou .titre-reglage > * {
+  white-space: nowrap;
+}
+
+.reglage-flou .curseur-flou input {
+  width: 100%;
+}
+
+.reglage-flou .bornes-curseur {
+  font-weight: 400;
+}
+
+.compte-reglage {
+  display: grid;
+  gap: 2px;
+  margin: var(--e1) 0 0;
+}
+
+.compte-reglage .detail-compte {
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.aides-floues {
+  display: grid;
+  gap: var(--e2);
+}
+
+.aides-floues .aide-ia {
+  display: grid;
+  gap: var(--e2);
+}
+
+.aides-floues button.bouton-ia {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--e2);
+  width: 100%;
+  height: auto;
+  min-height: var(--h-btn);
+  padding: 6px var(--e3);
+  text-align: left;
+  white-space: normal;
+}
+
+.aides-floues button.bouton-ia > .icone {
+  margin-top: 2px;
+}
+
+.nom-aide-deux-lignes {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nom-aide-deux-lignes .cout-aide {
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.photos-choisies .titre-section-panneau {
+  margin: 0 0 var(--e1);
+}
+
+.detail-choisie {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 var(--e2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  color: var(--texte-2);
+}
+
+.detail-choisie .explication-choisie {
+  color: var(--texte);
+}
+
+.photos-choisies .outils-choix {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.legende-badges {
+  display: grid;
+  gap: var(--e1);
+  padding-top: var(--e3);
+  border-top: 1px solid var(--filet);
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.legende-badges p {
+  margin: 0;
+}
+
+.legende-badges .ligne-legende {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e1) 6px;
+}
+
+.legende-badges .echantillon {
+  display: inline-block;
+  width: 28px;
+  height: 14px;
+  border-radius: 3px;
+  margin-left: var(--e1);
+}
+
+.legende-badges .echantillon:first-child {
+  margin-left: 0;
+}
+
+.legende-badges .echantillon.propose {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--badge-garde-bord);
+}
+
+.legende-badges .echantillon.decide {
+  background: var(--badge-garde-plein);
+}
+
+.legende-badges .a-verifier {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--badge-verifier-texte);
+}
+
+.mesure-flou summary {
+  cursor: pointer;
+  color: var(--texte);
+}
+
+.mesure-flou p {
+  margin: var(--e2) 0 0;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+/* La barre du bas : ce que fera « Valider » ; « les photos en bordure suivront le réglage » à la suite de la ligne 1
+   à 1440 px et plus, en tête de la ligne 2 en dessous ; au palier, seulement dans l'infobulle (la ligne 2 reste
+   entière). */
+.page-floues .barre-validation .suite-resume {
+  color: var(--texte-2);
+  font-weight: 400;
+}
+
+.page-floues .barre-validation .bordure-l2 {
+  display: none;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 1439.98px) {
+  .page-floues .barre-validation .suite-resume {
+    display: none;
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1439.98px) {
+  .page-floues .barre-validation .bordure-l2 {
+    display: inline;
+  }
+}

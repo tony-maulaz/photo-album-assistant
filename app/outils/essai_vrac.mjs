@@ -35,6 +35,133 @@ const verifier = (condition, texte) => {
   console.log(`✓ ${texte}`);
 };
 
+/** La photo `id` telle qu'elle est écrite dans `.album/plan.json` (règle d'or 7), quand `condition` est vraie (3 s au plus). */
+async function planEcrit(page, id, condition) {
+  let f;
+  for (let k = 0; k < 15; k++) {
+    f = await page.evaluate(async (id) => {
+      const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+      const plan = JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text());
+      return plan.fichiers.find((x) => x.id === id) ?? null;
+    }, id);
+    if (f && condition(f)) return { ok: true, f };
+    await page.waitForTimeout(200);
+  }
+  return { ok: false, f };
+}
+
+/**
+ * Badges de Floues (D112, réponse 20) : un clic sur la bande donne l'autre sort, décidé par vous (punaise), sans
+ * choisir la photo ; un second clic, dans les 0,5 s, est ignoré ; après, il rend la proposition ; un double-clic
+ * n'ouvre pas la vue en grand ; la bande d'une autre photo, cliquée aussitôt, agit ; G, X et Suppr sur la photo choisie ; Ctrl+Z défait chaque geste. Tout est défait à la
+ * fin : l'étape se valide comme avant.
+ */
+async function gestesBadge(page) {
+  const etat = (i) =>
+    page
+      .locator('.page-floues .tuile')
+      .nth(i)
+      .evaluate((t) => {
+        const b = t.querySelector('.badge-photo');
+        return { id: t.dataset.id, sort: b?.dataset.sort, origine: b?.dataset.origine, decide: !!b?.hasAttribute('data-decide'), choisie: t.classList.contains('choisie') };
+      });
+  const bande = (i) => page.locator('.page-floues .tuile').nth(i).locator('.badge-photo button');
+  const message = () => page.locator('.ligne-etape .message-entete').innerText();
+  // Une photo proposée (ni « Écartée avant » ni décidée).
+  const n = await page.locator('.page-floues .tuile').count();
+  let i = 0;
+  while (i < n && (await etat(i)).decide) i++;
+  const e0 = await etat(i);
+  verifier(!!e0.sort && !e0.decide, `badge de Floues : une photo proposée (${JSON.stringify(e0)})`);
+  await bande(i).click();
+  const e1 = await etat(i);
+  verifier(e1.decide && e1.origine === 'vous' && e1.sort !== e0.sort, `clic sur la bande : l’autre sort, par vous (${JSON.stringify(e1)})`);
+  verifier(!e1.choisie, 'clic sur la bande : la photo n’est pas choisie');
+  verifier(/par vous/.test(await message()), `message après le clic : « ${await message()} »`);
+  const ecrit1 = await planEcrit(page, e1.id, (f) => f.flou === (e1.sort === 'garder' ? 'sauvee' : 'ecartee') && f.origine?.flou === 'vous');
+  verifier(ecrit1.ok, `clic sur la bande : la décision et son origine écrites dans .album/plan.json (${JSON.stringify(ecrit1.f?.origine)})`);
+  // Second clic tout de suite : ignoré (garde de 0,5 s).
+  await bande(i).click();
+  verifier((await etat(i)).decide, 'second clic dans les 0,5 s : ignoré');
+  await page.waitForTimeout(600);
+  await bande(i).click();
+  const e2 = await etat(i);
+  verifier(!e2.decide && e2.sort === e0.sort, `second clic : retour à la proposition (${JSON.stringify(e2)})`);
+  const ecrit2 = await planEcrit(page, e1.id, (f) => (f.flou === undefined || f.flou === 'auto') && !f.origine?.flou);
+  verifier(ecrit2.ok, `second clic : décision et origine retirées de .album/plan.json (${JSON.stringify(ecrit2.f?.flou)})`);
+  // Ctrl+Z défait le second clic, puis le premier.
+  await page.keyboard.press('Control+z');
+  verifier((await etat(i)).decide, 'Ctrl+Z défait le second clic');
+  await page.keyboard.press('Control+z');
+  verifier(!(await etat(i)).decide, 'Ctrl+Z défait le premier clic');
+  // Double-clic sur la bande : pas de vue en grand (le premier clic seul compte).
+  await page.waitForTimeout(600);
+  await bande(i).dblclick();
+  verifier((await page.locator('.visionneuse').count()) === 0, 'double-clic sur la bande : pas de vue en grand');
+  verifier((await etat(i)).decide, 'double-clic sur la bande : un seul geste');
+  await page.keyboard.press('Control+z');
+  // La garde de 0,5 s est propre à chaque bande : la bande d'une autre photo, cliquée aussitôt après, agit.
+  let j = i + 1;
+  while (j < n && (await etat(j)).decide) j++;
+  if (j < n) {
+    await page.waitForTimeout(600);
+    await bande(i).click();
+    await bande(j).click();
+    verifier((await etat(i)).decide && (await etat(j)).decide, 'deux bandes cliquées l’une après l’autre : chacune prend son geste');
+    for (let k = 0; k < 2; k++) await page.keyboard.press('Control+z');
+    verifier(!(await etat(i)).decide && !(await etat(j)).decide, 'Ctrl+Z défait les clics des deux bandes');
+  }
+  // Les touches, sur la photo choisie : G garde, X écarte (par vous), Suppr retire le choix.
+  await page.locator('.page-floues .tuile').nth(i).locator('.cadre-miniature').click();
+  await page.keyboard.press('g');
+  const g = await etat(i);
+  verifier(g.decide && g.origine === 'vous' && g.sort === 'garder', `G : gardée par vous (${JSON.stringify(g)})`);
+  verifier((await planEcrit(page, g.id, (f) => f.flou === 'sauvee' && f.origine?.flou === 'vous')).ok, 'G : écrit dans .album/plan.json');
+  await page.keyboard.press('x');
+  const x = await etat(i);
+  verifier(x.decide && x.origine === 'vous' && x.sort === 'ecarter', `X : écartée par vous (${JSON.stringify(x)})`);
+  verifier((await planEcrit(page, x.id, (f) => f.flou === 'ecartee' && f.origine?.flou === 'vous')).ok, 'X : écrit dans .album/plan.json');
+  const parVous = await page.locator('[data-filtre=vous] .compte-filtre').first().innerText();
+  verifier(parVous.trim() === '1', `filtre « Par vous » : ${parVous}`);
+  await page.keyboard.press('Delete');
+  verifier(!(await etat(i)).decide, 'Suppr : retour à la proposition');
+  verifier((await planEcrit(page, x.id, (f) => f.flou !== 'ecartee' && f.flou !== 'sauvee' && !f.origine?.flou)).ok, 'Suppr : retiré de .album/plan.json');
+  await page.keyboard.press('Control+z');
+  verifier((await etat(i)).sort === 'ecarter' && (await planEcrit(page, x.id, (f) => f.flou === 'ecartee' && f.origine?.flou === 'vous')).ok, 'Ctrl+Z défait Suppr, écrit dans .album/plan.json');
+  for (let k = 0; k < 2; k++) await page.keyboard.press('Control+z');
+  verifier(!(await etat(i)).decide && (await etat(i)).sort === e0.sort, 'Ctrl+Z défait G, X et Suppr');
+  verifier((await planEcrit(page, x.id, (f) => f.flou !== 'ecartee' && f.flou !== 'sauvee' && !f.origine)).ok, 'Ctrl+Z : plus aucune décision ni origine dans .album/plan.json');
+  // Un clic sur la bande ne lui donne pas le focus : Entrée reste à la photo choisie (vue en grand).
+  await page.waitForTimeout(600);
+  await bande(i).click();
+  verifier(await page.evaluate(() => !document.activeElement?.closest('.badge-photo')), 'clic sur la bande : elle ne prend pas le focus');
+  await page.keyboard.press('Control+z');
+  // Dans un filtre, la photo cliquée en sort et la suivante prend sa place sous la souris : le second clic d'un
+  // double-clic tombe sur sa bande, et doit être ignoré (garde de 0,5 s).
+  if (n >= 2) {
+    const k = i + 1 < n ? i + 1 : i - 1;
+    await page.keyboard.press('Escape');
+    await page.locator('.page-floues .tuile').nth(i).locator('.cadre-miniature').click();
+    await page.locator('.page-floues .tuile').nth(k).locator('.cadre-miniature').click({ modifiers: ['Control'] });
+    await page.keyboard.press('g');
+    await page.keyboard.press('Escape');
+    await page.locator('.ligne-etape [data-filtre=vous], .page-floues [data-filtre=vous]').first().click();
+    verifier((await page.locator('.page-floues .tuile').count()) === 2, 'filtre « Par vous » : les deux photos gardées par vous');
+    verifier((await page.locator('.page-floues .vide-grille').count()) === 0, 'filtre « Par vous » non vide : pas de message de grille vide');
+    await page.waitForTimeout(600);
+    await bande(0).dblclick();
+    const restantes = await page.locator('.page-floues .tuile').count();
+    verifier(restantes === 1 && (await etat(0)).decide, `double-clic dans le filtre « Par vous » : une seule photo revient à la proposition (${restantes} restante)`);
+    verifier((await page.locator('.visionneuse').count()) === 0, 'double-clic dans le filtre : pas de vue en grand');
+    for (let z = 0; z < 2; z++) await page.keyboard.press('Control+z');
+    verifier((await page.locator('.page-floues .tuile').count()) === 0, 'Ctrl+Z défait le clic et G : filtre « Par vous » vide');
+    const vides = await page.locator('.page-floues .vide-grille').allInnerTexts();
+    verifier(vides.length === 1 && /filtre/.test(vides[0]), `filtre vide : un seul message, celui du filtre (${JSON.stringify(vides)})`);
+    await page.locator('.ligne-etape [data-filtre=toutes], .page-floues [data-filtre=toutes]').first().click();
+  }
+  await page.keyboard.press('Escape');
+}
+
 const photos = readdirSync(PHOTOS).filter((f) => f.endsWith('.jpg') && !f.startsWith('Vacances'));
 /** Le vrac : tout à la racine, sauf une photo dans BESTOF (copie voulue) et une dans « janvier ». */
 const chemins = Object.fromEntries(photos.map((p) => [p, p]));
@@ -270,12 +397,13 @@ try {
   // Étape 4 : floues.
   await page.locator('main[data-etape=floues]').waitFor();
   const compteur = await page.locator('.compteur-floues').innerText();
-  verifier(/photos? écartées?/.test(compteur), `curseur de netteté et compteur en direct : ${compteur}`);
+  verifier(/photos? (?:sera|seront) écartées?/.test(compteur), `curseur de netteté et compteur en direct : ${compteur}`);
   await page.locator('.curseur-flou input').fill(String(Math.round(Math.log(900) * 100)));
   const compteurHaut = await page.locator('.compteur-floues').innerText();
   verifier(compteurHaut !== compteur, `le compteur suit le curseur : ${compteurHaut}`);
   await page.getByRole('button', { name: /Revenir au réglage conseillé/ }).click();
   await capturer(page, 'v2_floues');
+  await gestesBadge(page);
   await page.locator('[data-action=valider]').click();
 
   // Étape 5 : doublons, comparés journée par journée tant que le dossier est en vrac.
@@ -741,8 +869,33 @@ try {
   });
   const bilanAvant = await ecrireSortie();
   verifier(bilanAvant.includes('ne sont pas dans le projet') && !bilanAvant.includes('Tout est dans le dossier de sortie.'), 'sécurité : la sortie signale les 2 fichiers de la source absents du projet, et ne dit pas « tout est dans la sortie »');
+  // Projet d'avant les badges (D112) : le plan.json écrit sans aucune origine ; une photo gardée à la main, comme
+  // le faisaient les anciennes versions. À la réouverture, chaque décision retrouve son origine, écrite aussitôt.
+  await page.waitForTimeout(1000);
+  const ancien = await page.evaluate(async () => {
+    const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+    const h = await album.getFileHandle('plan.json');
+    const plan = JSON.parse(await (await h.getFile()).text());
+    const gardee = plan.fichiers.find((f) => f.categorie === 'photo' && f.statut === 'archive' && !f.flou && !f.id.includes('/'));
+    gardee.flou = 'sauvee';
+    for (const f of plan.fichiers) {
+      delete f.origine;
+      delete f.avant;
+    }
+    const w = await h.createWritable();
+    await w.write(JSON.stringify(plan));
+    await w.close();
+    return { gardee: gardee.id, ecartees: plan.fichiers.filter((f) => f.statut === 'mis_de_cote' && (f.raison === 'doublons' || f.raison === 'doublons_exacts')).map((f) => f.id) };
+  });
   await page.reload();
   await page.locator('.bandeau-source').waitFor({ timeout: 20_000 });
+  const repris = await planEcrit(page, ancien.gardee, (f) => f.origine?.flou === 'vous');
+  verifier(repris.ok, `réouverture d’un projet d’avant les badges : la photo gardée à la main devient « par vous », écrit dans .album/plan.json (${JSON.stringify(repris.f?.origine)})`);
+  const reprisDoublons = await Promise.all(ancien.ecartees.map((id) => planEcrit(page, id, (f) => !!f.origine?.[f.raison])));
+  verifier(
+    ancien.ecartees.length > 0 && reprisDoublons.every((r) => r.ok && r.f.origine[r.f.raison] === (r.f.doublon?.source === 'ia' ? 'ia' : 'application')),
+    `réouverture : les ${ancien.ecartees.length} doublons écartés par un groupe accepté viennent de l’application, ou de l’IA pour une même scène (${reprisDoublons.map((r) => JSON.stringify(r.f?.origine)).join(', ')})`,
+  );
   verifier((await page.locator('.bandeau-source').innerText()).includes('2 nouveaux fichiers'), 'à la réouverture, un bandeau annonce les 2 nouveaux fichiers');
   await page.locator('.bandeau-source').getByRole('button', { name: 'Mettre à jour l’inventaire' }).click();
   await page.getByText(/Inventaire mis à jour : 2 fichiers ajoutés/).first().waitFor({ timeout: 60_000 });

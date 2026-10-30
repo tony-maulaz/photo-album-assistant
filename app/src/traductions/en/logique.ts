@@ -77,7 +77,6 @@ export const TEXTES: Record<string, string> = {
   écartées: 'set aside',
   remise: 'put back',
   remises: 'put back',
-  Sauver: 'Keep',
   Écarter: 'Set aside',
 
   // indicateurs.ts : signaux des photos

@@ -1501,6 +1501,15 @@ D110 (style figé : évolution É11 de la charte) et D111 (bandes fixes,
 bouton plein qui nomme la photo, Annuler dans l'en-tête gardé). Analyses et
 maquettes hors dépôt.
 
+Précisions du 30.10 (Floues, premières pages à badges) : une photo écartée
+pour flou que l'utilisateur remet à la main depuis « Mis de côté » (ou
+déplace) devient « Gardée par vous », comme un clic sur son badge ; elle ne
+repart plus au « Valider » suivant (choix de l'utilisateur). Une photo
+écartée par le réglage reste en bordure après « Valider » : le réglage peut
+encore la faire bouger, la bordure dit vrai. À la reprise d'un ancien
+projet, un doublon écarté reçoit l'origine « application » (ou « IA »),
+faute d'indice sûr d'un geste de l'utilisateur.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

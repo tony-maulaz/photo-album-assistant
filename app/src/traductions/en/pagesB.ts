@@ -219,8 +219,6 @@ export const TEXTES: Record<string, string> = {
     ': figures, dates, cameras and clock offset; the photo analysis (sharpness, similarity, copies, bursts) runs meanwhile.',
   ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
-  ' : réglez la tolérance ; S sauve une photo, X écarte une photo ratée. Rien n’est écarté avant « Valider et continuer ».':
-    ': set the tolerance; S saves a photo, X sets aside a failed photo. Nothing is set aside before “Confirm and continue”.',
   ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » écarte les autres.': ': one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: a click chooses the photo to keep, “Accept” sets the others aside.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
   ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',

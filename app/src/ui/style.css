@@ -122,6 +122,20 @@
   --etoile-texte: light-dark(#5c3d00, #f6d67a);
   --sur-etoile: #1c1d20;
 
+  /* Badges d'origine sous la photo (D112, mesurés par ux-visuel) : plein franc = décidé, bordure fine et pâle =
+     proposé. Vert, elle reste ; gris, elle part ; brun, à vérifier. Textes de 6 à 12:1 sur leur fond ; les pleins
+     se détachent de la surface (1,4 à 2,6:1) sans être le vert d'action (C-3.2). */
+  --badge-garde-plein: light-dark(#bfe3d9, #24685f);
+  --badge-garde-plein-texte: light-dark(#0b544e, #e6faf6);
+  --badge-garde-bord: light-dark(#8cc7bb, #2f7a70);
+  --badge-garde-texte: light-dark(#0b544e, #a7e3da);
+  --badge-part-plein: light-dark(#d6d5cd, #4a4f57);
+  --badge-part-plein-texte: light-dark(#1c1d20, #ecebe7);
+  --badge-part-bord: light-dark(#c4c2b9, #3d4148);
+  --badge-part-texte: light-dark(#4b505a, #b0b5bd);
+  --badge-verifier-bord: light-dark(#d9a274, #7a5230);
+  --badge-verifier-texte: light-dark(#8f4508, #f0b27a);
+
   /* C-9.5 : focus clavier, noir 2 / jaune 3 / noir 2, dans les deux thèmes. */
   --focus-jaune: #ffd60a;
   --focus-noir: #0b0c0c;
@@ -1118,6 +1132,13 @@ button.fleche-dossier:hover {
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
   color: var(--texte-2);
+}
+
+.barre-validation .l2 > .rien-supprime {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-width: 0;
 }
 
 .barre-validation .l2 .icone {
@@ -3282,11 +3303,11 @@ button.bouton-ia:hover:not(:disabled) {
   flex-basis: 100%;
 }
 
+/* Floues (D112) : le réglage du flou, dans le panneau ; ses bouts disent l'effet. */
 .curseur-flou {
   display: flex;
   flex-direction: column;
   gap: var(--e1);
-  min-width: 320px;
 }
 
 .bornes-curseur {
@@ -3301,27 +3322,6 @@ button.bouton-ia:hover:not(:disabled) {
 .compteur-floues {
   font-size: var(--t-corps);
   line-height: var(--lh-corps);
-}
-
-.grille-floues {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--r-objet);
-  background: var(--surface);
-  box-shadow: 0 0 0 1px var(--filet);
-  overflow: clip;
-}
-
-.grille-floues .grille-photos {
-  flex: 1;
-}
-
-/* Sur un petit écran, la grille descend sous la barre du bas : sa barre d'action se pose au-dessus de
-   celle-ci, sinon Sauver, Écarter et Selon le curseur restent cachés (retour du 29.10). */
-.grille-floues .barre-action {
-  position: fixed;
-  bottom: calc(var(--haut-barre-validation) + var(--e2));
 }
 
 .sous-dossiers select {

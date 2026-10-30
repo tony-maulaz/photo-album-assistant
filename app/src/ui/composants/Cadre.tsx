@@ -342,6 +342,7 @@ export function BarreValidation({
   fini = true,
   ecarte = false,
   court = false,
+  devantL2,
 }: {
   /** Ligne 1 : ce que devient ce qui reste (« 12 groupes pas encore acceptés : toutes leurs photos sont gardées »). */
   resume: ComponentChildren;
@@ -358,6 +359,8 @@ export function BarreValidation({
   ecarte?: boolean;
   /** Pages du cadre commun (lot 4) : la phrase courte de 66 signes ; la suite est dans l'infobulle et l'Aide. */
   court?: boolean;
+  /** Une phrase en tête de la ligne 2, devant le bouclier (Floues : « Les photos en bordure suivront le réglage. »). */
+  devantL2?: ComponentChildren;
 }) {
   const raison = valider && !validerActif ? (raisonInactif ?? '') : '';
   // Sa hauteur, lue par les messages passagers : ils se posent au-dessus d'elle, jamais sur la ligne
@@ -393,12 +396,29 @@ export function BarreValidation({
             </span>
           )}
         </p>
-        {ecarte && (
-          <p class="l2 rien-supprime" title={court ? t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.` : undefined}>
-            <Icone nom="bouclier" taille={16} />
-            {court ? t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ».` : t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}
-          </p>
-        )}
+        {ecarte &&
+          (() => {
+            const bulle = court ? t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.` : undefined;
+            const bouclier = (
+              <>
+                <Icone nom="bouclier" taille={16} />
+                {court ? t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ».` : t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}
+              </>
+            );
+            // Avec une phrase en tête, « Rien n'est supprimé » garde son propre élément (et son infobulle) derrière elle.
+            return devantL2 ? (
+              <p class="l2">
+                {devantL2}
+                <span class="rien-supprime" title={bulle}>
+                  {bouclier}
+                </span>
+              </p>
+            ) : (
+              <p class="l2 rien-supprime" title={bulle}>
+                {bouclier}
+              </p>
+            );
+          })()}
       </div>
       <div class="actions">
         {revenir && (

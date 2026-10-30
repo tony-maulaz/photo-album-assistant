@@ -2,10 +2,10 @@
 // IA2 (situer les photos sans GPS, étape « Tri automatique »). Elles
 // proposent ; l'utilisateur applique.
 
-import { casLimites, estimationCasLimites, estimationSituer, groupesSansGps, lireCasLimites, lireSituation, lotsCasLimites, requeteCasLimites, requeteSituer, voisinesDuGroupe, type PhotoLieu, type VerdictNettete } from '../../lib/aidesTri';
-import { photosConcernees, SEUIL_FLOU } from '../../lib/floues';
+import { estimationCasLimites, estimationSituer, groupesSansGps, lireCasLimites, lireSituation, lotsCasLimites, requeteCasLimites, requeteSituer, voisinesDuGroupe, type PhotoLieu, type VerdictNettete } from '../../lib/aidesTri';
+import { aJugerParIA, photosConcernees, SEUIL_FLOU } from '../../lib/floues';
 import { aTraduire, t } from '../../lib/langue';
-import { deplacerFichiers, enchainer, gardeSaPlace, type Modification } from '../../lib/plan';
+import { deplacerFichiers, enchainer, gardeSaPlace, type FichierPlan, type Modification } from '../../lib/plan';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { ETAPE } from '../../navigateur/projet';
 import { executerRequete } from '../../navigateur/executeur';
@@ -21,11 +21,14 @@ import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs
 export type VerdictIA1 = { verdict: VerdictNettete; raison: string };
 
 function lotsIA1(s: Session) {
-  const photos = photosConcernees(s.plan)
-    .map((f) => ({ id: f.id, dossier: f.dossier, date: f.date, nettete: s.analyses.get(f)?.nettete ?? NaN }))
-    .filter((p) => Number.isFinite(p.nettete));
-  // Le curseur de l'étape « Photos floues » est gardé dans le projet dès qu'il bouge.
-  return lotsCasLimites(casLimites(photos, s.projet.seuil_flou ?? SEUIL_FLOU));
+  const nettete = (f: FichierPlan) => {
+    const n = s.analyses.get(f)?.nettete;
+    return n !== undefined && Number.isFinite(n) ? n : undefined;
+  };
+  // Le curseur de l'étape « Photos floues » est gardé dans le projet dès qu'il bouge. Seules les photos « à
+  // vérifier » partent (D112) : ni celles qu'on a déjà décidées, ni celles qui ont déjà l'avis de l'IA.
+  const photos = aJugerParIA(photosConcernees(s.plan), nettete, s.projet.seuil_flou ?? SEUIL_FLOU, verdictsIA1(s));
+  return lotsCasLimites(photos.map((f) => ({ id: f.id, dossier: f.dossier, date: f.date, nettete: nettete(f)! })));
 }
 
 const identite = (s: Session) => (id: string) => {
@@ -48,7 +51,7 @@ enregistrerAide({
     const modele = modeleDe('standard');
     const aFaire = lots.filter((lot) => !s.ia.enCache(requeteCasLimites(lot, modele, identite(s)).cle));
     const e = estimationCasLimites(aFaire.map((l) => l.length), modele);
-    return { usd: e.usd, appels: e.appels, detail: pluriel(lots.reduce((a, l) => a + l.length, 0), 'photo à la limite', 'photos à la limite') };
+    return { usd: e.usd, appels: e.appels, detail: pluriel(lots.reduce((a, l) => a + l.length, 0), 'photo à vérifier', 'photos à vérifier') };
   },
   lancer: async (s, l) => {
     const lots = lotsIA1(s);

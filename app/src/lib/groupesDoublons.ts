@@ -12,7 +12,7 @@
 import type { Proposition } from './doublons';
 import type { GroupeExact } from './doublonsExacts';
 import { t } from './langue';
-import { choisirDoublons, combiner, dateSure, deplacerFichiers, ecarterDoublons, garderAussi, type FichierPlan, type InfoDoublon, type Modification, type Plan } from './plan';
+import { choisirDoublons, combiner, dateSure, deplacerFichiers, ecarterDoublons, garderAussi, type FichierPlan, type InfoDoublon, type Modification, type OrigineDecision, type Plan } from './plan';
 import { pluriel } from '../ui/format';
 
 /**
@@ -163,8 +163,11 @@ export function avancementGroupes(groupes: GroupeDoublons[], fichier: Fichiers):
 // Décisions
 // ---------------------------------------------------------------------------
 
-/** Met de côté `ids` ; un doublon note la photo gardée à sa place (la ★ si elle reste). */
-function ecarter(plan: Plan, g: GroupeDoublons, ids: string[]): Modification | null {
+/**
+ * Met de côté `ids` ; un doublon note la photo gardée à sa place (la ★ si elle reste). `origine` : d'où vient la
+ * décision de chaque photo (D112) ; par défaut, l'utilisateur.
+ */
+function ecarter(plan: Plan, g: GroupeDoublons, ids: string[], origine: (id: string) => OrigineDecision = () => 'vous'): Modification | null {
   if (!ids.length) return null;
   const sauf = new Set(ids);
   const restent = photosDuGroupe(g, (id) => plan.fichiers.get(id)).filter((x) => aGarder(x.etat) && !sauf.has(x.m.id));
@@ -179,7 +182,7 @@ function ecarter(plan: Plan, g: GroupeDoublons, ids: string[]): Modification | n
         raison === 'doublons'
           ? { garde, source: g.sorte === 'ia' ? 'ia' : 'rafale', raison: m?.raison, description: m?.description, descriptionGardee: membres.get(garde)?.description ?? g.descriptionGardee }
           : undefined;
-      return { id, raison, doublon };
+      return { id, raison, doublon, origine: origine(id) };
     }),
   );
 }
@@ -226,8 +229,12 @@ export function accepter(plan: Plan, groupes: GroupeDoublons[]): Modification | 
     const r = g.remplacement;
     const original = r && photosDuGroupe(g, fichier).find((x) => x.m.id === r.original);
     const deplacer = r && ids.includes(r.copie) && original && aGarder(original.etat) && original.f.dossier !== r.dossier && plan.dossiers.has(r.dossier);
-    modifications.push(ecarter(plan, g, ids));
-    if (choisies.length) modifications.push(garderAussi(plan, choisies, raisonDe(g)));
+    // Origine (D112) : ce que l'utilisateur a choisi photo par photo est « par vous » ; le reste suit la
+    // proposition acceptée, de l'IA pour une même scène, sinon de l'application.
+    const raison = raisonDe(g);
+    const proposee: OrigineDecision = g.sorte === 'ia' ? 'ia' : 'application';
+    modifications.push(ecarter(plan, g, ids, (id) => (fichier(id)?.choixDoublons?.[raison] !== undefined ? 'vous' : proposee)));
+    if (choisies.length) modifications.push(garderAussi(plan, choisies, raison));
     if (deplacer) modifications.push(deplacerFichiers(plan, [r.original], r.dossier));
   }
   // « Annuler : accepter 1 rafale » dit ce qu'il défait (C-8.2) : la sorte des groupes, s'ils sont tous de la même.

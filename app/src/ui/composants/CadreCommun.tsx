@@ -21,7 +21,7 @@ import { ETAPES_EN_ESSAI, MenuPrincipal, PastilleEssai, useDeroulant } from './C
 import { Icone } from './Icones';
 
 /** Étapes passées au cadre commun (liste, table, panneau, colonne d'Aide) ; les autres gardent leur disposition. */
-export const PAGES_CADRE: ReadonlySet<CodeEtape> = new Set<CodeEtape>(['selection', 'doublons']);
+export const PAGES_CADRE: ReadonlySet<CodeEtape> = new Set<CodeEtape>(['floues', 'selection', 'doublons']);
 
 /** Largeur de la fenêtre, relue à chaque changement de taille (palier, Aide). */
 export const largeurFenetre = signal(typeof window === 'undefined' ? 1440 : window.innerWidth);
@@ -438,9 +438,12 @@ export function LigneEtape({
   aide,
   taille,
   vue,
+  filtres,
 }: {
   titre: string;
   aide?: AideLigne;
+  /** Les filtres de la page, quand ils tiennent dans la ligne (Floues, D112) : au palier, ils vont dans la barre d'outils. */
+  filtres?: ComponentChildren;
   /** La Taille des photos ; une fonction : la taille vraiment montrée (vignettes de dossier à 0,6). */
   taille?: boolean | ((v: number) => number);
   vue?: VueLigne;
@@ -457,6 +460,7 @@ export function LigneEtape({
           {titre}
           {ETAPES_EN_ESSAI.has(numero) && <PastilleEssai />}
         </h1>
+        {filtres}
         {vue && sous && <MenuVue vue={vue} repere={repere!} />}
         <MessageLigne />
       </div>

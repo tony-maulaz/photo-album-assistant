@@ -13,8 +13,11 @@ import { Icone } from './Icones';
 
 const ORIGINES: Record<string, string> = { exif: aTraduire('appareil (EXIF)'), nom: aTraduire('nom du fichier'), video: aTraduire('données de la vidéo'), fichier: aTraduire('date du fichier (incertaine)') };
 
-/** Sans `rangement` (étape Dossiers), l'aide ne promet pas M et Suppr, qui n'y font rien. */
-export function Visionneuse({ elements, rangement = true }: { elements: FichierPlan[]; rangement?: boolean }) {
+/**
+ * Sans `rangement` (étapes Dossiers et Floues), l'aide ne promet pas M et Suppr, qui n'y font rien. `nettete` : la
+ * netteté écrite avec son repère (Floues : « netteté 47 · le réglage écarte sous 60 »).
+ */
+export function Visionneuse({ elements, rangement = true, nettete }: { elements: FichierPlan[]; rangement?: boolean; nettete?: (f: FichierPlan) => string }) {
   const s = session.value!;
   const index = visionneuse.value;
   const [url, setUrl] = useState<string | null>(null);
@@ -89,7 +92,7 @@ export function Visionneuse({ elements, rangement = true }: { elements: FichierP
             GPS {f.gps.lat.toFixed(4)}, {f.gps.lon.toFixed(4)}
           </span>
         )}
-        {s.analyses.get(f) && <span class="discret">{t`netteté ${Math.round(s.analyses.get(f)!.nettete)}`}</span>}
+        {nettete ? <span class="discret">{nettete(f)}</span> : s.analyses.get(f) && <span class="discret">{t`netteté ${Math.round(s.analyses.get(f)!.nettete)}`}</span>}
         {lignesIA(s, f.id).map((l) => (
           <span key={l} class="texte-ia">
             {l}

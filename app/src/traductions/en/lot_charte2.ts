@@ -60,8 +60,6 @@ export const TEXTES: Record<string, string> = {
   // Floues.tsx, Inventaire.tsx
   'Réglage conseillé': 'Recommended setting',
   '{0} · {1}': '{0} · {1}',
-  'autre est gardée': 'other is kept',
-  'autres sont gardées': 'others are kept',
   'Attendez la fin de l’analyse des photos.': 'Wait for the photo analysis to finish.',
   // Nommage.tsx
   calendrier: 'calendar',
@@ -119,8 +117,6 @@ export const TEXTES: Record<string, string> = {
   'déjà droite': 'already straight',
   // Lot 2, corrections après contrôle : « Annuler : … » court, mots C-10, « Réunir », « Mis de côté ».
   'Changer la tolérance au flou': 'Change the blur tolerance',
-  'Sauver {0}': 'Rescue {0}',
-  'Remettre {0} selon le curseur': 'Put {0} back by the slider',
   'Ressortir 1 dossier': 'Take out 1 folder',
   'Déplacer {0}': 'Move {0}',
   'Créer 1 dossier': 'Create 1 folder',
@@ -191,7 +187,6 @@ export const TEXTES: Record<string, string> = {
   'Les photos en double sont rangées par sorte, dans les onglets. Dans chaque groupe, un clic choisit la photo à garder ; « Accepter » garde les photos choisies et écarte les autres. Les photos écartées vont dans « Mis de côté » : rien n’est supprimé, et Ctrl+Z annule.': 'Duplicate photos are sorted by kind, in the tabs. In each group, a click chooses the photo to keep; “Accept” keeps the chosen photos and sets the others aside. Photos set aside go to “Set aside”: nothing is deleted, and Ctrl+Z undoes.',
   'La même photo en plusieurs exemplaires : le même fichier copié, ou une copie réduite envoyée par WhatsApp. Proposition : écarter un exemplaire qui ferait double emploi au même endroit (deux fois dans un dossier, ou une photo à trier déjà rangée dans un dossier) ; il ira dans « Mis de côté ». Une photo présente dans plusieurs dossiers que vous gardez y reste partout : à vous de décider, photo par photo.': 'The same photo in several copies: the same file copied, or a reduced copy sent by WhatsApp. Suggestion: set aside a copy that would be redundant in the same place (twice in a folder, or a photo to sort already put away in a folder); it will go to “Set aside”. A photo in several folders that you keep stays in all of them: it is up to you, photo by photo.',
   '{0} : dans « Mis de côté », rien n’est supprimé.': '{0}: in “Set aside”, nothing is deleted.',
-  'Les photos sont classées de la moins nette à la plus nette. Réglez la tolérance : les photos sous le seuil seront écartées dans « Mis de côté ». Sauvez celles qui vous plaisent quand même (flou voulu, mouvement), écartez une photo nette mais ratée.': 'Photos are ordered from the least sharp to the sharpest. Set the tolerance: photos below the threshold will be set aside in “Set aside”. Rescue the ones you like anyway (intentional blur, movement), set aside a sharp but failed photo.',
   'Analyse des photos terminée.': 'Photo analysis finished.',
   '{0}, floues, doublons… : comptés ci-dessus, ils iront dans le dossier « {1} » de la sortie.': '{0}, blurry, duplicates…: counted above, they will go into the “{1}” folder of the output.',
   'Écrivez d’abord un nom': 'First write a name',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appliquerFloues, compterFloues, deciderFlou, photosConcernees, SEUIL_FLOU } from '../src/lib/floues';
+import { appliquerFloues, deciderFlou, estFloue, photosConcernees, SEUIL_FLOU } from '../src/lib/floues';
 import { Historique, planVide, type FichierPlan, type Plan } from '../src/lib/plan';
 
 function plan(): Plan {
@@ -33,8 +33,10 @@ describe('photos floues (étape 3)', () => {
 
   it('compte en direct et applique le seuil, en une opération annulable', () => {
     const p = plan();
-    expect(compterFloues(photosConcernees(p), nettete, 60)).toBe(1);
-    expect(compterFloues(photosConcernees(p), nettete, 100)).toBe(2);
+    // « ancienne » (écartée par les anciens scripts, nette) compte : elle reste écartée (« Écartée avant », D112).
+    const compter = (seuil: number) => photosConcernees(p).filter((f) => estFloue(f, nettete(f), seuil)).length;
+    expect(compter(60)).toBe(2);
+    expect(compter(100)).toBe(3);
     const h = new Historique();
     h.enregistrer(appliquerFloues(p, nettete, 100));
     expect(p.fichiers.get('floue')).toMatchObject({ statut: 'mis_de_cote', raison: 'floues', flou: 'auto' });

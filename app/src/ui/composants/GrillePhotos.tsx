@@ -19,6 +19,7 @@ import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../.
 import { reglages, serviceMiniatures, session, versionPlan } from '../etat';
 import { dateHeure, jourCourt, pluriel } from '../format';
 import { ancre, glisse, selection, visionneuse, vue, VUE_MIS_DE_COTE } from '../organiser';
+import { appuiSurBadge, BandeBadge, type DescriptionBadge } from './Badge';
 import { bornesFenetre } from './CadreCommun';
 import { Icone } from './Icones';
 
@@ -107,10 +108,14 @@ function etiquetteGlisse(n: number): HTMLElement {
 /** Photo à amener à l'écran dans la grille affichée (résultat d'une aide IA, « voir ») ; remise à `null` une fois montrée. */
 export const photoAMontrer = signal<string | null>(null);
 
-/** État écrit sous une photo (C-9.2) : la classe de la bande (garder, ecarter, pas, mis, album, grande, decider) et son mot. */
+/**
+ * État écrit sous une photo (C-9.2) : la classe de la bande (garder, ecarter, pas, mis, album, grande, decider) et son
+ * mot ; ou le badge d'origine commun (D112), qui se clique.
+ */
 export interface EtatGrille {
   classe: string;
   libelle: ComponentChildren;
+  badge?: DescriptionBadge;
 }
 
 export interface OptionsGrille {
@@ -124,7 +129,7 @@ export interface OptionsGrille {
   largeurMin?: number;
   /** Texte sous la miniature (par défaut : l'heure, ou le nom) ; avec un état, la remarque sous la bande. */
   legende?: (f: FichierPlan) => ComponentChildren;
-  /** Lignes de légende (2 : l'heure et la description de l'IA). */
+  /** Lignes de légende (2 : l'heure et la description de l'IA ; 0 sous une bande d'état : la bande seule). */
   lignesLegende?: number;
   /** Titres de groupe : chacun ouvre une nouvelle ligne avant l'élément `debut` (indices croissants). */
   groupes?: { debut: number; titre: ComponentChildren }[];
@@ -140,6 +145,8 @@ export interface OptionsGrille {
   pied?: number;
   /** Glisser la sélection vers le panneau des dossiers (défaut : oui). */
   glisser?: boolean;
+  /** Le message d'une grille vide (défaut : « Aucune photo ni vidéo dans ce dossier. ») ; un filtre vide dit le sien. */
+  vide?: ComponentChildren;
   taille?: number;
 }
 
@@ -155,7 +162,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   const enMisDeCote = vue.value === VUE_MIS_DE_COTE;
   // Une bande d'état sous chaque photo : la page dit l'état, ou la vue « Mis de côté » dit pourquoi.
   const avecBande = !!options.etat || enMisDeCote;
-  const hauteurLegende = avecBande ? BANDE + 4 + LIGNE_REMARQUE * lignesLegende : LEGENDE * lignesLegende;
+  const hauteurLegende = avecBande ? BANDE + (lignesLegende ? 4 + LIGNE_REMARQUE * lignesLegende : 0) : LEGENDE * lignesLegende;
   const hauteurCase = taille + hauteurLegende + ESPACE;
   const colonnes = Math.max(1, Math.floor((dims.largeur - 2 * MARGE + ESPACE) / largeurCase));
   const groupes = options.groupes;
@@ -329,6 +336,11 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
   };
 
   const commencerGlisse = (e: DragEvent, i: number) => {
+    // Appuyé sur le badge : c'est un clic sur la bande, la case ne se glisse pas.
+    if (appuiSurBadge()) {
+      e.preventDefault();
+      return;
+    }
     const id = elements[i].id;
     if (!choisis.has(id)) {
       selection.value = new Set([id]);
@@ -419,6 +431,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
           `${dateHeure(f.date)}${f.origineDate === 'fichier' ? t` (date du fichier)` : ''}`,
           // Le dossier de la photo, sur toute page où elle a un état (choix de l'utilisateur, D96 levée ; C-9.6).
           ...(avecBande ? [t`Dossier : ${(session.value && cheminDossier(session.value.plan, f.dossier)) || t`Photos`}`] : []),
+          ...(nouveau && etat?.badge ? [t`Arrivée le ${jourCourt(derniere)}, à la dernière mise à jour de l’inventaire`] : []),
           ...(options.infobulle?.(f) ?? []),
         ].join('\n')}
       >
@@ -427,18 +440,25 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         </div>
         {avecBande ? (
           <>
-            {/* L'état écrit, ses marques au bout ; jamais la forme d'un bouton (C-9.2). */}
-            <div class={`etat-photo bande-etat ${etat?.classe ?? 'decider'}`}>
-              <span class="mot-bande">{etat?.libelle}</span>
-              {marques && !serree && <span class="fin-bande">{marques}</span>}
-            </div>
-            <div class="remarque" style={{ WebkitLineClamp: lignesLegende, maxHeight: `${LIGNE_REMARQUE * lignesLegende}px` }}>
-              {/* Les marques, ici quand la bande n'a pas la place pour elles et le mot entier (data-serree). */}
-              {serree && <span class="marques-remarque">{marques}</span>}
-              {marqueNouveau}
-              {marqueNouveau && ' '}
-              {texte}
-            </div>
+            {etat?.badge ? (
+              // Le badge d'origine (D112) : « nouveau » au bout s'il tient, sinon dans la bulle de la case.
+              <BandeBadge badge={etat.badge} largeur={largeurTuile} fin={nouveau && lignesLegende === 0 ? t`nouveau` : undefined} />
+            ) : (
+              // L'état écrit, ses marques au bout ; jamais la forme d'un bouton (C-9.2).
+              <div class={`etat-photo bande-etat ${etat?.classe ?? 'decider'}`}>
+                <span class="mot-bande">{etat?.libelle}</span>
+                {marques && !serree && <span class="fin-bande">{marques}</span>}
+              </div>
+            )}
+            {lignesLegende > 0 && (
+              <div class="remarque" style={{ WebkitLineClamp: lignesLegende, maxHeight: `${LIGNE_REMARQUE * lignesLegende}px` }}>
+                {/* Les marques, ici quand la bande n'a pas la place pour elles et le mot entier (data-serree). */}
+                {serree && <span class="marques-remarque">{marques}</span>}
+                {marqueNouveau}
+                {marqueNouveau && ' '}
+                {texte}
+              </div>
+            )}
           </>
         ) : (
           <div class={`legende${lignesLegende > 1 ? ' plusieurs-lignes' : ''}`} style={lignesLegende > 1 ? { height: `${hauteurLegende}px` } : undefined}>
@@ -474,7 +494,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         {cases}
         {rect && <div class="rectangle" style={{ left: `${rect.x0}px`, top: `${rect.y0}px`, width: `${rect.x1 - rect.x0}px`, height: `${rect.y1 - rect.y0}px` }} />}
       </div>
-      {elements.length === 0 && <p class="vide-grille">{t`Aucune photo ni vidéo dans ce dossier.`}</p>}
+      {elements.length === 0 && <p class="vide-grille">{options.vide ?? t`Aucune photo ni vidéo dans ce dossier.`}</p>}
     </div>
   );
 }

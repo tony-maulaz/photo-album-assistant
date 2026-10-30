@@ -4,6 +4,7 @@ import exemple from '../../../config.exemple/config.json';
 import { configAlbumDefaut, type ConfigAlbum } from '../lib/album';
 import { VERSION_CONFIG, type Config } from '../lib/config';
 import { t, type Langue } from '../lib/langue';
+import { reprendreOrigines } from '../lib/origines';
 import { depuisJson, Historique, planVide, RACINE, versJson, type PlanJson } from '../lib/plan';
 import { definirLangueSortie, etatVide, type EtatSortie } from '../lib/sortie';
 import { comparerSource, integrerSource, planInitial, type ChangementsSource } from '../lib/source';
@@ -16,7 +17,7 @@ import { Geocodage } from '../navigateur/geocodage';
 import { ServiceIA } from '../navigateur/ia';
 import { inventorier, lireDetails, listerSource, type Progression } from '../navigateur/inventaire';
 import { ETAPE, EtatProjet, migrerEtapes, noterProjetRecent, nouveauProjet, projetsRecents, type Projet } from '../navigateur/projet';
-import { appliquer, changementsSource, changerEtape, chargerEvenements, configuration, enregistrerProjet, journal, notifier, page, pageApresRechargement, reglages, session, versionIA, versionPlan, versionProjet } from './etat';
+import { appliquer, changementsSource, changerEtape, chargerEvenements, configuration, enregistrerMaintenant, enregistrerProjet, journal, notifier, page, pageApresRechargement, reglages, session, versionIA, versionPlan, versionProjet } from './etat';
 
 /** Services du projet ouvert : analyses des photos et appels IA (cache, budget). */
 async function services(etat: EtatProjet, projet: Projet) {
@@ -220,8 +221,12 @@ export async function ouvrirProjet(source: FileSystemDirectoryHandle, sortie: Fi
     etatSortie,
     ...(await services(etat, projet)),
   };
+  // Projet ouvert avant les badges (D112) : chaque décision reçoit son origine, écrite tout de suite (règle d'or 7).
+  const s = session.value!;
+  const reprises = reprendreOrigines(s.plan, s.aides.get<Record<string, unknown>>('IA1') ?? {});
+  if (reprises) await enregistrerMaintenant();
   await noterProjetRecent({ id: projet.id, nom: projet.nom, source, sortie, etapes: [...projet.etapes], fichiers: projet.inventaire?.fichiers });
-  journal('projet', t`Projet « ${projet.nom} » ouvert`);
+  journal('projet', t`Projet « ${projet.nom} » ouvert`, reprises ? { originesReprises: reprises } : undefined);
   versionPlan.value++;
   versionProjet.value++;
   // Après un rechargement de l'onglet, on reste sur la page regardée ; sinon, l'étape à reprendre.

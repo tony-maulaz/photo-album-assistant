@@ -195,18 +195,22 @@ export function useLancerAide(id: string) {
  * changent), et relit les options de la page (cases, curseur) qui changent le
  * coût. Le coût affiché suit toujours ce qui sera envoyé (règle d'or 5).
  */
-export function AideIA({ fonction, children }: { fonction: string; children?: ComponentChildren }) {
+export function AideIA({ fonction, nom, children }: { fonction: string; nom?: string; children?: ComponentChildren }) {
   const a = AIDES.get(fonction);
   // Options déclarées : réestimé quand elles changent ; sinon, à chaque affichage de la page (objet neuf).
   const options = a?.options ? JSON.stringify(a.options() ?? null) : {};
   return (
-    <BoutonAideIA fonction={fonction} options={options}>
+    <BoutonAideIA fonction={fonction} options={options} nom={nom}>
       {children}
     </BoutonAideIA>
   );
 }
 
-function BoutonAideIA({ fonction, options, children }: { fonction: string; options: unknown; children?: ComponentChildren }) {
+/**
+ * `nom` : le nom du bouton dans l'étape (« Demander l'avis de l'IA » à Floues, D112) ; la portée (le détail de
+ * l'estimation) et le prix s'écrivent alors dessous.
+ */
+function BoutonAideIA({ fonction, options, nom, children }: { fonction: string; options: unknown; nom?: string; children?: ComponentChildren }) {
   const s = session.value;
   const a = AIDES.get(fonction);
   const { progres, lancer, arreter } = useLancerAide(fonction);
@@ -235,10 +239,17 @@ function BoutonAideIA({ fonction, options, children }: { fonction: string; optio
         title={t`${t(a.description)} Envoyé : ${t(a.envoi)}.`}
       >
         <Icone nom="etincelle" taille={16} />
-        <span>
-          {t(a.nom)}
-          <span class="cout-aide"> — {enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : texteCout(e)}</span>
-        </span>
+        {nom ? (
+          <span class="nom-aide-deux-lignes">
+            {nom}
+            <span class="cout-aide">{enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : e.detail ? t`sur ${e.detail} · ${texteCout(e)}` : texteCout(e)}</span>
+          </span>
+        ) : (
+          <span>
+            {t(a.nom)}
+            <span class="cout-aide"> — {enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : texteCout(e)}</span>
+          </span>
+        )}
       </button>
       {avecWeb(a) && <span class="discret">{t`avec recherche web`}</span>}
       {illisibles > 0 && !progres && !enCours && (

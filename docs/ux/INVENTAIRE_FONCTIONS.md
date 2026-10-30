@@ -151,20 +151,30 @@ incohérents**.
 
 ## 9. Étape 4 « Photos floues »
 
-| Fonction | Accès | Vu |
-|---|---|---|
-| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
-| Tolérance au flou (plus tolérant ↔ plus strict), valeur en infobulle | curseur | V/B |
-| Revenir au réglage conseillé | lien (grisé s'il l'est déjà) | V |
-| Voir toutes les photos / seulement celles qui seront écartées | liste | V |
-| Annuler un geste de l'étape ; Rétablir | ↶ ↷ de la ligne de l'étape, en icônes (« Annuler : *le geste* » dans l'infobulle et le nom lu), Ctrl+Z / Ctrl+Y (forme E) | I/C |
-| Faire juger les cas limites par l'IA (IA1), suivre son avis | bouton IA + bouton « Suivre l'avis… » | V |
-| Sélectionner : clic, Ctrl+clic, Maj+clic, rectangle, flèches | souris/clavier | G/C |
-| Sauver / Écarter / Selon le curseur / désélectionner | barre noire flottante en bas, touches S, X ou Suppr, Échap | V/C |
-| Voir en grand | double-clic | G |
-| Glisser vers un dossier | désactivé ici | — |
-| Taille des photos | **absente** | — |
-| Ctrl+A | **absent** (existe aux étapes 7 et 11) | — |
+Dans le cadre commun depuis l'étape 2b (D112) : ligne de l'étape, grille en parties titrées, panneau « Ce que l'on
+écarte », barre du bas.
+
+| Fonction | Accès | Vu | Fichier |
+|---|---|---|---|
+| Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape : colonne à droite (ouverte à la 1re visite) ; au palier, elle prend la place du panneau, sous les outils des photos choisies (comme à la Sélection) ; « Fermer » la replie | V | Floues.tsx:447, 504-519 |
+| Tolérance au flou (« Écarter moins ↔ Écarter plus »), valeur du seuil en infobulle, compte en direct | curseur « Réglage du flou » du panneau, `aria-valuetext` = le compte ; dessous « n photos seront écartées sur N » et d'où vient le compte (réglage, vous, IA, avant) | V/B | Floues.tsx:339-376 |
+| Revenir au réglage conseillé | lien du panneau ; au réglage conseillé, un état écrit « Réglage conseillé » | V | Floues.tsx:343-351 |
+| Voir toutes / ce qui sera écarté / à vérifier (« ? ») / décidé par vous | filtres « Toutes n · À écarter n · ? n · Par vous n » dans la ligne de l'étape ; au palier, dans la barre d'outils (et le menu « Afficher » dans la ligne une fois défilé) | V | Floues.tsx:122-145, 445-466 |
+| Annuler un geste de l'étape ; Rétablir | ↶ ↷ de la ligne de l'étape, en icônes, Ctrl+Z / Ctrl+Y ; chaque clic sur une bande, G, X, Suppr, « Suivre l'avis de l'IA » = un geste | I/C | CadreCommun.tsx (annulerIci) |
+| Demander l'avis de l'IA (IA1) sur les photos à vérifier, avec portée et prix ; suivre son avis | « ✦ Demander l'avis de l'IA » (sur n photos à vérifier · prix) et « Suivre l'avis de l'IA pour n photos » dans le panneau ; l'avis pas encore tranché sous la photo (« ✦ L'IA : … ») | V | Floues.tsx:377-385, 482-492 |
+| Changer le sort d'une photo d'un clic | clic sur la bande sous la photo : l'autre sort, décidé par vous (punaise) ; second clic : retour à la proposition ; au survol, la bande dit l'effet (« ⇄ Garder », « ↺ Revenir ») ; pas un arrêt de Tab | V/B | Badge.tsx:125-153, Floues.tsx:265-272 |
+| Sélectionner : clic, Ctrl+clic, Maj+clic, rectangle, flèches, Ctrl+A | grille, clavier | G/C | GrillePhotos.tsx, Floues.tsx:284 |
+| Garder / Écarter / Retirer mon choix / Ne plus choisir | outils du panneau quand une photo est choisie (avec leur touche) ; touches G ou S, X, Suppr (ou Retour arrière), Échap ; sans photo choisie, une phrase les annonce | V/C | Floues.tsx:399-409, 286-290 |
+| Netteté d'une photo, avec le seuil | infobulle de la photo, panneau de la photo choisie, vue en grand (plus sous la photo) | B | Floues.tsx:388-397, 493-496, 529-537 |
+| Ce que veut dire un badge | petite légende du panneau (proposé / décidé, punaise / ✦ / ?), infobulle de chaque bande | V/B | Floues.tsx:148-170 |
+| Comment on mesure le flou | « Comment on mesure le flou », replié, dans le panneau | V | Floues.tsx:412-415 |
+| Progression de la mesure de netteté | encart en tête du panneau, tant que la mesure tourne | V | Floues.tsx:338 |
+| Photos sans mesure | dernière partie titrée « Netteté pas mesurée » ; alerte de la barre du bas | V | Floues.tsx:213-216, 525 |
+| Badge « nouveau » (inventaire § 20) | au bout de la bande s'il tient, sinon dans l'infobulle | V/B | GrillePhotos.tsx:438 |
+| Voir en grand | double-clic, Entrée, « Voir en grand » du panneau | G/C/V | Floues.tsx:289, 406 |
+| Ce que fera « Valider et continuer » ; « Rien n'est supprimé » | barre du bas : « n seront écartées · m gardées · dont k à vérifier » (la suite « les photos en bordure suivront le réglage » à 1440 px et plus, sinon en infobulle) ; bouclier | V/B | Floues.tsx:429-440, 521-528 |
+| Glisser vers un dossier | désactivé ici | — | Floues.tsx:473 |
+| Taille des photos | curseur de la ligne de l'étape | V | Floues.tsx:448 |
 
 ## 10. Étape 5 « Doublons »
 
@@ -395,8 +405,8 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 | **Voir en grand** | Dossiers, Floues, Lieux, Petits (centre), Consolidation, captures | Sélection (le double-clic ouvre le Tri rapide), Nommage, Album, Doublons (seulement « Comparer en grand ») |
 | **Boutons dans la vue en grand** | Tri rapide (8 boutons) | Visionneuse (aucun : M, Suppr seulement au clavier) |
 | **Déplacer** | Lieux, Sélection | Tri rapide, visionneuse (clavier seulement à l'étape 7) |
-| **Taille des photos** | Dossiers, Doublons, Tri, Lieux, Petits, Consolidation, Sélection, Réglages | Floues, Nommage, Album, ligne de temps, onglet Rafales vide |
-| **Ctrl+A** | Lieux, Sélection | Floues |
+| **Taille des photos** | Dossiers, Floues, Doublons, Tri, Lieux, Petits, Consolidation, Sélection, Réglages | Nommage, Album, ligne de temps, onglet Rafales vide |
+| **Ctrl+A** | Floues, Lieux, Sélection | — (corrigé pour Floues) |
 | **Liste des raccourcis « ? »** | Floues, Lieux, Doublons, Sélection | Dossiers, Tri, Petits, Nommage, Consolidation, Album (alors que Petits et Consolidation ont des touches) |
 | **Explication repliable** | « Aide » de la ligne de l'étape, sur les 13 étapes (forme E, D112) | — (corrigé) |
 | **← Retour** | Réglages, Journal, Fonctions IA, Aide | Configuration (où mènent pourtant les étapes 1, 2, 6, 10) |
@@ -418,9 +428,9 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 | **Écarter** | « Écarter » (Floues, va dans _mis_de_cote), « Mettre de côté » (Lieux), « Tout écarter » (Doublons), « Ranger dans leur dossier » (captures, leur propre dossier, pas mis de côté), « Pas pour l'album » (reste dans l'archive) | sens voisins, conséquences différentes |
 | **Fermer** | « Fermer » (Fenetre, Comparateur), « × » (Visionneuse), « Échap fermer » (Tri rapide), « Fermer sans recadrer » (Recadreur), « Fermer le tri rapide » / « Terminer » | — |
 | **Valider** | « Valider et continuer », « Continuer » (étape 1), « Créer le projet », « Créer / mettre à jour la sortie », « Vérifier à nouveau », « Accepter », « Réunir », « Ranger ensemble », « Renommer », « Valider le recadrage » | acceptable, mais le bouton du bas change de sens à l'étape 13 |
-| **Clic sur une photo** | Doublons : **décide** (choisie à garder) ; Floues, Lieux, Sélection : sélectionne seulement ; Dossiers, Petits, Consolidation : ouvre en grand ; Album : ouvre le panneau | même geste, quatre effets |
+| **Clic sur une photo** | Doublons : **décide** (choisie à garder) ; Floues, Lieux, Sélection : sélectionne seulement (à Floues, le clic sur la bande sous la photo change son sort, D112) ; Dossiers, Petits, Consolidation : ouvre en grand ; Album : ouvre le panneau | même geste, quatre effets |
 | **Double-clic sur une photo** | visionneuse (Floues, Lieux) ; Tri rapide (Sélection) ; rien (Doublons) | — |
-| **Suppr / Retour arrière** | Lieux : mettre de côté ; Floues : écarter ; Sélection et Tri rapide : remettre « à décider » | même touche, effets opposés |
+| **Suppr / Retour arrière** | Lieux : mettre de côté ; Floues : retirer mon choix (la photo revient à la proposition, D112) ; Sélection et Tri rapide : remettre « à décider » | même touche, effets opposés |
 | **X** | Floues : écarter (va dans _mis_de_cote) ; Sélection : pas pour l'album (reste dans l'archive) | — |
 | **N** | Doublons : journée suivante ; Consolidation : **refuser** la proposition | une touche de navigation devient une décision |
 | **K** | Doublons, Petits, Consolidation : élément précédent ; Sélection : recadrer | — |

@@ -595,10 +595,10 @@ try {
           const texte = document.querySelector('.bouton-annuler .texte-annuler');
           if (!texte) return null;
           const bouton = texte.closest('button');
-          const avant = [texte.textContent, bouton.getBoundingClientRect(), document.querySelector('.grille-photos, .grille-floues')?.getBoundingClientRect().top];
+          const avant = [texte.textContent, bouton.getBoundingClientRect(), document.querySelector('.grille-photos')?.getBoundingClientRect().top];
           texte.textContent = libelle;
           const b = bouton.getBoundingClientRect();
-          const grille = document.querySelector('.grille-photos, .grille-floues')?.getBoundingClientRect().top;
+          const grille = document.querySelector('.grille-photos')?.getBoundingClientRect().top;
           const r = { h: Math.round(b.height), deborde: bouton.scrollWidth > bouton.clientWidth + 1, dehors: b.right > innerWidth, bouge: grille !== undefined && Math.abs(grille - avant[2]) > 0.5 };
           texte.textContent = avant[0];
           return r;
