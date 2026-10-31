@@ -107,7 +107,6 @@ export const TEXTES: Record<string, string> = {
   'Aucun lieu à exporter': 'No place to export',
   'Rien à enregistrer': 'Nothing to save',
   'Ouverture du dossier en cours.': 'Opening the folder.',
-  'Donnez-lui d’abord un nom': 'First give it a name',
   'Chargement de la photo…': 'Loading the photo…',
   'déjà droite': 'already straight',
   // Lot 2, corrections après contrôle : « Annuler : … » court, mots C-10, « Réunir », « Mis de côté ».
@@ -155,8 +154,6 @@ export const TEXTES: Record<string, string> = {
   'Fermer sans recadrer': 'Close without cropping',
   'Aucune photo hors des voyages, sorties et dossiers de la maison.': 'No photo outside the trips, outings and home folders.',
   'Autres': 'Others',
-  'Copies exactes d’une photo déjà gardée : le tri les a rangées une seconde fois. Rien n’est supprimé : elles vont dans « Mis de côté ». Rangez à nouveau ensuite.': 'Exact copies of a photo already kept: the sorting put them away a second time. Nothing is deleted: they go to “Set aside”. Sort again afterwards.',
-  'Copies exactes d’une photo déjà gardée. Rien n’est supprimé : elles vont dans « Mis de côté ».': 'Exact copies of a photo already kept. Nothing is deleted: they go to “Set aside”.',
   'Ranger dans leur dossier': 'Put in their folder',
   '{0} dans leur dossier': '{0} in their folder',
   'capture d’écran rangée': 'screenshot put away',

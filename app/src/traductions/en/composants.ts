@@ -289,8 +289,6 @@ export const TEXTES: Record<string, string> = {
   'Noms des lieux indisponibles (OpenStreetMap injoignable) : les dossiers ont des noms provisoires (« {0}_01 »…). Renommez-les plus tard, ou rangez à nouveau une fois connecté.':
     'Place names unavailable (OpenStreetMap cannot be reached): the folders have temporary names (“{0}_01”…). Rename them later, or arrange again once connected.',
   'Tout ranger à nouveau': 'Arrange everything again',
-  ' : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; l’IA peut situer les photos sans GPS.':
-    ': put screenshots aside, save the places that come up often, choose how to arrange (the result shows at once), then “Arrange the photos”; the AI can locate photos without GPS.',
   'Photos pas encore rangées': 'Photos not arranged yet',
   // Étape 7 : dossiers nouveaux, ordre par taille (D89) ; le calendrier dans les lieux connus (D88).
   'Dossier créé par le tri automatique : il n’existe pas dans votre dossier d’origine': 'Folder created by the automatic sorting: it does not exist in your original folder',

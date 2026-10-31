@@ -286,15 +286,17 @@ describe('retours du 29.10 (D112) : toutes · aucune, G et X, retour à la propo
   it('« toutes » choisit chaque photo, « aucune » n’en garde aucune : des choix en attente, rien n’est écarté', () => {
     const p = plan();
     expect(choisirTous(p, rafale, true)?.libelle).toBe('Choisir toutes les photos');
-    expect(etats(p, rafale)).toEqual(['gardee', 'choisie', 'choisie']);
+    expect(etats(p, rafale)).toEqual(['choisie', 'choisie', 'choisie']);
     expect([...p.fichiers.values()].some((f) => f.statut === 'mis_de_cote')).toBe(false);
-    // La ★ gardée par la proposition n'a pas de choix noté : c'est déjà son sort.
-    expect(p.fichiers.get('a.jpg')!.choixDoublons).toBeUndefined();
+    // Tout le groupe est fixé « par vous », même la ★ que la proposition gardait déjà (D112, 31.10).
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toEqual({ doublons: true });
+    expect(badges(p, rafale)).toEqual(['garder:vous:plein', 'garder:vous:plein', 'garder:vous:plein']);
     accepter(p, [rafale]);
     expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'gardee']);
     const q = plan();
     choisirTous(q, rafale, false);
     expect(etats(q, rafale)).toEqual(['a_ecarter', 'a_ecarter', 'a_ecarter']);
+    expect(badges(q, rafale)).toEqual(['ecarter:vous:plein', 'ecarter:vous:plein', 'ecarter:vous:plein']);
     expect(acceptablesSansVider([rafale], fichiers(q))).toEqual([]);
     // Déjà le sort de chaque photo : rien à faire.
     expect(choisirTous(q, rafale, false)).toBeNull();
@@ -443,13 +445,13 @@ describe('retours du 29.10 (D112) : toutes · aucune, G et X, retour à la propo
     const h = new Historique();
     h.enregistrer(choisirTous(p, rafale, true));
     h.enregistrer(fixer(p, rafale, 'b.jpg', false, false));
-    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'choisie']);
+    expect(etats(p, rafale)).toEqual(['choisie', 'a_ecarter', 'choisie']);
     h.enregistrer(revenirProposition(p, rafale, 'c.jpg', false));
-    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'a_ecarter']);
+    expect(etats(p, rafale)).toEqual(['choisie', 'a_ecarter', 'a_ecarter']);
     h.annuler(p);
-    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'choisie']);
+    expect(etats(p, rafale)).toEqual(['choisie', 'a_ecarter', 'choisie']);
     h.annuler(p);
-    expect(etats(p, rafale)).toEqual(['gardee', 'choisie', 'choisie']);
+    expect(etats(p, rafale)).toEqual(['choisie', 'choisie', 'choisie']);
     h.annuler(p);
     expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'a_ecarter']);
     expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);

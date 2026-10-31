@@ -28,6 +28,9 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | journée | Les photos d'une même date, regroupées pour la relecture | day | jour (seul, ambigu avec la date) |
 | voyage | Plusieurs jours loin du domicile, un dossier par voyage | trip | séjour, vacances |
 | domicile, maison | Le lieu de résidence, d'après la configuration | home | adresse |
+| lieu, Vos lieux | Un endroit nommé dans la configuration (lieu connu : la maison, chez Mamie, le club) ou qui revient souvent dans les photos ; « Vos lieux » : la fenêtre du Tri où on les nomme et les corrige, deux onglets « À nommer » et « Nommés » (2026-10-31, D112 point 9) | place, Your places | endroit, « Endroits qui reviennent souvent » |
+| À nommer, Nommés | Les deux onglets de « Vos lieux » : les lieux qui reviennent souvent et n'ont pas de nom ; les lieux de la configuration où ce projet a des photos, pour revoir et corriger leur nom (corriger renomme les dossiers du projet qui portent encore le nom automatique ; ceux renommés à la main gardent le leur) (2026-10-31, D112) | To name, Named | Tous, Plus tard (en onglets) |
+| Plus tard ; Remis à plus tard · Le remontrer | Pour une proposition (un lieu à nommer, un bandeau) : ne plus la montrer pendant la séance ; « Le remontrer » la rend. Jamais pour une photo (2026-10-31, D112) | Later; Put off until later · Show it again | Pas maintenant, Ignorer (définitif) |
 
 ## Les étapes
 
@@ -109,3 +112,6 @@ depuis le 30.10 (É14), aussi à Doublons, dans « Comparer en grand », à la S
 | Menu | Le menu de l'en-tête (Fonctions IA, Configuration, Réglages, Journal, Aide), écrit en toutes lettres à côté de son icône | Menu | ☰ seul |
 | En essai | Une étape qui marche, mais dont la présentation peut encore changer ; vos réglages et vos choix sont gardés. Pastille neutre après le titre de l'étape et dans « Étape n sur 13 ▾ », avec sa bulle (29.10, É11, étape 1 des retours acceptée par l’utilisateur ; C-8.10). Aujourd'hui l'Album seul | Trial | bêta, beta, expérimental, provisoire, en test |
 | nouveau | Arrivé avec la mise à jour de l'inventaire | new | créé (pour un dossier du tri) |
+| N photos (bouton d'un dossier) | Au Tri, le bouton d'une ligne de dossier : l'icône photo et le nombre (« 38 photos »). Il déplie quelques photos sous la ligne (pour un voyage, deux par lieu visité) ; « Voir les 38 en grand » ouvre la visionneuse. Il ne fait que montrer (2026-10-31, D112 point 9, réponses 13 et 14) | N photos | Voir les lieux, Afficher |
+| bulle (icône calendrier) | La petite fenêtre d'information d'une icône : au Tri, les événements du calendrier pendant un dossier, celui de la plupart des photos d'abord. Elle s'ouvre au survol, au clic (épinglée) et au clavier ; Échap ou un clic ailleurs la ferme (2026-10-31, D112, C-4.13) | bubble | infobulle (le `title` du navigateur, sans clic ni clavier) |
+| bandeau de rappel | Une ligne brun doux au-dessus du contenu d'une page, qui rappelle un reste à faire ailleurs : une phrase avec un nombre, deux commandes en contour au plus (« Il reste 255 copies exactes à accepter à l'étape Doublons. » · « Aller à Doublons › » · « Les écarter ici ») (2026-10-31, D112, C-8.9) | reminder banner | alerte, erreur (rien n'est en panne) |

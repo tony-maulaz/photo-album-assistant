@@ -115,13 +115,6 @@
   line-height: var(--lh-petit);
 }
 
-.note-afaire {
-  margin: 0;
-  color: var(--texte-2);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-}
-
 .dessous-afaire {
   grid-column: 2 / -1;
 }
@@ -312,6 +305,23 @@ button.petit {
   line-height: var(--lh-section);
 }
 
+/* Une seule phrase pour toutes les lignes (C-10.10) : sur la ligne du titre, entière ; sinon à la ligne. */
+.tete-resultat .phrase-noms {
+  display: inline-flex;
+  flex: 1 1 auto;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.phrase-noms .icone {
+  flex: none;
+  margin-top: 2px;
+}
+
 .resultat-tri .onglets-doublons {
   /* Cinq onglets à 16 px dans une colonne étroite : à la ligne plutôt que coupés (C-6.2, C-7.1). */
   flex-wrap: wrap;
@@ -339,11 +349,13 @@ button.petit {
   font-weight: 700;
 }
 
-/* Une ligne par voyage, sortie ou période à la maison, sans miniatures (D104). */
+/* Une ligne par voyage, sortie ou période à la maison (D104) ; fermée, deux lignes de texte (lot C, D112 point 9) :
+   l'icône, le titre et le bouton « N photos » au bout, puis les détails ; le dépliant passe dessous, sur toute la largeur. */
 .ligne-tri {
-  display: flex;
-  gap: var(--e3);
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: var(--e2) var(--e3);
+  align-items: start;
   padding: var(--e3) var(--e4);
   border: 1px solid var(--filet);
   border-radius: var(--r-commande);
@@ -381,9 +393,8 @@ button.petit {
 
 .corps-ligne {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -391,7 +402,7 @@ button.petit {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e1) 10px;
-  align-items: baseline;
+  align-items: center;
 }
 
 .titre-ligne h3 {
@@ -419,39 +430,179 @@ button.petit {
 }
 
 .details-ligne {
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-}
-
-.calendrier-ligne {
-  color: var(--accent-doux-texte);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-}
-
-.dossier-ligne {
   color: var(--texte-2);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
 }
 
-.etapes-ligne {
-  display: flex;
-  flex-wrap: wrap;
+/* Le bouton des photos : tonal (fond neutre doux, sans bord), à la même place sur chaque ligne ; ouvert, vert doux. */
+.ligne-tri button.bouton-photos {
+  display: inline-flex;
   gap: 6px;
   align-items: center;
-  margin-top: var(--e1);
+  justify-content: center;
+  min-width: 136px;
+  border-color: transparent;
+  background: var(--neutre-doux);
+  white-space: nowrap;
 }
 
-.pastille-etape {
-  padding: 3px 10px;
-  border-radius: var(--r-pastille);
+.ligne-tri button.bouton-photos:hover:not(:disabled) {
+  border-color: var(--filet-fort);
+  background: var(--neutre-doux);
+}
+
+.ligne-tri button.bouton-photos.ouvert {
   background: var(--accent-doux);
   color: var(--accent-doux-texte);
+}
+
+/* L'icône calendrier (lot C, C-4.13) : 16 px en gris, cible de 24 px, le nombre d'événements s'il y en a plusieurs. */
+.calendrier-ligne {
+  display: inline-flex;
+}
+
+button.bouton-calendrier {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--e1);
+  border-color: transparent;
+  background: none;
+  color: var(--texte-2);
+}
+
+button.bouton-calendrier:hover:not(:disabled),
+button.bouton-calendrier[aria-expanded='true'] {
+  border-color: var(--filet-fort);
+  background: var(--neutre-doux);
+}
+
+/* La bulle d'information (C-4.13) : posée en surface, rayon 10, la seule ombre de la page ; fixe dans la fenêtre. */
+.bulle-calendrier {
+  position: fixed;
+  z-index: 40;
+  width: min(340px, calc(100vw - 32px));
+  padding: var(--e3) var(--e4);
+  border: 1px solid var(--filet-fort);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--ombre-flottant);
+  color: var(--texte);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
 }
 
+.bulle-calendrier .tete-bulle {
+  display: block;
+  margin-bottom: var(--e2);
+  font-weight: 600;
+}
+
+.bulle-calendrier ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bulle-calendrier li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: var(--e1);
+  padding: 6px 0;
+  border-top: 1px solid var(--filet);
+}
+
+.bulle-calendrier li:first-child {
+  border-top: 0;
+}
+
+.bulle-calendrier li > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.bulle-calendrier li strong {
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 600;
+}
+
+.bulle-calendrier .marque-bulle {
+  padding-top: var(--e1);
+  color: var(--accent-doux-texte);
+}
+
+.bulle-calendrier p {
+  margin: var(--e1) 0 0;
+}
+
+/* Le dépliant d'une ligne : une bande de vignettes posées sur la table, une phrase et « Voir les 38 en grand ». */
+.depliant-tri {
+  display: flex;
+  grid-column: 2 / -1;
+  flex-direction: column;
+  gap: var(--e2);
+  min-width: 0;
+}
+
+.bande-depliant {
+  display: flex;
+  gap: 6px;
+  padding: var(--e2);
+  border-radius: var(--r-commande);
+  background: var(--table);
+  overflow: hidden;
+}
+
+.lieux-depliant {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(2 * var(--cote-depliant) + 6px + 2 * var(--e2)), 1fr));
+  gap: var(--e2);
+  padding: var(--e2);
+  border-radius: var(--r-commande);
+  background: var(--table);
+}
+
+.lieu-depliant {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.lieu-depliant .bande-depliant {
+  margin-top: var(--e1);
+  padding: 0;
+  background: none;
+}
+
+button.photo-depliant {
+  flex: none;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-photo);
+  background: none;
+  line-height: 0;
+}
+
+button.photo-depliant:hover:not(:disabled) {
+  background: none;
+}
+
+.pied-depliant {
+  margin: 0;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+/* Gardé tel quel : ces règles, écrites pour l'ancienne liste des étapes d'un voyage, s'appliquent aussi à la liste
+   « Étape n sur 13 ▾ » de l'en-tête (même nom de classe) ; les retirer changerait son rendu. */
 .liste-etapes {
   margin: 6px 0 0;
   padding: 0;
@@ -586,29 +737,95 @@ button.petit {
   line-height: var(--lh-petit);
 }
 
-/* Lieux fréquents : une carte par endroit. */
-.fenetre .lieux-frequents {
-  gap: 0;
-  margin: 0;
+/* « Vos lieux » (lot B, D112 point 9) : deux onglets soulignés, le compte dessous, « Remis à plus tard » à droite ;
+   une carte par lieu (fond surface, filet fort, rayon 16, 12 px entre deux) ; la carte modifiée prend le filet vert. */
+.onglets-fenetre {
+  padding: 0 var(--e5);
+  border-bottom: 1px solid var(--filet);
 }
 
-.fenetre .lieu-frequent {
-  display: grid;
-  grid-template-columns: 264px minmax(0, 1fr);
-  gap: 20px;
-  padding: var(--e4) 0;
-  border-top: 1px solid var(--filet);
+.onglets-lieux {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2) var(--e4);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.onglets-lieux [role='tablist'] {
+  display: flex;
+  gap: var(--e4);
+}
+
+button.onglet-lieux {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--e1) 2px 6px;
+  border: 0;
+  border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
+  color: var(--texte-2);
 }
 
-.fenetre .lieu-frequent:first-child {
-  border-top: 0;
+button.onglet-lieux:hover:not(:disabled) {
+  background: none;
+  color: var(--texte);
+}
+
+button.onglet-lieux.actif {
+  border-bottom-color: var(--accent);
+  color: var(--texte);
+}
+
+.onglet-lieux .nom-onglet {
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 600;
+}
+
+.onglet-lieux .compte-onglet {
+  font-weight: 400;
+}
+
+.remis-plus-tard {
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.fenetre .corps-fenetre:has(.cartes-lieux) {
+  background: var(--table);
+}
+
+.cartes-lieux {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  margin: var(--e2) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carte-lieu {
+  display: grid;
+  grid-template-columns: 228px minmax(0, 1fr);
+  gap: var(--e4);
+  padding: 10px var(--e4) 10px 10px;
+  border: 1px solid var(--filet-fort);
+  border-radius: var(--r-objet);
+  background: var(--surface);
+}
+
+.carte-lieu.modifiee {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .vignettes-lieu {
   display: grid;
-  grid-template-columns: repeat(3, 84px);
+  grid-template-columns: repeat(3, 72px);
   gap: 6px;
   align-content: start;
 }
@@ -616,33 +833,147 @@ button.petit {
 .infos-lieu {
   display: flex;
   flex-direction: column;
-  gap: var(--e2);
+  gap: 6px;
   min-width: 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.titre-carte-lieu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e3);
+  align-items: center;
 }
 
 .infos-lieu .adresse-lieu {
+  color: var(--texte);
   font-size: var(--t-corps);
   line-height: var(--lh-corps);
+  font-weight: 600;
+}
+
+.actions-carte-lieu {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e3);
+  align-items: center;
+  margin-left: auto;
+}
+
+button.plus-tard {
+  border-color: transparent;
+  background: none;
+  color: var(--texte-2);
+}
+
+button.plus-tard:hover:not(:disabled) {
+  border-color: var(--filet-fort);
+  color: var(--texte);
+}
+
+.badge-maison {
+  display: inline-flex;
+  gap: var(--e1);
+  align-items: center;
+  padding: 0 var(--e2);
+  border-radius: var(--r-pastille);
+  background: var(--accent-doux);
+  color: var(--accent-doux-texte);
+  font-weight: 600;
 }
 
 .champ-lieu {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: var(--e2) 10px;
+  align-items: center;
+}
+
+.champ-lieu label {
+  font-weight: 600;
 }
 
 .champ-lieu input {
-  flex: 1;
+  flex: 0 1 300px;
   min-width: 0;
 }
 
-.pas-maintenant {
-  align-self: flex-start;
+.champ-lieu button:not(.lien) {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.effet-renommage {
+  margin: 0;
+  color: var(--texte-2);
+}
+
+.effet-renommage strong {
+  color: var(--texte);
+}
+
+.vide-lieux {
+  margin: var(--e4) 0;
+}
+
+.pied-lieux {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2) var(--e4);
+  justify-content: space-between;
+}
+
+.pied-lieux button.lien {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
 }
 
 @media (max-width: 720px) {
-  .fenetre .lieu-frequent {
+  .carte-lieu {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* Copies exactes restées à Doublons (C-8.9) : un bandeau brun doux au-dessus des colonnes, une phrase avec un
+   nombre et deux commandes en contour, sur une ligne quand elle tient. */
+.bandeau-rappel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2) var(--e3);
+  align-items: center;
+  margin: 0 0 var(--e4);
+  padding: var(--e2) var(--e2) var(--e2) var(--e4);
+  border: 1px solid var(--afaire);
+  border-radius: var(--r-commande);
+  background: var(--afaire-doux);
+  color: var(--texte);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.bandeau-rappel > .icone {
+  flex: none;
+  color: var(--afaire);
+}
+
+.bandeau-rappel p {
+  flex: 1 1 320px;
+  margin: 0;
+}
+
+.boutons-rappel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+
+.boutons-rappel button {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
 }
 
 /* Un seul bouton plein par écran (C-4.1) : les autres actions en contour (C-4.4). */

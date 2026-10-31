@@ -100,6 +100,12 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     L('Ctrl+A', aTraduire('Tout sélectionner')),
     LT(aTraduire('Entrée'), aTraduire('Voir la photo en grand (← → : la suivante)')),
   ],
+  // Tri automatique (D112 point 9) : le bouton « N photos », l'icône calendrier et la fenêtre « Vos lieux ».
+  tri: [
+    LT(aTraduire('Tab puis Entrée'), aTraduire('Sur « N photos » : déplier quelques photos du dossier ; sur l’icône calendrier : garder ses événements ouverts')),
+    LT(aTraduire('Échap'), aTraduire('Fermer la bulle du calendrier, la vue en grand ou la fenêtre « Vos lieux »')),
+    LT(aTraduire('Entrée dans « Nom »'), aTraduire('Enregistrer le nom d’un lieu (« Vos lieux »)')),
+  ],
   lieux: [
     ...GRILLE,
     L('Ctrl+A', aTraduire('Tout sélectionner')),
@@ -115,7 +121,7 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     LT(aTraduire('Espace'), aTraduire('Garder ou écarter la photo')),
     L('G', aTraduire('Garder la photo (par vous)')),
     L('X', aTraduire('Écarter la photo (par vous)')),
-    L('Ctrl+A', aTraduire('Choisir toutes les photos du groupe (« Accepter » les garde ; groupe déjà accepté : tout de suite)')),
+    L('Ctrl+A', aTraduire('Choisir toutes les photos du groupe, par vous (« Accepter » les garde ; groupe déjà accepté : tout de suite)')),
     LT(aTraduire('Clic sur la bande'), aTraduire('L’autre sort, décidé par vous ; un second clic revient à la proposition')),
     L('A', aTraduire('Accepter la proposition du groupe (sur le dernier groupe : la suite s’ouvre)')),
     L('C', aTraduire('Comparer le groupe en grand (↑ ↓ : photo, ← → : autre groupe, Entrée : côte à côte ou une à la fois)')),

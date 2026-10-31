@@ -71,7 +71,7 @@ stable (`ETAPE.lieux`), indépendant de son numéro.
 | 3 | **Dossiers** | Pour chaque sous-dossier d'un dossier en vrac : Trier, Garder et nettoyer, ou Ne pas toucher ; sautée sans sous-dossier et pour un dossier déjà trié | Tableau des sous-dossiers, trois boutons par ligne, photos au clic (§ 6.2) | — |
 | 4 | **Photos floues** | Classement par netteté | Grille des floues, curseur avec mise à jour en direct | Option : vérification IA des cas limites |
 | 5 | **Doublons** | Copies exactes, rafales (local), puis vue d'ensemble et vérification (IA), par dossier, ou par journée pour un dossier en vrac (§ 6.8) | Onglets par sorte, relecture journée par journée, un clic par photo | Oui |
-| 6 | **Tri automatique** | Liste « À faire » (maison, copies, captures d'écran, lieux fréquents), rangement dans l'ordre du temps : voyages avec leurs étapes, sorties, maison par mois ; noms de lieux ; inutile pour un dossier déjà trié | Résultat en cartes, onglets par sorte (§ 6.4) | Option : lieu des photos sans GPS |
+| 6 | **Tri automatique** | Liste « À faire » (maison, captures d'écran, vos lieux), bandeau des copies restées à Doublons, rangement dans l'ordre du temps : voyages avec leurs étapes, sorties, maison par mois ; noms de lieux ; inutile pour un dossier déjà trié | Résultat en cartes, onglets par sorte (§ 6.4) | Option : lieu des photos sans GPS |
 | 7 | **Lieux et sorties** | Vérifier et corriger l'arborescence | **Arborescence prévue** éditable (§ 6.4) | — |
 | 8 | **Petits dossiers** | Rattachement des petits dossiers à une sortie voisine | Propositions à accepter ou refuser | Oui |
 | 9 | **Nommage** | Noms parlants (calendrier, recherche web, monuments reconnus) | Tableau des noms | Oui |
@@ -319,20 +319,28 @@ chaque moment devient une sortie : la page le dit.
 un anneau d'état — orange à faire, vert coché fait, pointillé facultatif
 (avec l'étiquette « facultatif ») —, ses boutons à droite, et **un seul bouton
 plein** : celui de la première chose à faire, les autres en contour :
-- **la maison** (le domicile) : « L'indiquer… » ouvre la fenêtre des endroits
-  qui reviennent souvent (ou la Configuration s'il n'y en a pas) ;
-- **les photos en double** (copies exactes pas encore mises de côté, D85) :
-  « Voir » (étape Doublons), « Écarter » ; rien n'est supprimé, elles
-  vont dans `_mis_de_cote/` ;
+- **la maison** (le domicile) : « L'indiquer… » ouvre la fenêtre « Vos lieux »
+  (ou la Configuration s'il n'y en a pas) ; une fois indiquée, « Changer »
+  ouvre son onglet « Nommés » ;
 - **les captures d'écran** parmi les photos à trier : « Voir » ouvre une
   fenêtre (décocher une vraie photo, l'agrandir), « Mettre à part » les
   range dans `Captures_ecran/`, hors du tri et de l'album ;
-- facultatif, **les endroits qui reviennent souvent** : « Les nommer… » ouvre
-  une **grande fenêtre** (composant `Fenetre`, une seule façon d'ouvrir une
-  fenêtre dans l'application) : une carte par endroit, six photos, l'adresse
-  (OpenStreetMap), « Voir toutes les photos », un champ pour son nom avec
-  « Enregistrer » (grisé tant qu'il est vide), « C'est notre maison » quand il
-  n'y a pas de domicile, « Pas maintenant » (pour la séance) ; Échap ferme ;
+- **vos lieux** (« Vos lieux : 3 à nommer », facultatif ; « 5 lieux nommés »
+  une fois tout nommé : la ligne reste) : « Les nommer… » ou « Les voir… »
+  ouvre une **grande fenêtre** (composant `Fenetre`, une seule façon d'ouvrir
+  une fenêtre dans l'application) à deux onglets (D112 point 9).
+  « À nommer » : une carte par lieu qui revient souvent, trois photos (une par
+  jour), l'adresse (OpenStreetMap), « Voir les 39 photos », « Nom » et son
+  champ avec « Enregistrer » (grisé tant qu'il est vide, « attend un nom »),
+  « C'est notre maison » quand il n'y a pas de domicile, « Plus tard » (pour la
+  séance ; « Remis à plus tard : 1 lieu · Le remontrer »). « Nommés » : les
+  lieux de la configuration où le projet a des photos, la maison d'abord, le
+  nom dans son champ ; le corriger dit combien de dossiers du projet le
+  prendront (ceux qui portent encore le nom automatique ; ceux renommés à la
+  main gardent le leur), puis écrit la configuration et renomme ces dossiers
+  en un geste annulable (si la configuration ne s'écrit pas, rien ne change).
+  La fenêtre ne se ferme plus seule ; Échap ou « Fermer » ; retirer un lieu ou
+  changer son rayon : « Configuration › » dans son pied ;
 - **ranger les photos**, avec trois **listes de choix** (une ligne par choix,
   son effet chiffré à droite, « conseillé » en simple texte, D104, D107) :
   « Les voyages de plusieurs jours » (un sous-dossier par lieu visité,
@@ -341,9 +349,10 @@ plein** : celui de la première chose à faire, les autres en contour :
   100 km de la maison, chacun avec son nombre de voyages), « À la maison, un
   dossier… » (par mois conseillé, par semaine) ; sans domicile, une phrase dit
   de l'indiquer d'abord et ces questions ne sont pas posées. Puis le bouton
-  « Ranger les photos » (« Vos photos d'origine ne bougent pas. ») et une
-  ligne sur OpenStreetMap (« seule leur position est envoyée, jamais vos
-  photos »). Une fois rangé : « Photos rangées : 14 voyages, 119 sorties, la
+  « Ranger les photos » (« Vos photos d'origine ne bougent pas. ») ; la
+  phrase sur OpenStreetMap (« seule leur position est envoyée, jamais vos
+  photos ») est dans l'Aide de l'étape, la barre de progression des noms et le
+  pied de « Vos lieux ». Une fois rangé : « Photos rangées : 14 voyages, 119 sorties, la
   maison en 26 dossiers », et « Ranger autrement… » qui rouvre les mêmes
   choix : un autre réglage ne range rien en silence, l'écart s'affiche
   (« Avec ce réglage : 16 voyages (+2)… ») avec « Ranger avec ce réglage » et
@@ -351,6 +360,13 @@ plein** : celui de la première chose à faire, les autres en contour :
 - après le rangement, facultatif, **les photos sans position** : « Demander à
   l'IA… » ouvre l'aide dans une fenêtre (coût affiché avant de la lancer).
 La barre du bas rappelle ce qui reste à faire (« Encore 2 choses à faire »).
+**Les copies exactes restées à l'étape Doublons** (D85, D112 point 9) ne sont
+pas une tâche du tri : un **bandeau brun doux** au-dessus des deux colonnes
+le dit (« Il reste 255 copies exactes à accepter à l'étape Doublons. Sans
+cela, le tri les rangerait une seconde fois. »), avec « Aller à Doublons › »
+et « Les écarter ici » (un clic, annulable ; jamais un groupe où aucun
+exemplaire n'est choisi, D101), tous deux en contour ; il disparaît quand il
+ne reste rien. Dans la frise, l'étape Doublons validée passe en brun doux.
 
 **Le résultat**, **à droite de la liste** (deux colonnes, D105 : il reste à
 l'écran et défile seul, et l'on voit l'effet d'un cran sans descendre ; sous
@@ -359,19 +375,27 @@ Voyages, Sorties, À la maison, Mis à part, chacun avec son nombre. **Avant de
 ranger, c'est un aperçu en direct** (D104), recalculé à chaque choix
 (quelques dizaines de millisecondes pour une année) : ce qui vient
 d'apparaître est marqué « nouveau » et les comptes montrent l'écart
-(« 16 voyages (+2) »). Une **ligne** par dossier, sans miniatures, dans
+(« 16 voyages (+2) »). En tête, une seule phrase : « Les noms des dossiers
+se choisissent plus tard, à l'étape Nommage. » Une **ligne** par dossier, dans
 l'ordre du temps, mois par mois, avec un **titre lisible** (D107) : « La
 maison en juillet », « Voyage à Rome », « Florence, sam. 22 mars » ; avant le
 rangement, tant qu'un lieu n'a pas de nom, la date (« Voyage du 24 juillet au
-7 août », « Sortie du sam. 9 août »). Dessous : les dates en clair, le nombre
-de photos, la distance de la maison, l'événement du calendrier (« Votre
-calendrier : « … » — vous choisirez le nom au Nommage ») et, une fois rangé,
-le dossier en petit (« Dossier « Maison/07.25 » ») ; pour un voyage, ses lieux
-visités en pastilles, « Voir les lieux » les déplie. Avant le rangement,
+7 août », « Sortie du sam. 9 août »), une **icône calendrier** s'il y a un
+événement pendant le dossier (avec leur nombre s'il y en a plusieurs ; sa
+bulle s'ouvre au survol, au clic et au clavier, l'événement de la plupart des
+photos d'abord, D88, D94), et au bout de la ligne le bouton **« 38 photos »**.
+Dessous : les dates en clair, le nombre de lieux visités, la distance de la
+maison, les vidéos. Fermée, une ligne tient sur deux lignes de texte. « 38
+photos » **déplie quelques photos** sous la ligne (8 au plus, réparties sur la
+période ; pour un voyage, deux par lieu visité avec ses dates et son nombre),
+« Voir les 38 en grand » ouvre la visionneuse, et, une fois rangé, le dossier
+(« Dossier « Maison/07.25 » ») ; une ligne dépliée à la fois, sans rien
+retenir ni écarter (réponses 13 et 14 du 29.10 : il remplace les miniatures
+toujours visibles choisies le 27.10). Avant le rangement,
 OpenStreetMap n'est pas interrogé : un lieu déjà nommé à 1 km près garde son
 nom, sinon la ligne s'appelle d'après sa date, jamais « Lieu_01 ». Aucune correction sur cette page
-(« Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et
-sorties » ») : l'étape 6 range, l'étape 7 corrige. **Mis à part** : captures
+(l'Aide le dit : « Pour couper un dossier ou déplacer des photos : étape
+suivante, « Lieux et sorties » ») : l'étape 6 range, l'étape 7 corrige. **Mis à part** : captures
 d'écran, photos sans date, vidéos sans photo du même moment, avec leur
 nombre.
 

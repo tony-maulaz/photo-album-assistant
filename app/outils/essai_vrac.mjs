@@ -162,6 +162,129 @@ async function gestesBadge(page) {
   await page.keyboard.press('Escape');
 }
 
+/** Ce que dit la configuration choisie (`selecteur_config/config.json`), quand `condition` est vraie (3 s au plus). */
+async function configEcrite(page, condition) {
+  let c;
+  for (let k = 0; k < 15; k++) {
+    c = await page.evaluate(async () => {
+      const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_config');
+      return JSON.parse(await (await (await d.getFileHandle('config.json')).getFile()).text());
+    });
+    if (condition(c)) return { ok: true, c };
+    await page.waitForTimeout(200);
+  }
+  return { ok: false, c };
+}
+
+/** Noms des dossiers écrits dans `.album/plan.json`, quand `condition` est vraie (3 s au plus). */
+async function dossiersEcrits(page, condition) {
+  let noms = [];
+  for (let k = 0; k < 15; k++) {
+    noms = await page.evaluate(async () => {
+      const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+      return JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text()).dossiers.map((d) => d.nom);
+    });
+    if (condition(noms)) return { ok: true, noms };
+    await page.waitForTimeout(200);
+  }
+  return { ok: false, noms };
+}
+
+/**
+ * L'icône calendrier d'une ligne du tri (D112 point 9) : sa bulle s'ouvre au survol (après 300 ms) et se ferme
+ * quand la souris s'en va ; un clic l'épingle (elle reste), un clic ailleurs la ferme ; au clavier, le focus
+ * l'ouvre, Entrée l'épingle, Échap la ferme et laisse le focus sur l'icône.
+ */
+async function essaiCalendrier(page) {
+  const icone = page.locator('.resultat-tri .bouton-calendrier').first();
+  await icone.waitFor();
+  const bulle = page.locator('.bulle-calendrier');
+  const nom = await icone.getAttribute('aria-label');
+  verifier(/^Votre calendrier/.test(nom) && (await page.locator('.resultat-tri .lignes-tri').innerText()).includes('Votre calendrier') === false, `icône calendrier sur une ligne, sans phrase (nom lu : « ${nom} »)`);
+  await icone.hover();
+  await bulle.waitFor();
+  await capturer(page, 'v3c_tri_calendrier');
+  const texte = (await bulle.innerText()).replace(/\s+/g, ' ');
+  verifier(/Votre calendrier pendant/.test(texte) && /Voyage Thaïlande|18 ans de Lea/.test(texte) && (await icone.getAttribute('aria-expanded')) === 'true', `survol : la bulle s’ouvre (« ${texte.slice(0, 120)} »)`);
+  const place = await bulle.evaluate((b) => {
+    const r = b.getBoundingClientRect();
+    return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
+  });
+  verifier(place, 'la bulle tient dans la fenêtre');
+  await page.mouse.move(2, 450);
+  await bulle.waitFor({ state: 'detached' });
+  verifier(true, 'la souris s’en va : la bulle se ferme');
+  await icone.click();
+  await page.mouse.move(2, 450);
+  await page.waitForTimeout(500);
+  verifier((await bulle.count()) === 1 && (await bulle.innerText()).includes('Échap ou un clic ailleurs pour fermer'), 'clic : la bulle est épinglée, elle reste quand la souris s’en va');
+  await page.locator('.resultat-tri .tete-resultat h2').click();
+  await bulle.waitFor({ state: 'detached' });
+  verifier(true, 'un clic ailleurs ferme la bulle épinglée');
+  // Clavier : le focus venu du clavier l'ouvre ; Entrée l'épingle ; Échap la ferme, le focus reste sur l'icône.
+  // Une touche d'abord : le focus donné ensuite est celui du clavier (:focus-visible), pas celui d'un clic.
+  await page.keyboard.press('Tab');
+  await icone.focus();
+  await bulle.waitFor();
+  verifier(true, 'au clavier, le focus sur l’icône ouvre la bulle');
+  await page.keyboard.press('Enter');
+  verifier((await bulle.innerText()).includes('Échap ou un clic ailleurs pour fermer'), 'Entrée épingle la bulle');
+  await page.keyboard.press('Escape');
+  await bulle.waitFor({ state: 'detached' });
+  verifier(await icone.evaluate((b) => document.activeElement === b), 'Échap ferme la bulle, le focus reste sur l’icône');
+  await icone.evaluate((b) => b.blur());
+}
+
+/**
+ * La fenêtre « Vos lieux » (D112 point 9) : un lieu nommé de la configuration (« Plage ») ; on range à nouveau pour
+ * que des dossiers portent son nom, puis on le corrige dans l'onglet « Nommés » : la carte annonce combien de dossiers
+ * le prendront, la configuration et le plan changent ensemble, la fenêtre reste ouverte ; Ctrl+Z remet les deux.
+ */
+async function essaiLieux(page) {
+  await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger autrement…' }).click();
+  await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger à nouveau' }).click();
+  await page.locator('.dialogue').getByRole('button', { name: 'Ranger à nouveau' }).click();
+  const range = await dossiersEcrits(page, (n) => n.some((x) => /^Plage_\d/.test(x)));
+  verifier(range.ok, `rangé de nouveau avec le lieu nommé : ${range.noms.filter((x) => x.startsWith('Plage')).join(', ')}`);
+  const ligne = page.locator('.ligne-lieux');
+  verifier(/Vos lieux : 1 lieu nommé/.test(await ligne.innerText()), `liste « À faire » : ${(await ligne.innerText()).replace(/\s+/g, ' ')}`);
+  await ligne.getByRole('button', { name: 'Les voir…' }).click();
+  const fenetre = page.locator('.fenetre[role=dialog]');
+  await fenetre.waitFor();
+  const onglets = await fenetre.locator('[role=tab]').evaluateAll((l) => l.map((b) => `${b.dataset.onglet}:${b.getAttribute('aria-selected')}:${b.textContent.trim()}`));
+  verifier(
+    (await fenetre.locator('h2').innerText()) === 'Vos lieux' && onglets.length === 2 && onglets[1].startsWith('nommes:true') && /tout est nommé/.test(onglets[0]),
+    `fenêtre « Vos lieux », deux onglets, « Nommés » ouvert (${onglets.join(' | ')})`,
+  );
+  const carte = fenetre.locator('.carte-lieu').first();
+  const champ = carte.getByRole('textbox', { name: 'Nom' });
+  verifier((await champ.inputValue()) === 'Plage' && (await carte.getByRole('button', { name: 'Enregistrer' }).isDisabled()) && (await carte.innerText()).includes('nom inchangé'), 'carte du lieu nommé : le nom dans le champ, « Enregistrer » attend un changement');
+  await fenetre.getByRole('tab', { name: /À nommer/ }).click();
+  verifier((await fenetre.locator('.vide-lieux').innerText()).includes('Tout est nommé'), 'onglet « À nommer » : tout est nommé');
+  await fenetre.getByRole('tab', { name: /Nommés/ }).click();
+  await champ.fill('Plage Est');
+  await capturer(page, 'v3d_lieux_nommes');
+  const effet = (await carte.locator('.effet-renommage').innerText()).replace(/\s+/g, ' ');
+  const prevus = Number(effet.match(/^(\d+) dossiers? de ce projet prendr/)?.[1] ?? 0);
+  verifier(prevus > 0 && (await carte.getAttribute('class')).includes('modifiee'), `nom changé : la carte prend le filet vert et dit « ${effet} »`);
+  await carte.getByRole('button', { name: 'Enregistrer' }).click();
+  const config = await configEcrite(page, (c) => c.lieux_connus[0]?.nom === 'Plage_Est');
+  verifier(config.ok, 'corriger un nom : la configuration dit « Plage_Est »');
+  const renommes = await dossiersEcrits(page, (n) => !n.some((x) => /^Plage_\d/.test(x)) && n.some((x) => /^Plage_Est_\d/.test(x)));
+  verifier(renommes.ok && renommes.noms.filter((x) => x.startsWith('Plage_Est')).length === prevus, `les dossiers qui portaient le nom automatique le prennent, écrit dans .album/plan.json : ${renommes.noms.filter((x) => x.startsWith('Plage')).join(', ')}`);
+  verifier((await fenetre.count()) === 1 && (await champ.inputValue()) === 'Plage Est', 'la fenêtre ne se ferme pas toute seule après un nom');
+  await page.keyboard.press('Escape');
+  await fenetre.waitFor({ state: 'detached' });
+  await page.keyboard.press('Control+z');
+  const remis = await configEcrite(page, (c) => c.lieux_connus[0]?.nom === 'Plage');
+  const remisPlan = await dossiersEcrits(page, (n) => n.some((x) => /^Plage_\d/.test(x)) && !n.some((x) => x.startsWith('Plage_Est')));
+  verifier(remis.ok && remisPlan.ok, 'Ctrl+Z remet l’ancien nom, dans la configuration et dans les dossiers');
+  // Le rangement avec le lieu nommé se défait aussi : la suite de l'essai retrouve les dossiers d'avant.
+  await page.keyboard.press('Control+z');
+  const avant = await dossiersEcrits(page, (n) => !n.some((x) => x.startsWith('Plage')));
+  verifier(avant.ok, 'Ctrl+Z défait le second rangement : plus aucun dossier « Plage »');
+}
+
 const photos = readdirSync(PHOTOS).filter((f) => f.endsWith('.jpg') && !f.startsWith('Vacances'));
 /** Le vrac : tout à la racine, sauf une photo dans BESTOF (copie voulue) et une dans « janvier ». */
 const chemins = Object.fromEntries(photos.map((p) => [p, p]));
@@ -937,22 +1060,51 @@ try {
   await captures.getByRole('button', { name: 'Ranger dans leur dossier' }).click();
   await page.getByText('1 capture d’écran rangée dans leur dossier').waitFor();
   verifier(true, `capture d’écran rangée dans ${N.captures}, la ligne passe à ✓`);
+  // Copies exactes restées à Doublons (D112 point 9) : un bandeau brun au-dessus des colonnes, hors de la liste « À
+  // faire », une phrase avec le nombre et deux commandes en contour (jamais le plein de la page).
   const copies = page.locator('.copies-avant-tri');
-  verifier((await copies.innerText()).includes('2 photos en double'), 'à faire : les 2 copies pas encore écartées sont signalées');
-  verifier((await copies.locator('button.principal').count()) === 0, 'un seul bouton plein : la maison d’abord, les copies en contour (D107)');
+  {
+    const b = await copies.evaluate((el) => ({
+      texte: el.textContent.replace(/\s+/g, ' '),
+      dansListe: !!el.closest('.liste-afaire'),
+      avantColonnes: !!(el.compareDocumentPosition(document.querySelector('.colonnes-tri')) & Node.DOCUMENT_POSITION_FOLLOWING),
+      boutons: [...el.querySelectorAll('button')].map((x) => `${x.className}:${x.textContent.trim()}`),
+      fond: getComputedStyle(el).backgroundColor,
+    }));
+    verifier(
+      /Il reste 2 copies exactes à accepter à l’étape Doublons\. Sans cela, le tri les rangerait une seconde fois\./.test(b.texte) && !b.dansListe && b.avantColonnes,
+      `bandeau des copies au-dessus des colonnes, hors de la liste « À faire » (« ${b.texte.trim()} »)`,
+    );
+    verifier(b.boutons.length === 2 && b.boutons.every((x) => x.startsWith('contour:')) && /Aller à Doublons/.test(b.boutons[0]) && /Les écarter ici/.test(b.boutons[1]), `bandeau : deux commandes en contour (${b.boutons.join(', ')})`);
+    verifier(/Encore 3 choses à faire : .*|Encore 3 choses à faire/.test(await page.locator('.barre-validation .alerte').innerText()), `barre du bas, copies comprises : ${await page.locator('.barre-validation .alerte').innerText()}`);
+  }
+  // « Aller à Doublons » ouvre l'étape ; on revient au tri par la frise, le bandeau est toujours là.
+  await copies.getByRole('button', { name: 'Aller à Doublons' }).click();
+  await page.locator('main[data-etape=doublons]').waitFor();
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
+  await page.locator('main[data-etape=tri]').waitFor();
+  verifier((await copies.count()) === 1, '« Aller à Doublons » ouvre l’étape Doublons ; de retour au tri, le bandeau est toujours là');
+  verifier((await page.locator('.a-faire-tri button.principal').count()) === 1 && (await copies.locator('button.principal').count()) === 0, 'un seul bouton plein : la maison d’abord, le bandeau en contour (D107)');
   // Doublons validée avec des copies restantes : sa case de la frise en brun doux, son reste dans l'infobulle (É14 g).
   {
     const caseDoublons = await page.locator('.bandeau .etape').nth(4).evaluate((b) => ({ classe: b.className, titre: b.title }));
     verifier(caseDoublons.classe.includes('copies-restantes') && /2 copies exactes à accepter/.test(caseDoublons.titre) && (await page.locator('.etape-courante .point-reste').count()) === 1, `frise : Doublons en brun doux (« ${caseDoublons.titre} »), point brun sur « Étape n sur 13 »`);
   }
-  await copies.getByRole('button', { name: 'Écarter', exact: true }).click();
+  await copies.getByRole('button', { name: 'Les écarter ici' }).click();
   await copies.waitFor({ state: 'detached' });
-  verifier(true, 'un clic met les copies de côté avant le tri');
+  verifier(true, '« Les écarter ici » écarte les copies avant le tri ; le bandeau disparaît');
   verifier((await page.locator('.ligne-afaire.afaire', { hasText: 'Votre maison n’est pas encore indiquée' }).count()) === 1, 'sans domicile : la maison est à indiquer (●)');
   verifier(/Encore 2 choses à faire/.test(await page.locator('.barre-validation .alerte').innerText()), `barre du bas : ${await page.locator('.barre-validation .alerte').innerText()}`);
   // Avant de ranger : l'aperçu en direct, ligne par ligne, sans miniatures (D104).
   verifier((await page.locator('.resultat-tri .tete-resultat').innerText()).includes('Aperçu : rien n’est encore rangé') && (await page.locator('.resultat-tri .ligne-tri').count()) > 0, `aperçu avant de ranger : ${await page.locator('.resultat-tri .ligne-tri').count()} lignes`);
   verifier((await page.locator('.resultat-tri img').count()) === 0 && (await page.getByRole('button', { name: /^Couper|^Réunir/ }).count()) === 0, 'ni miniatures, ni « Couper… », ni « Réunir »');
+  // Une seule phrase sur les noms, en tête de la liste ; OpenStreetMap n'est plus écrit sur la page (il est dans l'Aide).
+  verifier(
+    (await page.locator('.resultat-tri .tete-resultat .phrase-noms').innerText()).includes('Les noms des dossiers se choisissent plus tard, à l’étape Nommage.') &&
+      !/OpenStreetMap|Nommage/.test(await page.locator('.resultat-tri .lignes-tri').innerText()) &&
+      !/OpenStreetMap/.test(await page.locator('.a-faire-tri').innerText()),
+    'une seule phrase sur les noms en tête de la liste ; rien sur OpenStreetMap ni le Nommage dans les lignes et la liste « À faire »',
+  );
   // Une seule question, et les chiffres calculés avec les photos avant de ranger.
   const chiffres = await page.locator('.ligne-ranger .apercu-tri-chiffres').innerText();
   const prevus = Number(chiffres.match(/(\d+) dossiers? en tout/)[1]);
@@ -964,7 +1116,36 @@ try {
   verifier(/^Photos rangées : /.test(resume), `rangé : ${resume}`);
   verifier(requetesNominatim.length > 0, `${requetesNominatim.length} requête(s) à OpenStreetMap (simulé)`);
   const lignesTri = await page.locator('.resultat-tri .ligne-tri').count();
-  verifier(lignesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout') && (await page.locator('.resultat-tri .tete-resultat').innerText()).includes('étape suivante'), `résultat : ${lignesTri} lignes dans l’onglet « Tout »`);
+  verifier(lignesTri > 0 && (await page.locator('.resultat-tri .onglet-doublons.actif').innerText()).startsWith('Tout') && (await page.locator('.resultat-tri .tete-resultat').innerText()).includes('Les noms des dossiers se choisissent plus tard'), `résultat : ${lignesTri} lignes dans l’onglet « Tout »`);
+  // Le bouton « N photos » (D112 point 9) : il déplie quelques photos sous la ligne ; « Voir les N en grand » ouvre la
+  // visionneuse ; Entrée le replie ; une seule ligne dépliée à la fois.
+  {
+    const lignes = page.locator('.resultat-tri .ligne-tri').filter({ has: page.locator('.bouton-photos') });
+    const ligne = lignes.first();
+    const bouton = ligne.locator('.bouton-photos');
+    const mot = (await bouton.innerText()).trim();
+    const nom = await bouton.getAttribute('aria-label');
+    verifier(/^\d+ photos?$/.test(mot) && (await bouton.getAttribute('aria-expanded')) === 'false' && nom.includes(mot), `bouton des photos : « ${mot} » (nom lu : « ${nom} »), fermé`);
+    await bouton.click();
+    await ligne.locator('.depliant-tri img').first().waitFor();
+    const vignettes = await ligne.locator('.depliant-tri img').count();
+    verifier((await bouton.getAttribute('aria-expanded')) === 'true' && vignettes > 0 && vignettes <= 8 && (await page.locator('.depliant-tri').count()) === 1, `bouton des photos : ${vignettes} vignette(s) sous la ligne, un seul dépliant`);
+    await capturer(page, 'v3b_tri_depliant');
+    await ligne.locator('.depliant-tri').getByRole('button', { name: /^Voir (les \d+ en grand|la photo en grand)$/ }).click();
+    await page.locator('.visionneuse').waitFor();
+    verifier(true, '« Voir les N en grand » ouvre la visionneuse');
+    await page.keyboard.press('Escape');
+    await page.locator('.visionneuse').waitFor({ state: 'detached' });
+    if ((await lignes.count()) > 1) {
+      await lignes.nth(1).locator('.bouton-photos').click();
+      verifier((await page.locator('.depliant-tri').count()) === 1 && (await bouton.getAttribute('aria-expanded')) === 'false', 'une autre ligne dépliée : la première se replie');
+      await lignes.nth(1).locator('.bouton-photos').click();
+    } else {
+      await bouton.focus();
+      await page.keyboard.press('Enter');
+    }
+    verifier((await page.locator('.depliant-tri').count()) === 0, 'bouton des photos : se replie au second geste (clic ou Entrée)');
+  }
   verifier((await page.locator('.colonnes-tri > .resultat-tri').count()) === 1 && (await page.getByRole('button', { name: 'Afficher les dossiers →' }).count()) === 0, 'les dossiers à droite de la page, sans changer d’étape (D105)');
   await capturer(page, 'v3_tri');
   await page.locator('.resultat-tri .onglet-doublons', { hasText: 'Autres' }).click();
@@ -977,13 +1158,29 @@ try {
   await page.waitForTimeout(500);
   verifier(requetesNominatim.length === avant, 'recalculer ne redemande pas les noms (cache)');
   verifier((await page.locator('.ligne-ranger .texte-afaire > strong').innerText()) === resume, 'recalculer avec les mêmes réglages donne la même arborescence');
-  // Configuration avec le calendrier familial, choisie depuis le menu (Fonctions IA, Configuration, …).
+  // Configuration avec le calendrier familial, choisie depuis le menu (Fonctions IA, Configuration, …). On y ajoute un
+  // lieu nommé (« Plage ») autour d'une photo rangée, ses coordonnées lues dans le plan (aucune n'est écrite ici).
+  await page.evaluate(async () => {
+    const racine = await navigator.storage.getDirectory();
+    const album = await (await racine.getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+    const plan = JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text());
+    const f = plan.fichiers.find((x) => x.gps && x.statut === 'archive' && x.categorie === 'photo');
+    const d = await racine.getDirectoryHandle('selecteur_config');
+    const config = JSON.parse(await (await (await d.getFileHandle('config.json')).getFile()).text());
+    config.lieux_connus = [{ id: 'plage', nom: 'Plage', lat: f.gps.lat, lon: f.gps.lon, rayon_m: 300, domicile: false, un_seul_dossier: false, notes: 'essai' }];
+    const w = await (await d.getFileHandle('config.json')).createWritable();
+    await w.write(JSON.stringify(config, null, 2));
+    await w.close();
+  });
   await page.locator('.bouton-menu').click();
   await page.locator('.menu-deroulant [role=menuitem]').nth(1).click();
   await page.getByRole('button', { name: 'Choisir le dossier config…' }).click();
   await page.getByText(/Calendriers \(1\)/).waitFor();
-  verifier(true, 'configuration avec un calendrier .ics choisie');
+  verifier(true, 'configuration avec un calendrier .ics et un lieu nommé (« Plage ») choisie');
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
+  await page.locator('main[data-etape=tri]').waitFor();
+  await essaiCalendrier(page);
+  await essaiLieux(page);
   await page.locator('[data-action=valider]').click();
 
   // Étape 7 : lieux et sorties.

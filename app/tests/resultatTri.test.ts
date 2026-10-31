@@ -65,6 +65,8 @@ describe('resultatDuPlan', () => {
       ['Tivoli_12.07.25', 1],
     ]);
     expect([v.du, v.au, v.photos]).toEqual(['2025-07-10', '2025-07-12', 3]);
+    expect(v.etapes.map((e) => e.ids.length)).toEqual([2, 1]);
+    expect(v.ids).toHaveLength(3);
     expect(v.km).toBe(Math.max(...v.etapes.map((e) => e.km!)));
     expect(v.km).toBeGreaterThan(400);
     // La maison n'a pas de distance ; une sortie a la sienne.
@@ -126,6 +128,8 @@ describe('resultatPropose (aperçu en direct, D104)', () => {
       [true, 2],
     ]);
     expect(r.lignes[1].evenement).toBe('Ski');
+    // Les photos de chaque ligne et de chaque étape, sans les vidéos, pour le bouton « N photos » (D112).
+    expect([v.ids, v.etapes.map((e) => e.ids), r.lignes[1].ids]).toEqual([['a', 'b'], [['a'], ['b']], ['d']]);
   });
 
   it('une photo mise de côté (copie, floue) n’est pas comptée', () => {

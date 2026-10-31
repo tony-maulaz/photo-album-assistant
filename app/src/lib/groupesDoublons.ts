@@ -221,8 +221,9 @@ function parDefaut(x: PhotoDuGroupe): boolean {
 /**
  * « choisir : toutes · aucune » après « Garder plusieurs photos », et Ctrl+A (D112, question 3) : chaque photo du
  * groupe est choisie pour être gardée (`garder`), ou aucune ne l'est. Un choix en attente, comme un clic : rien
- * n'est mis de côté avant « Accepter ». Dans un groupe accepté (« Revoir »), comme le clic sur la bande : l'autre
- * sort, par vous, tout de suite et sans rouvrir le groupe (C-9.12, `basculerAccepte`).
+ * n'est mis de côté avant « Accepter ». Tout le groupe est fixé « par vous » (punaise, en plein), même les photos
+ * dont la proposition donnait déjà ce sort (D112, précision du 31.10). Dans un groupe accepté (« Revoir »), comme
+ * le clic sur la bande : l'autre sort, par vous, tout de suite et sans rouvrir le groupe (C-9.12, `basculerAccepte`).
  */
 export function choisirTous(plan: Plan, g: GroupeDoublons, garder: boolean): Modification | null {
   const fichier = (x: string) => plan.fichiers.get(x);
@@ -235,7 +236,7 @@ export function choisirTous(plan: Plan, g: GroupeDoublons, garder: boolean): Mod
   const m = choisirDoublons(
     plan,
     raisonDe(g),
-    photos.map((x) => ({ id: x.m.id, garder: garder === parDefaut(x) ? undefined : garder })),
+    photos.map((x) => ({ id: x.m.id, garder })),
   );
   return combiner(libelle, m);
 }

@@ -2436,7 +2436,7 @@ export function PageDoublons() {
       </p>
       {onglet !== 'mis_de_cote' && (
         <>
-          <p>{t`Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Sur le dernier groupe d’une journée ou d’un mois, « Accepter » ouvre la suite. Pour garder toute une rafale : « Garder plusieurs photos », puis « toutes » (ou Ctrl+A), puis « Accepter » ; dans un groupe déjà accepté, « toutes » et « aucune » agissent tout de suite.`}</p>
+          <p>{t`Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Sur le dernier groupe d’une journée ou d’un mois, « Accepter » ouvre la suite. Pour garder toute une rafale : « Garder plusieurs photos », puis « toutes » (ou Ctrl+A), puis « Accepter » ; « toutes » et « aucune » fixent chaque photo du groupe par vous (punaise) ; dans un groupe déjà accepté, ils agissent tout de suite.`}</p>
           <p class="legende-badges-aide">
             {t`Sous chaque photo, ce qui lui arrivera : vert, elle reste ; gris, elle part. L’icône dit d’où vient l’idée :`} <Icone nom="punaise" taille={16} titre={t`punaise`} /> {t`vous ;`}{' '}
             <Icone nom="coche" taille={16} titre={t`coche`} /> <Icone nom="croix" taille={16} titre={t`croix`} /> {t`le groupe ;`} <Icone nom="etincelle" taille={16} titre={t`étincelle`} /> {t`l’IA ;`}{' '}

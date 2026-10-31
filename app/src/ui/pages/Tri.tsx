@@ -4,7 +4,8 @@
 // faire » et les réglages à gauche ; à droite, toujours sous les yeux, les
 // dossiers ligne par ligne, avec des onglets comme aux Doublons, en direct
 // avant de ranger (D104, D105). L'étape suivante, « Lieux et sorties », sert
-// à corriger photo par photo (D54).
+// à corriger photo par photo (D54). Au-dessus des colonnes, le bandeau des
+// copies exactes restées à Doublons (D112 point 9).
 
 import { useMemo, useState } from 'preact/hooks';
 import { t } from '../../lib/langue';
@@ -14,7 +15,9 @@ import { optionsDuProjet, type OptionsTri } from '../../lib/tri';
 import { BarreValidation } from '../composants/Cadre';
 import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { ResultatTri } from '../composants/ResultatTri';
-import { dossiersProposes, memesReglages, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
+import { coteDepliant } from '../composants/ResultatTri';
+import { BandeauCopies, dossiersProposes, memesReglages, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
+import { Icone } from '../composants/Icones';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { pluriel } from '../format';
 
@@ -48,10 +51,18 @@ function PageTriVrac() {
 
   return (
     <div class="page avec-barre page-tri">
-      <LigneEtape titre={t`Tri automatique`} aide={{ cle: 'tri' }} taille />
+      <LigneEtape titre={t`Tri automatique`} aide={{ cle: 'tri' }} taille={coteDepliant} />
       <AideEtape cle="tri">
-        {t`Rangez vos photos en dossiers : un par voyage, un par sortie, et la maison mois par mois. Vos photos d’origine ne bougent pas : l’application prépare un plan, la copie se fait à la dernière étape.`}
+        <p>{t`Rangez vos photos en dossiers : un par voyage, un par sortie, et la maison mois par mois. Vos photos d’origine ne bougent pas : l’application prépare un plan, la copie se fait à la dernière étape.`}</p>
+        <p>
+          {t`À droite, un dossier par ligne. « 38 photos » en montre quelques-unes sous la ligne (pour un voyage, par lieu visité) ; « Voir les 38 en grand » les ouvre en grand. L’icône`}{' '}
+          <Icone nom="calendrier" taille={16} /> {t`donne les événements de votre calendrier pendant ce dossier : survolez-la, cliquez dessus ou atteignez-la avec Tab ; Échap la ferme.`}
+        </p>
+        <p>{t`Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ». Les noms des dossiers se choisissent à l’étape Nommage.`}</p>
+        <p>{t`« Vos lieux » : donnez un nom aux lieux qui reviennent souvent, revoyez ceux déjà nommés (onglet « Nommés ») et corrigez un nom : les dossiers de ce projet qui portent encore le nom automatique le prennent. Un nom sert à tous vos albums.`}</p>
+        <p>{t`Pour nommer les lieux, seule leur position est envoyée à OpenStreetMap (un service de cartes gratuit), jamais vos photos.`}</p>
       </AideEtape>
+      <BandeauCopies e={e} />
       <div class="colonnes-tri">
         <TriAuto e={e} o={o} setO={setO} ap={ap} apercu={apercu} actuel={actuel} />
         <ResultatTri r={actuel ?? apercu} apercu={!actuel} />

@@ -436,7 +436,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
-          {t` : rangez à part les captures d’écran, enregistrez les lieux qui reviennent souvent, choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; l’IA peut situer les photos sans GPS.`}
+          {t` : rangez à part les captures d’écran, nommez vos lieux (et corrigez un nom dans « Nommés »), choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; « 38 photos » montre quelques photos d’un dossier, l’icône calendrier ses événements ; l’IA peut situer les photos sans GPS. Un bandeau rappelle les copies exactes restées à l’étape Doublons.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.lieux)}</strong>

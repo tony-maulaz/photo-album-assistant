@@ -1,13 +1,16 @@
 // Tri automatique d'un dossier en vrac (étape « Tri automatique », D103, D104) :
 // une liste « À faire » où chaque ligne dit son état — ● à faire, ✓ fait,
-// ○ facultatif — la maison, les copies et les captures à mettre de côté, les
-// lieux qui reviennent souvent, puis « Ranger les photos » avec trois choix
+// ○ facultatif — la maison, les captures à mettre à part, vos lieux (à nommer
+// ou nommés), puis « Ranger les photos » avec trois choix
 // (les étapes d'un voyage, sa distance en crans, la maison par mois ou par
 // semaine), chacun avec ce qu'il donne. Le rangement suit
 // l'ordre du temps (lib/tri.ts), demande les noms des lieux à OpenStreetMap,
 // puis l'arborescence remplace le vrac dans le plan (annulable). Sans
 // connexion, les lieux gardent des noms provisoires : le tri n'est jamais
 // bloqué. Le résultat se voit à droite (ResultatTri), en direct avant de ranger.
+// Les copies exactes restées à l'étape Doublons sont rappelées par un bandeau
+// au-dessus des colonnes (BandeauCopies, D112 point 9) : c'est un reste de
+// Doublons, pas une tâche du tri.
 
 import type { ComponentChildren } from 'preact';
 import { useMemo, useRef, useState, type StateUpdater, type Dispatch } from 'preact/hooks';
@@ -28,7 +31,7 @@ import { BarreProgression } from './Cadre';
 import { Captures, capturesProposees } from './Captures';
 import { confirmer, Fenetre } from './Dialogues';
 import { Icone } from './Icones';
-import { LieuxFrequents, useLieuxProposes } from './LieuxFrequents';
+import { LieuxFrequents, useLieuxNommes, useLieuxProposes, type OngletLieux } from './LieuxFrequents';
 import { montrerOnglet } from './ResultatTri';
 
 /** Dossiers proposés par le tri qui contiennent des photos ou des vidéos (un dossier vidé, par exemple de ses floues, ne compte pas). */
@@ -70,8 +73,10 @@ export interface EtatTri {
   aRanger: FichierPlan[];
   /** Les photos ont déjà été rangées une fois. */
   range: boolean;
-  /** Lieux fréquents à nommer (ni enregistrés, ni écartés pour la séance). */
+  /** Lieux fréquents à nommer (ni enregistrés, ni remis à plus tard pour la séance). */
   lieuxProposes: number;
+  /** Lieux de la configuration où des photos du projet ont été prises (la maison comprise). */
+  lieuxNommes: number;
 }
 
 /** Sans configuration : toujours la même liste vide, pour que les calculs gardés en mémoire ne se refassent pas. */
@@ -83,6 +88,7 @@ export function useEtatTri(): EtatTri {
   const lieux = configuration.value?.lecture?.config?.lieux_connus ?? AUCUN_LIEU;
   const exactes = useCopiesExactes();
   const lieuxProposes = useLieuxProposes();
+  const lieuxNommes = useLieuxNommes();
   const aTrier = fichiersATrier(s.plan);
   const range = [...s.plan.dossiers.values()].some((d) => d.origine === 'tri');
   const fichier = (id: string) => s.plan.fichiers.get(id);
@@ -99,6 +105,7 @@ export function useEtatTri(): EtatTri {
     aRanger: range ? fichiersARanger(s.plan) : aTrier,
     range,
     lieuxProposes,
+    lieuxNommes,
   };
 }
 
@@ -106,7 +113,7 @@ export function useEtatTri(): EtatTri {
 export function restantsTri(e: EtatTri): string[] {
   const r: string[] = [];
   if (!e.domicile) r.push(t`indiquer votre maison`);
-  if (e.nCopies) r.push(t`mettre ${pluriel(e.nCopies, 'copie')} de côté`);
+  if (e.nCopies) r.push(t`écarter ${pluriel(e.nCopies, 'copie exacte', 'copies exactes')}`);
   if (e.captures.length) r.push(t`les captures d’écran`);
   if (!e.range) r.push(t`ranger les photos`);
   else if (e.aRanger.length) r.push(t`ranger ${pluriel(e.aRanger.length, 'nouvelle photo', 'nouvelles photos')}`);
@@ -208,7 +215,7 @@ export const memesReglages = (a: OptionsTri, b: OptionsTri) => a.etapes === b.et
 export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: OptionsTri; setO: Dispatch<StateUpdater<OptionsTri>>; ap: ApercuTri; apercu: Resultat; actuel: Resultat | null }) {
   const s = session.value!;
   versionPlan.value;
-  const [fenetre, setFenetre] = useState<'lieux' | 'captures' | 'gps' | null>(null);
+  const [fenetre, setFenetre] = useState<OngletLieux | 'captures' | 'gps' | null>(null);
   const [autrement, setAutrement] = useState(false);
   const [progres, setProgres] = useState<{ faits: number; total: number } | null>(null);
   const arreter = useRef(false);
@@ -217,8 +224,9 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
   const enregistres = optionsDuProjet(s.projet.tri);
   const change = e.range && !memesReglages(o, enregistres);
   const nSansGps = e.range ? nombreSansGps(s) : 0;
-  // Un seul bouton plein (D107) : celui de la première chose à faire ; les autres en contour.
-  const premier = !e.domicile ? 'maison' : e.nCopies ? 'copies' : e.captures.length ? 'captures' : !e.range || e.aRanger.length ? 'ranger' : null;
+  // Un seul bouton plein (D107) : celui de la première chose à faire ; les autres en contour. Les copies restées à
+  // Doublons n'en prennent jamais : leur bandeau est un rappel, pas la tâche de la page (D112 point 9).
+  const premier = !e.domicile ? 'maison' : e.captures.length ? 'captures' : !e.range || e.aRanger.length ? 'ranger' : null;
   const style = (quoi: typeof premier) => (premier === quoi ? 'principal' : 'contour');
 
   /** `nouvelles` : seulement les photos pas encore rangées, sans toucher aux dossiers déjà faits. */
@@ -278,18 +286,6 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
     } finally {
       setProgres(null);
     }
-  };
-
-  const ecarterCopies = () => {
-    const nb = e.nCopies;
-    appliquer(accepter(s.plan, e.copies));
-    notifier(
-      'ok',
-      e.range
-        ? t`${pluriel(nb, 'copie écartée', 'copies écartées')} : dans « Mis de côté ». Rangez à nouveau : des dossiers ont pu se vider.`
-        : t`${pluriel(nb, 'copie écartée', 'copies écartées')} : dans « Mis de côté ».`,
-      { libelle: t`Annuler`, faire: annuler },
-    );
   };
 
   const barreProgres = progres && (
@@ -377,7 +373,6 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           )}
         </div>
       )}
-      <p class="note-afaire">{t`Pour nommer les lieux, seule leur position est envoyée à OpenStreetMap (un service de cartes gratuit), jamais vos photos.`}</p>
     </div>
   );
 
@@ -390,7 +385,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
             etat="fait"
             titre={t`Votre maison : ${e.domicile.nom}`}
             boutons={
-              <button type="button" class="petit" onClick={() => (page.value = { nom: 'configuration' })}>
+              // Les lieux nommés se revoient et se corrigent dans « Vos lieux » ; sans lieu nommé ici, à la Configuration.
+              <button type="button" class="petit" onClick={() => (e.lieuxNommes ? setFenetre('nommes') : (page.value = { nom: 'configuration' }))}>
                 {t`Changer`}
               </button>
             }
@@ -399,34 +395,11 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           <Ligne
             etat="afaire"
             titre={t`Votre maison n’est pas encore indiquée`}
-            detail={e.lieuxProposes ? t`Choisissez-la parmi les endroits qui reviennent souvent.` : t`Indiquez-la dans la Configuration : sans elle, aucun voyage n’est reconnu.`}
+            detail={e.lieuxProposes ? t`Choisissez-la parmi les lieux qui reviennent souvent.` : t`Indiquez-la dans la Configuration : sans elle, aucun voyage n’est reconnu.`}
             boutons={
-              <button type="button" class={style('maison')} onClick={() => (e.lieuxProposes ? setFenetre('lieux') : (page.value = { nom: 'configuration' }))}>
+              <button type="button" class={style('maison')} onClick={() => (e.lieuxProposes ? setFenetre('a_nommer') : (page.value = { nom: 'configuration' }))}>
                 {t`L’indiquer…`}
               </button>
-            }
-          />
-        )}
-
-        {e.nCopies > 0 && (
-          <Ligne
-            etat="afaire"
-            classe="copies-avant-tri"
-            titre={pluriel(e.nCopies, 'photo en double', 'photos en double')}
-            detail={
-              e.range
-                ? t`Copies exactes d’une photo déjà gardée : le tri les a rangées une seconde fois. Rien n’est supprimé : elles vont dans « Mis de côté ». Rangez à nouveau ensuite.`
-                : t`Copies exactes d’une photo déjà gardée. Rien n’est supprimé : elles vont dans « Mis de côté ».`
-            }
-            boutons={
-              <>
-                <button type="button" class="petit" onClick={() => allerEtape('doublons')}>
-                  {t`Voir`}
-                </button>
-                <button type="button" class={style('copies')} onClick={ecarterCopies}>
-                  {t`Écarter`}
-                </button>
-              </>
             }
           />
         )}
@@ -465,14 +438,17 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           )
         )}
 
-        {e.domicile && e.lieuxProposes > 0 && (
+        {/* Vos lieux (D112 point 9) : la ligne reste quand tout est nommé, pour revoir et corriger. Sans maison, la
+            ligne de la maison ouvre déjà la fenêtre sur les lieux à nommer. */}
+        {(e.lieuxProposes > 0 ? !!e.domicile : e.lieuxNommes > 0) && (
           <Ligne
-            etat="facultatif"
-            titre={pluriel(e.lieuxProposes, 'endroit revient souvent', 'endroits reviennent souvent')}
-            detail={t`Donnez-leur un nom : vos dossiers seront mieux nommés.`}
+            etat={e.lieuxProposes ? 'facultatif' : 'fait'}
+            classe="ligne-lieux"
+            titre={e.lieuxProposes ? t`Vos lieux : ${nombre(e.lieuxProposes)} à nommer` : t`Vos lieux : ${pluriel(e.lieuxNommes, 'lieu nommé', 'lieux nommés')}`}
+            detail={e.lieuxProposes ? (e.lieuxNommes ? t`${pluriel(e.lieuxNommes, 'déjà nommé', 'déjà nommés')}. Un nom donne de meilleurs noms de dossiers.` : t`Photographiés sur de nombreux jours. Un nom donne de meilleurs noms de dossiers.`) : t`Revoyez-les, corrigez un nom.`}
             boutons={
-              <button type="button" class="petit" onClick={() => setFenetre('lieux')}>
-                {t`Les nommer…`}
+              <button type="button" class="petit" onClick={() => setFenetre(e.lieuxProposes ? 'a_nommer' : 'nommes')}>
+                {e.lieuxProposes ? t`Les nommer…` : t`Les voir…`}
               </button>
             }
           />
@@ -545,7 +521,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
           />
         )}
       </ul>
-      {fenetre === 'lieux' && <LieuxFrequents fermer={() => setFenetre(null)} />}
+      {(fenetre === 'a_nommer' || fenetre === 'nommes') && <LieuxFrequents onglet={fenetre} fermer={() => setFenetre(null)} />}
       {fenetre === 'captures' && (
         <Fenetre titre={t`Captures d’écran trouvées`} intro={t`Reconnues à leur nom de fichier, à leurs dimensions d’écran et à l’absence de marque d’appareil.`} fermer={() => setFenetre(null)}>
           <Captures />
@@ -557,5 +533,45 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
         </Fenetre>
       )}
     </section>
+  );
+}
+
+/**
+ * Copies exactes restées à l'étape Doublons (D112 point 9, C-8.9) : un bandeau brun doux au-dessus des colonnes,
+ * une phrase et deux commandes en contour (le plein de la page reste sa tâche, C-4.1). « Les écarter ici » les
+ * écarte d'un clic, annulable (D85) ; jamais un groupe où aucun exemplaire n'est choisi (D101). Il disparaît quand
+ * il ne reste plus rien.
+ */
+export function BandeauCopies({ e }: { e: EtatTri }) {
+  const s = session.value!;
+  if (!e.nCopies) return null;
+  const ecarter = () => {
+    const nb = e.nCopies;
+    appliquer(accepter(s.plan, e.copies));
+    notifier(
+      'ok',
+      e.range
+        ? t`${pluriel(nb, 'copie écartée', 'copies écartées')} : dans « Mis de côté ». Rangez à nouveau : des dossiers ont pu se vider.`
+        : t`${pluriel(nb, 'copie écartée', 'copies écartées')} : dans « Mis de côté ».`,
+      { libelle: t`Annuler`, faire: annuler },
+    );
+  };
+  return (
+    <div class="bandeau-rappel copies-avant-tri" role="status">
+      <Icone nom="alerte" taille={20} />
+      <p>
+        <strong>{e.nCopies === 1 ? t`Il reste 1 copie exacte à accepter à l’étape Doublons.` : t`Il reste ${nombre(e.nCopies)} copies exactes à accepter à l’étape Doublons.`}</strong>{' '}
+        {e.range ? t`Le tri les a rangées une seconde fois : écartez-les, puis rangez à nouveau.` : t`Sans cela, le tri les rangerait une seconde fois.`}
+      </p>
+      <div class="boutons-rappel">
+        <button type="button" class="contour" data-action="aller-doublons" onClick={() => allerEtape('doublons')}>
+          {t`Aller à Doublons`}
+          <Icone nom="chevronDroite" taille={16} />
+        </button>
+        <button type="button" class="contour" data-action="ecarter-copies" onClick={ecarter}>
+          {t`Les écarter ici`}
+        </button>
+      </div>
+    </div>
   );
 }

@@ -128,10 +128,10 @@ let prochaineFenetre = 1;
 /**
  * Grande fenêtre (D107) : un contenu riche (lieux fréquents, captures d'écran)
  * au lieu d'un panneau imbriqué dans une ligne de la page. Un titre, une
- * phrase d'explication, un seul « Fermer » ; Échap ferme, le clavier reste
+ * phrase d'explication, des onglets s'il en faut, un seul « Fermer » ; Échap ferme, le clavier reste
  * dans la fenêtre, et le focus revient à ce qui l'a ouverte.
  */
-export function Fenetre({ titre, intro, pied, fermer, children }: { titre: string; intro?: ComponentChildren; pied?: ComponentChildren; fermer: () => void; children: ComponentChildren }) {
+export function Fenetre({ titre, intro, onglets, pied, fermer, children }: { titre: string; intro?: ComponentChildren; onglets?: ComponentChildren; pied?: ComponentChildren; fermer: () => void; children: ComponentChildren }) {
   const boite = useRef<HTMLDivElement>(null);
   const [id] = useState(() => `fenetre-${prochaineFenetre++}`);
   const focusables = () => [...(boite.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])') ?? [])];
@@ -141,6 +141,15 @@ export function Fenetre({ titre, intro, pied, fermer, children }: { titre: strin
     const champ = [...(boite.current?.querySelectorAll<HTMLInputElement>('input[type=text]') ?? [])].find((c) => !c.value);
     (champ ?? focusables()[0])?.focus();
     return () => avant?.focus?.();
+  }, []);
+  // Le focus perdu (un bouton désactivé ou une carte retirée après un geste) : Échap ferme encore la fenêtre.
+  // En fin de parcours (bulle) : une vue ouverte par-dessus (visionneuse) arrête la touche avant.
+  const fermerRef = useRef(fermer);
+  fermerRef.current = fermer;
+  useLayoutEffect(() => {
+    const touche = (e: KeyboardEvent) => e.key === 'Escape' && (!document.activeElement || document.activeElement === document.body) && fermerRef.current();
+    window.addEventListener('keydown', touche);
+    return () => window.removeEventListener('keydown', touche);
   }, []);
   return (
     <div class="voile voile-fenetre" onMouseDown={(e) => e.target === e.currentTarget && fermer()}>
@@ -178,6 +187,8 @@ export function Fenetre({ titre, intro, pied, fermer, children }: { titre: strin
             {t`Fermer`}
           </button>
         </header>
+        {/* Les onglets restent sous le titre pendant que le corps défile (« Vos lieux », D112 point 9). */}
+        {onglets && <div class="onglets-fenetre">{onglets}</div>}
         <div class="corps-fenetre">{children}</div>
         {pied && <footer class="pied-fenetre discret">{pied}</footer>}
       </div>

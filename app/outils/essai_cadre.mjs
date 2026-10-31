@@ -1777,6 +1777,9 @@ try {
         const reste = await page.evaluate((cle) => document.querySelectorAll(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] .tuile-doublon.a_ecarter`).length, cleToutes);
         if (d0 !== d1) faute(F, `${ici} : double-clic sur « toutes » : ${d0 - d1} groupe(s) accepté(s) (aucun attendu)`);
         if (reste) faute(F, `${ici} : double-clic sur « toutes » : ${reste} photo(s) encore « À écarter »`);
+        // « toutes » fixe tout le groupe « par vous » (punaise, plein), même la photo que la proposition gardait (31.10).
+        const badgesToutes = await page.evaluate((cle) => [...document.querySelectorAll(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] .badge-photo`)].map((b) => `${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`), cleToutes);
+        if (!badgesToutes.length || badgesToutes.some((b) => b !== 'vous:plein')) faute(F, `${ici} : « toutes » : chaque photo du groupe « par vous » en plein attendue (${badgesToutes.join(', ')})`);
         console.log(`  ${ici} double-clic sur « toutes » : ${d0 - d1} groupe(s) accepté(s), ${reste} photo(s) à écarter`);
         await page.evaluate(() => document.activeElement?.blur?.());
         await page.keyboard.press('Control+z');
@@ -2263,10 +2266,51 @@ try {
   await valider('tri');
   await controlerAilleurs('tri-apercu');
   const copies = page.locator('.copies-avant-tri');
-  if (await copies.count()) await copies.getByRole('button', { name: 'Écarter', exact: true }).click();
+  if (await copies.count()) await copies.getByRole('button', { name: 'Les écarter ici' }).click();
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
   await page.locator('.ligne-ranger.fait').waitFor({ timeout: 120_000 });
   await controlerAilleurs('tri-range');
+  // Le bouton « N photos » (D112 point 9) : à chaque taille, le dépliant tient dans la ligne, sur une rangée de 3 à 8
+  // vignettes, sans défilement en largeur ; le bouton est à la même place sur chaque ligne.
+  {
+    const bouton = page.locator('.resultat-tri .ligne-tri:not(.voyage) .bouton-photos').first();
+    if (!(await bouton.count())) faute('tri-photos', 'aucun bouton « N photos » au tri');
+    else {
+      for (const [w, h] of TAILLES) {
+        await taille(w, h);
+        await bouton.scrollIntoViewIfNeeded();
+        if ((await bouton.getAttribute('aria-expanded')) !== 'true') await bouton.click();
+        await page.locator('.depliant-tri img').first().waitFor({ timeout: 10_000 }).catch(() => {});
+        await attendre(300);
+        const r = await page.evaluate(() => {
+          const d = document.querySelector('.depliant-tri');
+          const l = d?.closest('.ligne-tri');
+          if (!d || !l) return null;
+          const imgs = [...d.querySelectorAll('.bande-depliant img')].map((i) => i.getBoundingClientRect());
+          const lr = l.getBoundingClientRect();
+          const col = document.querySelector('.resultat-tri');
+          const xBoutons = [...document.querySelectorAll('.resultat-tri .bouton-photos')].map((b) => Math.round(b.getBoundingClientRect().right));
+          return {
+            n: imgs.length,
+            dehors: imgs.filter((i) => i.right > lr.right + 0.5 || i.left < lr.left - 0.5).length,
+            rangees: new Set(imgs.map((i) => Math.round(i.top))).size,
+            largeur: col.scrollWidth > col.clientWidth + 1 || document.documentElement.scrollWidth > innerWidth + 1,
+            memeX: new Set(xBoutons).size === 1,
+          };
+        });
+        const ici = `${w}×${h}`;
+        if (!r) faute('tri-photos', `${ici} : pas de dépliant après le clic`);
+        else {
+          if (r.n < 1 || r.n > 8 || r.dehors || r.rangees > 1) faute('tri-photos', `${ici} : ${r.n} vignette(s), ${r.dehors} hors de la ligne, ${r.rangees} rangée(s) (une rangée de 3 à 8 attendue)`);
+          if (r.largeur) faute('tri-photos', `${ici} : défilement en largeur avec le dépliant ouvert`);
+          if (!r.memeX) faute('tri-photos', `${ici} : « N photos » n’est pas au même bord droit sur chaque ligne`);
+          console.log(`  tri-photos ${ici} : ${r.n} vignette(s) sur ${r.rangees} rangée(s)`);
+        }
+      }
+      await taille(1440, 900);
+      await bouton.click();
+    }
+  }
   await page.locator('[data-action=valider]').click();
   await page.locator('.panneau-dossiers').waitFor({ timeout: 120_000 });
   await controlerAilleurs('lieux');

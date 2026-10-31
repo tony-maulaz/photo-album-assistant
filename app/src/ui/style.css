@@ -3637,23 +3637,6 @@ button.bouton-ia:hover:not(:disabled) {
   line-height: var(--lh-petit);
 }
 
-.lieux-frequents {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.lieux-frequents li {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e2);
-  padding: var(--e3) 14px;
-  border-radius: var(--r-objet);
-  background: var(--neutre-doux);
-}
-
 .tete-lieu,
 .actions-lieu {
   display: flex;

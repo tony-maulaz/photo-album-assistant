@@ -803,10 +803,20 @@ try {
   await valider('tri');
   await controler('tri-apercu');
   const copies = page.locator('.copies-avant-tri');
-  if (await copies.count()) await copies.getByRole('button', { name: 'Écarter', exact: true }).click();
+  if (await copies.count()) await copies.getByRole('button', { name: 'Les écarter ici' }).click();
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
   await page.locator('.ligne-ranger.fait').waitFor({ timeout: 60_000 });
   await controler('tri-range');
+  // Le dépliant d'un dossier (bouton « N photos », D112 point 9) : la charte vaut aussi pour lui.
+  {
+    const bouton = page.locator('.resultat-tri .bouton-photos').first();
+    if (await bouton.count()) {
+      await bouton.click();
+      await page.locator('.depliant-tri img').first().waitFor({ timeout: 10_000 }).catch(() => {});
+      await controler('tri-photos');
+      await bouton.click();
+    } else fautes.push('tri : aucun bouton « N photos »');
+  }
   await page.locator('[data-action=valider]').click();
   await page.locator('.panneau-dossiers').waitFor({ timeout: 60_000 });
   await controler('lieux');

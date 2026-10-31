@@ -45,7 +45,8 @@ export function Visionneuse({ elements, rangement = true, nettete }: { elements:
     };
   }, [f?.id]);
 
-  useEffect(() => {
+  // Posé dès l'affichage (pas après la peinture) : Échap tapé aussitôt la vue ouverte la ferme.
+  useLayoutEffect(() => {
     const touche = (e: KeyboardEvent) => {
       if (e.key === 'Escape') visionneuse.value = null;
       else if (e.key === 'ArrowRight' && index !== null) visionneuse.value = Math.min(elements.length - 1, index + 1);

@@ -83,8 +83,8 @@ export const TEXTES: Record<string, string> = {
   // L'Aide de Doublons.
   'Les photos en double sont rangées par sorte, dans les onglets. Dans chaque groupe, un clic choisit la photo à garder ; « Accepter » garde les photos choisies et écarte les autres. Les photos écartées se revoient dans l’onglet « Écartées » et iront dans « Mis de côté » : rien n’est supprimé, et Ctrl+Z annule.':
     'Duplicate photos are sorted by kind, in the tabs. In each group, a click chooses the photo to keep; “Accept” keeps the chosen photos and sets the others aside. Photos set aside can be reviewed in the “Set aside” tab and will go to the “Set aside” folder: nothing is deleted, and Ctrl+Z undoes.',
-  'Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Sur le dernier groupe d’une journée ou d’un mois, « Accepter » ouvre la suite. Pour garder toute une rafale : « Garder plusieurs photos », puis « toutes » (ou Ctrl+A), puis « Accepter » ; dans un groupe déjà accepté, « toutes » et « aucune » agissent tout de suite.':
-    'A click on a photo chooses it (in a burst, instead of the others; Ctrl+click: in addition); “Accept” keeps the chosen photos and sets the others aside. On the last group of a day or a month, “Accept” opens the next one. To keep a whole burst: “Keep several photos”, then “all” (or Ctrl+A), then “Accept”; in a group already accepted, “all” and “none” act right away.',
+  'Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Sur le dernier groupe d’une journée ou d’un mois, « Accepter » ouvre la suite. Pour garder toute une rafale : « Garder plusieurs photos », puis « toutes » (ou Ctrl+A), puis « Accepter » ; « toutes » et « aucune » fixent chaque photo du groupe par vous (punaise) ; dans un groupe déjà accepté, ils agissent tout de suite.':
+    'A click on a photo chooses it (in a burst, instead of the others; Ctrl+click: in addition); “Accept” keeps the chosen photos and sets the others aside. On the last group of a day or a month, “Accept” opens the next one. To keep a whole burst: “Keep several photos”, then “all” (or Ctrl+A), then “Accept”; “all” and “none” set every photo of the group as yours (pin); in a group already accepted, they act right away.',
   'Sous chaque photo, ce qui lui arrivera : vert, elle reste ; gris, elle part. L’icône dit d’où vient l’idée :': 'Under each photo, what will happen to it: green, it stays; grey, it goes. The icon says where the idea comes from:',
   punaise: 'pin',
   'vous ;': 'you;',
@@ -100,7 +100,7 @@ export const TEXTES: Record<string, string> = {
   // Raccourcis.
   'Garder la photo (par vous)': 'Keep the photo (by you)',
   'Écarter la photo (par vous)': 'Set the photo aside (by you)',
-  'Choisir toutes les photos du groupe (« Accepter » les garde ; groupe déjà accepté : tout de suite)': 'Choose all the photos of the group (“Accept” keeps them; group already accepted: right away)',
+  'Choisir toutes les photos du groupe, par vous (« Accepter » les garde ; groupe déjà accepté : tout de suite)': 'Choose all the photos of the group, as yours (“Accept” keeps them; group already accepted: right away)',
   'Accepter la proposition du groupe (sur le dernier groupe : la suite s’ouvre)': 'Accept the group’s suggestion (on the last group: the next part opens)',
   'Dans l’album, ou de nouveau à décider': 'In the album, or back to undecided',
   'Écarter (dans « Mis de côté » : remettre)': 'Set aside (in the “Set aside” folder: put back)',

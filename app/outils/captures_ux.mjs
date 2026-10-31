@@ -692,7 +692,7 @@ try {
     await page.getByText('Recherche de l’adresse…').first().waitFor({ state: 'detached', timeout: 30_000 }).catch(() => undefined);
     await attendre(2000);
     await capturer('11_etape06_tri_avant', 'Étape 6 Tri automatique : avant de ranger (aperçu, réglages)');
-    const copies = page.locator('.copies-avant-tri').getByRole('button', { name: 'Écarter', exact: true });
+    const copies = page.locator('.copies-avant-tri').getByRole('button', { name: 'Les écarter ici' });
     if (await copies.count()) await copies.click();
     await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
     await page.locator('.ligne-ranger.fait').waitFor({ timeout: 600_000 });

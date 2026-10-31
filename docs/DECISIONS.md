@@ -1510,6 +1510,20 @@ encore la faire bouger, la bordure dit vrai. À la reprise d'un ancien
 projet, un doublon écarté reçoit l'origine « application » (ou « IA »),
 faute d'indice sûr d'un geste de l'utilisateur.
 
+Précisions du 31.10 (point 9, Tri automatique et « Vos lieux » ; finition de
+Doublons) : à Doublons, « toutes », « aucune » et Ctrl+A fixent tout le
+groupe « par vous », même les photos que la proposition gardait ou écartait
+déjà (choix de l'utilisateur). Au Tri, le bouton « N photos » remplace les
+miniatures toujours visibles (réponses 13 et 14 ; D104 et D105 levées sur ce
+point) ; une ligne dépliée à la fois ; la phrase sur OpenStreetMap passe dans
+l'Aide. Dans « Vos lieux », l'onglet « Nommés » montre les lieux de la
+configuration où le projet a des photos, la maison toujours ; corriger un nom
+écrit d'abord la configuration (si elle ne s'écrit pas, rien ne change), puis
+renomme, en un geste annulable qui remet aussi la configuration, les dossiers
+du tri qui portent encore leur nom automatique (le nom du lieu y est remplacé ;
+un dossier nommé d'après une commune homonyme à plus de 5 km n'est pas
+touché). La fenêtre ne se ferme plus seule (D107 levée sur ce point).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |
