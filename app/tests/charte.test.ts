@@ -149,6 +149,19 @@ describe('charte : échelles fermées dans les CSS de app/src/ui', () => {
     expect(fautes).toEqual([]);
   });
 
+  it('aucune opacité sur une photo écartée de Doublons ni « Pas pour l’album » : un peu délavée seulement (C-9.3, É14 k)', () => {
+    // Une photo de nuit pâlie par opacité resterait noire ; le délavé (filtre) la laisse lisible, comme à Floues.
+    const fautes: string[] = [];
+    for (const f of feuilles(UI)) {
+      const texte = readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const m of texte.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+        const o = m[2].match(/(?:^|[;\s])opacity:\s*([\d.]+)/);
+        if (o && Number(o[1]) < 1 && /\.(ecartee|refusee)\b/.test(m[1])) fautes.push(`${relative(UI, f)} ${m[1].trim()} : opacity ${o[1]}`);
+      }
+    }
+    expect(fautes).toEqual([]);
+  });
+
   it('le build garde light-dark() natif : cible CSS Chrome et Edge 123 ou plus (C-3.9)', () => {
     // Sinon Lightning CSS le remplace par des variables calculées sur :root, et les
     // vues sombres (Comparer, tri rapide, recadrage) gardent le texte du thème clair.

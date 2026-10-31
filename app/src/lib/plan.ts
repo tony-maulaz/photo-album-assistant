@@ -129,28 +129,43 @@ export interface FichierPlan {
    * « Accepter » l'applique et l'efface ; sans effet sur la sortie tant qu'il attend.
    */
   choixDoublons?: Partial<Record<'doublons' | 'doublons_exacts', boolean>>;
+  /**
+   * Ce choix en attente vient de « Choisir avec l'IA » (D102), pas d'un geste : une proposition de l'IA, montrée en
+   * bordure (règle d'or 3, D112) ; « Accepter » l'applique avec l'origine « ia ». Effacé avec le choix, ou quand
+   * l'utilisateur choisit à son tour.
+   */
+  choixIA?: Partial<Record<'doublons' | 'doublons_exacts', true>>;
 }
 
-/** La photo sans son choix en attente à l'étape « Doublons » (d'une famille, ou de toutes). */
+/** La case `raison` retirée ; `undefined` s'il ne reste rien. */
+function sansCase<V>(r: Partial<Record<'doublons' | 'doublons_exacts', V>> | undefined, raison: 'doublons' | 'doublons_exacts'): Partial<Record<'doublons' | 'doublons_exacts', V>> | undefined {
+  const { [raison]: _retire, ...autres } = r ?? {};
+  return Object.keys(autres).length ? autres : undefined;
+}
+
+/** La photo sans son choix en attente à l'étape « Doublons » (d'une famille, ou de toutes), ni sa marque « IA ». */
 export function sansChoixDoublons<F extends FichierPlan>(f: F, raison?: 'doublons' | 'doublons_exacts'): F {
-  if (!f.choixDoublons) return f;
-  const { choixDoublons, ...reste } = f;
+  if (!f.choixDoublons && !f.choixIA) return f;
+  const { choixDoublons, choixIA, ...reste } = f;
   if (!raison) return reste as F;
-  const { [raison]: _retire, ...autres } = choixDoublons;
-  return (Object.keys(autres).length ? { ...reste, choixDoublons: autres } : reste) as F;
+  const c = sansCase(choixDoublons, raison);
+  const ia = sansCase(choixIA, raison);
+  return { ...reste, ...(c && { choixDoublons: c }), ...(ia && { choixIA: ia }) } as F;
 }
 
 /**
  * Pose (ou retire, `undefined`) le choix en attente de photos à l'étape « Doublons » (D101) : un clic,
- * même s'il touche toute une rafale, est un seul Ctrl+Z ; rien n'est mis de côté.
+ * même s'il touche toute une rafale, est un seul Ctrl+Z ; rien n'est mis de côté. `par` : l'utilisateur (un geste ;
+ * une photo listée dont le choix venait de l'IA devient le sien, même inchangé) ou l'IA (« Choisir avec l'IA »).
  */
-export function choisirDoublons(plan: Plan, raison: 'doublons' | 'doublons_exacts', choix: { id: string; garder: boolean | undefined }[]): Modification | null {
+export function choisirDoublons(plan: Plan, raison: 'doublons' | 'doublons_exacts', choix: { id: string; garder: boolean | undefined }[], par: 'vous' | 'ia' = 'vous'): Modification | null {
   const tx = new Transaction(plan);
   for (const c of choix) {
     const f = plan.fichiers.get(c.id);
-    if (!f || f.choixDoublons?.[raison] === c.garder) continue;
+    const ia = par === 'ia' && c.garder !== undefined;
+    if (!f || (f.choixDoublons?.[raison] === c.garder && !!f.choixIA?.[raison] === ia)) continue;
     const sans = sansChoixDoublons(f, raison);
-    tx.fichier(c.garder === undefined ? sans : { ...sans, choixDoublons: { ...sans.choixDoublons, [raison]: c.garder } });
+    tx.fichier(c.garder === undefined ? sans : { ...sans, choixDoublons: { ...sans.choixDoublons, [raison]: c.garder }, ...(ia && { choixIA: { ...sans.choixIA, [raison]: true as const } }) });
   }
   return tx.terminer(t`Choisir une photo`);
 }
@@ -513,7 +528,7 @@ export function mettreDeCote(plan: Plan, ids: string[], raison: RaisonMiseDeCote
     const f = plan.fichiers.get(id);
     if (f && f.categorie !== 'autre' && f.statut !== 'mis_de_cote') tx.fichier({ ...f, statut: 'mis_de_cote', raison });
   }
-  return tx.terminer(t`Mettre de côté ${pluriel(ids.length, 'élément')}`);
+  return tx.terminer(t`Écarter ${pluriel(ids.length, 'élément')}`);
 }
 
 /**

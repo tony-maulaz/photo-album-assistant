@@ -444,8 +444,11 @@ export function LigneEtape({
   aide?: AideLigne;
   /** Les filtres de la page, quand ils tiennent dans la ligne (Floues, D112) : au palier, ils vont dans la barre d'outils. */
   filtres?: ComponentChildren;
-  /** La Taille des photos ; une fonction : la taille vraiment montrée (vignettes de dossier à 0,6). */
-  taille?: boolean | ((v: number) => number);
+  /**
+   * La Taille des photos ; une fonction : la taille vraiment montrée des vignettes (de dossier, à 0,6) ;
+   * `{ photos }` : celle des photos, quand la page les réduit (Doublons au palier, trois quarts).
+   */
+  taille?: boolean | ((v: number) => number) | { photos: (v: number) => number };
   vue?: VueLigne;
 }) {
   const p = page.value;
@@ -465,7 +468,7 @@ export function LigneEtape({
         <MessageLigne />
       </div>
       <div class="droite-ligne">
-        <div class="place-taille">{taille && <CurseurTaille vraie={typeof taille === 'function' ? taille : undefined} />}</div>
+        <div class="place-taille">{taille && <CurseurTaille vraie={typeof taille === 'function' ? taille : typeof taille === 'object' ? taille.photos : undefined} photos={typeof taille === 'object'} />}</div>
         <span class="separateur-ligne" aria-hidden="true" />
         <AnnulerRetablirLigne />
         <span class="separateur-ligne" aria-hidden="true" />
@@ -513,10 +516,11 @@ export function AideEtape({ cle, ouverte = false, children }: { cle: string; ouv
  * Taille des photos (retours du 29.10, question 11) : une petite photo, un curseur gris de 12 crans, une grande
  * photo ; les deux photos sont des boutons d'un cran, le clavier passe par le curseur (← → un cran, Origine, Fin).
  * Un seul réglage pour toutes les étapes, au même endroit sur chaque page : dans la ligne de l'étape, à gauche
- * de ↶. `vraie` : la taille réellement montrée (vignettes de dossier à 0,6), lue dans l'infobulle et
- * par le lecteur d'écran ; `id` : celui du curseur, pour une étiquette de formulaire (Réglages).
+ * de ↶. `vraie` : la taille réellement montrée (vignettes de dossier à 0,6 ; `photos` : des photos réduites, Doublons
+ * au palier), lue dans l'infobulle et par le lecteur d'écran ; `id` : celui du curseur, pour une étiquette de
+ * formulaire (Réglages).
  */
-export function CurseurTaille({ vraie, id }: { vraie?: (v: number) => number; id?: string }) {
+export function CurseurTaille({ vraie, id, photos = false }: { vraie?: (v: number) => number; id?: string; photos?: boolean }) {
   const i = cranTaille(reglages.value.tailleMiniatures);
   const dernier = PAS_TAILLE.length - 1;
   const v = PAS_TAILLE[i];
@@ -525,7 +529,7 @@ export function CurseurTaille({ vraie, id }: { vraie?: (v: number) => number; id
     if (j >= 0 && j <= dernier && PAS_TAILLE[j] !== reglages.value.tailleMiniatures) changerReglages({ ...reglages.value, tailleMiniatures: PAS_TAILLE[j] });
   };
   return (
-    <div class="taille-cadre" data-place="taille" role="group" aria-label={t`Taille des photos`} title={vraie ? t`Taille des vignettes : ${n} px` : t`Taille des photos : ${v} px (de 100 à 600)`} data-valeur={v}>
+    <div class="taille-cadre" data-place="taille" role="group" aria-label={t`Taille des photos`} title={vraie && !photos ? t`Taille des vignettes : ${n} px` : t`Taille des photos : ${n} px (de 100 à 600)`} data-valeur={v}>
       <button
         type="button"
         class="bout-taille"
@@ -547,7 +551,7 @@ export function CurseurTaille({ vraie, id }: { vraie?: (v: number) => number; id
         step={1}
         value={i}
         aria-label={t`Taille des photos`}
-        aria-valuetext={vraie ? t`vignettes de ${n} px` : t`${n} px`}
+        aria-valuetext={vraie && !photos ? t`vignettes de ${n} px` : t`${n} px`}
         style={{ '--parcouru': `${(i / dernier) * 100}%` }}
         onInput={(e) => changer(Number(e.currentTarget.value))}
       />

@@ -5,19 +5,24 @@ import {
   prochainAAccepter,
   aRelire,
   avancementGroupes,
+  basculerAccepte,
   choisir,
+  choisirTous,
   copiesEnAttente,
-  ecarterTout,
   etatPhoto,
   exemplairesAEcarterDans,
   exemplairesEcartesDans,
+  fixer,
   garderTout,
   groupesCopies,
   groupesScenes,
   groupeVisible,
+  origineBadgeDoublon,
   photosDuGroupe,
+  revenirProposition,
   type GroupeDoublons,
 } from '../src/lib/groupesDoublons';
+import { origineMisDeCote } from '../src/lib/origines';
 import { dossierSource, ecarterDoublons, garderAussi, Historique, mettreDeCote, planVide, RACINE, type FichierPlan, type Plan } from '../src/lib/plan';
 
 function plan(): Plan {
@@ -78,7 +83,7 @@ describe('état des photos d’un groupe (D71)', () => {
   });
 });
 
-describe('décisions (un clic, Accepter, Tout garder, Tout écarter)', () => {
+describe('décisions (un clic, Accepter, Tout garder, « aucune »)', () => {
   it('un clic choisit la photo seule, sans rien écarter ni valider ; Ctrl+clic en ajoute une (D101)', () => {
     const p = plan();
     choisir(p, rafale, 'b.jpg', true);
@@ -145,9 +150,10 @@ describe('décisions (un clic, Accepter, Tout garder, Tout écarter)', () => {
     expect(p.fichiers.get('a.jpg')!.choixDoublons).toEqual({ doublons: false });
   });
 
-  it('« Tout écarter » écarte aussi la ★ ; « Tout garder » remet tout', () => {
+  it('« aucune » puis « Accepter » écarte aussi la ★ ; « Tout garder » remet tout', () => {
     const p = plan();
-    ecarterTout(p, [rafale]);
+    choisirTous(p, rafale, false);
+    accepter(p, [rafale]);
     expect(etats(p, rafale)).toEqual(['ecartee', 'ecartee', 'ecartee']);
     garderTout(p, [rafale]);
     expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'gardee']);
@@ -172,7 +178,8 @@ describe('décisions (un clic, Accepter, Tout garder, Tout écarter)', () => {
   it('toutes les copies d’une photo peuvent être écartées (rien n’est supprimé)', () => {
     const p = plan();
     const [g] = groupesCopies([{ garde: 'a.jpg', copies: [{ id: 'b.jpg', type: 'identique' }], aGarder: ['a.jpg'] }], fichiers(p));
-    ecarterTout(p, [g]);
+    choisir(p, g, 'a.jpg', false);
+    accepter(p, [g]);
     expect(etats(p, g)).toEqual(['ecartee', 'ecartee']);
     expect(p.fichiers.get('a.jpg')).toMatchObject({ statut: 'mis_de_cote', raison: 'doublons_exacts' });
   });
@@ -264,5 +271,187 @@ describe('bouton plein des Doublons (C-4.1) : le groupe à accepter qui suit le 
   it('le groupe en cours masqué par le filtre « À accepter » : on part de sa place, pas du premier groupe', () => {
     // « b » vient d'être accepté : il n'est plus affiché ; « a » et « c » restent à accepter.
     expect(prochainAAccepter(liste, id, 'b', (x) => x !== 'b', (x) => x !== 'b')).toBe('c');
+  });
+});
+
+describe('retours du 29.10 (D112) : toutes · aucune, G et X, retour à la proposition, badges', () => {
+  const badges = (p: Plan, g: GroupeDoublons, iaPrefere?: string) => {
+    const valide = !aRelire(g, fichiers(p));
+    return photosDuGroupe(g, fichiers(p)).map((x) => {
+      const b = origineBadgeDoublon(g, x, valide, iaPrefere);
+      return `${b.sort}:${b.origine}:${b.decide ? 'plein' : 'bord'}`;
+    });
+  };
+
+  it('« toutes » choisit chaque photo, « aucune » n’en garde aucune : des choix en attente, rien n’est écarté', () => {
+    const p = plan();
+    expect(choisirTous(p, rafale, true)?.libelle).toBe('Choisir toutes les photos');
+    expect(etats(p, rafale)).toEqual(['gardee', 'choisie', 'choisie']);
+    expect([...p.fichiers.values()].some((f) => f.statut === 'mis_de_cote')).toBe(false);
+    // La ★ gardée par la proposition n'a pas de choix noté : c'est déjà son sort.
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toBeUndefined();
+    accepter(p, [rafale]);
+    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'gardee']);
+    const q = plan();
+    choisirTous(q, rafale, false);
+    expect(etats(q, rafale)).toEqual(['a_ecarter', 'a_ecarter', 'a_ecarter']);
+    expect(acceptablesSansVider([rafale], fichiers(q))).toEqual([]);
+    // Déjà le sort de chaque photo : rien à faire.
+    expect(choisirTous(q, rafale, false)).toBeNull();
+  });
+
+  it('G fixe le sort proposé « par vous » ; dans une rafale, garder une photo écarte les autres ; X sur une écartée ne fait rien', () => {
+    const p = plan();
+    fixer(p, rafale, 'a.jpg', true, true);
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toEqual({ doublons: true });
+    expect(badges(p, rafale)).toEqual(['garder:vous:plein', 'ecarter:application:bord', 'ecarter:application:bord']);
+    fixer(p, rafale, 'c.jpg', true, true);
+    expect(etats(p, rafale)).toEqual(['a_ecarter', 'a_ecarter', 'choisie']);
+    expect(p.fichiers.get('a.jpg')!.choixDoublons).toEqual({ doublons: false });
+    // Plusieurs photos : X n'écarte que la sienne.
+    fixer(p, rafale, 'c.jpg', false, false);
+    expect(etats(p, rafale)).toEqual(['a_ecarter', 'a_ecarter', 'a_ecarter']);
+    const q = plan();
+    accepter(q, [rafale]);
+    expect(fixer(q, rafale, 'b.jpg', false, true)).toBeNull();
+  });
+
+  it('second clic : la photo revient à la proposition ; dans une rafale à une photo, tout le groupe', () => {
+    const p = plan();
+    choisir(p, rafale, 'b.jpg', true);
+    expect(revenirProposition(p, rafale, 'b.jpg', true)?.libelle).toBe('Revenir à la proposition');
+    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'a_ecarter']);
+    expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);
+    choisir(p, rafale, 'b.jpg', false);
+    choisir(p, rafale, 'c.jpg', false);
+    revenirProposition(p, rafale, 'b.jpg', false);
+    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'choisie']);
+  });
+
+  it('badges : bordure jusqu’à « Accepter », plein ensuite avec l’origine ; un choix est « par vous » en plein ; « ? » si l’IA préfère une autre photo', () => {
+    const p = plan();
+    expect(badges(p, rafale)).toEqual(['garder:application:bord', 'ecarter:application:bord', 'ecarter:application:bord']);
+    // L'IA conseille la b : la ★ et la b sont à vérifier, la c reste proposée.
+    expect(badges(p, rafale, 'b.jpg')).toEqual(['garder:verifier:bord', 'ecarter:verifier:bord', 'ecarter:application:bord']);
+    // L'IA est d'accord avec la proposition : l'idée vient d'elle.
+    expect(badges(p, rafale, 'a.jpg')).toEqual(['garder:ia:bord', 'ecarter:ia:bord', 'ecarter:ia:bord']);
+    choisir(p, rafale, 'b.jpg', true);
+    expect(badges(p, rafale)).toEqual(['ecarter:vous:plein', 'garder:vous:plein', 'ecarter:application:bord']);
+    accepter(p, [rafale]);
+    // Accepté : la ★ écartée par votre choix reste « par vous », la c vient du groupe, la b gardée par vous.
+    expect(badges(p, rafale)).toEqual(['ecarter:vous:plein', 'garder:vous:plein', 'ecarter:application:plein']);
+    const q = plan();
+    accepter(q, [rafale]);
+    expect(badges(q, rafale)).toEqual(['garder:application:plein', 'ecarter:application:plein', 'ecarter:application:plein']);
+  });
+
+  it('clic sur la bande d’un groupe accepté : l’autre sort tout de suite, par vous, sans rouvrir le groupe ; Ctrl+Z défait', () => {
+    const p = plan();
+    const h = new Historique();
+    h.enregistrer(accepter(p, [rafale]));
+    const m = basculerAccepte(p, rafale, 'b.jpg');
+    expect(m?.libelle).toBe('Garder une photo');
+    h.enregistrer(m);
+    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'ecartee']);
+    expect(aRelire(rafale, fichiers(p))).toBe(false);
+    expect(badges(p, rafale)[1]).toBe('garder:vous:plein');
+    const m2 = basculerAccepte(p, rafale, 'a.jpg');
+    expect(m2?.libelle).toBe('Écarter une photo');
+    h.enregistrer(m2);
+    expect(etats(p, rafale)).toEqual(['ecartee', 'gardee', 'ecartee']);
+    expect(aRelire(rafale, fichiers(p))).toBe(false);
+    h.annuler(p);
+    h.annuler(p);
+    expect(etats(p, rafale)).toEqual(['gardee', 'ecartee', 'ecartee']);
+    expect(basculerAccepte(p, rafale, 'inconnue.jpg')).toBeNull();
+  });
+
+  it('G et X dans un groupe accepté : comme le clic sur la bande, sans rouvrir le groupe ; rien si le sort est déjà le sien', () => {
+    const p = plan();
+    accepter(p, [rafale]);
+    // G sur la photo gardée, X sur une écartée : déjà leur sort.
+    expect(fixer(p, rafale, 'a.jpg', true, true)).toBeNull();
+    expect(fixer(p, rafale, 'b.jpg', false, true)).toBeNull();
+    expect(fixer(p, rafale, 'b.jpg', true, true)?.libelle).toBe('Garder une photo');
+    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'ecartee']);
+    expect(fixer(p, rafale, 'a.jpg', false, true)?.libelle).toBe('Écarter une photo');
+    expect(etats(p, rafale)).toEqual(['ecartee', 'gardee', 'ecartee']);
+    expect(aRelire(rafale, fichiers(p))).toBe(false);
+    expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);
+  });
+
+  it('« Dans plusieurs dossiers » : gardée d’office, en bordure (aucun geste, jamais acceptée)', () => {
+    const p = plan();
+    const [g] = groupesCopies([{ garde: 'IMG_1.jpg', copies: [{ id: 'Best of/IMG-WA1.jpg', type: 'identique' }], aGarder: ['IMG_1.jpg', 'Best of/IMG-WA1.jpg'] }], fichiers(p));
+    expect(g.sorte).toBe('dossiers');
+    expect(aRelire(g, fichiers(p))).toBe(false);
+    expect(photosDuGroupe(g, fichiers(p)).map((x) => origineBadgeDoublon(g, x, true).decide)).toEqual([false, false]);
+    expect(photosDuGroupe(g, fichiers(p)).every((x) => origineBadgeDoublon(g, x, true).partout)).toBe(true);
+  });
+
+  it('« Choisir avec l’IA » : une proposition de l’IA, en bordure, jusqu’à « Accepter » ; ensuite ✦ en plein, origine « ia » dans le plan (règle d’or 3)', () => {
+    const p = plan();
+    choisir(p, rafale, 'b.jpg', true, 'ia');
+    expect(p.fichiers.get('b.jpg')).toMatchObject({ choixDoublons: { doublons: true }, choixIA: { doublons: true } });
+    expect(badges(p, rafale, 'b.jpg')).toEqual(['ecarter:ia:bord', 'garder:ia:bord', 'ecarter:application:bord']);
+    expect(photosDuGroupe(rafale, fichiers(p)).map((x) => origineBadgeDoublon(rafale, x, false, 'b.jpg').enAttente)).toEqual([false, false, false]);
+    accepter(p, [rafale]);
+    expect(p.fichiers.get('a.jpg')).toMatchObject({ statut: 'mis_de_cote', origine: { doublons: 'ia' } });
+    expect(p.fichiers.get('b.jpg')).toMatchObject({ statut: 'archive', protegee: true, origine: { doublons: 'ia' } });
+    expect(p.fichiers.get('c.jpg')!.origine).toEqual({ doublons: 'application' });
+    expect([...p.fichiers.values()].some((f) => f.choixIA || f.choixDoublons)).toBe(false);
+    expect(badges(p, rafale, 'b.jpg')).toEqual(['ecarter:ia:plein', 'garder:ia:plein', 'ecarter:application:plein']);
+    // L'onglet « Écartées » et « Mis de côté » le disent aussi : proposition de l'IA acceptée.
+    expect(origineMisDeCote(p.fichiers.get('a.jpg')!)).toMatchObject({ origine: 'ia', decide: true });
+  });
+
+  it('un geste sur un choix de l’IA le fait vôtre ; un clic qui choisit une photo seule redécide tout le groupe', () => {
+    const p = plan();
+    choisir(p, rafale, 'b.jpg', true, 'ia');
+    fixer(p, rafale, 'b.jpg', false, true);
+    expect(badges(p, rafale)).toEqual(['ecarter:ia:bord', 'ecarter:vous:plein', 'ecarter:application:bord']);
+    choisir(p, rafale, 'c.jpg', true);
+    expect([...p.fichiers.values()].some((f) => f.choixIA)).toBe(false);
+    expect(badges(p, rafale)).toEqual(['ecarter:vous:plein', 'ecarter:application:bord', 'garder:vous:plein']);
+    // Ctrl+clic (plusieurs photos) : seule la photo cliquée change, le choix de l'IA sur les autres reste.
+    const q = plan();
+    choisir(q, rafale, 'b.jpg', true, 'ia');
+    choisir(q, rafale, 'c.jpg', false);
+    expect(badges(q, rafale)).toEqual(['ecarter:ia:bord', 'garder:ia:bord', 'garder:vous:plein']);
+  });
+
+  it('« toutes », « aucune » et Ctrl+A dans un groupe accepté : l’autre sort tout de suite, par vous, sans rouvrir le groupe (C-9.12)', () => {
+    const p = plan();
+    const h = new Historique();
+    accepter(p, [rafale]);
+    h.enregistrer(choisirTous(p, rafale, true));
+    expect(etats(p, rafale)).toEqual(['gardee', 'gardee', 'gardee']);
+    expect(aRelire(rafale, fichiers(p))).toBe(false);
+    expect(badges(p, rafale)).toEqual(['garder:application:plein', 'garder:vous:plein', 'garder:vous:plein']);
+    expect(choisirTous(p, rafale, true)).toBeNull();
+    h.enregistrer(choisirTous(p, rafale, false));
+    expect(etats(p, rafale)).toEqual(['ecartee', 'ecartee', 'ecartee']);
+    expect(aRelire(rafale, fichiers(p))).toBe(false);
+    expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);
+    h.annuler(p);
+    h.annuler(p);
+    expect(etats(p, rafale)).toEqual(['gardee', 'ecartee', 'ecartee']);
+  });
+
+  it('Ctrl+Z défait « toutes », G et le retour à la proposition, chacun en un pas', () => {
+    const p = plan();
+    const h = new Historique();
+    h.enregistrer(choisirTous(p, rafale, true));
+    h.enregistrer(fixer(p, rafale, 'b.jpg', false, false));
+    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'choisie']);
+    h.enregistrer(revenirProposition(p, rafale, 'c.jpg', false));
+    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'a_ecarter']);
+    h.annuler(p);
+    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'choisie']);
+    h.annuler(p);
+    expect(etats(p, rafale)).toEqual(['gardee', 'choisie', 'choisie']);
+    h.annuler(p);
+    expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'a_ecarter']);
+    expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);
   });
 });

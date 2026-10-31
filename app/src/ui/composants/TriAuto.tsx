@@ -286,8 +286,8 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
     notifier(
       'ok',
       e.range
-        ? t`${pluriel(nb, 'copie mise', 'copies mises')} dans « Mis de côté ». Rangez à nouveau : des dossiers ont pu se vider.`
-        : t`${pluriel(nb, 'copie mise', 'copies mises')} dans « Mis de côté ».`,
+        ? t`${pluriel(nb, 'copie écartée', 'copies écartées')} : dans « Mis de côté ». Rangez à nouveau : des dossiers ont pu se vider.`
+        : t`${pluriel(nb, 'copie écartée', 'copies écartées')} : dans « Mis de côté ».`,
       { libelle: t`Annuler`, faire: annuler },
     );
   };
@@ -424,7 +424,7 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
                   {t`Voir`}
                 </button>
                 <button type="button" class={style('copies')} onClick={ecarterCopies}>
-                  {t`Mettre de côté`}
+                  {t`Écarter`}
                 </button>
               </>
             }

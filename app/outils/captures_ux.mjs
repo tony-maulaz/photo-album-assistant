@@ -655,12 +655,33 @@ try {
     await attendre(1500);
     await etat('10_etape05_doublons_rafales', 'Étape 5 Doublons : onglet Rafales', { pleine: true });
     await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
-    // Lot 4 : ce qui touche tout l'onglet est dans le menu « Toutes les copies ▾ » de la barre d'outils.
-    const menuCopies = page.locator('.rangee-onglet .bouton-portee');
-    if (await menuCopies.count()) {
-      await menuCopies.click();
-      const accepter = page.locator('.rangee-onglet').getByRole('menuitem', { name: /^Accepter (les \d+ propositions|la proposition)/ });
-      if (await accepter.count()) await accepter.click();
+    // É14 (étape 2d) : des copies exactes restent ; « Valider et continuer » ouvre la fenêtre à trois choix (Échap :
+    // « Les voir d'abord », on reste sur les copies).
+    await valider();
+    const troisChoix = page.locator('[role=dialog]').first();
+    if (await troisChoix.waitFor({ timeout: 3000 }).then(() => true, () => false)) {
+      await etat('10b_etape05_doublons_valider_copies', 'Étape 5 Doublons : « Valider et continuer » avec des copies exactes restantes (fenêtre à trois choix)');
+      await page.keyboard.press('Escape');
+      await troisChoix.waitFor({ state: 'detached' });
+      await attendre(600);
+    }
+    // « Accepter les N propositions » en clair, puis la fenêtre qui chiffre.
+    const accepterOnglet = page.locator('[data-action=accepter-onglet]');
+    if (await accepterOnglet.count()) {
+      await accepterOnglet.click();
+      const f = page.locator('[role=dialog]').first();
+      await f.waitFor();
+      await etat('10c_etape05_doublons_accepter_copies', 'Étape 5 Doublons : « Accepter les N propositions », la fenêtre qui chiffre');
+      await f.locator('button.principal').click();
+      await f.waitFor({ state: 'detached' });
+      await attendre(600);
+    }
+    // L'onglet « Écartées » (Q4) : les photos écartées à cette étape, un badge sous chacune.
+    const ecartees = page.locator('.onglet-doublons.onglet-ecartees');
+    if (await ecartees.count()) {
+      await ecartees.click();
+      await attendre(1000);
+      await etat('10d_etape05_doublons_ecartees', 'Étape 5 Doublons : onglet « Écartées »', { pleine: true });
     }
     await valider();
   });
@@ -671,7 +692,7 @@ try {
     await page.getByText('Recherche de l’adresse…').first().waitFor({ state: 'detached', timeout: 30_000 }).catch(() => undefined);
     await attendre(2000);
     await capturer('11_etape06_tri_avant', 'Étape 6 Tri automatique : avant de ranger (aperçu, réglages)');
-    const copies = page.locator('.copies-avant-tri').getByRole('button', { name: /^Mettre \d+ copies? de côté/ });
+    const copies = page.locator('.copies-avant-tri').getByRole('button', { name: 'Écarter', exact: true });
     if (await copies.count()) await copies.click();
     await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
     await page.locator('.ligne-ranger.fait').waitFor({ timeout: 600_000 });

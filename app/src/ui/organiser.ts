@@ -131,7 +131,7 @@ export function mettreSelectionDeCote(ids: string[] = [...selection.value]) {
   if (!s || !ids.length) return;
   appliquer(mettreDeCote(s.plan, ids, 'autres'));
   selection.value = new Set();
-  notifier('ok', t`${texteNombre(ids.length)} mis de côté (rien n’est supprimé : ils iront dans « ${nomsSortie().misDeCote} »).`, retourAnnuler());
+  notifier('ok', t`${pluriel(ids.length, 'élément écarté', 'éléments écartés')} (rien n’est supprimé : ils iront dans « ${nomsSortie().misDeCote} »).`, retourAnnuler());
 }
 
 export function remettreSelection(ids: string[] = [...selection.value]) {

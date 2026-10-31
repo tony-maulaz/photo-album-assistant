@@ -42,7 +42,6 @@ export const TEXTES: Record<string, string> = {
   '1 à 9': '1 to 9',
   'Déplacer vers un des derniers dossiers utilisés': 'Move to one of the last folders used',
   Suppr: 'Delete',
-  'Mettre de côté (dans « Mis de côté » : remettre)': 'Set aside (in “Set aside”: put back)',
   'Renommer le dossier affiché': 'Rename the folder shown',
   Entrée: 'Enter',
   'Voir la photo en grand (← → : la suivante)': 'View the photo full size (← →: the next one)',

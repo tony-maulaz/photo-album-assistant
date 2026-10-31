@@ -11,6 +11,7 @@
 // second clic pendant 0,5 s, ne prend pas le focus et ne se glisse pas (`appuiSurBadge`, lu par la case) ; elle n'est
 // pas un arrêt de Tab : le clavier passe par la photo choisie (G, X, Suppr).
 
+import type { ComponentChildren } from 'preact';
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { Icone, type NomIcone } from './Icones';
 
@@ -18,8 +19,11 @@ import { Icone, type NomIcone } from './Icones';
 export type OrigineBadge = 'vous' | 'application' | 'ia' | 'avant' | 'verifier';
 
 export interface DescriptionBadge {
-  /** Ce qui arrive à la photo : elle reste (vert), ou elle part (gris). */
-  sort: 'garder' | 'ecarter';
+  /**
+   * Ce qui arrive à la photo : elle reste (vert), ou elle part (gris) ; à la Sélection, l'album (ambre : « Dans
+   * l'album », « Grande ») ou rien de décidé (« À décider »).
+   */
+  sort: 'garder' | 'ecarter' | 'album' | 'grande' | 'decider';
   origine: OrigineBadge;
   /** Plein : décidé ; sinon bordure fine : proposé. */
   decide: boolean;
@@ -34,10 +38,16 @@ export interface DescriptionBadge {
   nom: string;
   /** Le geste du clic. */
   basculer?: () => void;
+  /**
+   * La tête de la bande, à la place de l'icône d'origine : les étoiles de la Sélection (★, ★★ ; tout y est de
+   * l'utilisateur, elles tiennent lieu de punaise) ; `null` : pas d'icône (« À décider »).
+   */
+  tete?: ComponentChildren | null;
 }
 
 /** L'icône de tête : une seule par bande, dans l'ordre punaise, ✦, ?, puis ✓ ou ✕. */
 export function iconeBadge(b: Pick<DescriptionBadge, 'origine' | 'sort'>): NomIcone {
+  if (b.sort === 'album' || b.sort === 'grande' || b.sort === 'decider') return 'coche';
   if (b.origine === 'vous') return 'punaise';
   if (b.origine === 'ia') return 'etincelle';
   if (b.origine === 'verifier') return 'question';
@@ -89,10 +99,12 @@ function formeQuiTient(place: number, police: string, mot: string, motCourt: str
 
 /**
  * La bande d'une photo. `largeur` : celle de la case, pour remesurer quand la Taille change ; `fin` : une marque
- * courte au bout (« nouveau »), écrite seulement si elle tient (sinon elle reste dans la bulle de la case).
+ * courte au bout (« nouveau »), écrite seulement si elle tient (sinon elle reste dans la bulle de la case) ;
+ * `marques` : les marques de la Sélection (↻ ✂ ▣), au bout, après le mot ; `enLigne` : dans un bouton (la ligne
+ * d'un exemplaire de copie, une vignette de Comparer), la bande est un `span` qui ne se clique pas.
  */
-export function BandeBadge({ badge, largeur, fin }: { badge: DescriptionBadge; largeur: number; fin?: string }) {
-  const zone = useRef<HTMLDivElement>(null);
+export function BandeBadge({ badge, largeur, fin, marques, enLigne = false }: { badge: DescriptionBadge; largeur: number; fin?: string; marques?: ComponentChildren; enLigne?: boolean }) {
+  const zone = useRef<HTMLElement>(null);
   // Le dernier clic sur cette bande-ci : un second clic sur elle est ignoré pendant 0,5 s, où qu'il tombe.
   const dernierIci = useRef(0);
   const [forme, setForme] = useState<Forme>({ court: false, icone: true, fin: !!fin });
@@ -101,7 +113,9 @@ export function BandeBadge({ badge, largeur, fin }: { badge: DescriptionBadge; l
     const el = zone.current;
     if (!el) return;
     const style = getComputedStyle(el);
-    const place = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    // Les marques au bout (Sélection) gardent leur place : le mot se mesure dans ce qui reste.
+    const bout = el.querySelector<HTMLElement>(':scope > .fin-bande');
+    const place = el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - (bout && bout.childElementCount ? bout.offsetWidth + 8 : 0);
     // Mesuré en gras : la bande pleine et le survol le sont, la proposition l'est moins (la marge est gardée).
     const police = `600 ${style.fontSize} ${style.fontFamily}`;
     const f = formeQuiTient(place, police, badge.mot, badge.motCourt, fin);
@@ -110,13 +124,14 @@ export function BandeBadge({ badge, largeur, fin }: { badge: DescriptionBadge; l
       const e = formeQuiTient(place, police, badge.effet.mot, badge.effet.motCourt, undefined);
       if (e.court !== formeEffet.court || e.icone !== formeEffet.icone) setFormeEffet(e);
     }
-  }, [badge.mot, badge.motCourt, badge.effet?.mot, fin, largeur]);
+  }, [badge.mot, badge.motCourt, badge.effet?.mot, fin, largeur, !!marques]);
 
-  const cliquable = !!badge.basculer;
+  const cliquable = !!badge.basculer && !enLigne;
+  const tete = badge.tete === undefined ? <Icone nom={iconeBadge(badge)} taille={16} /> : badge.tete;
   const contenu = (
     <>
       <span class="etat-badge">
-        {forme.icone && <Icone nom={iconeBadge(badge)} taille={16} />}
+        {forme.icone && tete}
         <span class="mot-badge">{forme.court ? badge.motCourt : badge.mot}</span>
         {forme.fin && fin && <span class="fin-badge">{fin}</span>}
       </span>
@@ -135,14 +150,22 @@ export function BandeBadge({ badge, largeur, fin }: { badge: DescriptionBadge; l
     'data-decide': badge.decide ? '' : undefined,
     title: badge.bulle,
   };
+  if (enLigne)
+    return (
+      <span ref={zone} {...attributs}>
+        {contenu}
+        {marques}
+      </span>
+    );
   if (!cliquable)
     return (
-      <div ref={zone} {...attributs} role="img" aria-label={badge.nom}>
+      <div ref={zone as { current: HTMLDivElement | null }} {...attributs} role="img" aria-label={badge.nom}>
         {contenu}
+        {marques}
       </div>
     );
   return (
-    <div ref={zone} {...attributs} data-cliquable="">
+    <div ref={zone as { current: HTMLDivElement | null }} {...attributs} data-cliquable="">
       <button
         type="button"
         class="clic-badge"
@@ -177,6 +200,7 @@ export function BandeBadge({ badge, largeur, fin }: { badge: DescriptionBadge; l
       >
         {contenu}
       </button>
+      {marques}
     </div>
   );
 }

@@ -369,7 +369,8 @@ function mesurer() {
     return b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < H;
   });
   for (const cadre of photosEtat) {
-    const bande = cadre.nextElementSibling;
+    // À Doublons (É14), la bande suit le bouton de la photo, jamais dedans (un bouton n'en contient pas un autre).
+    const bande = cadre.nextElementSibling ?? (cadre.parentElement?.matches('.tuile-doublon') ? cadre.parentElement.nextElementSibling : null);
     const ici = `${cadre.closest('[aria-label]')?.getAttribute('aria-label')?.slice(0, 30) ?? cadre.className}`;
     if (!bande?.matches('.bande-etat')) {
       bandes.push(`pas de bande sous ${ici}`);
@@ -393,7 +394,7 @@ function mesurer() {
   for (const bande of document.querySelectorAll('.bande-etat')) {
     const b = bande.getBoundingClientRect();
     if (!b.width || b.bottom < 0 || b.top > H) continue;
-    const mot = bande.querySelector('.mot-bande') ?? bande;
+    const mot = bande.querySelector('.mot-bande, .etat-badge .mot-badge') ?? bande;
     const rm = mot.getBoundingClientRect();
     if (bande.scrollWidth > bande.clientWidth + 1 || mot.scrollWidth > mot.clientWidth + 1 || rm.right > b.right + 1) bandes.push(`mot d’état coupé « ${nom(bande)} » (${bande.scrollWidth} pour ${bande.clientWidth} px)`);
   }
@@ -447,8 +448,9 @@ function mesurerComparer() {
     presentation,
     titre: vue.querySelector('.titre-legende')?.textContent ?? '',
     // L'état de la photo affichée (côte à côte : la carte courante), et s'il y a une photo « À garder ».
-    etatCourante: ((presentation === 'une' ? vue.querySelector('.vignette-comparer.affichee .bande-etat') : vue.querySelector('.cmp-carte.courante .choix-photo button.on'))?.textContent ?? '').trim().replace(/^\d+ · /, ''),
-    unAGarder: [...vue.querySelectorAll('.vignette-comparer .bande-etat, .cmp-carte .choix-photo button.on')].some((x) => /À garder/.test(x.textContent ?? '')),
+    // É14 : la bande (badge) sous chaque photo dit l'état ; les choix dessous disent le verbe (Doublons).
+    etatCourante: ((presentation === 'une' ? vue.querySelector('.legende-une .badge-photo .etat-badge .mot-badge') : vue.querySelector('.cmp-carte.courante .badge-photo .etat-badge .mot-badge'))?.textContent ?? '').trim(),
+    unAGarder: [...vue.querySelectorAll('.vignette-comparer .badge-photo, .cmp-carte .badge-photo')].some((x) => x.dataset.sort === 'garder'),
     volets: vue.querySelectorAll('.volet').length,
     hauteurs: images.map((b) => Math.round(b.height)),
     imagesDedans: [...vue.querySelectorAll('.volet-image')].every(dedans),
@@ -466,7 +468,7 @@ function mesurerComparer() {
     })(),
     rienSupprime: !!vue.querySelector('.rien-supprime-vue .icone'),
     // État de chaque photo (bandes des cartes ou des vignettes) : ↓ puis Entrée ne doit rien y changer.
-    etats: (presentation === 'une' ? [...vue.querySelectorAll('.vignette-comparer .bande-etat')].map((x) => (x.textContent || '').trim().replace(/^\d+ · /, '')) : [...vue.querySelectorAll('.cmp-carte .choix-photo button.on')].map((x) => (x.textContent || '').trim())).join(' | '),
+    etats: [...vue.querySelectorAll(presentation === 'une' ? '.vignette-comparer .badge-photo' : '.cmp-carte .badge-photo')].map((x) => `${x.dataset.sort}:${x.dataset.origine}:${x.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join(' | '),
     // « Côte à côte » impossible à cette taille (photos trop petites) : le bouton est désactivé, sa raison écrite.
     coteImpossible: !!vue.querySelector('.choix-presentation button:first-child:disabled'),
     focusDansLaVue: !!document.activeElement?.closest('.comparateur'),
@@ -676,6 +678,10 @@ try {
   const valider = async (etape) => {
     await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 60_000 });
     await page.locator('[data-action=valider]').click();
+    // Doublons avec des copies exactes restantes (É14 g) : la fenêtre à trois choix ; on part sans elles (le tri les
+    // signale ensuite).
+    const choix = page.locator('.dialogue [data-choix=sans]');
+    if (await choix.waitFor({ timeout: 1500 }).then(() => true, () => false)) await choix.click();
     await page.locator(`main[data-etape=${etape}]`).waitFor({ timeout: 60_000 });
   };
 
@@ -697,9 +703,8 @@ try {
   if ((await page.locator('[data-place=aide]').getAttribute('aria-expanded')) === 'true') await page.locator('[data-place=aide]').click();
   // « Comparer en grand » à 2, 3, 4 et 6 photos (C-7.5), aux deux tailles : toutes les copies dans une
   // section (« Grouper par dossier » : elles sont toutes dans le dossier à trier).
-  // « Grouper et classer » est replié dans la liste de gauche (lot 4) : on l'ouvre.
-  if (!(await page.locator('.outils-doublons details.grouper-classer').evaluate((d) => d.open))) await page.locator('.outils-doublons details.grouper-classer > summary').click();
-  await page.locator('.outils-doublons select').first().selectOption('dossier');
+  // « Grouper » : un segmenté visible dans la liste de gauche (É14 c).
+  await page.locator('.outils-doublons').getByRole('radio', { name: 'Dossier', exact: true }).click();
   await page.waitForTimeout(500);
   /** Contrôles de « Comparer en grand » à une taille ; `n` photos, `doublons` : la vue où l'on écarte. */
   const controlerComparer = async (nomVue, n, [w, h], { doublons }) => {
@@ -767,8 +772,8 @@ try {
       await cartes.nth(i).getByRole('button', { name: 'Comparer en grand' }).click();
       await page.locator('.comparateur[data-presentation]').waitFor();
       await page.waitForTimeout(300);
-      await page.locator('.cmp-carte[data-numero="2"] .choix-photo button', { hasText: 'À garder' }).click();
-      const un = page.locator('.cmp-carte[data-numero="1"] .choix-photo button', { hasText: 'À écarter' });
+      await page.locator('.cmp-carte[data-numero="2"] .choix-photo button.garder').click();
+      const un = page.locator('.cmp-carte[data-numero="1"] .choix-photo button.ecarter');
       if (!/\bon\b/.test((await un.getAttribute('class')) ?? '')) await un.click();
       await page.keyboard.press('Escape');
       await page.locator('.comparateur').waitFor({ state: 'detached' });
@@ -780,7 +785,7 @@ try {
     // Ouverture (C-7.5) : sans photo conseillée, sur la première « À garder ».
     const ouverture = await page.evaluate(mesurerComparer);
     if (n === 2) console.log(`${nomVue} : ouverture sur « ${ouverture.etatCourante} », états ${ouverture.etats}`);
-    if (ouverture.unAGarder && !/À garder/.test(ouverture.etatCourante)) fautes.push(`${nomVue} : la vue s’ouvre sur une photo « ${ouverture.etatCourante} » alors qu’une autre est « À garder »`);
+    if (ouverture.unAGarder && !/À garder|Gardée/.test(ouverture.etatCourante)) fautes.push(`${nomVue} : la vue s’ouvre sur une photo « ${ouverture.etatCourante} » alors qu’une autre est « À garder »`);
     await controler(nomVue);
     for (const taille of TAILLES_COMPARER) {
       await controlerComparer(nomVue, n, taille, { doublons: true });
@@ -798,7 +803,7 @@ try {
   await valider('tri');
   await controler('tri-apercu');
   const copies = page.locator('.copies-avant-tri');
-  if (await copies.count()) await copies.getByRole('button', { name: 'Mettre de côté' }).click();
+  if (await copies.count()) await copies.getByRole('button', { name: 'Écarter', exact: true }).click();
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
   await page.locator('.ligne-ranger.fait').waitFor({ timeout: 60_000 });
   await controler('tri-range');
@@ -867,7 +872,7 @@ try {
     await tuile.click();
     await page.keyboard.press('x');
     await page.keyboard.press('r');
-    await tuile.locator('.bande-etat.pas').waitFor();
+    await tuile.locator('.badge-photo[data-sort=ecarter]').waitFor();
     // Taille des photos (retours du 29.10) : la petite photo jusqu'à la plus petite taille, puis la grande autant de
     // fois pour revenir.
     const moins = page.locator('[data-place="taille"] [data-action="plus-petites"]');

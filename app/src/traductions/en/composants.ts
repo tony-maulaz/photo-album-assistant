@@ -229,7 +229,6 @@ export const TEXTES: Record<string, string> = {
   Visionneuse: 'Viewer',
   'date : {0}': 'date: {0}',
   'source : {0}': 'source: {0}',
-  '← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer': '← → to browse · M to move · Del to set aside · Esc to close',
   '← → pour naviguer · Échap pour fermer': '← → to browse · Esc to close',
   'Nouveau dossier « {0} »': 'New folder “{0}”',
   'Dossier « {0} » créé avec {1} élément(s).': 'Folder “{0}” created with {1} item(s).',

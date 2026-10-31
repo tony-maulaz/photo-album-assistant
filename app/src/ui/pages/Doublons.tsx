@@ -17,14 +17,18 @@ import {
   avancementGroupes,
   aGarder,
   choisir as choisirPhoto,
+  choisirTous,
   choixEnAttente,
-  ecarterTout,
+  fixer,
   garderTout,
   groupesCopies,
   groupesScenes,
   groupeVisible,
+  origineBadgeDoublon,
   photosDuGroupe,
   prochainAAccepter,
+  revenirProposition,
+  basculerAccepte,
   sectionJour,
   type GroupeDoublons,
   type EtatPhoto,
@@ -32,6 +36,7 @@ import {
   type Sorte,
 } from '../../lib/groupesDoublons';
 import { aTraduire, t } from '../../lib/langue';
+import { origineMisDeCote } from '../../lib/origines';
 import { comparerPhotos, LIBELLES_REMARQUES, type Comparaison } from '../../lib/comparerPhotos';
 import { cheminDossier, comparerNoms, dossierSource, ecarterDoublons, garderAussi, RACINE, traitementDe, type FichierPlan, type InfoDoublon, type Modification, type Plan } from '../../lib/plan';
 import type { Presentation } from '../../lib/presentationComparer';
@@ -43,10 +48,11 @@ import { cleMiniature } from '../../navigateur/miniatures';
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { analyseEnCours, lancerAnalyseDossier, rafalesAChercher } from '../analyseDossier';
 import { EncartAnalyse } from '../composants/Analyse';
-import { BarreProgression, BarreValidation, RaisonDesactivee, useDeroulant } from '../composants/Cadre';
+import { BandeBadge, type DescriptionBadge } from '../composants/Badge';
+import { BarreProgression, BarreValidation, RaisonDesactivee } from '../composants/Cadre';
 import { bornesFenetre, largeurFenetre, LigneEtape, OutilsCadre, PanneauAide, useCadre, useMenuListe } from '../composants/CadreCommun';
 import { Comparateur, type NavigationGroupes, type PresentationGardee } from '../composants/Comparateur';
-import { confirmer } from '../composants/Dialogues';
+import { choisirParmi, confirmer } from '../composants/Dialogues';
 import { Miniature } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { redimensionner, styleLargeurPanneau } from '../composants/PanneauDossiers';
@@ -166,17 +172,59 @@ interface CadreDoublons {
 const ContexteCadre = createContext<CadreDoublons | null>(null);
 
 /**
+ * La tête de la table ne rogne jamais le titre de la section ni son compte (C-10.4) : quand ils ne tiennent pas avec
+ * les boutons de la section, ceux-ci passent sur une deuxième ligne (`data-deux-lignes`), et sa hauteur devient
+ * `--h-tete-col` de la table, sous laquelle se collent les en-têtes de groupe. Mesuré à chaque rendu (la section, les
+ * comptes) et quand la largeur change. Pas au palier (`actif` faux) : à 464 px de haut, une deuxième ligne pousserait
+ * la bande du premier groupe hors de l'écran ; le compte s'y raccourcit (à trancher, journal de l'étape 2d).
+ */
+function useTeteSurDeuxLignes(actif: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const largeur = useRef(0);
+  // Lu par le ResizeObserver, installé une fois : la valeur du dernier rendu.
+  const actifRef = useRef(actif);
+  actifRef.current = actif;
+  const mesurer = () => {
+    const el = ref.current;
+    const table = el?.parentElement;
+    if (!el || !table) return;
+    el.removeAttribute('data-deux-lignes');
+    table.style.removeProperty('--h-tete-col');
+    if (!actifRef.current) return;
+    const rogne = [...el.querySelectorAll<HTMLElement>('.titre-section, .detail-section')].some((x) => x.scrollWidth > x.clientWidth + 1);
+    if (!rogne) return;
+    el.setAttribute('data-deux-lignes', '');
+    table.style.setProperty('--h-tete-col', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+  };
+  useLayoutEffect(mesurer);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => {
+      const l = Math.round(e.contentRect.width);
+      if (l === largeur.current) return;
+      largeur.current = l;
+      mesurer();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref.current]);
+  return ref;
+}
+
+/**
  * Le corps d'un onglet : la liste de gauche (une colonne, ou un menu au palier : le même composant, un seul
  * exemplaire), la table (sa tête fixe, puis ce qui défile) et l'Aide en colonne. Seule la zone de contenu défile.
  */
 function CorpsCadre({ liste, nomListe, tete, zone, children }: { liste?: ComponentChildren; nomListe?: ComponentChildren; tete?: ComponentChildren; zone?: { current: HTMLDivElement | null }; children: ComponentChildren }) {
   const c = useContext(ContexteCadre)!;
+  const refTete = useTeteSurDeuxLignes(!c.palier);
   return (
     <div class="corps-cadre">
       {liste && <div class="colonne-liste">{liste}</div>}
       <section class="table-cadre">
         {(tete || (c.palier && liste)) && (
-          <div class="tete-col tete-table">
+          <div class="tete-col tete-table" ref={refTete}>
             {c.palier && liste && (
               <button type="button" class="menu-liste" data-action="menu-liste" aria-expanded={c.listeOuverte} aria-haspopup="true" onClick={() => c.ouvrirListe(!c.listeOuverte)} title={t`Choisir la journée ou le dossier affiché (N : suivant, P : précédent)`}>
                 <span class="nom-menu-liste">{nomListe}</span>
@@ -194,28 +242,6 @@ function CorpsCadre({ liste, nomListe, tete, zone, children }: { liste?: Compone
         <PanneauAide cle="doublons" titre={nomEtape(ETAPE.doublons)}>
           {c.texteAide}
         </PanneauAide>
-      )}
-    </div>
-  );
-}
-
-/**
- * Un menu nommé de la barre d'outils ou de la tête de la table (« Toutes les copies ▾ », « Cette journée ▾ ») :
- * les actions d'une portée, dites par son nom ; ✦ quand une aide IA y est (C-4.6, son prix est sur sa ligne).
- */
-function MenuPortee({ libelle, ia = false, children }: { libelle: string; ia?: boolean; children: ComponentChildren }) {
-  const [ouvert, basculer, zone] = useDeroulant();
-  return (
-    <div class="menu-portee" ref={zone}>
-      <button type="button" class="bouton-portee" aria-expanded={ouvert} aria-haspopup="true" onClick={() => basculer()}>
-        {ia && <Icone nom="etincelle" taille={16} />}
-        {libelle}
-        <Icone nom={ouvert ? 'chevronHaut' : 'chevronBas'} taille={16} />
-      </button>
-      {ouvert && (
-        <div class="menu-deroulant menu-actions" onClick={(e) => (e.target as HTMLElement).closest('button:not(:disabled)') && basculer(false)}>
-          {children}
-        </div>
       )}
     </div>
   );
@@ -278,8 +304,7 @@ function amenerEnHaut(z: HTMLElement, e: Element, commeArrivee = false) {
  * Taille des photos de Doublons : le réglage « Taille », réduit d'un quart au palier « texte agrandi » (160 → 120,
  * § 1.4) pour que l'en-tête, la photo et sa bande « À garder » tiennent ensemble à 1024×464 (tour 1 du lot 4).
  */
-function coteDoublons(palier: boolean): number {
-  const v = reglages.value.tailleMiniatures;
+function coteDoublons(palier: boolean, v = reglages.value.tailleMiniatures): number {
   return palier ? Math.max(100, Math.round((v * 0.75) / 4) * 4) : v;
 }
 
@@ -317,17 +342,39 @@ function useGroupement(onglet: Onglet, fichiers: (FichierPlan | undefined)[]): [
   return [parDefaut, (g) => (groupementsChoisis.value = { ...groupementsChoisis.value, [onglet]: g })];
 }
 
-/** Menu « Grouper : par journée, par mois, par dossier ». */
+/**
+ * Un réglage de la liste de gauche, en boutons visibles (D112 : plus de menu déroulant pour grouper, classer ou
+ * filtrer) : son mot devant, ses choix dans un groupe dont un seul est allumé.
+ */
+function ChoixSegmente<T extends string>({ mot, nom, valeur, choix, choisir }: { mot: string; nom: string; valeur: T; choix: (readonly [T, string])[]; choisir: (v: T) => void }) {
+  return (
+    <div class="ligne-outil">
+      <span class="discret mot-outil">{mot}</span>
+      <div class="choix-segmente" role="radiogroup" aria-label={nom}>
+        {choix.map(([v, libelle]) => (
+          <button key={v} type="button" role="radio" aria-checked={valeur === v} onClick={() => choisir(v)}>
+            {libelle}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** « Grouper : Journée · Mois · Dossier ». */
 function ChoixGroupement({ valeur, choisir }: { valeur: Groupement; choisir: (g: Groupement) => void }) {
   return (
-    <label class="discret">
-      {t`Grouper`}{' '}
-      <select value={valeur} onChange={(e) => choisir(e.currentTarget.value as Groupement)}>
-        <option value="jour">{t`par journée`}</option>
-        <option value="mois">{t`par mois`}</option>
-        <option value="dossier">{t`par dossier`}</option>
-      </select>
-    </label>
+    <ChoixSegmente
+      mot={t`Grouper`}
+      nom={t`Grouper`}
+      valeur={valeur}
+      choix={[
+        ['jour', t`Journée`],
+        ['mois', t`Mois`],
+        ['dossier', t`Dossier`],
+      ]}
+      choisir={choisir}
+    />
   );
 }
 
@@ -472,14 +519,6 @@ function NomSection({ section, avancement = true }: { section: Section; avanceme
       {avancement && section.aRelire > 0 && <span class="reste-menu">{t`${nombre(section.aRelire)} à accepter`}</span>}
     </>
   );
-}
-
-/** Ce que désigne une section, pour dire la portée de ses boutons : « Ce mois », « Cette journée »… */
-function porteeSection(x: Section): string {
-  if (x.cle.startsWith('jour:')) return t`Cette journée`;
-  if (x.cle.startsWith('mois:')) return t`Ce mois`;
-  if (estDossier(x)) return t`Ce dossier`;
-  return t`Sans date`;
 }
 
 /** La tête de la table : le titre de la section et son détail (au palier, le menu de la liste les remplace). */
@@ -678,62 +717,34 @@ function lignesPhoto(g: GroupeDoublons, x: PhotoDuGroupe, c: Comparaison, avis?:
 }
 
 /**
- * Ce que fait « Accepter », dit en entier (É9, § 1.7) : la même chose sur la carte du groupe et dans
- * « Comparer en grand ». Une photo gardée : sa place et sa vignette (« garder la 4 [v], écarter 5 autres ») ;
- * plusieurs : « garder 3 photos, écarter 9 autres » ; aux Copies, le nom exact du dossier de l'exemplaire
- * gardé (« garder celle de « Vacances à Annecy », écarter 2 »). Jamais un nombre nu à côté des places.
+ * Ce que fait « Accepter » (D112, question 2 de l'interface générale) : le bouton dit seulement « Accepter → », à
+ * largeur fixe ; ce qu'il garde et écarte est écrit à sa gauche, en gris et court (« garde la 2 · écarte 1 »,
+ * « garde 1 exemplaire · écarte 2 ») ; la phrase entière (la place et l'heure, le dossier ou le nom de
+ * l'exemplaire gardé) est dans le nom lu, qui commence par le mot visible (WCAG 2.5.3), et dans l'infobulle.
+ * Le même texte sur la carte du groupe et dans « Comparer en grand ».
  */
-function libelleAccepter(g: GroupeDoublons, photos: PhotoDuGroupe[]): { contenu: ComponentChildren; lecteur: string } {
+function libelleAccepter(g: GroupeDoublons, photos: PhotoDuGroupe[]): { court: string; lecteur: string } {
   const s = session.value!;
   const gardees = photos.filter((x) => aGarder(x.etat));
   const n = photos.length;
   const m = photos.filter((x) => x.etat === 'a_ecarter').length;
   const k = gardees.length;
   const copie = g.sorte === 'copies' || g.sorte === 'dossiers';
-  const texte = (x: string) => ({ contenu: x, lecteur: x });
-  if (!k) return texte(t`Accepter : écarter les ${nombre(n)}`);
-  if (!m) return texte(t`Accepter : garder les ${nombre(k)}`);
+  if (!k) return { court: t`n’en garde aucune · écarte les ${nombre(n)}`, lecteur: t`Accepter : écarter les ${nombre(n)}` };
+  if (!m) return { court: t`garde les ${nombre(k)}`, lecteur: t`Accepter : garder les ${nombre(k)}` };
   if (copie) {
-    if (k > 1) return texte(t`Accepter : garder ${nombre(k)} exemplaires, écarter ${nombre(m)}`);
-    // Le nom exact du dossier ; s'il manque de place (Comparer en grand, nom très long), il se raccourcit, entier dans l'infobulle.
+    const court = k > 1 ? t`garde ${nombre(k)} exemplaires · écarte ${nombre(m)}` : t`garde 1 exemplaire · écarte ${nombre(m)}`;
+    if (k > 1) return { court, lecteur: t`Accepter : garder ${nombre(k)} exemplaires, écarter ${nombre(m)}` };
     const dossierDe = (f: FichierPlan) => dossierSource(f) || nomRacine(s.projet.mode === 'vrac');
     const dossier = dossierDe(gardees[0].f);
-    // Un autre exemplaire dans le même dossier : le dossier ne dit plus lequel est gardé ; le nom du fichier le
-    // dit (raccourci au milieu, entier dans l'infobulle et pour le lecteur d'écran ; tour 1 du lot 4).
-    if (photos.some((x) => x !== gardees[0] && dossierDe(x.f) === dossier)) {
-      const fichier = gardees[0].f.nom;
-      return {
-        contenu: (
-          <>
-            {t`Accepter : garder « `}
-            <span class="nom-libelle" title={fichier}>
-              {raccourcirMilieu(fichier, 28)}
-            </span>
-            {t` », écarter ${nombre(m)}`}
-          </>
-        ),
-        lecteur: t`Accepter : garder « ${fichier} », écarter ${nombre(m)}`,
-      };
-    }
-    return {
-      contenu: (
-        <>
-          {/* Espaces insécables : ils restent autour du nom, qui est un élément à part. */}
-          {t`Accepter : garder celle de « `}
-          <span class="nom-libelle" title={dossier}>
-            {dossier}
-          </span>
-          {t` », écarter ${nombre(m)}`}
-        </>
-      ),
-      lecteur: t`Accepter : garder celle de « ${dossier} », écarter ${nombre(m)}`,
-    };
+    // Un autre exemplaire dans le même dossier : le dossier ne dit plus lequel est gardé, le nom du fichier le dit.
+    if (photos.some((x) => x !== gardees[0] && dossierDe(x.f) === dossier)) return { court, lecteur: t`Accepter : garder « ${gardees[0].f.nom} », écarter ${nombre(m)}` };
+    return { court, lecteur: t`Accepter : garder celle de « ${dossier} », écarter ${nombre(m)}` };
   }
   const places = gardees.map((x) => nombre(photos.indexOf(x) + 1));
   if (k > 1)
     return {
-      contenu: m === 1 ? t`Accepter : garder ${nombre(k)} photos, écarter 1 autre` : t`Accepter : garder ${nombre(k)} photos, écarter ${nombre(m)} autres`,
-      // Le nom lu commence par le texte visible (WCAG 2.5.3) ; les places suivent entre parenthèses.
+      court: t`garde ${nombre(k)} photos · écarte ${nombre(m)}`,
       lecteur:
         (m === 1 ? t`Accepter : garder ${nombre(k)} photos, écarter 1 autre` : t`Accepter : garder ${nombre(k)} photos, écarter ${nombre(m)} autres`) +
         ` (${places.map((p) => t`la ${p}`).join(', ')})`,
@@ -741,23 +752,26 @@ function libelleAccepter(g: GroupeDoublons, photos: PhotoDuGroupe[]): { contenu:
   const x = gardees[0];
   const heure = x.f.date && x.f.date.length > 10 ? x.f.date.slice(11, 19) : '';
   return {
-    contenu: (
-      <>
-        {t`Accepter : garder la ${places[0]}`}
-        <Miniature f={x.f} taille={24} rotation={x.f.rotation} />
-        <span class="suite-libelle">{m === 1 ? t`, écarter 1 autre` : t`, écarter ${nombre(m)} autres`}</span>
-      </>
-    ),
-    // Le nom lu commence par le texte visible (WCAG 2.5.3) ; l'heure de la photo gardée suit entre parenthèses.
+    court: t`garde la ${places[0]} · écarte ${nombre(m)}`,
     lecteur: (m === 1 ? t`Accepter : garder la ${places[0]}, écarter 1 autre` : t`Accepter : garder la ${places[0]}, écarter ${nombre(m)} autres`) + (heure ? t` (photo de ${heure})` : ''),
   };
 }
 
-/** Un nom trop long raccourci au milieu (« 0140_2025…25.jpg ») : le début et l'extension restent lisibles. */
-function raccourcirMilieu(nom: string, max: number): string {
-  if (nom.length <= max) return nom;
-  const fin = Math.floor((max - 1) / 2);
-  return `${nom.slice(0, max - 1 - fin)}…${nom.slice(nom.length - fin)}`;
+/** Le plein du groupe : « Accepter → », toujours le même mot, à largeur fixe ; ce qu'il fera est écrit à sa gauche. */
+function BoutonAccepter({ libelle, plein, fondu = false, puis, onClick }: { libelle: { court: string; lecteur: string }; plein: boolean; fondu?: boolean; puis?: string; onClick: () => void }) {
+  const lecteur = puis ? t`${libelle.lecteur}, puis ${puis}` : libelle.lecteur;
+  return (
+    <>
+      <span class="dit-accepter" title={lecteur} aria-hidden="true">
+        {libelle.court}
+        {puis && <span class="puis-accepter">{t` · puis ${puis}`}</span>}
+      </span>
+      <button type="button" class={`${plein ? 'principal' : 'contour'} bouton-accepter${plein && fondu ? ' fondu' : ''}`} data-action="accepter" onClick={onClick} onKeyDown={entreeRepetee} aria-label={lecteur} title={t`${lecteur} (touche A)`}>
+        {t`Accepter`}
+        <Icone nom="fleche" taille={16} />
+      </button>
+    </>
+  );
 }
 
 /** Entrée gardée enfoncée sur un plein : seul le premier appui compte (garde du § 1.7, comme pour A). */
@@ -770,29 +784,92 @@ function alerteRienGarde(): string {
   return t`Aucune photo choisie : tout le groupe ira dans « Mis de côté ».`;
 }
 
-/** L'état écrit d'une photo (C-9.2) ; dans un groupe pas encore accepté, une photo gardée est « À garder » (D101). */
-function libelleEtat(etat: EtatPhoto, valide: boolean): [classe: EtatPhoto, libelle: string] {
-  if (etat === 'gardee' && !valide) return ['choisie', t`À garder`];
-  return [etat, etat === 'gardee' ? t`Gardée` : etat === 'ecartee' ? t`Écartée` : etat === 'choisie' ? t`À garder` : t`À écarter`];
+/** Le mot d'un état, pour le nom lu de la photo et de sa vignette dans « Comparer en grand ». */
+function motEtat(etat: EtatPhoto, valide: boolean): string {
+  if (etat === 'ecartee') return t`Écartée`;
+  if (etat === 'a_ecarter') return t`À écarter`;
+  return etat === 'gardee' && valide ? t`Gardée` : t`À garder`;
 }
 
-/** La bande d'état sous une photo (C-9.1) : un état, écrit, jamais la forme d'un bouton. */
-function BandeEtat({ classe, libelle, autre = '', place }: { classe: string; libelle: string; autre?: string; place?: number }) {
-  const garde = classe === 'gardee' || classe === 'choisie';
-  // Dans une rafale, la place de la photo au début de sa bande (« 4 · À garder ») : le chiffre de la touche de
-  // Comparer et du bouton « Accepter » ; elle prend la place de l'icône, rien n'est posé sur l'image (C-9.1).
-  return (
-    <span class={`etat-photo bande-etat ${classe}${autre ? ` ${autre}` : ''}`}>
-      {place !== undefined ? <span class="place-photo num">{`${nombre(place)} · `}</span> : <Icone nom={garde ? 'coche' : 'croix'} taille={16} />}
-      {libelle}
-    </span>
-  );
+/**
+ * Le badge d'une photo d'un groupe (D112, C-9.2) : le mot et sa couleur disent ce qui lui arrive, l'icône d'où vient
+ * l'idée (punaise : vous ; ✓ ✕ : le groupe ; ✦ : l'IA ; « ? » : l'IA conseille une autre photo que la proposition) ;
+ * plein : décidé (votre clic, ou le groupe accepté), bordure : proposé (dont le choix de « Choisir avec l'IA »). Dans une rafale, la place de la photo suit
+ * l'icône (« ✓ 2 · À garder »). Un clic sur la bande donne l'autre sort, par vous (comme un clic sur la photo) ;
+ * sur un choix par vous pas encore accepté, il revient à la proposition. `seule` : rafale sans « Garder plusieurs
+ * photos » (un clic garde la photo à la place des autres, et le retour vaut pour tout le groupe) ; dans un groupe
+ * accepté, le clic la garde en plus, sans écarter les autres (`basculerAccepte`).
+ */
+function badgeDoublon(g: GroupeDoublons, x: PhotoDuGroupe, o: { valide: boolean; avis?: AvisRafale; place?: number; seule: boolean; agir?: (faire: () => Modification | null) => void }): DescriptionBadge {
+  const s = session.value!;
+  const b = origineBadgeDoublon(g, x, o.valide, o.avis?.meilleure || undefined);
+  const garde = b.sort === 'garder';
+  const vous = b.origine === 'vous';
+  const avec = (m: string) => (o.place !== undefined ? `${nombre(o.place)} · ${m}` : m);
+  const [mot, motCourt] = b.decide ? (vous ? (garde ? [t`Gardée par vous`, t`Gardée`] : [t`Écartée par vous`, t`Écartée`]) : [garde ? t`Gardée` : t`Écartée`]) : [garde ? t`À garder` : t`À écarter`];
+  const etat = b.partout
+    ? t`À garder : présente dans plusieurs dossiers gardés, l’application ne choisit pas le dossier à vider.`
+    : b.enAttente
+      ? garde
+        ? t`Gardée par vous : « Accepter » la garde.`
+        : t`Écartée par vous : « Accepter » l’écarte.`
+      : b.decide
+        ? vous
+          ? garde
+            ? t`Gardée par vous.`
+            : t`Écartée par vous : dans « Mis de côté ».`
+          : b.origine === 'ia'
+            ? garde
+              ? t`Gardée : proposition de l’IA acceptée.`
+              : t`Écartée : proposition de l’IA acceptée, dans « Mis de côté ».`
+            : garde
+              ? t`Gardée : groupe accepté.`
+              : t`Écartée : groupe accepté, dans « Mis de côté ».`
+        : b.origine === 'verifier'
+          ? garde
+            ? t`À garder, proposé par l’application. À vérifier : l’IA conseille une autre photo.`
+            : t`À écarter, proposé par l’application. À vérifier : l’IA conseille de garder celle-ci.`
+          : b.origine === 'ia'
+            ? garde
+              ? t`À garder : proposé par l’IA.`
+              : t`À écarter : proposé par l’IA.`
+            : garde
+              ? t`À garder : proposé par l’application.`
+              : t`À écarter : proposé par l’application.`;
+  const effet = b.enAttente ? t`Clic : revenir à la proposition.` : garde ? t`Clic : l’écarter.` : o.seule && !o.valide ? t`Clic : la garder à la place des autres.` : t`Clic : la garder.`;
+  const lu = b.enAttente ? t`Activer pour revenir à la proposition.` : garde ? t`Activer pour l’écarter.` : t`Activer pour la garder.`;
+  const agir = o.agir;
+  return {
+    sort: b.sort,
+    origine: b.origine,
+    decide: b.decide,
+    mot: avec(mot),
+    motCourt: motCourt ? avec(motCourt) : undefined,
+    effet: agir ? (b.enAttente ? { icone: 'revenir', mot: t`Revenir à la proposition`, motCourt: t`Revenir` } : { icone: 'echanger', mot: garde ? t`Écarter` : t`Garder` }) : undefined,
+    bulle: agir ? `${etat}\n${effet}` : etat,
+    nom: agir ? `${o.place !== undefined ? `${nombre(o.place)} · ` : ''}${etat} ${lu}` : `${o.place !== undefined ? `${nombre(o.place)} · ` : ''}${etat}`,
+    basculer: agir
+      ? () =>
+          agir(() =>
+            b.enAttente
+              ? revenirProposition(s.plan, g, x.m.id, o.seule)
+              : // Groupe accepté (« Revoir ») : l'autre sort tout de suite, sans rouvrir le groupe (C-9.12).
+                o.valide
+                ? basculerAccepte(s.plan, g, x.m.id)
+                : // Choix de « Choisir avec l'IA » : une proposition ; le clic fixe l'autre sort, par vous.
+                  b.choixIA
+                  ? fixer(s.plan, g, x.m.id, !garde, o.seule)
+                  : choisirPhoto(s.plan, g, x.m.id, !garde && o.seule),
+          )
+      : undefined,
+  };
 }
 
 /**
  * Une photo : un clic la choisit (D101). Dans une rafale ou une même scène, sans « Garder plusieurs
  * photos », elle est choisie seule ; Ctrl+clic l'ajoute ou la retire sans toucher aux autres. Son état
- * est écrit dans la bande dessous, une remarque courte suit ; le reste est dans l'infobulle (C-9).
+ * est écrit dans le badge dessous, qui se clique (D112) ; une remarque courte suit ; le reste est dans
+ * l'infobulle (C-9). Le badge est à côté du bouton de la photo, jamais dedans.
  */
 function TuileDoublon({
   g,
@@ -820,18 +897,19 @@ function TuileDoublon({
   conseil: Conseil | undefined;
 }) {
   const { m, f, etat } = x;
-  const [classe, libelle] = libelleEtat(etat, valide);
   const garde = aGarder(etat);
   const geste = garde ? t`Cliquer pour l’écarter` : seule ? t`Cliquer pour garder celle-ci seule (Ctrl+clic : en plus)` : t`Cliquer pour la garder`;
-  // « 12 · À écarter » tient dans la bande, même à la plus petite taille (C-10.4).
-  const largeur = Math.max(cote, place !== undefined ? 116 : 0);
+  const badge = badgeDoublon(g, x, { valide, avis, place, seule, agir });
+  // « 12 · Gardée par vous » (ou « 12 · Gardée ») tient dans la bande, même à la plus petite taille (C-10.4).
+  const largeur = Math.max(cote, place !== undefined ? 128 : 0);
   return (
-    <div class="photo-doublon" style={{ width: `${largeur}px` }}>
+    <div class={`photo-doublon ${etat}`} style={{ width: `${largeur}px` }}>
       <button
         type="button"
-        class={`tuile-doublon ${classe}`}
+        class={`tuile-doublon ${etat}`}
+        data-id={m.id}
         aria-pressed={garde}
-        aria-label={place !== undefined ? `${nombre(place)} · ${libelle} · ${f.nom}` : `${libelle} · ${f.nom}`}
+        aria-label={`${badge.mot} · ${f.nom}`}
         title={[...lignesPhoto(g, x, c, avis, conseil), '', geste].join('\n')}
         onClick={(e) => agir(() => choisirPhoto(session.value!.plan, g, m.id, seule && !(e.ctrlKey || e.metaKey)))}
         onKeyDown={entreeRepetee}
@@ -839,8 +917,8 @@ function TuileDoublon({
         <span class="cadre-tuile" style={{ width: `${largeur}px`, height: `${cote}px` }}>
           <Miniature f={f} taille={cote} rotation={f.rotation} />
         </span>
-        <BandeEtat classe={classe} libelle={libelle} place={place} />
       </button>
+      <BandeBadge badge={badge} largeur={largeur} />
       <p class="remarque legende-doublon">
         <RemarqueDoublon g={g} x={x} c={c} avis={avis} conseil={conseil} />
       </p>
@@ -855,21 +933,23 @@ function TuileDoublon({
 function LigneExemplaire({ g, x, c, conseil, agir, valide }: { g: GroupeDoublons; x: PhotoDuGroupe; c: Comparaison; conseil?: Conseil; agir: (faire: () => Modification | null) => void; valide: boolean }) {
   const s = session.value!;
   const { m, f, etat } = x;
-  const [classe, libelle] = libelleEtat(etat, valide);
   const garde = aGarder(etat);
+  // Le badge sans clic : toute la ligne se choisit (É4), il n'y a qu'un geste.
+  const badge = badgeDoublon(g, x, { valide, seule: false });
   const detail = [f.nom, f.date ? dateHeure(f.date) : '', m.reduite ? t`copie réduite` : '', conseil?.id === m.id ? t(TEXTES_CONSEIL[conseil.pourquoi]) : ''].filter(Boolean);
   const remarque = c.remarques.get(m.id);
   return (
     <button
       type="button"
-      class={`tuile-doublon exemplaire ${classe}`}
+      class={`tuile-doublon exemplaire ${etat}`}
+      data-id={m.id}
       aria-pressed={garde}
-      aria-label={`${libelle} · ${dossierSource(f) || nomRacine(s.projet.mode === 'vrac')} · ${f.nom}`}
+      aria-label={`${badge.mot} · ${dossierSource(f) || nomRacine(s.projet.mode === 'vrac')} · ${f.nom}`}
       title={[...lignesPhoto(g, x, c, undefined, conseil), '', garde ? t`Cliquer pour l’écarter` : t`Cliquer pour garder cet exemplaire`].join('\n')}
       onClick={() => agir(() => choisirPhoto(s.plan, g, m.id, false))}
       onKeyDown={entreeRepetee}
     >
-      <BandeEtat classe={classe} libelle={libelle} />
+      <BandeBadge badge={badge} largeur={132} enLigne />
       <span class="texte-exemplaire">
         <span class="dossier-exemplaire">
           <Emplacement f={f} />
@@ -882,24 +962,6 @@ function LigneExemplaire({ g, x, c, conseil, agir, valide }: { g: GroupeDoublons
       </span>
       <span class="num poids-exemplaire">{texteTaille(f.taille)}</span>
     </button>
-  );
-}
-
-/** « Tout écarter » (et ce qui viendra) : le menu « Autres choix » d'un groupe, pour garder la ligne courte. */
-function AutresChoix({ children }: { children: ComponentChildren }) {
-  const [ouvert, basculer, zone] = useDeroulant();
-  return (
-    <div class="menu-portee autres-choix" ref={zone}>
-      <button type="button" aria-expanded={ouvert} aria-haspopup="true" onClick={() => basculer()}>
-        {t`Autres choix`}
-        <Icone nom={ouvert ? 'chevronHaut' : 'chevronBas'} taille={16} />
-      </button>
-      {ouvert && (
-        <div class="menu-deroulant menu-actions" onClick={(e) => (e.target as HTMLElement).closest('button:not(:disabled)') && basculer(false)}>
-          {children}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -930,7 +992,6 @@ function CarteGroupe({
   ouverte,
   avecJour,
   agir,
-  agirGroupe,
   accepterIci,
   rouvrir,
   replier,
@@ -944,6 +1005,7 @@ function CarteGroupe({
   fondu = false,
   toucher,
   suite,
+  puis,
 }: {
   g: GroupeDoublons;
   ouverte: boolean;
@@ -964,8 +1026,6 @@ function CarteGroupe({
   /** La section est un mois : la journée est dite devant l'heure. */
   avecJour: boolean;
   agir: (faire: () => Modification | null) => void;
-  /** Un geste sur tout le groupe, calculé seulement s'il passe la garde de 0,5 s (il modifie déjà le plan). */
-  agirGroupe: (faire: () => Modification | null, message: string) => void;
   /** « Accepter » du groupe (garde de 0,5 s comprise). */
   accepterIci: () => void;
   rouvrir: () => void;
@@ -974,6 +1034,8 @@ function CarteGroupe({
   toucher: () => void;
   /** Dernier groupe de la liste : le lien vers la section suivante à accepter. */
   suite?: ComponentChildren;
+  /** Dernier groupe à accepter de la section : « Accepter » ouvre ensuite la suivante, dont voici le nom (D112, Q2). */
+  puis?: string;
 }) {
   const s = session.value!;
   const plan = s.plan;
@@ -1050,9 +1112,7 @@ function CarteGroupe({
           {!compacte && t`Comparer en grand`}
         </button>
         {!valide ? (
-          <button type="button" class={`${prochaine ? 'principal' : 'contour'}${prochaine && fondu ? ' fondu' : ''}`} data-action="accepter" onClick={accepterIci} onKeyDown={entreeRepetee} aria-label={libelle.lecteur} title={t`Touche A`}>
-            {libelle.contenu}
-          </button>
+          <BoutonAccepter libelle={libelle} plein={prochaine} fondu={fondu} puis={puis} onClick={accepterIci} />
         ) : (
           <>
             {g.sorte === 'dossiers' && !ecartees ? (
@@ -1100,16 +1160,7 @@ function CarteGroupe({
       )}
       {nGarder === 0 && <p class="alerte-doublons">{alerteRienGarde()}</p>}
       <footer>
-        {unePhoto && photos.length > 1 && <CasePlusieurs g={g} photos={photos} plusieurs={plusieurs} changer={changerPlusieurs} />}
-        {/* Désactivés, ils disent pourquoi dans leur libellé (C-4.7). */}
-        <button type="button" disabled={gardees === photos.length} data-raison={gardees === photos.length ? 'libelle' : undefined} onClick={() => agirGroupe(() => garderTout(plan, [g]), t`Toutes les photos du groupe sont gardées.`)}>
-          {gardees === photos.length ? t`Tout est gardé` : t`Tout garder`}
-        </button>
-        <AutresChoix>
-          <button type="button" role="menuitem" disabled={ecartees === photos.length} data-raison={ecartees === photos.length ? 'libelle' : undefined} onClick={() => agirGroupe(() => ecarterTout(plan, [g]), texteEcartees(photos.length - ecartees))}>
-            {ecartees === photos.length ? t`Tout est écarté` : t`Tout écarter`}
-          </button>
-        </AutresChoix>
+        {unePhoto && photos.length > 1 && <CasePlusieurs g={g} photos={photos} plusieurs={plusieurs} changer={changerPlusieurs} agir={agir} />}
         {etat}
         {!copie && etoile && <span class="discret lieu-groupe">{lieuDe(s, etoile)}</span>}
         {suite && <span class="espace" />}
@@ -1132,7 +1183,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   // « Tous » allumé par défaut (C-4.8, choix de l'utilisateur du 27.10).
   const [filtre, setFiltre] = useState<Filtre>('tous');
   const [ordre, setOrdre] = useState<Ordre>('heure');
-  // Cartes repliées après « Accepter », « Tout garder »… ; et cartes déjà relues rouvertes (« Revoir »).
+  // Cartes repliées après « Accepter »… ; et cartes déjà relues rouvertes (« Revoir »).
   const [fermees, setFermees] = useState<ReadonlySet<string>>(new Set());
   const [rouvertes, setRouvertes] = useState<ReadonlySet<string>>(new Set());
   const [comparee, setComparee] = useState<string | null>(null);
@@ -1165,6 +1216,8 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   const defilementAppli = useRef(0);
   // Après « Accepter » : le plein suivant ignore les clics, A et Entrée 0,5 s (double-clic, A deux fois).
   const derniereAcceptation = useRef(-1e9);
+  // La section quittée par « Accepter → » sur son dernier groupe, et ce groupe : l'annulation y ramène.
+  const quittee = useRef<{ section: string; cle: string } | null>(null);
   const [fondu, setFondu] = useState(false);
   // À faire après le prochain rendu : montrer le plein (et lui rendre le focus s'il était dans la table).
   // `focus: 'garde'` : sur la photo gardée du groupe (à défaut la première), pas sur son plein (tour 3, usage B1).
@@ -1177,13 +1230,6 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
     groupes.map((g) => fichier(g.etoile)),
   );
   const copies = onglet === 'copies';
-  // « Grouper et classer » : ouvert d'office par dossier ou par taille ; il reste ouvert quand on revient à
-  // « par journée » (il ne se referme pas sous la souris), et se referme ou s'ouvre à la main.
-  const groupementVoulu = groupement === 'dossier' || ordre !== 'heure';
-  const [grouperOuvert, setGrouperOuvert] = useState(groupementVoulu);
-  useEffect(() => {
-    if (groupementVoulu) setGrouperOuvert(true);
-  }, [groupementVoulu]);
   // Une photo dans plusieurs dossiers gardés : rien à relire, tout est gardé ; elle se montre sous les groupes
   // à relire de la section, quel que soit le filtre, pour qu'on puisse en écarter un exemplaire (D86).
   const partout = (g: GroupeDoublons) => g.sorte === 'dossiers';
@@ -1208,7 +1254,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   const signature = groupes.map((g) => g.cle).join('|');
   // Instantané des groupes montrés, figé tant qu'on reste sur cette section et ce filtre : un clic sur une photo
   // ne fait rien disparaître (D71). Les groupes déjà relus à l'arrivée sont repliés ; un groupe validé (Accepter,
-  // Tout garder, Tout écarter, Replier) se replie à sa place, avec tous les filtres (D100 levée le 27.10 :
+  // « Garder tous les exemplaires », Replier) se replie à sa place, avec tous les filtres (D100 levée le 27.10 :
   // « il reste visible, replié ») ; « Annuler » le rouvre.
   const montres = useMemo(
     () => new Set(elements.filter((e) => e.section === section?.cle && (filtre === 'tous' || partout(e.g) || (filtre === 'a_relire') === e.relire)).map((e) => e.g.cle)),
@@ -1217,8 +1263,9 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   const relusAuDepart = useMemo(() => new Set(elements.filter((e) => e.section === section?.cle && !e.relire && !partout(e.g)).map((e) => e.g.cle)), [section?.cle, signature]);
   const parDate = (a: (typeof elements)[number], b: (typeof elements)[number]) => (a.date ?? '').localeCompare(b.date ?? '') || a.g.cle.localeCompare(b.g.cle);
   const dansOrdre = (a: (typeof elements)[number], b: (typeof elements)[number]) => Number(partout(a.g)) - Number(partout(b.g)) || (ordre === 'taille' ? b.g.membres.length - a.g.membres.length || parDate(a, b) : parDate(a, b));
-  // Tous les groupes de la section dans l'ordre affiché, cachés compris (pour trouver le suivant d'un groupe qui vient de s'en aller).
-  const ordonnes = elements.filter((e) => e.section === section?.cle).sort(dansOrdre);
+  // Tous les groupes d'une section dans l'ordre affiché, cachés compris (pour trouver le suivant d'un groupe qui vient de s'en aller).
+  const ordonnesDe = (cle: string | undefined) => elements.filter((e) => e.section === cle).sort(dansOrdre);
+  const ordonnes = ordonnesDe(section?.cle);
   const visibles = ordonnes.filter((e) => montres.has(e.g.cle));
   const iPartout = visibles.findIndex((e) => partout(e.g));
   const enAttente = visibles.filter((e) => aRelire(e.g, fichier)).map((e) => e.g);
@@ -1247,7 +1294,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
     .join(' · ');
 
   /**
-   * Après une action sur tout un groupe (Accepter, Tout garder, Tout écarter, la section, l'onglet) : la carte se
+   * Après une action sur tout un groupe (Accepter, la section, l'onglet, « Garder tous les exemplaires ») : la carte se
    * replie à sa place (avec tous les filtres), le groupe suivant à accepter prend le plein et vient en haut de la
    * zone. Toutes passent par la garde de 0,5 s : le groupe suivant arrive au même y, son bouton est sous la souris
    * (double-clic sur « Tout garder », tour 3 du lot 4, critique T1). Le geste n'est calculé qu'après la garde : il
@@ -1261,6 +1308,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
     const m = faire();
     if (!m) return false;
     derniereAcceptation.current = performance.now();
+    quittee.current = null;
     appliquer(m);
     setFermees(new Set([...fermees, ...cles]));
     setRouvertes(new Set([...rouvertes].filter((c) => !cles.includes(c))));
@@ -1270,12 +1318,25 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
     apres.current = { montrer: 'plein', focus: dedans ? 'garde' : undefined, enHaut: true };
     return true;
   };
-  /** « Accepter » d'un groupe : ignoré 0,5 s après une acceptation (un double-clic, A deux fois). */
-  const accepterGroupe = (g: GroupeDoublons) => {
+  // Prochaine section qui reste à accepter, après celle-ci (sinon la première).
+  const iSection = section ? liste.indexOf(section) : -1;
+  const suite = [...liste.slice(iSection + 1), ...liste.slice(0, Math.max(0, iSection))].find((x) => x.aRelire > 0);
+  /**
+   * « Accepter » d'un groupe : ignoré 0,5 s après une acceptation (un double-clic, A deux fois). `ouvrirSuite` :
+   * sur le dernier groupe à accepter de la section, la section suivante s'ouvre (D112, question 2 : un geste au lieu
+   * de deux, le sens de la flèche) ; pas depuis « Comparer en grand », qui passe au groupe suivant de sa liste.
+   */
+  const accepterGroupe = (g: GroupeDoublons, ouvrirSuite = false) => {
     // Compté avant le geste : `accepter` modifie déjà le plan (tour 2 du lot 4, « 0 photo écartée »).
     const n = aEcarter(g, fichier).length;
+    const dernier = enAttente.every((x) => x.cle === g.cle);
     if (!agirGroupe([g.cle], () => accepter(plan, [g]), texteEcartees(n))) return false;
     setFondu(true);
+    if (ouvrirSuite && dernier && suite && section) {
+      // Ctrl+Z ou « Annuler » ramènera dans cette section, sur ce groupe (effet ci-dessous).
+      quittee.current = { section: section.cle, cle: g.cle };
+      choisir(suite.cle);
+    }
     return true;
   };
   useEffect(() => {
@@ -1290,20 +1351,46 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   };
   // Valider la section : les groupes où au moins une photo est choisie ; on dit combien n'ont pas été touchés (D101).
   const validables = acceptablesSansVider(enAttente, fichier);
-  const sansChoix = validables.filter((g) => !choixEnAttente(g, fichier)).length;
-  const accepterSection = () => {
-    const acceptes = validables;
+  const sansChoix = validables.filter((g) => !choixEnAttente(g, fichier, true)).length;
+  /**
+   * Accepter plusieurs groupes d'un coup (la section, ou toutes les copies) : une petite fenêtre dit d'abord combien
+   * de photos seront écartées, et dans combien de groupes rien n'a été choisi (D112 ; règle d'or 3 : on accepte
+   * en sachant ce qui part). `libelle` : le mot du bouton, repris par la fenêtre (« Accepter les 8 propositions »).
+   */
+  const accepterPlusieurs = async (acceptes: GroupeDoublons[], libelle?: string) => {
+    if (!acceptes.length) return;
     const n = acceptes.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
+    // Les photos écartées dans des groupes où rien n'a été choisi : la proposition, acceptée sans avoir été regardée.
+    const sansRegard = acceptes.filter((g) => !choixEnAttente(g, fichier, true)).reduce((a, g) => a + aEcarter(g, fichier).length, 0);
+    const nom = libelle ?? (acceptes.length === 1 ? t`Accepter 1 groupe` : t`Accepter les ${nombre(acceptes.length)} groupes`);
+    const texte = [
+      !n
+        ? t`Aucune photo ne sera écartée.`
+        : sansRegard === n
+          ? n === 1
+            ? t`1 photo sera écartée, dans un groupe où vous n’avez rien choisi.`
+            : t`${nombre(n)} photos seront écartées, toutes dans des groupes où vous n’avez rien choisi.`
+          : sansRegard
+            ? t`${pluriel(n, 'photo sera écartée', 'photos seront écartées')}, dont ${nombre(sansRegard)} dans des groupes où vous n’avez rien choisi.`
+            : `${pluriel(n, 'photo sera écartée', 'photos seront écartées')}.`,
+      n ? t`Rien n’est supprimé : elles iront dans « Mis de côté ».` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    if (!(await confirmer(t`${nom} ?`, texte, nom))) return;
     agirGroupe(
       acceptes.map((g) => g.cle),
       () => accepter(plan, acceptes),
       texteEcartees(n),
     );
   };
+  const accepterSection = () => void accepterPlusieurs(validables);
 
   // Une annulation qui rouvre un groupe de la page (Ctrl+Z, « Annuler » de l'en-tête ou du message) lui rend le
   // plein et le montre en haut de la zone, comme après « Accepter » : A vise alors ce groupe, pas le suivant qu'on
   // ne voit plus (tour 3 du lot 4, usage M1, novice M-T3-1). Avant l'effet « après le rendu » ci-dessous.
+  // « Accepter → » sur le dernier groupe a ouvert la section suivante : l'annulation qui rouvre ce groupe ramène dans
+  // la section quittée, où il prend le plein (sinon la page resterait sur la suivante, et A viserait un autre groupe).
   const nAnnulations = annulations.value;
   const aAccepterIci = visibles.filter((e) => aRelire(e.g, fichier)).map((e) => e.g.cle);
   const vusAvant = useRef({ n: nAnnulations, cles: new Set(aAccepterIci) });
@@ -1311,6 +1398,16 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
     const avant = vusAvant.current;
     vusAvant.current = { n: nAnnulations, cles: new Set(aAccepterIci) };
     if (avant.n === nAnnulations) return;
+    const q = quittee.current;
+    const gq = q && groupes.find((x) => x.cle === q.cle);
+    if (q && gq && q.section !== section?.cle && aRelire(gq, fichier) && liste.some((x) => x.cle === q.section)) {
+      quittee.current = null;
+      enCoursRef.current = q.cle;
+      setEnCours(q.cle);
+      choisirSection(q.section);
+      apres.current = { montrer: q.cle, enHaut: true, focus: zone.current?.contains(document.activeElement) ? 'garde' : undefined };
+      return;
+    }
     const rouvert = aAccepterIci.find((c) => !avant.cles.has(c));
     if (!rouvert) return;
     const dedans = !!zone.current?.contains(document.activeElement);
@@ -1339,7 +1436,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
       // Après « Accepter », la photo gardée du groupe suivant se voit avec sa bande, même au fond d'une grande rafale
       // (l'en-tête du groupe reste collé en haut, avec son plein ; C-7.1 ter, tour 2 du lot 4).
       if (a.enHaut) {
-        const garde = [...article.querySelectorAll('.bande-etat.choisie, .bande-etat.gardee')].find((b) => !b.closest('[data-action=accepter]'));
+        const garde = article.querySelector('.bande-etat[data-sort=garder]');
         const q = garde?.getBoundingClientRect();
         if (q && q.bottom > bas + 1) {
           const d = q.bottom - bas + 4;
@@ -1392,7 +1489,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
       }
       const articles = [...z.querySelectorAll<HTMLElement>('article.carte-doublons')].filter((a) => a.querySelector(':scope > header [data-action=accepter]'));
       const enteteVue = (a: HTMLElement) => entier(a.querySelector(':scope > header [data-action=accepter]'), haut, bas);
-      const gardeeVue = (a: HTMLElement) => [...a.querySelectorAll('.bande-etat.choisie, .bande-etat.gardee')].some((b) => entier(b, hb, bas));
+      const gardeeVue = (a: HTMLElement) => [...a.querySelectorAll('.bande-etat[data-sort=garder]')].some((b) => entier(b, hb, bas));
       const choix = articles.find((a) => enteteVue(a) && gardeeVue(a)) ?? articles.find(enteteVue);
       const cle = choix?.dataset.cle;
       if (cle && cle !== enCoursRef.current) {
@@ -1418,11 +1515,47 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   // n'accepte qu'une fois, et pas dans les 0,5 s qui suivent une acceptation.
   const nav = useRef({ liste, section, choisir });
   nav.current = { liste, section, choisir };
+  // Gestes du clavier sur un groupe (D112) : Ctrl+A choisit toutes les photos du groupe en cours (comme « toutes »),
+  // G et X fixent le sort de la photo qui a le focus, par vous. Relus à chaque rendu par l'écouteur, créé une fois.
+  const gestes = useRef({ toutes: (_cle: string) => {}, fixer: (_cle: string, _id: string, _garder: boolean) => {} });
+  gestes.current = {
+    toutes: (cle) => {
+      const g = groupes.find((x) => x.cle === cle);
+      if (!g || performance.now() - derniereAcceptation.current < 500) return;
+      // Les copies n'ont pas de case « Garder plusieurs photos » : Ctrl+A le dit au lieu de ne rien faire.
+      if (g.sorte !== 'rafales' && g.sorte !== 'ia') {
+        notifier('info', t`Ctrl+A choisit toutes les photos d’une rafale ou d’une même scène. Pour les copies, cliquez sur chaque exemplaire à garder.`);
+        return;
+      }
+      setPlusieurs((p) => (p.has(cle) ? p : new Set([...p, cle])));
+      // Groupe accepté : les photos écartées reviennent tout de suite, sans le rouvrir (C-9.12).
+      const accepte = !aRelire(g, fichier);
+      const m = choisirTous(plan, g, true);
+      if (!m) return;
+      appliquer(m);
+      notifier('ok', accepte ? t`Toutes les photos du groupe sont gardées.` : t`Toutes les photos du groupe sont choisies : « Accepter » les garde.`, { libelle: t`Annuler`, faire: annuler });
+    },
+    fixer: (cle, id, garder) => {
+      const g = groupes.find((x) => x.cle === cle);
+      if (!g || performance.now() - derniereAcceptation.current < 500) return;
+      appliquer(fixer(plan, g, id, garder, uneSeule(g)));
+    },
+  };
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || estChampDeSaisie(e) || e.ctrlKey || e.metaKey || e.altKey || document.querySelector('[role="dialog"], .comparateur')) return;
+      if (e.defaultPrevented || estChampDeSaisie(e) || e.altKey || document.querySelector('[role="dialog"], .comparateur')) return;
       const conteneur = zone.current;
       if (!conteneur) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !e.shiftKey) {
+        // Le groupe qui a le focus, sinon celui du plein ; jamais sous un menu ou la liste ouverte en menu.
+        if (document.querySelector('.menu-deroulant, .page-cadre[data-palier][data-liste="ouverte"]')) return;
+        const actif = document.activeElement instanceof HTMLElement && conteneur.contains(document.activeElement) ? document.activeElement : null;
+        const carte = actif?.closest<HTMLElement>('article.carte-doublons') ?? conteneur.querySelector<HTMLElement>(PLEIN)?.closest<HTMLElement>('article.carte-doublons');
+        e.preventDefault();
+        if (carte?.dataset.cle) gestes.current.toutes(carte.dataset.cle);
+        return;
+      }
+      if (e.ctrlKey || e.metaKey) return;
       const k = e.key.toLowerCase();
       if (k === 'a' || k === 'c') {
         // Ni dans un menu ouvert, ni sous la liste de gauche ouverte en menu au palier (elle cache le groupe du plein).
@@ -1454,7 +1587,8 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
         const tuiles = [...carte.querySelectorAll<HTMLElement>('.tuile-doublon')];
         const j = tuiles.indexOf(actif) + (e.key === 'ArrowRight' ? 1 : -1);
         tuiles[(j + tuiles.length) % tuiles.length]?.focus();
-      } else if (k === 'n') voisine(1);
+      } else if ((k === 'g' || k === 'x') && carte?.dataset.cle && actif?.dataset.id) gestes.current.fixer(carte.dataset.cle, actif.dataset.id, k === 'g');
+      else if (k === 'n') voisine(1);
       else if (k === 'p') voisine(-1);
       else return;
       e.preventDefault();
@@ -1468,15 +1602,14 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   // accepté (replié à sa place) n'y est plus : « Groupe k sur N » compte les groupes encore à accepter de l'instantané.
   const navigables = filtre === 'a_relire' ? visibles.filter((e) => !(fermees.has(e.g.cle) && !aRelire(e.g, fichier))) : visibles;
   const iComparee = navigables.findIndex((e) => e.g.cle === comparee);
-  // Prochaine section qui reste à relire, après celle-ci (sinon la première).
-  const iSection = section ? liste.indexOf(section) : -1;
-  const suite = [...liste.slice(iSection + 1), ...liste.slice(0, Math.max(0, iSection))].find((x) => x.aRelire > 0);
   // Le groupe comparé reste ouvert même s'il quitte la liste (relu par une touche, avec « À relire ») (D100).
   const gComparee = navigables[iComparee]?.g ?? groupes.find((g) => g.cle === comparee);
   // « Accepter » de la vue en grand : le même libellé que sur la carte du groupe.
   const photosComparee = gComparee ? ordonner(photosDuGroupe(gComparee, fichier)) : [];
   const nGarderComparee = photosComparee.filter((x) => aGarder(x.etat)).length;
   const libelleComparee = gComparee ? libelleAccepter(gComparee, photosComparee) : null;
+  // Le groupe comparé est le dernier à accepter de la section : « Accepter → » ouvrira la suivante.
+  const dernierComparee = !!gComparee && enAttente.every((g) => g.cle === gComparee.cle);
   // Un seul bouton plein (C-4.1) : « Accepter » du groupe en cours s'il reste à accepter, sinon du suivant à
   // accepter dans la liste, sinon du premier. Le groupe en cours peut avoir quitté la liste (accepté, avec
   // « À accepter ») : on part de sa place, pas du début.
@@ -1494,7 +1627,14 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
     apres.current = reste ? { montrer: cle, focus: cle === ouvreur ? 'comparer' : 'plein' } : { montrer: 'plein', focus: 'plein' };
   };
 
-  const photosOnglet = enAttenteOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  // « Accepter les N propositions » : les groupes où au moins un exemplaire reste gardé (les autres restent à voir).
+  const acceptablesOnglet = acceptablesSansVider(enAttenteOnglet, fichier);
+  const photosOnglet = acceptablesOnglet.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  const libelleAccepterOnglet = !acceptablesOnglet.length
+    ? t`Accepter : aucun exemplaire gardé dans ces groupes`
+    : acceptablesOnglet.length === 1
+      ? t`Accepter la proposition`
+      : t`Accepter les ${nombre(acceptablesOnglet.length)} propositions`;
   // L'IA de la section : seulement si elle ne couvre pas déjà tout l'onglet (le menu de l'onglet suffit).
   const ciblesOnglet = onglet === 'rafales' ? ciblesIA(s, groupes) : [];
   const ciblesSectionBrutes = onglet === 'rafales' ? ciblesIA(s, enAttente) : [];
@@ -1502,59 +1642,62 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   const ceci = section?.cle.startsWith('jour:') ? t`de cette journée` : section?.cle.startsWith('mois:') ? t`de ce mois` : section && estDossier(section) ? t`de ce dossier` : t`ci-dessous`;
   const finie = enAttente.length === 0;
 
-  // Barre d'outils : les onglets, puis ce qui touche tout l'onglet, dans un menu nommé (portée dite, D98).
+  // Barre d'outils : les onglets, puis ce qui touche tout l'onglet, écrit en clair avec sa portée (D98 ; D112 : plus
+  // de menu déroulant, le prix de l'IA se lit sur son bouton).
   const porteeOnglet =
     copies && enAttenteOnglet.length > 0 ? (
       <span class="rangee-onglet" title={total ? t`Acceptés : ${nombre(relus)} sur ${nombre(total)}` : undefined}>
-        <MenuPortee libelle={t`Toutes les copies`}>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() =>
-              agirGroupe(
-                acceptablesSansVider(enAttenteOnglet, fichier).map((g) => g.cle),
-                () => accepter(plan, acceptablesSansVider(enAttenteOnglet, fichier)),
-                texteEcartees(photosOnglet),
-              )
-            }
-          >
-            {enAttenteOnglet.length === 1 ? t`Accepter la proposition` : t`Accepter les ${nombre(enAttenteOnglet.length)} propositions`}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() =>
-              agirGroupe(
-                enAttenteOnglet.map((g) => g.cle),
-                () => garderTout(plan, enAttenteOnglet),
-                t`Tous les exemplaires sont gardés.`,
-              )
-            }
-          >
-            {t`Garder tous les exemplaires`}
-          </button>
-        </MenuPortee>
+        <button
+          type="button"
+          class="contour"
+          data-action="accepter-onglet"
+          onClick={() => void accepterPlusieurs(acceptablesOnglet, libelleAccepterOnglet)}
+          disabled={!acceptablesOnglet.length}
+          data-raison={acceptablesOnglet.length ? undefined : 'libelle'}
+          title={acceptablesOnglet.length ? t`${pluriel(photosOnglet, 'exemplaire écarté', 'exemplaires écartés')} ; une fenêtre le redit avant d’accepter` : undefined}
+        >
+          {libelleAccepterOnglet}
+        </button>
+        <button
+          type="button"
+          class="contour"
+          onClick={() =>
+            agirGroupe(
+              enAttenteOnglet.map((g) => g.cle),
+              () => garderTout(plan, enAttenteOnglet),
+              t`Tous les exemplaires sont gardés.`,
+            )
+          }
+        >
+          {t`Garder tous les exemplaires`}
+        </button>
       </span>
     ) : onglet === 'rafales' && (ciblesOnglet.length > 0 || iaRafales.value) ? (
       <span class="rangee-onglet" title={total ? t`Acceptés : ${nombre(relus)} sur ${nombre(total)}` : undefined}>
-        <MenuPortee libelle={t`Toutes les rafales`} ia>
-          <BoutonIARafales cibles={ciblesOnglet} libelle={t`Choisir avec l’IA dans ${pluriel(ciblesOnglet.length, 'rafale')}`} />
-        </MenuPortee>
+        <BoutonIARafales cibles={ciblesOnglet} libelle={t`Choisir avec l’IA dans ${pluriel(ciblesOnglet.length, 'rafale')}`} />
       </span>
     ) : null;
-  // Tête de la table : ce qui touche la section (« Cette journée ▾ »), et le plein « Journée suivante » quand elle est finie.
-  const menuSection =
-    section && (boutonSection || ciblesSection.length > 0) ? (
-      <MenuPortee libelle={porteeSection(section)} ia={ciblesSection.length > 0}>
-        {ciblesSection.length > 0 && <BoutonIARafales cibles={ciblesSection} libelle={t`Choisir avec l’IA ${ceci}`} />}
-        {boutonSection && (
-          <button type="button" role="menuitem" onClick={accepterSection} disabled={!validables.length} data-raison={validables.length ? undefined : 'libelle'}>
-            {validables.length ? t`Accepter les ${nombre(validables.length)} groupes ${ceci}` : t`Accepter : aucune photo choisie dans ces groupes`}
-            {validables.length > 0 && sansChoix > 0 && <span class="discret">{t`dont ${nombre(sansChoix)} où vous n’avez rien choisi`}</span>}
-          </button>
-        )}
-      </MenuPortee>
-    ) : null;
+  // Tête de la table : ce qui touche la section, en clair (« Accepter les 7 groupes », « Choisir avec l'IA dans ce
+  // mois »), à gauche, juste après le compte ; le plein « Journée suivante » quand elle est finie.
+  const boutonsSection = section && (boutonSection || ciblesSection.length > 0) && (
+    <>
+      {boutonSection && (
+        <button
+          type="button"
+          class="contour"
+          data-action="accepter-section"
+          onClick={accepterSection}
+          disabled={!validables.length}
+          data-raison={validables.length ? undefined : 'libelle'}
+          title={validables.length && sansChoix > 0 ? t`Dont ${nombre(sansChoix)} où vous n’avez rien choisi` : undefined}
+        >
+          {validables.length ? t`Accepter les ${nombre(validables.length)} groupes` : t`Accepter : aucune photo choisie dans ces groupes`}
+        </button>
+      )}
+      {/* Court dans la tête : le titre de la section dit déjà la portée (il ne se coupe pas, C-10.4). */}
+      {ciblesSection.length > 0 && <BoutonIARafales cibles={ciblesSection} libelle={t`Choisir avec l’IA`} portee={ceci} />}
+    </>
+  );
 
   return (
     <>
@@ -1571,37 +1714,29 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
             choisir={choisir}
             outils={
               <>
-                <div class="ligne-outil">
-                  <span class="discret">{t`Afficher`}</span>
-                  <div class="choix-segmente" role="radiogroup" aria-label={t`Groupes affichés`}>
-                    {(
-                      [
-                        ['a_relire', t`À accepter`],
-                        ['relus', t`Acceptés`],
-                        ['tous', t`Tous`],
-                      ] as const
-                    ).map(([v, libelle]) => (
-                      <button key={v} type="button" role="radio" aria-checked={filtre === v} onClick={() => setFiltre(v)}>
-                        {libelle}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Repliés (maquette v2) : la liste montre plus de journées ; ouverts d'office par dossier ou par taille. */}
-                <details class="grouper-classer" open={grouperOuvert} onToggle={(e) => setGrouperOuvert(e.currentTarget.open)}>
-                  <summary class="discret">{t`Grouper et classer`}</summary>
-                  {/* Le contenu dans sa propre grille : un <details> ne range pas ses enfants (tour 2 du lot 4). */}
-                  <div class="contenu-grouper">
-                    <ChoixGroupement valeur={groupement} choisir={choisirGroupement} />
-                    <label class="discret">
-                      {t`Classer`}{' '}
-                      <select value={ordre} onChange={(e) => setOrdre(e.currentTarget.value as Ordre)}>
-                        <option value="heure">{t`par heure`}</option>
-                        <option value="taille">{t`les plus grands groupes d’abord`}</option>
-                      </select>
-                    </label>
-                  </div>
-                </details>
+                <ChoixSegmente
+                  mot={t`Afficher`}
+                  nom={t`Groupes affichés`}
+                  valeur={filtre}
+                  choix={[
+                    ['a_relire', t`À accepter`],
+                    ['relus', t`Acceptés`],
+                    ['tous', t`Tous`],
+                  ]}
+                  choisir={setFiltre}
+                />
+                {/* Grouper et Classer en boutons visibles (D112 : plus de menu déroulant ni de réglage replié). */}
+                <ChoixGroupement valeur={groupement} choisir={choisirGroupement} />
+                <ChoixSegmente
+                  mot={t`Classer`}
+                  nom={t`Classer`}
+                  valeur={ordre}
+                  choix={[
+                    ['heure', t`Heure`],
+                    ['taille', t`Plus grands d’abord`],
+                  ]}
+                  choisir={setOrdre}
+                />
               </>
             }
           />
@@ -1610,8 +1745,8 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
         tete={
           <>
             {section && <TeteSection section={section} detail={detail} />}
+            {boutonsSection}
             <span class="espace" />
-            {menuSection}
             {finie && suite && (
               <button type="button" class="principal" data-action="journee-suivante" onClick={() => choisir(suite.cle)}>
                 {libelleSuite(suite)}
@@ -1661,8 +1796,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
                 if (performance.now() - derniereAcceptation.current < 500) return;
                 appliquer(faire());
               }}
-              agirGroupe={(faire, message) => agirGroupe([g.cle], faire, message)}
-              accepterIci={() => accepterGroupe(g)}
+              accepterIci={() => accepterGroupe(g, true)}
               rouvrir={() => {
                 // Le second clic d'un double-clic sur « Accepter » ne rouvre pas le groupe (proposition, avocat N1).
                 if (performance.now() - derniereAcceptation.current < 500) return;
@@ -1679,6 +1813,7 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
               compacte={compacte}
               fondu={fondu}
               suite={i === visibles.length - 1 && suite && !finie ? <LienSuite suite={suite} choisir={choisir} /> : undefined}
+              puis={suite && enAttente.length === 1 && enAttente[0].cle === g.cle ? suite.nom : undefined}
             />,
           ])}
         </div>
@@ -1702,11 +1837,15 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
             suivant: iComparee < navigables.length - 1 ? () => setComparee(navigables[iComparee + 1].g.cle) : undefined,
             accepter: aRelire(gComparee, fichier)
               ? () => {
-                  if (accepterGroupe(gComparee)) setComparee(navigables[iComparee + 1]?.g.cle ?? null);
+                  // Dernier groupe à accepter de la section : le premier groupe à accepter de la suivante (É14 b) ;
+                  // sinon le groupe d'après dans la liste.
+                  const versSuite = dernierComparee && suite ? suite : undefined;
+                  const suivant = versSuite ? ordonnesDe(versSuite.cle).find((e) => e.relire)?.g.cle : navigables[iComparee + 1]?.g.cle;
+                  if (accepterGroupe(gComparee, !!versSuite)) setComparee(suivant ?? null);
                 }
               : undefined,
-            // Le même libellé, vignette comprise, et la même alerte que sur la carte du groupe (É9).
-            libelleAccepter: libelleComparee?.contenu,
+            // Le même texte gris et la même alerte que sur la carte du groupe (D112).
+            ditAccepter: libelleComparee ? (dernierComparee && suite ? t`${libelleComparee.court} · puis ${suite.nom}` : libelleComparee.court) : undefined,
             lecteurAccepter: libelleComparee?.lecteur,
             alerte: nGarderComparee === 0 ? alerteRienGarde() : undefined,
           }}
@@ -1716,24 +1855,46 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
   );
 }
 
-/** « Garder plusieurs photos » d'une rafale ou d'une même scène (D101) : cochée d'office dès deux photos choisies. */
-function CasePlusieurs({ g, photos, plusieurs, changer }: { g: GroupeDoublons; photos: PhotoDuGroupe[]; plusieurs: boolean; changer: (oui: boolean) => void }) {
+/**
+ * « Garder plusieurs photos » d'une rafale ou d'une même scène (D101) : cochée d'office dès deux photos choisies.
+ * Cochée, elle montre « choisir : toutes · aucune » (D112, question 3 : à la place de « Tout garder » et « Tout
+ * écarter ») ; Ctrl+A fait « toutes » dans le groupe en cours. Des choix en attente : « Accepter » les applique.
+ */
+function CasePlusieurs({ g, photos, plusieurs, changer, agir }: { g: GroupeDoublons; photos: PhotoDuGroupe[]; plusieurs: boolean; changer: (oui: boolean) => void; agir?: (faire: () => Modification | null) => void }) {
   const nGarder = photos.filter((x) => aGarder(x.etat)).length;
+  const cochee = plusieurs || nGarder >= 2;
+  const faire = agir ?? ((f: () => Modification | null) => appliquer(f()));
+  // Groupe accepté (« Revoir ») : « toutes » et « aucune » agissent tout de suite, sans le rouvrir (C-9.12).
+  const accepte = !photos.some((x) => x.etat === 'a_ecarter' || x.etat === 'choisie');
   return (
-    <label class="plusieurs-photos">
-      <input
-        type="checkbox"
-        checked={plusieurs || nGarder >= 2}
-        onChange={(e) => {
-          const oui = e.currentTarget.checked;
-          changer(oui);
-          // Décocher : seule la première photo choisie reste à garder (la photo proposée si elle l'est).
-          const premiere = photos.find((x) => x.m.id === g.etoile && aGarder(x.etat)) ?? photos.find((x) => aGarder(x.etat));
-          if (!oui && nGarder >= 2 && premiere) appliquer(choisirPhoto(session.value!.plan, g, premiere.m.id, true));
-        }}
-      />{' '}
-      {t`Garder plusieurs photos`}
-    </label>
+    <span class="plusieurs-photos">
+      <label>
+        <input
+          type="checkbox"
+          checked={cochee}
+          onChange={(e) => {
+            const oui = e.currentTarget.checked;
+            changer(oui);
+            // Décocher : seule la première photo choisie reste à garder (la photo proposée si elle l'est).
+            const premiere = photos.find((x) => x.m.id === g.etoile && aGarder(x.etat)) ?? photos.find((x) => aGarder(x.etat));
+            if (!oui && nGarder >= 2 && premiere) appliquer(choisirPhoto(session.value!.plan, g, premiere.m.id, true));
+          }}
+        />{' '}
+        {t`Garder plusieurs photos`}
+      </label>
+      {cochee && (
+        <span class="toutes-aucune">
+          {t`choisir :`}{' '}
+          <button type="button" class="lien" data-action="toutes" title={accepte ? t`Garder toutes les photos du groupe, tout de suite (Ctrl+A)` : t`Choisir toutes les photos du groupe (Ctrl+A) ; « Accepter » les garde`} onClick={() => faire(() => choisirTous(session.value!.plan, g, true))}>
+            {t`toutes`}
+          </button>
+          {' · '}
+          <button type="button" class="lien" data-action="aucune" title={accepte ? t`Écarter toutes les photos du groupe, tout de suite (rien n’est supprimé)` : t`N’en choisir aucune ; « Accepter » écarterait tout le groupe`} onClick={() => faire(() => choisirTous(session.value!.plan, g, false))}>
+            {t`aucune`}
+          </button>
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -1794,9 +1955,11 @@ function ComparerGroupe({
       conseillee={conseil?.id ?? comparaison.plusNette ?? photos.find((x) => aGarder(x.etat))?.f.id}
       suivre={avis?.meilleure}
       etat={(f) => {
-        const [classe, libelle] = libelleEtat(de(f).etat, valide);
-        return { classe, libelle, icone: aGarder(de(f).etat) ? 'coche' : 'croix' };
+        const x = de(f);
+        return { classe: x.etat, libelle: motEtat(x.etat, valide), icone: aGarder(x.etat) ? 'coche' : 'croix' };
       }}
+      // La même bande que sur la page (D112), qui se clique de même ; le numéro de la photo est sur sa ligne.
+      badge={(f) => badgeDoublon(g, de(f), { valide, avis, seule: uneSeule, agir: (faire) => appliquer(faire()) })}
       choix={(f, vertical) => {
         const x = de(f);
         const garde = aGarder(x.etat);
@@ -1805,11 +1968,11 @@ function ComparerGroupe({
           <>
             <button type="button" class={`garder${garde ? ' on' : ''}`} aria-pressed={garde} onClick={() => !garde && appliquer(choisirPhoto(plan, g, f.id, uneSeule))} title={uneSeule ? t`Garder celle-ci seule : les autres passent à écarter (touche ${photos.indexOf(x) + 1})` : t`Touche ${photos.indexOf(x) + 1}`}>
               <Icone nom="coche" taille={vertical ? 20 : 16} />
-              {x.etat === 'gardee' && valide ? t`Gardée` : t`À garder`}
+              {t`Garder`}
             </button>
             <button type="button" class={`ecarter${garde ? '' : ' on'}`} aria-pressed={!garde} onClick={() => garde && appliquer(choisirPhoto(plan, g, f.id, false))} title={t`Touche ${photos.indexOf(x) + 1}`}>
               <Icone nom="croix" taille={vertical ? 20 : 16} />
-              {x.etat === 'ecartee' ? t`Écartée` : t`À écarter`}
+              {t`Écarter`}
             </button>
           </>
         );
@@ -1860,6 +2023,37 @@ function ComparerGroupe({
 // Onglet « Mis de côté »
 // ---------------------------------------------------------------------------
 
+/**
+ * Le badge d'une photo de l'onglet « Écartées » (D112) : écartée, en plein, avec l'icône de qui l'a décidé (✕ le
+ * groupe accepté, ✦ l'IA, la punaise vous, « Écartée avant » les anciens scripts : la règle de « Mis de côté »,
+ * `origineMisDeCote`) ; gardée de nouveau, « Gardée par vous ». Un clic la remet, un second l'écarte de nouveau (le
+ * geste de la photo).
+ */
+function badgeEcartee(f: FichierPlan, basculer: () => void): DescriptionBadge {
+  const ecartee = f.statut === 'mis_de_cote';
+  const origine = ecartee ? origineMisDeCote(f).origine : 'vous';
+  const etat = !ecartee
+    ? t`Gardée par vous : elle revient à sa place.`
+    : origine === 'avant'
+      ? t`Écartée avant : déjà écartée avant l’application.`
+      : origine === 'vous'
+        ? t`Écartée par vous : dans « Mis de côté ».`
+        : origine === 'ia'
+          ? t`Écartée : proposition de l’IA acceptée, dans « Mis de côté ».`
+          : t`Écartée : groupe accepté, dans « Mis de côté ».`;
+  const effet = ecartee ? t`Clic : la remettre à sa place.` : t`Clic : l’écarter de nouveau.`;
+  return {
+    sort: ecartee ? 'ecarter' : 'garder',
+    origine,
+    decide: true,
+    ...(origine === 'vous' ? (ecartee ? { mot: t`Écartée par vous`, motCourt: t`Écartée` } : { mot: t`Gardée par vous`, motCourt: t`Gardée` }) : origine === 'avant' ? { mot: t`Écartée avant` } : { mot: t`Écartée` }),
+    effet: { icone: 'echanger', mot: ecartee ? t`Remettre` : t`Écarter` },
+    bulle: `${etat}\n${effet}`,
+    nom: `${etat} ${ecartee ? t`Activer pour la remettre.` : t`Activer pour l’écarter.`}`,
+    basculer,
+  };
+}
+
 function MisDeCote() {
   const s = session.value!;
   versionPlan.value;
@@ -1894,7 +2088,7 @@ function MisDeCote() {
       <>
         <OutilsCadre>{cadre.onglets}</OutilsCadre>
         <CorpsCadre>
-          <p class="encart">{t`Aucune photo mise de côté à cette étape.`}</p>
+          <p class="encart">{t`Aucune photo écartée à cette étape.`}</p>
           <BoutonOngletSuivant />
         </CorpsCadre>
       </>
@@ -1918,7 +2112,7 @@ function MisDeCote() {
             <span class="espace" />
             {aRemettre.length > 0 && (
               <button type="button" class="contour" onClick={() => appliquer(garderAussi(plan, aRemettre))}>
-                {t`Tout remettre (${nombre(aRemettre.length)})`}
+                {aRemettre.length === 1 ? t`Garder la photo` : t`Garder les ${nombre(aRemettre.length)} photos`}
               </button>
             )}
             <BoutonOngletSuivant />
@@ -1928,21 +2122,22 @@ function MisDeCote() {
         <div class="grille-mis-de-cote">
           {dans.map((e) => {
             const etat = e.f.statut === 'mis_de_cote' ? 'ecartee' : 'gardee';
+            const badge = badgeEcartee(e.f, () => basculerPhoto(e));
             return (
-              <div key={e.id} class="photo-doublon" style={{ width: `${cote}px` }}>
+              <div key={e.id} class={`photo-doublon ${etat}`} style={{ width: `${cote}px` }}>
                 <button
                   type="button"
                   class={`tuile-doublon ${etat}`}
                   aria-pressed={etat === 'gardee'}
-                  aria-label={`${e.f.nom} : ${etat === 'gardee' ? t`Remise` : t`Écartée`}`}
+                  aria-label={`${e.f.nom} : ${badge.mot}`}
                   title={[e.f.nom, dateHeure(e.f.date), t`Dossier : ${dossierSource(e.f) || nomRacine(s.projet.mode === 'vrac')}`, '', etat === 'gardee' ? t`Cliquer pour l’écarter de nouveau` : t`Cliquer pour la remettre à sa place`].join('\n')}
                   onClick={() => basculerPhoto(e)}
                 >
                   <span class="cadre-tuile" style={{ width: `${cote}px`, height: `${cote}px` }}>
                     <Miniature f={e.f} taille={cote} rotation={e.f.rotation} />
                   </span>
-                  <BandeEtat classe={etat} libelle={etat === 'gardee' ? t`Remise` : t`Écartée`} autre={etat === 'ecartee' ? 'mis' : ''} />
                 </button>
+                <BandeBadge badge={badge} largeur={cote} />
                 <p class="remarque legende-doublon">
                   {section && !section.cle.startsWith('jour:') && e.f.date ? `${nomJour(e.f.date.slice(0, 10))} · ` : ''}
                   {e.f.date && e.f.date.length > 10 ? `${e.f.date.slice(11, 16)} · ` : ''}
@@ -2143,7 +2338,7 @@ export function PageDoublons() {
     ['copies', t`Copies exactes`],
     ['rafales', t`Rafales`],
     ['ia', t`Même scène (IA)`],
-    ['mis_de_cote', t`Mis de côté`],
+    ['mis_de_cote', t`Écartées`],
   ];
 
   const enAttente = (['copies', 'rafales', 'ia'] as const).reduce((n, o) => n + avancement(o).total - avancement(o).relus, 0);
@@ -2154,6 +2349,51 @@ export function PageDoublons() {
   const ongletSuivant = prochainOnglet
     ? { nom: ONGLETS.find(([o]) => o === prochainOnglet)![1], reste: avancement(prochainOnglet).total - avancement(prochainOnglet).relus, aller: () => choisirOnglet(s.projet.nom, prochainOnglet) }
     : null;
+
+  // Copies exactes encore proposées à l'écart (D112, question 5) : sans « Accepter », le tri rangerait une seconde
+  // fois une photo déjà gardée. Seulement elles : garder toutes les photos d'une rafale est un choix normal.
+  const copiesEnAttente = groupes.copies.filter((g) => aRelire(g, fichier) && aEcarter(g, fichier).length > 0);
+  const nCopies = copiesEnAttente.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  // Ce que « Accepter … et continuer » accepte vraiment : les groupes où un exemplaire reste gardé. Un groupe où vous
+  // les avez tous écartés reste à voir (comme « Accepter les N propositions »), et la fenêtre le dit.
+  const copiesAcceptables = acceptablesSansVider(copiesEnAttente, fichier);
+  const nCopiesAcceptables = copiesAcceptables.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  const nGroupesVides = copiesEnAttente.length - copiesAcceptables.length;
+  /** « Valider et continuer » : avec des copies restantes, une fenêtre à trois choix d'abord. */
+  const valider = async () => {
+    if (nCopies > 0) {
+      const choix = await choisirParmi(
+        nCopies === 1 ? t`1 copie exacte n’est pas encore acceptée` : t`${nombre(nCopies)} copies exactes ne sont pas encore acceptées`,
+        [
+          t`Ce sont des copies d’une photo déjà gardée. Sans les accepter, le tri automatique les rangerait une seconde fois. Rien n’est supprimé : elles iraient dans « Mis de côté ».`,
+          nGroupesVides === 1
+            ? t`Dans 1 groupe, vous n’avez gardé aucun exemplaire : il reste à voir.`
+            : nGroupesVides > 1
+              ? t`Dans ${nombre(nGroupesVides)} groupes, vous n’avez gardé aucun exemplaire : ils restent à voir.`
+              : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+        [
+          { cle: 'sans', libelle: t`Continuer sans elles` },
+          { cle: 'voir', libelle: t`Les voir d’abord` },
+          ...(nCopiesAcceptables > 0
+            ? [{ cle: 'accepter', libelle: nCopiesAcceptables === 1 ? t`Accepter la copie et continuer` : t`Accepter les ${nombre(nCopiesAcceptables)} copies et continuer` }]
+            : []),
+        ],
+      );
+      // Échap (ou un clic à côté) : on reste, comme « Les voir d'abord ».
+      if (!choix || choix === 'voir') {
+        choisirOnglet(s.projet.nom, 'copies');
+        return;
+      }
+      if (choix === 'accepter') {
+        appliquer(accepter(plan, copiesAcceptables));
+        notifier('ok', texteEcartees(nCopiesAcceptables), { libelle: t`Annuler`, faire: annuler });
+      }
+    }
+    validerEtape('doublons');
+  };
 
   // Cadre commun (lot 4, D111) : bandes fixes, seule la zone de contenu défile ; Aide « à lire » sous 1440 px.
   const { aide, palier } = useCadre('doublons');
@@ -2166,7 +2406,7 @@ export function PageDoublons() {
         <button
           key={o}
           type="button"
-          class={`onglet-doublons${o === onglet ? ' actif' : ''}`}
+          class={`onglet-doublons${o === onglet ? ' actif' : ''}${o === 'mis_de_cote' ? ' onglet-ecartees' : ''}`}
           aria-current={o === onglet ? 'page' : undefined}
           onClick={() => choisirOnglet(s.projet.nom, o)}
         >
@@ -2183,11 +2423,11 @@ export function PageDoublons() {
         ? t`Photos quasi identiques prises à la suite (quelques minutes au plus), repérées sur l’ordinateur (gratuit). La plus nette est proposée ; quand les photos se valent, gardez celle que vous préférez. « Plus nette », « plus sombre »… sous une photo signalent un écart visible. « Choisir avec l’IA » : l’IA choisit dans chaque rafale et dit pourquoi, vous acceptez.`
         : onglet === 'ia'
           ? t`Facultatif : l’IA repère la même scène photographiée plusieurs fois (pas seulement les rafales), puis vérifie chaque groupe en grand.`
-          : t`Les photos écartées à cette étape. Un clic remet une photo à sa place, un second l’écarte de nouveau.`;
+          : t`Les photos écartées à cette étape. Elles iront dans le dossier « Mis de côté » de la sortie : rien n’est supprimé. Un clic remet une photo à sa place, un second l’écarte de nouveau.`;
   const texteAide = (
     <>
       <p>
-        {t`Les photos en double sont rangées par sorte, dans les onglets. Dans chaque groupe, un clic choisit la photo à garder ; « Accepter » garde les photos choisies et écarte les autres. Les photos écartées vont dans « Mis de côté » : rien n’est supprimé, et Ctrl+Z annule.`}
+        {t`Les photos en double sont rangées par sorte, dans les onglets. Dans chaque groupe, un clic choisit la photo à garder ; « Accepter » garde les photos choisies et écarte les autres. Les photos écartées se revoient dans l’onglet « Écartées » et iront dans « Mis de côté » : rien n’est supprimé, et Ctrl+Z annule.`}
         {s.projet.mode === 'vrac' && t` Le dossier n’étant pas encore trié, les rafales sont cherchées journée par journée.`}
       </p>
       <p class="encart-onglet">
@@ -2195,7 +2435,15 @@ export function PageDoublons() {
         {onglet === 'copies' && intouches > 0 && t` Les dossiers « Ne pas toucher » ne sont pas examinés : leurs copies sont voulues.`}
       </p>
       {onglet !== 'mis_de_cote' && (
-        <p>{t`Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Clavier : J et K (ou ↓ et ↑) d’un groupe à l’autre, ← et → d’une photo à l’autre, Espace pour choisir, A pour accepter, C pour comparer en grand, N et P pour avancer dans la liste de gauche.`}</p>
+        <>
+          <p>{t`Un clic sur une photo la choisit (dans une rafale, à la place des autres ; Ctrl+clic : en plus) ; « Accepter » garde les photos choisies et écarte les autres. Sur le dernier groupe d’une journée ou d’un mois, « Accepter » ouvre la suite. Pour garder toute une rafale : « Garder plusieurs photos », puis « toutes » (ou Ctrl+A), puis « Accepter » ; dans un groupe déjà accepté, « toutes » et « aucune » agissent tout de suite.`}</p>
+          <p class="legende-badges-aide">
+            {t`Sous chaque photo, ce qui lui arrivera : vert, elle reste ; gris, elle part. L’icône dit d’où vient l’idée :`} <Icone nom="punaise" taille={16} titre={t`punaise`} /> {t`vous ;`}{' '}
+            <Icone nom="coche" taille={16} titre={t`coche`} /> <Icone nom="croix" taille={16} titre={t`croix`} /> {t`le groupe ;`} <Icone nom="etincelle" taille={16} titre={t`étincelle`} /> {t`l’IA ;`}{' '}
+            <Icone nom="question" taille={16} titre={t`point d’interrogation`} /> {t`l’IA conseille une autre photo. En bordure, c’est proposé (le choix de « Choisir avec l’IA » aussi, jusqu’à « Accepter ») ; en plein, c’est décidé. Un clic sur la bande donne l’autre sort ; un second clic revient à la proposition.`}
+          </p>
+          <p>{t`Clavier : J et K (ou ↓ et ↑) d’un groupe à l’autre, ← et → d’une photo à l’autre, Espace pour choisir, G pour garder, X pour écarter, Ctrl+A pour toutes les photos du groupe, A pour accepter, C pour comparer en grand, N et P pour avancer dans la liste de gauche.`}</p>
+        </>
       )}
       <p>{t`Rien n’est supprimé : ce que vous écartez va dans « Mis de côté ». Vos photos d’origine ne bougent pas.`}</p>
     </>
@@ -2222,7 +2470,8 @@ export function PageDoublons() {
         <LigneEtape
           titre={nomEtape(ETAPE.doublons)}
           aide={{ cle: 'doublons', colonne: true }}
-          taille
+          // La taille vraiment montrée : au palier, les trois quarts du réglage (l'infobulle et le lecteur d'écran la disent).
+          taille={{ photos: (v) => coteDoublons(palier, v) }}
           vue={{ nom: t`Sortes de doublons`, choix: ONGLETS.map(([o, nom]) => ({ cle: o, libelle: nom })), actuelle: onglet, choisir: (o) => choisirOnglet(s.projet.nom, o as Onglet) }}
         />
 
@@ -2277,13 +2526,25 @@ export function PageDoublons() {
 
         {/* C-8.5 : ce que devient ce qui reste ; « Valider et continuer » plein une fois tout accepté (C-4.1). */}
         <BarreValidation
-          // Ce que devient ce qui reste (C-8.5), sur une ligne même au palier ; le compte des photos écartées est sur l'onglet « Mis de côté ».
-          resume={enAttente ? t`${pluriel(enAttente, 'groupe pas encore accepté', 'groupes pas encore acceptés')} : toutes leurs photos sont gardées.` : t`Tous les groupes sont acceptés.`}
+          // Ce que devient ce qui reste (C-8.5), sur une ligne même au palier ; le compte des photos écartées est sur
+          // l'onglet « Écartées ». Des copies exactes restantes passent avant, en brun (D112, question 5).
+          resume={
+            nCopies > 0 ? (
+              <span class="reste-copies">
+                <Icone nom="alerte" taille={16} />
+                {nCopies === 1 ? t`1 copie exacte pas encore acceptée : le tri la rangerait deux fois.` : t`${nombre(nCopies)} copies exactes pas encore acceptées : le tri les rangerait deux fois.`}
+              </span>
+            ) : enAttente ? (
+              t`${pluriel(enAttente, 'groupe pas encore accepté', 'groupes pas encore acceptés')} : toutes leurs photos sont gardées.`
+            ) : (
+              t`Tous les groupes sont acceptés.`
+            )
+          }
           ecarte
           court
           fini={!enAttente && copies !== null && !!s.doublons}
           revenir={() => revenirDe('doublons')}
-          valider={() => validerEtape('doublons')}
+          valider={() => void valider()}
         />
       </div>
     </ContexteCadre.Provider>

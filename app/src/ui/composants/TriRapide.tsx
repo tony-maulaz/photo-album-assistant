@@ -15,6 +15,9 @@ import { Icone } from './Icones';
 import { useOriginal } from './Comparateur';
 import { useZoom } from './Zoom';
 
+/** Le tri rapide dit le choix dans sa barre : pas de message par touche (ils s'empileraient sur la photo). */
+const SANS_MESSAGE = { message: false };
+
 const ETAT = { 0: aTraduire('Pas pour l’album'), 1: aTraduire('★ Dans l’album'), 2: aTraduire('★★ Grande photo') } as const;
 
 export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
@@ -70,15 +73,15 @@ export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
       else if (k === 'ArrowRight') suivante();
       else if (k === 'ArrowLeft') aller(finRef.current ? c.i : c.i - 1);
       else if (k === ' ' || k === '1') {
-        choisir([c.id], 1);
+        choisir([c.id], 1, SANS_MESSAGE);
         suivante();
       } else if (k === '2') {
-        choisir([c.id], 2);
+        choisir([c.id], 2, SANS_MESSAGE);
         suivante();
       } else if (k.toLowerCase() === 'x') {
-        choisir([c.id], 0);
+        choisir([c.id], 0, SANS_MESSAGE);
         suivante();
-      } else if (k === 'Backspace' || k === 'Delete') choisir([c.id], undefined);
+      } else if (k === 'Backspace' || k === 'Delete') choisir([c.id], undefined, SANS_MESSAGE);
       else if (k.toLowerCase() === 'r') tournerPhotos([c.id], e.shiftKey ? -90 : 90);
       else return;
       e.preventDefault();
@@ -163,16 +166,16 @@ export function TriRapide({ infos }: { infos: Map<string, InfoPhoto> }) {
         </div>
       )}
       <div class="tri-touches">
-        <button type="button" onClick={() => (choisir([f.id], 1), suivante())}>
+        <button type="button" onClick={() => (choisir([f.id], 1, SANS_MESSAGE), suivante())}>
           <kbd>{t`Espace`}</kbd> {t`★ dans l’album`}
         </button>
-        <button type="button" onClick={() => (choisir([f.id], 2), suivante())}>
+        <button type="button" onClick={() => (choisir([f.id], 2, SANS_MESSAGE), suivante())}>
           <kbd>2</kbd> {t`★★ grande photo`}
         </button>
-        <button type="button" onClick={() => (choisir([f.id], 0), suivante())}>
+        <button type="button" onClick={() => (choisir([f.id], 0, SANS_MESSAGE), suivante())}>
           <kbd>X</kbd> {t`pas dans l’album`}
         </button>
-        <button type="button" onClick={() => choisir([f.id], undefined)}>
+        <button type="button" onClick={() => choisir([f.id], undefined, SANS_MESSAGE)}>
           <kbd>
             <Icone nom="effacer" taille={16} titre={t`Retour arrière`} />
           </kbd>{' '}

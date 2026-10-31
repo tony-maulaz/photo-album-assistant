@@ -147,10 +147,13 @@ export function aRelire(g: GroupeDoublons, fichier: Fichiers): boolean {
   return photosDuGroupe(g, fichier).some((x) => x.etat === 'a_ecarter' || x.etat === 'choisie');
 }
 
-/** Un choix de l'utilisateur attend sur une photo du groupe (pas seulement la proposition). */
-export function choixEnAttente(g: GroupeDoublons, fichier: Fichiers): boolean {
+/**
+ * Un choix attend sur une photo du groupe (pas seulement la proposition) : de l'utilisateur ou de « Choisir avec
+ * l'IA » ; `deVous` : de l'utilisateur seulement (un geste).
+ */
+export function choixEnAttente(g: GroupeDoublons, fichier: Fichiers, deVous = false): boolean {
   const raison = raisonDe(g);
-  return photosDuGroupe(g, fichier).some((x) => x.f.choixDoublons?.[raison] !== undefined);
+  return photosDuGroupe(g, fichier).some((x) => x.f.choixDoublons?.[raison] !== undefined && !(deVous && x.f.choixIA?.[raison]));
 }
 
 /** Groupes relus et groupes en tout (visibles seulement). */
@@ -190,10 +193,11 @@ function ecarter(plan: Plan, g: GroupeDoublons, ids: string[], origine: (id: str
 /**
  * Un clic sur une photo (D101) : un choix en attente, rien n'est mis de côté avant « Accepter ».
  * `seule` (rafale, même scène) : cette photo est choisie et les autres passent « à écarter » ; sinon
- * (copies, « Garder plusieurs photos ») seule cette photo change. Un choix égal à ce que ferait
- * « Accepter » sans lui n'est pas noté.
+ * (copies, « Garder plusieurs photos ») seule cette photo change, les choix des autres restent. Un choix égal à
+ * ce que ferait « Accepter » sans lui n'est pas noté. `par` : « ia » pour « Choisir avec l'IA » (une proposition de
+ * l'IA, pas un geste : règle d'or 3).
  */
-export function choisir(plan: Plan, g: GroupeDoublons, id: string, seule: boolean): Modification | null {
+export function choisir(plan: Plan, g: GroupeDoublons, id: string, seule: boolean, par: 'vous' | 'ia' = 'vous'): Modification | null {
   const fichier = (x: string) => plan.fichiers.get(x);
   const photos = photosDuGroupe(g, fichier);
   const cliquee = photos.find((x) => x.m.id === id);
@@ -201,13 +205,129 @@ export function choisir(plan: Plan, g: GroupeDoublons, id: string, seule: boolea
   return choisirDoublons(
     plan,
     raisonDe(g),
-    photos.map((x) => {
-      const garder = seule ? x.m.id === id : x.m.id === id ? !aGarder(x.etat) : aGarder(x.etat);
-      // Ce que deviendrait la photo sans choix : écartée si elle l'est, sinon selon sa proposition.
-      const parDefaut = x.f.statut === 'mis_de_cote' ? false : x.m.garder || !!x.f.protegee;
-      return { id: x.m.id, garder: garder === parDefaut ? undefined : garder };
+    (seule ? photos : [cliquee]).map((x) => {
+      const garder = seule ? x.m.id === id : !aGarder(x.etat);
+      return { id: x.m.id, garder: garder === parDefaut(x) ? undefined : garder };
     }),
+    par,
   );
+}
+
+/** Ce que deviendrait la photo sans choix : écartée si elle l'est, sinon selon sa proposition. */
+function parDefaut(x: PhotoDuGroupe): boolean {
+  return x.f.statut === 'mis_de_cote' ? false : x.m.garder || !!x.f.protegee;
+}
+
+/**
+ * « choisir : toutes · aucune » après « Garder plusieurs photos », et Ctrl+A (D112, question 3) : chaque photo du
+ * groupe est choisie pour être gardée (`garder`), ou aucune ne l'est. Un choix en attente, comme un clic : rien
+ * n'est mis de côté avant « Accepter ». Dans un groupe accepté (« Revoir »), comme le clic sur la bande : l'autre
+ * sort, par vous, tout de suite et sans rouvrir le groupe (C-9.12, `basculerAccepte`).
+ */
+export function choisirTous(plan: Plan, g: GroupeDoublons, garder: boolean): Modification | null {
+  const fichier = (x: string) => plan.fichiers.get(x);
+  const photos = photosDuGroupe(g, fichier);
+  const libelle = garder ? t`Choisir toutes les photos` : t`N’en choisir aucune`;
+  if (!aRelire(g, fichier)) {
+    const ids = photos.filter((x) => aGarder(x.etat) !== garder).map((x) => x.m.id);
+    return ids.length ? combiner(libelle, garder ? garderAussi(plan, ids, raisonDe(g), 'vous') : ecarter(plan, g, ids)) : null;
+  }
+  const m = choisirDoublons(
+    plan,
+    raisonDe(g),
+    photos.map((x) => ({ id: x.m.id, garder: garder === parDefaut(x) ? undefined : garder })),
+  );
+  return combiner(libelle, m);
+}
+
+/**
+ * G ou X sur une photo (D112) : son sort est fixé par l'utilisateur, même s'il est celui de la proposition (la
+ * bande passe en plein, avec la punaise). `seule` (rafale sans « Garder plusieurs photos ») : la garder écarte
+ * les autres, comme un clic. Dans un groupe accepté, G et X font comme le clic sur la bande (`basculerAccepte`).
+ */
+export function fixer(plan: Plan, g: GroupeDoublons, id: string, garder: boolean, seule: boolean): Modification | null {
+  const raison = raisonDe(g);
+  const photos = photosDuGroupe(g, (x) => plan.fichiers.get(x));
+  const cible = photos.find((x) => x.m.id === id);
+  if (!cible) return null;
+  // Groupe accepté : comme le clic sur sa bande, l'autre sort tout de suite, sans rouvrir le groupe (C-9.12) ;
+  // rien si la photo a déjà le sort demandé.
+  if (!aRelire(g, (x) => plan.fichiers.get(x))) return aGarder(cible.etat) === garder ? null : basculerAccepte(plan, g, id);
+  // Les autres photos ne changent pas (leur choix, de vous ou de l'IA, reste), sauf « la garder seule ».
+  const m = choisirDoublons(
+    plan,
+    raison,
+    photos
+      .filter((x) => x.m.id === id || (seule && garder))
+      .map((x) => (x.m.id === id ? { id, garder } : { id: x.m.id, garder: parDefaut(x) === false ? undefined : false })),
+  );
+  return combiner(garder ? t`Garder une photo` : t`Écarter une photo`, m);
+}
+
+/**
+ * Second clic sur la bande d'une photo choisie par l'utilisateur (D112, réponse 20) : elle revient à la
+ * proposition. `groupe` (rafale sans « Garder plusieurs photos ») : un clic avait choisi une photo à la place des
+ * autres, tout le groupe y revient ; sinon cette photo seulement.
+ */
+export function revenirProposition(plan: Plan, g: GroupeDoublons, id: string, groupe: boolean): Modification | null {
+  const photos = photosDuGroupe(g, (x) => plan.fichiers.get(x));
+  const m = choisirDoublons(
+    plan,
+    raisonDe(g),
+    photos.filter((x) => groupe || x.m.id === id).map((x) => ({ id: x.m.id, garder: undefined })),
+  );
+  return combiner(t`Revenir à la proposition`, m);
+}
+
+/**
+ * Clic sur la bande d'une photo d'un groupe déjà accepté (« Revoir ») : l'autre sort, par vous, tout de suite et
+ * sans rouvrir le groupe (CHARTE C-9.12) ; une photo gardée est écartée (rien n'est supprimé), une écartée revient.
+ */
+export function basculerAccepte(plan: Plan, g: GroupeDoublons, id: string): Modification | null {
+  const x = photosDuGroupe(g, (y) => plan.fichiers.get(y)).find((y) => y.m.id === id);
+  if (!x) return null;
+  return aGarder(x.etat) ? combiner(t`Écarter une photo`, ecarter(plan, g, [id])) : combiner(t`Garder une photo`, garderAussi(plan, [id], raisonDe(g), 'vous'));
+}
+
+/** D'où vient le sort d'une photo d'un groupe, pour son badge (D112) : décidé (plein) ou proposé (bordure). */
+export interface OrigineBadgeDoublon {
+  sort: 'garder' | 'ecarter';
+  origine: 'vous' | 'application' | 'ia' | 'verifier';
+  decide: boolean;
+  /** Un choix de l'utilisateur attend « Accepter » (un second clic revient à la proposition). */
+  enAttente: boolean;
+  /**
+   * Le sort vient de « Choisir avec l'IA », pas encore accepté : une proposition (en bordure) ; un clic fixe
+   * l'autre sort par vous (`fixer`), comme sur toute proposition.
+   */
+  choixIA?: boolean;
+  /** Groupe « Dans plusieurs dossiers » (D86) : gardée d'office dans chaque dossier, sans geste ni « Accepter ». */
+  partout?: boolean;
+}
+
+/**
+ * Le badge d'une photo (D112) : un choix de l'utilisateur (clic, G, X) est « par vous », en plein, même avant
+ * « Accepter » ; un choix posé par « Choisir avec l'IA » est une proposition de l'IA (✦, en bordure, règle d'or 3)
+ * jusqu'à « Accepter » ; une photo écartée garde l'origine écrite dans le plan ; une photo gardée d'un groupe accepté vient
+ * du groupe (l'application, l'IA pour une même scène ou une rafale où l'IA l'a choisie), ou de vous si vous
+ * l'aviez gardée. Avant « Accepter », la proposition est en bordure ; si l'IA conseille une autre photo que la
+ * proposition, les deux photos en désaccord sont « à vérifier ». Un exemplaire d'un groupe « Dans plusieurs
+ * dossiers » reste en bordure : gardé d'office, jamais accepté. `iaPrefere` : la photo conseillée par l'IA.
+ */
+export function origineBadgeDoublon(g: GroupeDoublons, x: PhotoDuGroupe, valide: boolean, iaPrefere?: string): OrigineBadgeDoublon {
+  const raison = raisonDe(g);
+  const sort = aGarder(x.etat) ? 'garder' : 'ecarter';
+  const lue = (o: OrigineDecision | undefined): 'vous' | 'application' | 'ia' => (o === 'vous' ? 'vous' : o === 'ia' ? 'ia' : 'application');
+  if (x.f.choixDoublons?.[raison] !== undefined)
+    return x.f.choixIA?.[raison] ? { sort, origine: 'ia', decide: false, enAttente: false, choixIA: true } : { sort, origine: 'vous', decide: true, enAttente: true };
+  if (x.etat === 'ecartee') return { sort, origine: lue(x.f.origine?.[raison]), decide: true, enAttente: false };
+  if (x.f.protegee && x.f.origine?.[raison]) return { sort, origine: lue(x.f.origine[raison]), decide: true, enAttente: false };
+  // Présente dans plusieurs dossiers gardés : l'application la garde partout (D86) ; aucun geste, donc en bordure.
+  if (g.sorte === 'dossiers' && sort === 'garder') return { sort, origine: 'application', decide: false, enAttente: false, partout: true };
+  const proposee = g.sorte === 'ia' || (iaPrefere !== undefined && iaPrefere === x.m.id) ? 'ia' : 'application';
+  if (valide) return { sort, origine: proposee, decide: true, enAttente: false };
+  if (iaPrefere !== undefined && iaPrefere !== g.etoile && (x.m.id === iaPrefere) !== (sort === 'garder')) return { sort, origine: 'verifier', decide: false, enAttente: false };
+  return { sort, origine: iaPrefere !== undefined && iaPrefere === g.etoile ? 'ia' : proposee, decide: false, enAttente: false };
 }
 
 /**
@@ -229,12 +349,16 @@ export function accepter(plan: Plan, groupes: GroupeDoublons[]): Modification | 
     const r = g.remplacement;
     const original = r && photosDuGroupe(g, fichier).find((x) => x.m.id === r.original);
     const deplacer = r && ids.includes(r.copie) && original && aGarder(original.etat) && original.f.dossier !== r.dossier && plan.dossiers.has(r.dossier);
-    // Origine (D112) : ce que l'utilisateur a choisi photo par photo est « par vous » ; le reste suit la
-    // proposition acceptée, de l'IA pour une même scène, sinon de l'application.
+    // Origine (D112) : ce que l'utilisateur a choisi photo par photo est « par vous », ce que « Choisir avec l'IA » a
+    // choisi est de l'IA ; le reste suit la proposition acceptée, de l'IA pour une même scène, sinon de l'application.
     const raison = raisonDe(g);
     const proposee: OrigineDecision = g.sorte === 'ia' ? 'ia' : 'application';
-    modifications.push(ecarter(plan, g, ids, (id) => (fichier(id)?.choixDoublons?.[raison] !== undefined ? 'vous' : proposee)));
-    if (choisies.length) modifications.push(garderAussi(plan, choisies, raison));
+    const parIA = (id: string) => !!fichier(id)?.choixIA?.[raison];
+    modifications.push(ecarter(plan, g, ids, (id) => (fichier(id)?.choixDoublons?.[raison] === undefined ? proposee : parIA(id) ? 'ia' : 'vous')));
+    const choisiesIA = choisies.filter(parIA);
+    const choisiesVous = choisies.filter((id) => !parIA(id));
+    if (choisiesVous.length) modifications.push(garderAussi(plan, choisiesVous, raison));
+    if (choisiesIA.length) modifications.push(garderAussi(plan, choisiesIA, raison, 'ia'));
     if (deplacer) modifications.push(deplacerFichiers(plan, [r.original], r.dossier));
   }
   // « Annuler : accepter 1 rafale » dit ce qu'il défait (C-8.2) : la sorte des groupes, s'ils sont tous de la même.
@@ -263,23 +387,6 @@ export function garderTout(plan: Plan, groupes: GroupeDoublons[]): Modification 
         .map((x) => x.m.id);
       return ids.length ? garderAussi(plan, ids, raisonDe(g)) : null;
     }),
-  );
-}
-
-/** « Tout écarter » : toutes les photos du groupe, la ★ comprise, vont dans `_mis_de_cote/` (rien n'est supprimé). */
-export function ecarterTout(plan: Plan, groupes: GroupeDoublons[]): Modification | null {
-  const fichier = (id: string) => plan.fichiers.get(id);
-  return combiner(
-    t`Tout écarter`,
-    ...groupes.map((g) =>
-      ecarter(
-        plan,
-        g,
-        photosDuGroupe(g, fichier)
-          .filter((x) => x.etat !== 'ecartee')
-          .map((x) => x.m.id),
-      ),
-    ),
   );
 }
 

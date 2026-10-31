@@ -118,6 +118,11 @@ interface Arbre {
   evenements: Map<string, EvenementCalendrier>;
   /** Badge « petit » : pas pour un dossier en vrac, dont l'étape suivante traite les petits dossiers (D94). */
   petits: boolean;
+  /**
+   * Liste de la Sélection (D112, question 14) : le nom en gras, la période dessous, l'événement du calendrier en
+   * petite icône au bout de la période (son nom dans la bulle) plutôt que sur une ligne à lui.
+   */
+  simple: boolean;
 }
 
 /**
@@ -333,6 +338,11 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
                 <Icone nom="chevronDroite" taille={14} />
               </span>}
             <span class="dates-dossier">{periode(r.duTotal, r.auTotal)}</span>
+            {arbre.simple && evenement && (
+              <span class="icone-evenement" role="img" aria-label={t`Calendrier : ${evenement.titre}`} title={t`Calendrier : la moitié au moins des photos ont été prises pendant « ${evenement.titre} »`}>
+                <Icone nom="calendrier" taille={14} />
+              </span>
+            )}
             {arbre.petits && direct > 0 && direct < SEUIL_PETIT && (
               <span class="badge petit" title={t`Petit dossier : moins de ${SEUIL_PETIT} photos`}>
                 {t`petit`}
@@ -356,7 +366,7 @@ function Ligne({ d, profondeur, arbre, plat = false }: { d: DossierPlan; profond
             ))}
           </span>
           {/* L'événement du calendrier sur sa propre ligne : en bout de ligne, les badges le coupaient. */}
-          {evenement && (
+          {evenement && !arbre.simple && (
             <span class="evenement-dossier" title={t`Calendrier : la moitié au moins des photos ont été prises pendant « ${evenement.titre} »`}>
               <Icone nom="calendrier" taille={14} />
               <span>{evenement.titre}</span>
@@ -451,8 +461,8 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
       for (const id of nouveaux.keys()) for (let y = s.plan.dossiers.get(id); y; y = y.parent === null ? undefined : s.plan.dossiers.get(y.parent)) avec.add(y.id);
       visibles = visibles ? new Set([...visibles].filter((id) => avec.has(id))) : avec;
     }
-    return { enfants, resumes: r, visibles, alertes, nouveaux, evenements: evts, petits };
-  }, [version, filtre, seulementAlertes, seulementNouveaux, ordrePanneau.value, evenements.value]);
+    return { enfants, resumes: r, visibles, alertes, nouveaux, evenements: evts, petits, simple };
+  }, [version, filtre, seulementAlertes, seulementNouveaux, ordrePanneau.value, evenements.value, simple]);
 
   const nbMisDeCote = elementsVue(s.plan, VUE_MIS_DE_COTE).length;
   const nbAutres = elementsVue(s.plan, VUE_AUTRES).length;
@@ -498,7 +508,7 @@ export function PanneauDossiers({ simple = false }: { simple?: boolean }) {
   );
 
   return (
-    <aside class="panneau-dossiers" aria-label={t`Dossiers`}>
+    <aside class={`panneau-dossiers${simple ? ' liste-simple' : ''}`} aria-label={t`Dossiers`}>
       <div
         class="poignee-panneau"
         role="separator"

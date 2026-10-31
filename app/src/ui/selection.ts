@@ -3,7 +3,7 @@
 
 import { signal } from '@preact/signals';
 import { texteEtiquettes, type Etiquettes } from '../lib/aidesSelection';
-import { aTraduire, t } from '../lib/langue';
+import { t } from '../lib/langue';
 import { seuilFlou, signaux, type Indicateurs, type Signal } from '../lib/indicateurs';
 import { rechercher } from '../lib/recherche';
 import { estDescendant, noterAlbum, RACINE, tourner, type FichierPlan, type Plan } from '../lib/plan';
@@ -11,6 +11,7 @@ import { jourArrivee, piles } from '../lib/selection';
 import type { Analyses } from '../navigateur/analyses';
 import { photoAMontrer } from './composants/GrillePhotos';
 import { annuler, appliquer, notifier, session } from './etat';
+import { nombre } from './format';
 import { ancre, selection } from './organiser';
 
 export interface Filtres {
@@ -150,13 +151,24 @@ export function avecPiles(photos: FichierPlan[], pilesDe: Map<string, string[]>,
   });
 }
 
-const LIBELLES = { 0: aTraduire('pas dans l’album'), 1: aTraduire('dans l’album ★'), 2: aTraduire('grande photo ★★') } as const;
 
-export function choisir(ids: string[], valeur: 0 | 1 | 2 | undefined) {
+/**
+ * Un choix pour l'album, sur une ou plusieurs photos ; un message court le dit dans la ligne de l'étape, suivi de
+ * « ↶ ou Ctrl+Z pour l'annuler » (retours du 29.10 : rien ne le disait pour une seule photo). `message: false` : le
+ * tri rapide, qui dit déjà le choix dans sa barre (un message par touche s'empilerait sur la photo).
+ */
+export function choisir(ids: string[], valeur: 0 | 1 | 2 | undefined, { message = true }: { message?: boolean } = {}) {
   const s = session.value;
   if (!s || !ids.length) return;
-  appliquer(noterAlbum(s.plan, ids, valeur));
-  if (ids.length > 1) notifier('ok', t`${ids.length} photos : ${valeur === undefined ? t`à décider` : t(LIBELLES[valeur])}.`, { libelle: t`Annuler`, faire: annuler });
+  const m = noterAlbum(s.plan, ids, valeur);
+  if (!m) return;
+  appliquer(m);
+  const n = ids.length;
+  const texte =
+    n === 1
+      ? { 0: t`Pas pour l’album.`, 1: t`Dans l’album.`, 2: t`Grande photo, dans l’album.`, a: t`À décider.` }
+      : { 0: t`${nombre(n)} photos pas pour l’album.`, 1: t`${nombre(n)} photos dans l’album.`, 2: t`${nombre(n)} grandes photos, dans l’album.`, a: t`${nombre(n)} photos à décider.` };
+  if (message) notifier('ok', texte[valeur ?? 'a'], { libelle: t`Annuler`, faire: annuler });
 }
 
 export function tournerPhotos(ids: string[], sens: 90 | -90 = 90) {

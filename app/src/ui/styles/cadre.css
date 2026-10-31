@@ -546,6 +546,30 @@ body:not(:has([role='dialog'])) .app[data-ligne] .messages {
   padding-bottom: 2px;
 }
 
+/* Doublons : le titre de la section et son compte ne tiennent pas avec ses boutons ; ceux-ci passent dessous
+   (la hauteur mesurée devient --h-tete-col de la table, Doublons.tsx). */
+.tete-table[data-deux-lignes] {
+  height: auto;
+  min-height: var(--h-tete-col-petit);
+  flex-wrap: wrap;
+  row-gap: var(--e1);
+  padding-top: var(--e1);
+  padding-bottom: var(--e1);
+}
+
+/* Le titre (ou le menu de la liste, au palier) et le compte sur la première ligne, tous les boutons sur la seconde. */
+.tete-table[data-deux-lignes]::after {
+  content: '';
+  order: 1;
+  flex-basis: 100%;
+  height: 0;
+  margin-top: calc(-1 * var(--e1));
+}
+
+.tete-table[data-deux-lignes] > :not(.titre-section, .detail-section, .menu-liste) {
+  order: 2;
+}
+
 .tete-table .sous-titre-vue {
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
@@ -941,44 +965,6 @@ button.fermer-aide {
   background: none;
 }
 
-/* Un menu nommé : la portée dite par son nom, ses actions dessous. */
-.menu-portee {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.menu-portee > button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e2);
-  white-space: nowrap;
-}
-
-.menu-portee .menu-actions {
-  top: calc(100% + var(--e1));
-  min-width: 300px;
-  gap: 2px;
-}
-
-.menu-actions button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  width: 100%;
-  white-space: normal;
-}
-
-.menu-actions button:disabled {
-  border: 1px dashed var(--filet-fort);
-}
-
-.menu-actions button .discret {
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  font-weight: 400;
-}
-
 /* La liste de gauche : ce qu'on montre en haut (fixe), les journées ou dossiers dessous (défilent). */
 .colonne-liste > .sections-doublons {
   flex: 1 1 auto;
@@ -1009,33 +995,7 @@ button.fermer-aide {
   background: var(--surface);
 }
 
-/* « Grouper et classer », replié : la liste de gauche garde la place des journées (maquette v2). Ouvert : une
-   ligne par réglage, chaque mot au-dessus de sa liste, les deux listes alignées à gauche et de la même largeur
-   (tour 3 du lot 4 : « Grouper » à côté de sa liste et « Classer » au-dessus de la sienne ne se lisaient pas
-   pareil) ; rien ne se coupe, en anglais non plus (un <details> ne range pas ses enfants : la grille est dans le div). */
-.page-doublons .grouper-classer > .contenu-grouper {
-  display: grid;
-  gap: var(--e2);
-  margin-top: var(--e2);
-}
-
-.page-doublons .grouper-classer > .contenu-grouper > label {
-  display: grid;
-  gap: var(--e1);
-}
-
-.page-doublons .grouper-classer > .contenu-grouper select {
-  width: 100%;
-  min-width: 0;
-}
-
-.page-doublons .grouper-classer > summary {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  cursor: pointer;
-}
-
+/* « Afficher », « Grouper », « Classer » : trois segmentés visibles, le mot devant (É14 c). */
 .page-doublons .ligne-outil {
   display: flex;
   flex-wrap: wrap;
@@ -1262,27 +1222,6 @@ button.fermer-aide {
   }
 }
 
-/* Le nom du dossier dans « garder celle de « … » » : entier tant qu'il tient, raccourci sinon (infobulle). */
-.nom-libelle {
-  min-width: 3em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-[data-action='accepter'] img,
-[data-action='accepter'] .sans-miniature {
-  flex: none;
-  width: 24px;
-  height: 24px;
-  max-width: none;
-  max-height: none;
-  margin: 0 var(--e1) 0 6px;
-  object-fit: cover;
-  border-radius: 6px;
-  box-shadow: 0 0 0 1px var(--surface);
-}
-
 /* Après « Accepter », le plein suivant arrive en fondu ; il ignore les clics pendant ce temps (0,5 s). */
 @keyframes fondu-plein {
   from {
@@ -1297,12 +1236,7 @@ button.fermer-aide {
   animation: fondu-plein 0.5s ease-out;
 }
 
-/* La place de la photo au début de sa bande (« 4 · À garder »). */
-.place-photo {
-  flex: none;
-}
-
-/* La ligne des boutons du groupe : « Garder plusieurs photos », « Tout garder », « Autres choix », l'état,
+/* La ligne du bas du groupe : « Garder plusieurs photos » (et « choisir : toutes · aucune »), l'état, le lieu,
    et au bout « Journée suivante à accepter » sur le dernier groupe. */
 .page-doublons article.carte-doublons > footer {
   display: flex;

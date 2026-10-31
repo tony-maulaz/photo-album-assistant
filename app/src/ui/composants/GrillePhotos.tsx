@@ -13,6 +13,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { disposer, elementsVisibles, voisinVertical } from '../../lib/grille';
 import { aTraduire, t } from '../../lib/langue';
+import { origineMisDeCote } from '../../lib/origines';
 import { cheminDossier, type FichierPlan } from '../../lib/plan';
 import { arrivees, jourArrivee } from '../../lib/selection';
 import { cleGrande, cleMiniature, HAUTEUR_GRANDE, HAUTEUR_MINIATURE } from '../../navigateur/miniatures';
@@ -40,6 +41,42 @@ const RAISONS: Record<string, string> = { floues: aTraduire('floue'), doublons: 
 function texteRaison(f: FichierPlan): string {
   const r = RAISONS[f.raison ?? 'autres'];
   return r ? t(r) : '';
+}
+
+/** Le mot d'une raison, en tête de bande (« Floue », « Doublon »). */
+const MOTS_RAISONS: Record<string, string> = { floues: aTraduire('Floue'), doublons: aTraduire('Doublon'), doublons_exacts: aTraduire('Copie exacte') };
+
+/**
+ * Le badge d'une photo de « Mis de côté » (D112) : écartée, en plein ; le mot dit pourquoi (« Floue », « Doublon »,
+ * « Copie exacte »), l'icône qui l'a décidé (✕ l'application, ✦ l'IA, la punaise vous : « Écartée par vous ») ; une
+ * photo des anciens scripts : « Écartée avant » ; écartée par le réglage du flou, sans décision : en bordure, une
+ * proposition (`origineMisDeCote`). Il ne se clique pas : Suppr ou le glisser la remettent.
+ */
+function badgeMisDeCote(f: FichierPlan): DescriptionBadge {
+  const { origine, decide, reglage } = origineMisDeCote(f);
+  const vous = origine === 'vous';
+  const avant = origine === 'avant';
+  const raison = texteRaison(f);
+  const mot = vous ? t`Écartée par vous` : avant ? t`Écartée avant` : t(MOTS_RAISONS[f.raison ?? ''] ?? aTraduire('Écartée'));
+  const etat = avant
+    ? t`Écartée avant : déjà écartée avant l’application.`
+    : reglage
+      ? t`À écarter, proposé par le réglage de netteté : il peut encore la faire revenir.`
+      : vous
+        ? t`Écartée par vous (${raison}).`
+        : origine === 'ia'
+          ? t`Écartée (${raison}) : proposition de l’IA acceptée.`
+          : t`Écartée (${raison}) : proposition de l’application acceptée.`;
+  const lu = t`Suppr ou « Remettre » la remet à sa place.`;
+  return {
+    sort: 'ecarter',
+    origine,
+    decide,
+    mot,
+    ...(vous ? { motCourt: t`Écartée` } : {}),
+    bulle: `${etat}\n${lu}`,
+    nom: `${etat} ${lu}`,
+  };
 }
 
 /** Miniature d'une photo ; avec `recadrage`, telle qu'elle sera dans l'album (D62). */
@@ -253,7 +290,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     const nouvelles = new Set<string>();
     for (const tuile of el.querySelectorAll<HTMLElement>('.tuile[data-id]')) {
       const bande = tuile.querySelector<HTMLElement>('.bande-etat');
-      const mot = bande?.querySelector<HTMLElement>('.mot-bande');
+      const mot = bande?.querySelector<HTMLElement>('.mot-bande, .etat-badge');
       const marques = tuile.querySelector<HTMLElement>('.bande-etat .fin-bande, .marques-remarque');
       if (!bande || !mot || !marques || !marques.childElementCount) continue;
       const style = getComputedStyle(bande);
@@ -405,7 +442,7 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
     const f = elements[i];
     const { x, y } = position(i);
     const nouveau = !!derniere && !!f.ajout && jourArrivee(f.ajout) === derniere;
-    const etat = options.etat?.(f) ?? (enMisDeCote ? { classe: 'mis', libelle: texteRaison(f) } : null);
+    const etat = options.etat?.(f) ?? (enMisDeCote ? { classe: 'mis', libelle: texteRaison(f), badge: badgeMisDeCote(f) } : null);
     const marques = options.finBande?.(f);
     const serree = !!marques && serrees.has(f.id);
     const marqueNouveau = nouveau && (
@@ -441,8 +478,14 @@ export function GrillePhotos({ elements, options = {} }: { elements: FichierPlan
         {avecBande ? (
           <>
             {etat?.badge ? (
-              // Le badge d'origine (D112) : « nouveau » au bout s'il tient, sinon dans la bulle de la case.
-              <BandeBadge badge={etat.badge} largeur={largeurTuile} fin={nouveau && lignesLegende === 0 ? t`nouveau` : undefined} />
+              // Le badge d'origine (D112) : « nouveau » au bout s'il tient, sinon dans la bulle de la case ; les marques
+              // ↻ ✂ ▣ au bout, ou en tête de la remarque si la bande n'a pas la place (data-serree).
+              <BandeBadge
+                badge={etat.badge}
+                largeur={largeurTuile}
+                fin={nouveau && lignesLegende === 0 ? t`nouveau` : undefined}
+                marques={marques && !serree ? <span class="fin-bande">{marques}</span> : undefined}
+              />
             ) : (
               // L'état écrit, ses marques au bout ; jamais la forme d'un bouton (C-9.2).
               <div class={`etat-photo bande-etat ${etat?.classe ?? 'decider'}`}>

@@ -18,6 +18,7 @@ import type { FichierPlan } from '../../lib/plan';
 import { bandeVignettes, choisirPresentation, contenir, dispositionCote, MESURES, photoOuverture, placeUne, proportion, repartir, type MesuresComparer, type Presentation, type Scene } from '../../lib/presentationComparer';
 import { cleMiniature } from '../../navigateur/miniatures';
 import { annuler, retablir, serviceMiniatures, session } from '../etat';
+import { BandeBadge, type DescriptionBadge } from './Badge';
 import { AnnulerRetablir } from './Cadre';
 import { Miniature } from './GrillePhotos';
 import { Icone, type NomIcone } from './Icones';
@@ -110,6 +111,9 @@ function ImageVolet({ f, vue, largeur, hauteur }: { f: FichierPlan; vue: Vue; la
   );
 }
 
+/** Hauteur ajoutée à la légende par le badge : la bande (28 px) et son écart. */
+const BANDE_COMPARER = 34;
+
 /** Passer d'un groupe de photos à l'autre sans fermer (étape « Doublons ») ; A pour accepter. */
 export interface NavigationGroupes {
   texte: string;
@@ -117,9 +121,9 @@ export interface NavigationGroupes {
   suivant?: () => void;
   /** Accepter la proposition du groupe, puis passer au suivant. */
   accepter?: () => void;
-  /** Libellé du bouton (« Accepter : garder la 1 [vignette], écarter 2 autres »), le même que sur la page (É9). */
-  libelleAccepter?: ComponentChildren;
-  /** Le même libellé, en texte entier, pour le lecteur d'écran. */
+  /** Ce que fera « Accepter → », en gris à sa gauche (« garde la 2 · écarte 1 »), le même que sur la page (D112). */
+  ditAccepter?: string;
+  /** La phrase entière, pour le lecteur d'écran et l'infobulle. */
   lecteurAccepter?: string;
   /** Avertissement avant d'accepter (aucune photo gardée : tout le groupe sera mis de côté). */
   alerte?: string;
@@ -159,6 +163,7 @@ export function Comparateur({
   basculer,
   mesures,
   gardee,
+  badge,
 }: {
   photos: FichierPlan[];
   fermer: () => void;
@@ -196,8 +201,14 @@ export function Comparateur({
   mesures?: Partial<MesuresComparer>;
   /** Présentation choisie à la main, gardée d'un groupe à l'autre. */
   gardee?: PresentationGardee;
+  /**
+   * Le badge de chaque photo (D112, C-9.2) : la même bande que sur la page, sous la photo (elle se clique), et sans
+   * clic sur sa vignette de « Une à la fois » ; les boutons de choix restent dessous.
+   */
+  badge?: (f: FichierPlan) => DescriptionBadge;
 }) {
-  const m = { ...MESURES, ...mesures };
+  // La bande de 28 px et son écart s'ajoutent à la légende côte à côte : la photo cède sa place, rien ne déborde.
+  const m = { ...MESURES, ...mesures, legendeCote: (mesures?.legendeCote ?? MESURES.legendeCote) + (badge ? BANDE_COMPARER : 0) };
   const n = photos.length;
   const ids = photos.map((f) => f.id);
   const [vue, setVue] = useState<Vue>(VUE_ENTIERE);
@@ -388,6 +399,7 @@ export function Comparateur({
       >
         <ImageVolet f={f} vue={vue} largeur={h * ratios[i]} hauteur={h} />
         <figcaption class="legende-comparer" style={{ height: `${m.legendeCote}px` }}>
+          {badge && <BandeBadge badge={badge(f)} largeur={Math.round(Math.max(h * ratios[i] + 2 * m.margeCarte, m.carteMin))} />}
           {choixDe(f, false)}
           {(resume || ou || basculer) && (
             // Deux lignes au plus (C-9.6) ; le texte entier est dans l'infobulle et dans « Une à la fois ».
@@ -422,6 +434,7 @@ export function Comparateur({
             {numero(c)}
             {t`Photo ${c + 1} sur ${n}`}
           </p>
+          {badge && <BandeBadge badge={badge(f)} largeur={m.legendeUne} />}
           {choixDe(f, true)}
           {plusieurs}
           {outils && <div class="outils-photo">{outils(f)}</div>}
@@ -448,10 +461,15 @@ export function Comparateur({
                         {/* La miniature tient dans son cadre : un paysage en prend la largeur, un portrait la hauteur. */}
                         <Miniature f={p} taille={Math.round(ratios[i] >= 1 ? Math.min(bande.largeurVignette, bande.hauteurVignette * ratios[i]) : bande.hauteurVignette)} rotation={p.rotation} />
                       </span>
-                      <span class={`etat-photo bande-etat ${e.classe}`}>
-                        {e.icone && <Icone nom={e.icone} taille={16} />}
-                        {i + 1} · {e.libelle}
-                      </span>
+                      {badge ? (
+                        // La vignette : le plein ou la bordure, l'icône d'origine et le numéro ; le mot dans l'infobulle.
+                        <BandeBadge badge={{ ...badge(p), basculer: undefined, effet: undefined, mot: `${i + 1}`, motCourt: undefined }} largeur={bande.largeurVignette} enLigne />
+                      ) : (
+                        <span class={`etat-photo bande-etat ${e.classe}`}>
+                          {e.icone && <Icone nom={e.icone} taille={16} />}
+                          {i + 1} · {e.libelle}
+                        </span>
+                      )}
                     </button>
                   </li>
                 );
@@ -572,10 +590,23 @@ export function Comparateur({
             <Icone nom="plus" taille={16} />
           </button>
         </span>
+        {navigation?.accepter && navigation.ditAccepter && (
+          <span class="dit-accepter" aria-hidden="true" title={navigation.lecteurAccepter}>
+            {navigation.ditAccepter}
+          </span>
+        )}
         {navigation?.accepter && (
-          <button type="button" class="principal" data-action="accepter" onClick={navigation.accepter} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && e.repeat && e.preventDefault()} aria-label={navigation.lecteurAccepter} title={t`Touche A, puis groupe suivant`}>
-            <Icone nom="coche" taille={16} />
-            {navigation.libelleAccepter ?? t`Accepter et groupe suivant`}
+          <button
+            type="button"
+            class="principal bouton-accepter"
+            data-action="accepter"
+            onClick={navigation.accepter}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && e.repeat && e.preventDefault()}
+            aria-label={navigation.lecteurAccepter}
+            title={t`${navigation.lecteurAccepter ?? t`Accepter`} (touche A, puis groupe suivant)`}
+          >
+            {t`Accepter`}
+            <Icone nom="fleche" taille={16} />
           </button>
         )}
       </footer>

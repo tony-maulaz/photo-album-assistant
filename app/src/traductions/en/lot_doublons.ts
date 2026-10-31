@@ -40,23 +40,15 @@ export const TEXTES: Record<string, string> = {
   'Cliquer pour la garder': 'Click to keep it',
   gardées: 'kept',
   Revoir: 'Review',
-  'Toutes les photos du groupe sont gardées.': 'All the photos of the group are kept.',
-  'Touche A': 'Key A',
-  'Touche A, puis groupe suivant': 'Key A, then next group',
   'Comparer en grand': 'Compare full size',
   Afficher: 'Show',
   Tous: 'All',
   Classer: 'Order',
-  'par heure': 'by time',
-  'les plus grands groupes d’abord': 'largest groups first',
   // Portée des boutons groupés (D98)
   'Toutes les copies exactes': 'All exact copies',
   'Toutes les rafales': 'All bursts',
   'Toutes les scènes en double': 'All repeated scenes',
   'Garder tous les exemplaires': 'Keep every copy',
-  'Cette journée': 'This day',
-  'Ce mois': 'This month',
-  'Ce dossier': 'This folder',
   'de cette journée': 'for this day',
   'de ce mois': 'for this month',
   'de ce dossier': 'for this folder',
@@ -66,11 +58,6 @@ export const TEXTES: Record<string, string> = {
   'Aucun groupe à montrer ici.': 'No group to show here.',
   Mois: 'Months',
   'Groupe {0} sur {1}': 'Group {0} of {1}',
-  'Aucune photo mise de côté à cette étape.': 'No photo set aside at this step.',
-  'Les photos écartées à cette étape. Un clic remet une photo à sa place, un second l’écarte de nouveau.':
-    'The photos set aside at this step. One click puts a photo back in its place, a second sets it aside again.',
-  'Tout remettre ({0})': 'Put all back ({0})',
-  Remise: 'Put back',
   'Cliquer pour l’écarter de nouveau': 'Click to set it aside again',
   'Cliquer pour la remettre à sa place': 'Click to put it back in its place',
   'doublon de la photo de {0}': 'duplicate of the {0} photo',
@@ -95,7 +82,6 @@ export const TEXTES: Record<string, string> = {
   'L’IA n’a trouvé aucune autre scène en double.': 'The AI found no other duplicate scene.',
 
   // Comparateur.tsx
-  'Accepter et groupe suivant': 'Accept and next group',
 
   // analyseDossier.ts, Analyse.tsx : les rafales cherchées avec l'analyse (D81)
   'Rafales cherchées en {0} s : {1}': 'Bursts looked for in {0} s: {1}',
@@ -103,9 +89,7 @@ export const TEXTES: Record<string, string> = {
 
   // Regroupement de la liste de gauche ; rafales annoncées à l'inventaire
   Grouper: 'Group',
-  'par journée': 'by day',
   'par mois': 'by month',
-  'par dossier': 'by folder',
   rafale: 'burst',
   '{0} (photos quasi identiques prises à la suite) : vous choisirez à l’étape « {1} » celles à garder.':
     '{0} (nearly identical photos taken in a row): you will choose which to keep at the “{1}” step.',
@@ -121,18 +105,15 @@ export const TEXTES: Record<string, string> = {
   'Groupe suivant, groupe précédent': 'Next group, previous group',
   'Passer d’une photo du groupe à l’autre': 'Move from one photo of the group to another',
   'Garder ou écarter la photo': 'Keep or set aside the photo',
-  'Accepter la proposition du groupe': 'Accept the group’s suggestion',
   'N et P': 'N and P',
   'Journée (ou dossier) suivante, précédente': 'Next, previous day (or folder)',
 
   // lib/groupesDoublons.ts
   'Accepter {0}': 'Accept {0}',
-  'Tout écarter': 'Set all aside',
   // Un clic choisit, « Accepter » valide (D101)
   'Choisir une photo': 'Choose a photo',
   'Cliquer pour garder celle-ci seule (Ctrl+clic : en plus)': 'Click to keep only this one (Ctrl+click: in addition)',
   'Garder plusieurs photos': 'Keep several photos',
-  'dont {0} où vous n’avez rien choisi': 'including {0} where you chose nothing',
   // D102 — choisir dans les rafales avec l'IA
   'Choisir avec l’IA dans {0} ?': 'Choose with AI in {0}?',
   'Environ {0} CHF (au plus). Les photos de chaque rafale sont envoyées en 1568 px à l’IA (api.anthropic.com).':
@@ -150,7 +131,6 @@ export const TEXTES: Record<string, string> = {
   'L’IA ne départage pas (trop de monde) : à vous de choisir': 'The AI does not decide (too many people): your choice',
   ' (photos presque équivalentes)': ' (photos almost equivalent)',
   'Choisir avec l’IA dans {0}': 'Choose with AI in {0}',
-  'Choisir avec l’IA {0}': 'Choose with AI {0}',
   'Choisir avec l’IA': 'Choose with AI',
   'Choisir dans les rafales': 'Choose within bursts',
   'Photos de chaque rafale en 1568 px': 'Photos of each burst at 1568 px',

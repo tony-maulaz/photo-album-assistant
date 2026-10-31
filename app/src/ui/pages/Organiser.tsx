@@ -261,7 +261,7 @@ export function PageOrganiser() {
               </button>
             ) : (
               <button type="button" onClick={() => mettreSelectionDeCote()} title={t`Touche Suppr : rien n’est supprimé`}>
-                {t`Mettre de côté`}
+                {t`Écarter`}
               </button>
             )}
             <button type="button" disabled={!ancre.value} aria-describedby={ancre.value ? undefined : 'raison-periode'} onClick={() => memePeriode(10)} title={t`Sélectionner toute la journée de la dernière photo cliquée`}>
@@ -317,7 +317,7 @@ export function PageOrganiser() {
         resume={
           <>
             {pluriel(dossiers.length, 'dossier')} · {pluriel(racine.photosTotal, 'photo')} · {pluriel(racine.videosTotal, 'vidéo')}
-            {misDeCote ? t` · ${nombre(misDeCote)} mis de côté` : ''}
+            {misDeCote ? t` · ${nombre(misDeCote)} écartés` : ''}
           </>
         }
         ecarte

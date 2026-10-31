@@ -106,7 +106,6 @@ export const TEXTES: Record<string, string> = {
   'Déplacer {0} vers « {1} »': 'Move {0} to “{1}”',
   élément: 'item',
   éléments: 'items',
-  'Mettre de côté {0}': 'Set aside {0}',
   'Remettre {0}': 'Put back {0}',
   'Un dossier « {0} » existe déjà à cet endroit.': 'A folder “{0}” already exists here.',
   'Créer le dossier « {0} »': 'Create the folder “{0}”',

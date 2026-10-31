@@ -8,6 +8,7 @@ import { LIBELLES_DEFAUTS, LIBELLES_PERSONNES, LIBELLES_TYPES } from '../../lib/
 import { LIBELLES_SIGNAUX, type Signal } from '../../lib/indicateurs';
 import { cheminDossier, RACINE, type FichierPlan } from '../../lib/plan';
 import { arrivees, avancement, copiesRetenues, equilibre, groupesParJour, periodesEquilibre, redondances, type GroupeJour, type Periode } from '../../lib/selection';
+import type { DescriptionBadge } from '../composants/Badge';
 import { BarreValidation, garderFocus, RaisonDesactivee } from '../composants/Cadre';
 import { annulerIci, LigneEtape, OutilsCadre, PanneauAide, retablirIci, useCadre, useMenuListe } from '../composants/CadreCommun';
 import { Comparateur } from '../composants/Comparateur';
@@ -49,40 +50,34 @@ function estChampDeSaisie(e: KeyboardEvent): boolean {
   return t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName);
 }
 
-/** L'état d'une photo, écrit dans la bande sous elle (C-9.2) : ambre pour l'album, blanc pour le reste. */
-function etatAlbum(album: FichierPlan['album']): { classe: string; libelle: ComponentChildren } {
-  if (album === 1)
-    return {
-      classe: 'album',
-      libelle: (
-        <>
-          <span class="etoiles a1">★</span>
-          {t`Dans l’album`}
-        </>
-      ),
-    };
-  if (album === 2)
-    return {
-      classe: 'grande',
-      libelle: (
-        <>
-          <span class="etoiles a2">★★</span>
-          {t`Grande`}
-        </>
-      ),
-    };
-  if (album === 0)
-    return {
-      classe: 'pas',
-      libelle: (
-        <>
-          <Icone nom="croix" taille={16} />
-          {t`Pas pour l’album`}
-        </>
-      ),
-    };
-  return { classe: 'decider', libelle: t`À décider` };
+/**
+ * Le badge d'une photo (D112, C-9.2) : à la Sélection, tout choix est de l'utilisateur ; les étoiles tiennent lieu
+ * de punaise. Plein : décidé (★ Dans l'album, ★★ Grande, Pas pour l'album) ; « À décider » : rien, ni bord ni icône
+ * (C-3.12). Un clic sur la bande fait seulement « Dans l'album » ↔ « À décider » ; « Grande » et « Pas pour l'album » se font avec 2 et X
+ * ou le panneau (une bande à quatre états se lirait mal).
+ */
+function badgeAlbum(f: FichierPlan): DescriptionBadge {
+  const a = f.album;
+  const dans = (a ?? 0) >= 1;
+  // Tout état hors de l'album donne « Dans l'album » ; tout état dans l'album (Grande comprise) redonne « À décider ».
+  const basculer = () => choisir([f.id], dans ? undefined : 1);
+  const effet = dans ? t`Clic : la remettre à décider (touche Suppr).` : t`Clic : dans l’album (touche Espace).`;
+  const lu = dans ? t`Activer pour la remettre à décider.` : t`Activer pour la mettre dans l’album.`;
+  const etat = a === 1 ? t`Dans l’album, choisie par vous.` : a === 2 ? t`Grande photo (pleine page), choisie par vous.` : a === 0 ? t`Pas pour l’album : elle reste dans l’archive.` : t`À décider : rien n’est choisi pour elle.`;
+  const commun = {
+    origine: 'vous' as const,
+    basculer,
+    effet: dans ? { icone: 'echanger' as const, mot: t`Remettre à décider`, motCourt: t`À décider` } : { icone: 'echanger' as const, mot: t`Mettre dans l’album`, motCourt: t`Album` },
+    bulle: `${etat}\n${effet}`,
+    nom: `${etat} ${lu}`,
+  };
+  if (a === 1) return { ...commun, sort: 'album', decide: true, mot: t`Dans l’album`, motCourt: t`Album`, tete: <span class="etoiles a1">★</span> };
+  if (a === 2) return { ...commun, sort: 'grande', decide: true, mot: t`Grande`, tete: <span class="etoiles a2">★★</span> };
+  // « Pas pour l'album » sans icône : ✕ dirait « l'application » (C-5.3, É13).
+  if (a === 0) return { ...commun, sort: 'ecarter', decide: true, mot: t`Pas pour l’album`, motCourt: t`Hors album`, tete: null };
+  return { ...commun, sort: 'decider', decide: false, mot: t`À décider`, tete: null };
 }
+
 /** Les quatre choix d'une photo, en toutes lettres (Comparer en grand). */
 const CHOIX_PHOTO = [
   [1, aTraduire('★ Dans l’album')],
@@ -872,8 +867,8 @@ export function PageSelection() {
               ouvrir: (i) => ouvrirTri(i),
               classe: (f) => (f.album === undefined ? 'a-decider' : f.album === 0 ? 'refusee' : 'retenue'),
               groupes,
-              // L'état écrit sous chaque photo, ses marques au bout de la bande, une remarque dessous (C-9).
-              etat: (f) => etatAlbum(f.album),
+              // Le badge sous chaque photo (D112), ses marques au bout de la bande, une remarque dessous (C-9).
+              etat: (f) => ({ classe: '', libelle: '', badge: badgeAlbum(f) }),
               finBande: (f) => <MarquesBande f={f} pile={pilesDe.get(f.id)} ouverte={pilesOuvertes.value.has(pilesDe.get(f.id)?.[0] ?? '')} />,
               telleQuAlbum: true,
               // « Pas pour l'album » tient dans la bande, même à la plus petite taille (C-10.4).
@@ -936,6 +931,8 @@ export function PageSelection() {
             libelle: t(CHOIX_PHOTO.find(([v]) => v === f.album)![1]),
             icone: f.album === 0 ? 'croix' : undefined,
           })}
+          // Le même badge que dans la grille, qui se clique de même (D112).
+          badge={badgeAlbum}
           // Le choix allumé est l'état (C-4.9) : quatre choix, en grille sous la photo ou en liste à droite.
           choix={(f) =>
             CHOIX_PHOTO.map(([valeur, libelle]) => (

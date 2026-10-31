@@ -322,7 +322,7 @@ plein** : celui de la première chose à faire, les autres en contour :
 - **la maison** (le domicile) : « L'indiquer… » ouvre la fenêtre des endroits
   qui reviennent souvent (ou la Configuration s'il n'y en a pas) ;
 - **les photos en double** (copies exactes pas encore mises de côté, D85) :
-  « Voir » (étape Doublons), « Mettre de côté » ; rien n'est supprimé, elles
+  « Voir » (étape Doublons), « Écarter » ; rien n'est supprimé, elles
   vont dans `_mis_de_cote/` ;
 - **les captures d'écran** parmi les photos à trier : « Voir » ouvre une
   fenêtre (décocher une vraie photo, l'agrandir), « Mettre à part » les
@@ -491,23 +491,25 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
 - **Onglets** (D71), un par sorte de doublons, dans la barre d'outils, chacun
   avec ce qui reste à accepter : **Copies exactes** (avec les photos présentes
   dans plusieurs dossiers gardés, D86), **Rafales**, **Même scène (IA)**,
-  **Mis de côté** (tout ce que l'étape a écarté, à remettre d'un clic). Ce qui
-  touche tout l'onglet est dans un menu nommé par sa portée (D98) : « Toutes
-  les copies ▾ » (« Accepter les N propositions », « Garder tous les
-  exemplaires ») ou « ✦ Toutes les rafales ▾ » (« Choisir avec l'IA », prix
-  sur sa ligne) ; puis « Taille − + » (le même réglage qu'à la Sélection ; au
-  palier, les photos en font les trois quarts). En haut de la liste de
-  gauche : **Afficher** (À accepter, Acceptés, **Tous** par défaut),
-  « Grouper et classer » (replié), « Chercher » (par dossier) ; dessous, les
+  puis, après un filet, **Écartées** (tout ce que l'étape a écarté, à garder
+  de nouveau d'un clic ; D112). Ce qui touche tout l'onglet est écrit en clair,
+  avec sa portée (D98, D112 : plus de menu) : « Accepter les N propositions »
+  et « Garder tous les exemplaires » (Copies), « ✦ Choisir avec l'IA dans N
+  rafales » et son prix (Rafales). La taille des photos est le curseur de la
+  ligne de l'étape (au palier, les photos en font les trois quarts, et le
+  curseur le dit). En haut de la liste de gauche : **Afficher** (À accepter,
+  Acceptés, **Tous** par défaut), **Grouper** (Journée · Mois · Dossier) et
+  **Classer** (Heure · Plus grands d'abord), visibles, « Chercher » (par
+  dossier) ; dessous, les
   journées (puis les dossiers gardés, puis les photos sans date), avec ce qui
   reste ; au palier, la liste devient un menu dans la tête de la table. Tête de
-  la table : le titre de la section et son compte, le menu « Cette journée ▾ »
-  (« Ce mois », « Ce dossier ») avec « Accepter les N groupes de cette
-  journée » (s'il reste au moins deux groupes ; ceux où au moins une photo est
-  choisie, « dont N où vous n'avez rien choisi ») et l'IA de la section : on
-  parcourt la section en choisissant d'un clic, puis on la valide d'un coup
-  (D100, D101) ; quand la section est finie, le plein « Suite à accepter :
-  … › » ; quand l'onglet est fini (et sur « Mis de côté »), le plein mène au
+  la table : le titre de la section et son compte, puis en clair « Accepter les
+  N groupes » (s'il reste au moins deux groupes ; ceux où au moins une photo est
+  choisie ; une fenêtre dit d'abord combien de photos seront écartées, dont
+  combien dans des groupes où rien n'a été choisi, D112) et « ✦ Choisir avec
+  l'IA de cette journée » : on parcourt la section en choisissant d'un clic,
+  puis on la valide d'un coup (D100, D101) ; quand la section est finie, le plein « Suite à accepter :
+  … › » ; quand l'onglet est fini (et sur « Écartées »), le plein mène au
   prochain onglet qui reste (« Rafales : 6 à accepter › »). Pas de boutons
   vers les sections voisines (N et P au clavier ; « Journée suivante à
   accepter » sur la ligne des boutons du dernier groupe). Groupé par dossier,
@@ -518,8 +520,10 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   dossiers sont par ordre alphabétique, avec une recherche.
 - **Un groupe**, posé sur la table : un en-tête d'une ligne, collé en haut de
   la zone tant que le groupe se voit (heure · sorte, « Comparer en grand »,
-  le plein « Accepter » au bout à droite), puis les photos, chacune avec sa
-  place au début de sa bande d'état (« 4 · À garder ») ; aux Copies, la photo
+  « Accepter → » au bout à droite, ce qu'il fera écrit en gris à sa gauche),
+  puis les photos, chacune avec son badge (D112 : le mot et sa couleur disent
+  ce qui lui arrive, l'icône d'où vient l'idée ; bordure : proposé, plein :
+  décidé ; la place après l'icône, « ✓ 4 · À garder ») ; aux Copies, la photo
   une fois et une ligne par exemplaire. Chaque photo a une proposition
   (garder ou écarter). **Un clic choisit, « Accepter » applique** (D101) : un
   clic sur une photo pose un choix en attente (« À garder », « À écarter » ;
@@ -530,18 +534,26 @@ sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
   Ctrl+clic ajoute une photo) ; pour les copies exactes, il change cet
   exemplaire seul. Le plein suit **le dernier geste** (le groupe cliqué, ou
   touché au clavier ; après la molette, le premier groupe dont on voit la
-  bande « À garder ») et dit ce qu'il fait : « Accepter : garder la 4
-  [vignette], écarter 5 autres », « garder 3 photos, écarter 9 autres »,
-  aux Copies « garder celle de « dossier » » (ou le nom du fichier si deux
-  exemplaires sont dans le même dossier) ; il applique les choix et accepte
-  le groupe (« Gardée », « Écartée », « Accepté » avec la coche) ; il ignore
-  les clics, A et Entrée 0,5 s après une acceptation (comme « Tout garder »,
-  « Tout écarter » et les photos du groupe suivant) ; le focus passe alors à
-  la photo gardée du groupe suivant, jamais à son plein (Espace y choisit,
-  il n'accepte pas). Aussi **Tout garder**,
-  **Tout écarter** (« Autres choix ▾ »), **Comparer en grand** (zoom
-  synchronisé, dossier de chaque photo, ← → d'un groupe à l'autre, 1, 2, 3…
-  choisissent la photo de ce numéro, le même plein). Un groupe accepté se
+  bande « À garder ») ; il dit seulement « Accepter → », à largeur fixe, et
+  la ligne grise d'à côté dit ce qu'il fera : « garde la 4 · écarte 5 »,
+  « garde 3 photos · écarte 9 », aux Copies « garde 1 exemplaire · écarte 2 »
+  (« · puis septembre 2026 » sur le dernier groupe d'une section, qu'il
+  ouvre ensuite) ; il applique les choix et accepte le groupe (« Gardée »,
+  « Écartée », « Accepté » avec la coche) ; il ignore les clics, A et Entrée
+  0,5 s après une acceptation (comme « toutes · aucune » et les photos du
+  groupe suivant) ; le focus passe alors à la photo gardée du groupe
+  suivant, jamais à son plein (Espace y choisit, il n'accepte pas). Un clic
+  sur le badge donne l'autre sort, par vous ; un second clic revient à la
+  proposition ; G et X fixent le sort de la photo qui a le focus. La case
+  **Garder plusieurs photos**, cochée, montre « choisir : toutes · aucune »
+  (Ctrl+A : toutes), à la place de « Tout garder » et « Tout écarter » (D112).
+  Aussi **Comparer en grand** (zoom synchronisé, dossier de chaque photo, le
+  même badge sous chaque photo, ← → d'un groupe à l'autre, 1, 2, 3…
+  choisissent la photo de ce numéro, le même « Accepter → »). S'il reste des
+  copies exactes, la barre du bas le dit en brun, la case de Doublons de la
+  frise passe en brun doux et « Valider et continuer » propose « Continuer
+  sans elles », « Les voir d'abord » ou « Accepter les N copies et
+  continuer » (D112 ; jamais pour des rafales). Un groupe accepté se
   replie à sa place, quel que soit le filtre (« Revoir » le rouvre,
   « Replier » le referme ; D100 levée le 27.10) ; « Annuler » le rouvre et
   lui rend le plein, en haut de la zone. Un

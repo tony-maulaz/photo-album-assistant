@@ -417,7 +417,7 @@ try {
   verifier((await copie0140.getAttribute('class')).includes('a_ecarter'), 'copies exactes : la copie du vrac est proposée à l’écart (« à écarter »)');
   const carte0141 = page.locator('.carte-doublons', { hasText: '0141' });
   verifier(
-    (await carte0141.locator('.tuile-doublon.choisie').count()) === 1 &&
+    (await carte0141.locator('.tuile-doublon[aria-pressed=true]').count()) === 1 &&
       (await carte0141.locator('.tuile-doublon.a_ecarter').count()) === 1 &&
       (await page.locator('.carte-doublons', { hasText: 'BESTOF' }).count()) === 0,
     'copie déjà rangée dans janvier (« Garder, nettoyer ») : l’exemplaire à trier est proposé à l’écart ; BESTOF (« Ne pas toucher ») n’est pas examiné',
@@ -431,6 +431,21 @@ try {
   await page.keyboard.press('Control+z');
   await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label$=" · copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
   verifier(true, 'un clic garde une copie proposée à l’écart ; Ctrl+Z annule');
+  // Badges (D112, É14 h) : la ligne d'un exemplaire porte sa bande, en bordure tant que le groupe n'est pas accepté ;
+  // un clic sur la ligne en fait un choix « par vous », en plein.
+  {
+    const bande = () => page.locator('.tuile-doublon[aria-label$=" · copie de 0140.jpg"] .badge-photo').evaluate((b) => ({ sort: b.dataset.sort, origine: b.dataset.origine, decide: b.hasAttribute('data-decide'), mot: b.textContent }));
+    const avant = await bande();
+    await copie0140.click();
+    await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label$=" · copie de 0140.jpg"] .badge-photo')?.hasAttribute('data-decide'));
+    const apres = await bande();
+    verifier(
+      avant.sort === 'ecarter' && !avant.decide && avant.origine === 'application' && apres.sort === 'garder' && apres.decide && apres.origine === 'vous',
+      `badge d’un exemplaire : « ${avant.mot} » en bordure, puis « ${apres.mot} » en plein après un clic`,
+    );
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => document.querySelector('.tuile-doublon[aria-label$=" · copie de 0140.jpg"]')?.classList.contains('a_ecarter'));
+  }
   // Lot 4 (cadre commun) : l'explication de l'onglet est dans l'Aide (ouverte d'elle-même à 1440 px à la première
   // visite), ce qui touche tout l'onglet dans le menu « Toutes les copies » de la barre d'outils, les filtres en haut
   // de la liste de gauche, sans « Accepter ».
@@ -439,18 +454,33 @@ try {
   verifier(
     aideDoublons.ouverte &&
       aideDoublons.boutons === 0 &&
-      (await page.locator('.outils-cadre .rangee-onglet .bouton-portee', { hasText: 'Toutes les copies' }).count()) === 1 &&
+      (await page.locator('.outils-cadre .rangee-onglet [data-action=accepter-onglet]', { hasText: 'Accepter les 2 propositions' }).count()) === 1 &&
+      (await page.locator('.outils-cadre .rangee-onglet button', { hasText: 'Garder tous les exemplaires' }).count()) === 1 &&
+      (await page.locator('.page-doublons [aria-haspopup=true]:not(.menu-vue):not([data-action=menu-liste])').count()) === 0 &&
       (await page.locator('.sections-doublons .outils-doublons').count()) === 1 &&
       (await page.locator('.outils-doublons button', { hasText: /^Accepter/ }).count()) === 0 &&
       ((await page.locator('.rangee-onglet').getAttribute('title')) ?? '').includes('Acceptés : 0 sur 2'),
-    'explication de l’onglet dans l’Aide, boutons de tout l’onglet dans son menu, filtres en haut de la liste de gauche',
+    'explication de l’onglet dans l’Aide, boutons de tout l’onglet en clair (plus de menu), filtres en haut de la liste de gauche',
   );
   // « Tous » allumé par défaut (C-4.8) ; un groupe accepté reste à sa place, replié (D100 levée le 27.10).
   verifier((await page.getByRole('radio', { name: 'Tous' }).getAttribute('aria-checked')) === 'true', 'Doublons : le filtre « Tous » est allumé par défaut (C-4.8)');
   const cartes = await page.locator('.carte-doublons').count();
   const ouvertes = await page.locator('.carte-doublons:not(.repliee)').count();
-  await page.locator('.rangee-onglet .bouton-portee').click();
-  await page.locator('.rangee-onglet').getByRole('menuitem', { name: 'Accepter les 2 propositions', exact: true }).click();
+  // Accepter tout l'onglet ouvre d'abord une fenêtre qui chiffre (É14 d), titrée du mot du bouton ; rien n'est écarté
+  // avant son plein ; Échap ne fait rien.
+  await page.locator('[data-action=accepter-onglet]').click();
+  const fenetreAccepter = page.locator('.dialogue[role=dialog]');
+  await fenetreAccepter.waitFor();
+  const texteFenetre = (await fenetreAccepter.innerText()).replace(/\s+/g, ' ');
+  verifier(
+    /Accepter les 2 propositions \?/.test(texteFenetre) && /2 photos seront écartées, toutes dans des groupes où vous n’avez rien choisi/.test(texteFenetre) && (await page.locator('.onglet-doublons.actif').innerText()).includes('2 à accepter'),
+    `accepter tout l’onglet : une fenêtre chiffre d’abord, rien n’est écarté (« ${texteFenetre.slice(0, 120)} »)`,
+  );
+  await page.keyboard.press('Escape');
+  await fenetreAccepter.waitFor({ state: 'detached' });
+  verifier((await page.locator('.onglet-doublons.actif').innerText()).includes('2 à accepter'), 'la fenêtre fermée par Échap : rien n’est accepté');
+  await page.locator('[data-action=accepter-onglet]').click();
+  await fenetreAccepter.getByRole('button', { name: 'Accepter les 2 propositions', exact: true }).click();
   await page.locator('.onglet-doublons.actif .compte.fini', { hasText: '2' }).waitFor();
   verifier(
     (await page.locator('.carte-doublons').count()) === cartes && (await page.locator('.carte-doublons:not(.repliee)').count()) === ouvertes - 2,
@@ -462,15 +492,52 @@ try {
     const rafalesRestent = /à accepter/.test(await page.locator('.onglet-doublons', { hasText: 'Rafales' }).innerText());
     verifier(!rafalesRestent || ((await suite.count()) === 1 && (await suite.innerText()).includes('Rafales')), 'Copies toutes acceptées : un plein « Rafales : N à accepter › »');
   }
-  await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).click();
+  await page.locator('.onglet-doublons', { hasText: 'Écartées' }).click();
   await page.locator('.tuile-doublon.ecartee').first().waitFor();
-  verifier((await page.locator('.tuile-doublon.ecartee').count()) === 2, 'onglet « Mis de côté » : les 2 copies écartées, prêtes à être remises');
+  verifier((await page.locator('.tuile-doublon.ecartee').count()) === 2, 'onglet « Écartées » : les 2 copies écartées, prêtes à être remises');
+  // Écartées (É14 j) : la bande en plein, l'icône du groupe accepté ; un clic la garde « par vous », un second l'écarte
+  // de nouveau ; Ctrl+Z défait ; « Garder les 2 photos » remplace « Tout remettre ».
+  {
+    const bandes = () => page.locator('.grille-mis-de-cote .badge-photo').evaluateAll((l) => l.map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`));
+    const avant = await bandes();
+    await page.locator('.grille-mis-de-cote .badge-photo .clic-badge').first().click();
+    await page.waitForFunction(() => document.querySelector('.grille-mis-de-cote .badge-photo')?.dataset.sort === 'garder');
+    const apres = await bandes();
+    // Le geste est écrit dans .album/plan.json (règle d'or 7) : la photo n'y est plus « mis_de_cote ».
+    const nomEcartee = ((await page.locator('.grille-mis-de-cote .tuile-doublon').first().getAttribute('aria-label')) ?? '').split(' : ')[0];
+    const statutEcrit = async (attendu) => {
+      for (let k = 0; k < 15; k++) {
+        const statut = await page.evaluate(async (nom) => {
+          const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+          const plan = JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text());
+          return plan.fichiers.find((x) => x.nom === nom)?.statut ?? null;
+        }, nomEcartee);
+        if ((statut === 'mis_de_cote') === attendu) return true;
+        await page.waitForTimeout(200);
+      }
+      return false;
+    };
+    verifier(await statutEcrit(false), `« Écartées » : la photo remise (« ${nomEcartee} ») est écrite dans .album/plan.json`);
+    await page.waitForTimeout(600);
+    await page.locator('.grille-mis-de-cote .badge-photo .clic-badge').first().click();
+    await page.waitForFunction(() => document.querySelector('.grille-mis-de-cote .badge-photo')?.dataset.sort === 'ecarter');
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => document.querySelector('.grille-mis-de-cote .badge-photo')?.dataset.sort === 'garder');
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => document.querySelector('.grille-mis-de-cote .badge-photo')?.dataset.sort === 'ecarter');
+    verifier(await statutEcrit(true), '« Écartées » : après Ctrl+Z, la photo est de nouveau écartée dans .album/plan.json');
+    verifier(
+      avant.every((b) => b === 'ecarter:application:plein') && apres[0] === 'garder:vous:plein' && (await page.getByRole('button', { name: 'Garder les 2 photos' }).count()) === 1,
+      `« Écartées » : bandes ${avant.join(', ')} ; un clic : ${apres[0]} ; second clic et Ctrl+Z ; « Garder les 2 photos »`,
+    );
+  }
   // Grouper par dossier : une copie se range sous chacun des dossiers de la source où elle a un exemplaire.
   await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
   await page.getByRole('radio', { name: 'Tous' }).click();
-  // « Grouper et classer » est replié dans la liste de gauche (lot 4) : on l'ouvre.
-  if (!(await page.locator('.outils-doublons details.grouper-classer').evaluate((d) => d.open))) await page.locator('.outils-doublons details.grouper-classer > summary').click();
-  await page.locator('.outils-doublons select').first().selectOption('dossier');
+  // « Grouper » et « Classer » : deux segmentés visibles dans la liste de gauche (É14 c), plus de liste déroulante.
+  verifier((await page.locator('.outils-doublons select, .outils-doublons details').count()) === 0, 'Doublons : ni liste déroulante ni réglage replié dans la liste de gauche');
+  await page.locator('.outils-doublons').getByRole('radio', { name: 'Dossier', exact: true }).click();
   // Le chemin complet est dans l'infobulle ; la liste n'affiche que le dernier nom, en retrait sous son parent (D97).
   const cheminsSections = () => page.locator('.section-doublons').evaluateAll((l) => l.map((b) => b.getAttribute('title')));
   const sectionsDossiers = await cheminsSections();
@@ -525,21 +592,43 @@ try {
     'comparer en grand : un numéro et le dossier sur chaque photo',
   );
   // La touche du numéro garde la photo proposée à l'écart ; Ctrl+Z annule.
-  const n = 1 + (await comparateur.locator('.volet .etat-photo').evaluateAll((l) => l.findIndex((x) => x.classList.contains('a_ecarter'))));
+  const n = 1 + (await comparateur.locator('.volet .choix-photo').evaluateAll((l) => l.findIndex((x) => x.classList.contains('a_ecarter'))));
   // Le clavier du comparateur s'installe juste après son premier affichage.
   await page.waitForTimeout(300);
   await page.keyboard.press(String(n));
-  await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.choisie').waitFor();
+  await comparateur.locator('.volet').nth(n - 1).locator('.choix-photo.choisie').waitFor();
   verifier(n > 0, `comparer en grand : la touche ${n} garde la photo ${n}`);
+  verifier(
+    (await comparateur.locator('.volet').nth(n - 1).locator('.badge-photo').evaluate((b) => b.dataset.origine === 'vous' && b.hasAttribute('data-decide'))) &&
+      (await comparateur.locator('.volet .badge-photo').count()) === (await comparateur.locator('.volet').count()),
+    'comparer en grand : la même bande sous chaque photo, « par vous » en plein après la touche',
+  );
+  // Le fond vraiment peint (tour 0 de l'étape 2d) : le bouton de la bande reste transparent dans la vue (la règle des
+  // boutons de Comparer le peignait en gris) ; plein et bordure s'y distinguent comme sur la page.
+  const peint = await comparateur.locator('.volet .badge-photo').evaluateAll((l) =>
+    l.map((b) => {
+      const c = b.querySelector('.clic-badge') ?? b;
+      const sb = getComputedStyle(b);
+      return { decide: b.hasAttribute('data-decide'), bouton: c === b ? 'rgba(0, 0, 0, 0)' : getComputedStyle(c).backgroundColor, couleur: getComputedStyle(c).color === sb.color, fond: sb.backgroundColor, ombre: sb.boxShadow };
+    }),
+  );
+  const pleins = peint.filter((p) => p.decide);
+  const bords = peint.filter((p) => !p.decide);
+  verifier(
+    peint.every((p) => p.bouton === 'rgba(0, 0, 0, 0)' && p.couleur) && pleins.length > 0 && bords.length > 0 && bords.every((p) => p.ombre !== 'none' && !pleins.some((q) => q.fond === p.fond)),
+    `comparer en grand : le fond peint de la bande, plein et bordure distincts (${peint.map((p) => `${p.decide ? 'plein' : 'bord'} ${p.fond} / bouton ${p.bouton}`).join(' ; ')})`,
+  );
   // Ctrl+Z annule aussi dans la vue en grand, sans la fermer ; « Accepter » y porte le même libellé chiffré que la carte.
   await page.keyboard.press('Control+z');
-  await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.a_ecarter').waitFor();
+  await comparateur.locator('.volet').nth(n - 1).locator('.choix-photo.a_ecarter').waitFor();
   verifier(
-    (await comparateur.count()) === 1 && /^Accepter : (garder (la \d+|\d+|les \d+|celle de « |« )|écarter les \d+)/.test(((await comparateur.locator('.navigation-groupes button.principal').textContent()) ?? '').replace(/\s+/g, ' ').trim()),
-    'comparer en grand : Ctrl+Z annule sans fermer la vue ; « Accepter : garder N, écarter M » comme sur la carte',
+    (await comparateur.count()) === 1 &&
+      ((await comparateur.locator('.navigation-groupes button.principal').textContent()) ?? '').trim() === 'Accepter' &&
+      /^(garde|n’en garde)/.test((await comparateur.locator('.cmp-bas .dit-accepter').textContent()) ?? ''),
+    'comparer en grand : Ctrl+Z annule sans fermer la vue ; « Accepter → », ce qu’il fera en gris à sa gauche, comme sur la carte',
   );
   await page.keyboard.press(String(n));
-  await comparateur.locator('.volet').nth(n - 1).locator('.etat-photo.choisie').waitFor();
+  await comparateur.locator('.volet').nth(n - 1).locator('.choix-photo.choisie').waitFor();
   const texteGroupe = await comparateur.locator('.position-groupe').innerText();
   await page.keyboard.press('ArrowRight');
   await page.waitForFunction((avant) => document.querySelector('.comparateur .position-groupe')?.textContent !== avant, texteGroupe);
@@ -577,17 +666,141 @@ try {
   );
   await rafale.getByRole('checkbox', { name: 'Garder plusieurs photos' }).check();
   await rafale.locator('.tuile-doublon.a_ecarter').first().click();
-  await page.waitForFunction(() => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.choisie').length === 2);
+  await page.waitForFunction(() => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon[aria-pressed=true]').length === 2);
   verifier(true, 'rafale : « Garder plusieurs photos » cochée, un clic ajoute la seconde');
   await capturer(page, 'v2c_rafales');
+  // « choisir : toutes · aucune » après la case (É14 e) : « aucune » ne garde rien (l'alerte le dit), « toutes »
+  // garde tout ; des choix en attente, chacun défait par Ctrl+Z ; ni « Tout garder », ni « Tout écarter », ni menu.
+  {
+    const nAttente = () => rafale.locator('.tuile-doublon.a_ecarter').count();
+    const nGarde = () => rafale.locator('.tuile-doublon[aria-pressed=true]').count();
+    await rafale.locator('[data-action=aucune]').click();
+    await rafale.locator('.alerte-doublons').waitFor();
+    const aucune = { attente: await nAttente(), garde: await nGarde() };
+    await page.waitForTimeout(600);
+    await rafale.locator('[data-action=toutes]').click();
+    await page.waitForFunction(() => !document.querySelector('.carte-doublons .alerte-doublons'));
+    const toutes = { attente: await nAttente(), garde: await nGarde() };
+    verifier(
+      aucune.attente === 2 && aucune.garde === 0 && toutes.attente === 0 && toutes.garde === 2 && (await rafale.getByRole('button', { name: /^Tout (garder|écarter)|^Autres choix/ }).count()) === 0,
+      `rafale : « aucune » (${aucune.garde} gardée, alerte), puis « toutes » (${toutes.garde} gardées), sans « Tout garder » ni « Autres choix »`,
+    );
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon[aria-pressed=true]').length === 2);
+  }
   await page.evaluate(() => document.activeElement?.blur());
   await page.keyboard.press('Control+z');
   await page.keyboard.press('Control+z');
   await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+  // Ctrl+A (É14 e) : toutes les photos du groupe en cours, la case cochée ; Ctrl+Z défait.
+  await page.keyboard.press('Control+a');
+  await page.waitForFunction(() => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.a_ecarter').length === 0);
+  verifier(await rafale.getByRole('checkbox', { name: 'Garder plusieurs photos' }).isChecked(), 'rafale : Ctrl+A choisit toutes les photos du groupe et coche « Garder plusieurs photos »');
+  await page.keyboard.press('Control+z');
+  await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+  await rafale.getByRole('checkbox', { name: 'Garder plusieurs photos' }).uncheck();
+  // Badge d'une photo de rafale (É14 h) : « ✓ 1 · À garder » en bordure ; un clic sur la bande d'une photo « À écarter »
+  // la garde par vous, à la place de l'autre ; un second clic revient à la proposition ; Ctrl+Z défait chaque clic.
+  {
+    const bandes = () => rafale.locator('.photo-doublon > .badge-photo').evaluateAll((l) => l.map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|'));
+    const depart = await bandes();
+    const iEcarter = await rafale.locator('.photo-doublon > .badge-photo').evaluateAll((l) => l.findIndex((b) => b.dataset.sort === 'ecarter'));
+    const clic = () => rafale.locator('.photo-doublon > .badge-photo .clic-badge').nth(iEcarter).click();
+    await clic();
+    await rafale.locator('.pastille-attente').waitFor();
+    const un = await bandes();
+    await page.waitForTimeout(600);
+    await clic();
+    await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+    const deux = await bandes();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await rafale.locator('.pastille-attente').waitFor();
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+    verifier(
+      /^garder:(application|ia):bord\|ecarter:(application|ia):bord$|^ecarter:(application|ia):bord\|garder:(application|ia):bord$/.test(depart) && un.split('|').every((b) => b.endsWith(':vous:plein')) && deux === depart,
+      `badges d’une rafale : ${depart} → clic ${un} → second clic ${deux} ; Ctrl+Z défait chaque clic`,
+    );
+    verifier((await rafale.locator('.photo-doublon > .badge-photo').first().textContent()).includes('1 ·'), 'la place de la photo dans sa bande, après l’icône (« ✓ 1 · À garder »)');
+  }
+  // G et X sur la photo qui a le focus (É14, testeur) : G la garde par vous (l'autre passe « à écarter » dans une
+  // rafale sans la case), X fixe « à écarter » par vous ; chaque geste écrit dans .album/plan.json (règle d'or 7) ;
+  // Ctrl+Z défait l'un puis l'autre, et le plan revient sans choix.
+  {
+    const tuile = rafale.locator('.tuile-doublon.a_ecarter').first();
+    const id = await tuile.getAttribute('data-id');
+    const cible = rafale.locator(`.tuile-doublon[data-id="${id}"]`);
+    const bandeCible = () => rafale.locator(`.photo-doublon:has(.tuile-doublon[data-id="${id}"]) > .badge-photo`).evaluate((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`);
+    await cible.focus();
+    await page.keyboard.press('g');
+    await page.waitForFunction((id) => document.querySelector(`.carte-doublons .tuile-doublon[data-id="${id}"]`)?.getAttribute('aria-pressed') === 'true', id);
+    const apresG = { bande: await bandeCible(), autres: await rafale.locator('.tuile-doublon.a_ecarter').count(), ecrit: (await planEcrit(page, id, (f) => f.choixDoublons?.doublons === true)).ok };
+    await cible.focus();
+    await page.keyboard.press('x');
+    await page.waitForFunction((id) => document.querySelector(`.carte-doublons .tuile-doublon[data-id="${id}"]`)?.classList.contains('a_ecarter'), id);
+    const apresX = { bande: await bandeCible(), ecrit: (await planEcrit(page, id, (f) => f.choixDoublons?.doublons === false)).ok };
+    verifier(
+      apresG.bande === 'garder:vous:plein' && apresG.autres === 1 && apresG.ecrit && apresX.bande === 'ecarter:vous:plein' && apresX.ecrit,
+      `Doublons : G → ${apresG.bande} (l’autre à écarter), X → ${apresX.bande} ; chacun écrit dans .album/plan.json`,
+    );
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction((id) => document.querySelector(`.carte-doublons .tuile-doublon[data-id="${id}"]`)?.getAttribute('aria-pressed') === 'true', id);
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
+    const defait = await planEcrit(page, id, (f) => f.choixDoublons?.doublons === undefined);
+    verifier(defait.ok && (await bandeCible()).endsWith(':bord'), 'Doublons : Ctrl+Z défait X puis G ; plus aucun choix dans .album/plan.json, la bande revient en bordure');
+  }
+  // Bande d'un groupe accepté (C-9.12, testeur, tour 1) : « Revoir » rouvre la rafale acceptée ; un clic sur la bande
+  // de la photo écartée la garde par vous, en plein, sans rouvrir le groupe (aucun « pas encore accepté ») ; le geste
+  // est écrit dans .album/plan.json ; Ctrl+Z le défait, puis l'acceptation (la suite de l'essai part du groupe proposé).
+  {
+    const cle = await rafale.getAttribute('data-cle');
+    const carte = page.locator(`.carte-doublons[data-cle="${cle}"]`);
+    await carte.locator('[data-action=accepter]').click();
+    await page.locator(`.carte-doublons.repliee[data-cle="${cle}"]`).waitFor();
+    // « Revoir » ignore un clic dans les 0,5 s après « Accepter » (double-clic) : on attend comme un humain.
+    await page.waitForTimeout(600);
+    await carte.getByRole('button', { name: 'Revoir' }).click();
+    await carte.locator('.photo-doublon > .badge-photo').first().waitFor();
+    const bandes = () => carte.locator('.photo-doublon > .badge-photo').evaluateAll((l) => l.map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`));
+    const avant = await bandes();
+    const i = avant.findIndex((b) => b.startsWith('ecarter'));
+    const id = await carte.locator('.photo-doublon').nth(i).locator('.tuile-doublon').getAttribute('data-id');
+    const ecarteeAvant = (await planEcrit(page, id, (f) => f.statut === 'mis_de_cote')).ok;
+    await carte.locator('.photo-doublon > .badge-photo .clic-badge').nth(i).click();
+    await page.waitForFunction(([cle, i]) => document.querySelectorAll(`.carte-doublons[data-cle="${cle}"] .photo-doublon > .badge-photo`)[i]?.dataset.sort === 'garder', [cle, i]);
+    const apres = await bandes();
+    const gardeeEcrite = (await planEcrit(page, id, (f) => f.statut !== 'mis_de_cote')).ok;
+    const attente = await carte.locator('.pastille-attente').count();
+    verifier(
+      i >= 0 && avant[i].endsWith(':plein') && apres[i] === 'garder:vous:plein' && apres.every((b) => b.endsWith(':plein')) && attente === 0 && ecarteeAvant && gardeeEcrite,
+      `bande d’une rafale acceptée : ${avant.join(' | ')} → clic ${apres.join(' | ')}, le groupe reste accepté ; écrit dans .album/plan.json`,
+    );
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(([cle, i]) => document.querySelectorAll(`.carte-doublons[data-cle="${cle}"] .photo-doublon > .badge-photo`)[i]?.dataset.sort === 'ecarter', [cle, i]);
+    const defaitEcrit = (await planEcrit(page, id, (f) => f.statut === 'mis_de_cote')).ok;
+    // Ctrl+A (« toutes ») dans le groupe accepté : la photo écartée revient tout de suite, sans rouvrir le groupe ;
+    // Ctrl+Z la rend écartée.
+    await carte.locator('.tuile-doublon').first().focus();
+    await page.keyboard.press('Control+a');
+    await page.waitForFunction((cle) => [...document.querySelectorAll(`.carte-doublons[data-cle="${cle}"] .photo-doublon > .badge-photo`)].every((b) => b.dataset.sort === 'garder'), cle);
+    const toutes = { attente: await carte.locator('.pastille-attente').count(), ecrit: (await planEcrit(page, id, (f) => f.statut !== 'mis_de_cote' && f.choixDoublons === undefined)).ok };
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(([cle, i]) => document.querySelectorAll(`.carte-doublons[data-cle="${cle}"] .photo-doublon > .badge-photo`)[i]?.dataset.sort === 'ecarter', [cle, i]);
+    verifier(toutes.attente === 0 && toutes.ecrit, 'Ctrl+A dans une rafale acceptée : toutes gardées tout de suite, le groupe reste accepté (C-9.12) ; Ctrl+Z la rend écartée');
+    await page.keyboard.press('Control+z');
+    await page.locator(`.carte-doublons.en-attente[data-cle="${cle}"]`).waitFor();
+    verifier(defaitEcrit && (await planEcrit(page, id, (f) => f.statut !== 'mis_de_cote')).ok, 'bande d’une rafale acceptée : Ctrl+Z rend la photo écartée (écrit), un second Ctrl+Z défait l’acceptation');
+  }
   // IA des rafales (D102) : sa photo porte la ★, avec sa raison sous chaque photo ; un seul Ctrl+Z annule son choix.
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
-  // Lot 4 : ce qui touche tout l'onglet est dans le menu « Toutes les rafales » de la barre d'outils.
-  await page.locator('.rangee-onglet .bouton-portee').click();
+  // É14 : ce qui touche tout l'onglet est écrit en clair dans la barre d'outils, son prix sur le bouton.
   await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA dans 1 rafale/ }).click();
   await rafale.locator('.avis-ia').waitFor();
   await capturer(page, 'v2d_rafales_ia');
@@ -598,6 +811,14 @@ try {
   );
   if (await rafale.locator('.pastille-attente').count()) {
     verifier((await rafale.locator('.pastille-attente').innerText()).includes('Choix de l’IA') && (await rafale.locator('.tuile-doublon.choisie').count()) === 1, 'IA des rafales : son choix est posé, à valider');
+    // Règle d'or 3 : le choix de l'IA reste une proposition (✦ en bordure, jamais la punaise), marqué « IA » dans le plan.
+    const bandesIA = await rafale.locator('.photo-doublon > .badge-photo').evaluateAll((l) => l.map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`));
+    const idIA = await rafale.locator('.tuile-doublon.choisie').getAttribute('data-id');
+    const marqueIA = (await planEcrit(page, idIA, (f) => f.choixIA?.doublons === true && f.choixDoublons?.doublons === true)).ok;
+    verifier(
+      bandesIA.includes('garder:ia:bord') && bandesIA.every((b) => b.endsWith(':bord') && !b.includes(':vous:')) && marqueIA,
+      `IA des rafales : son choix reste une proposition (${bandesIA.join(' | ')}), marqué « IA » dans .album/plan.json`,
+    );
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Control+z');
     await page.waitForFunction(() => !document.querySelector('.carte-doublons .pastille-attente'));
@@ -606,7 +827,103 @@ try {
   await page.locator('.rangee-onglet').getByRole('button', { name: /^Choisir avec l’IA/ }).waitFor({ state: 'detached' });
   verifier(true, 'IA des rafales : déjà examinée, la rafale n’est plus proposée (relancer ne repaie pas)');
   await page.evaluate(() => sessionStorage.removeItem('album:cle_api'));
-  await page.locator('[data-action=valider]').click();
+  // Des copies exactes restent (É14 g) : la barre du bas le dit en brun ; « Valider et continuer » ouvre une fenêtre
+  // à trois choix ; Échap = « Les voir d'abord » (l'onglet Copies s'ouvre) ; « Continuer sans elles » laisse le tri
+  // les signaler (D85).
+  {
+    const brun = await page.locator('.barre-validation .reste-copies').evaluate((e) => ({ texte: e.textContent, couleur: getComputedStyle(e).color }));
+    await page.locator('[data-action=valider]').click();
+    const fenetre = page.locator('.dialogue[role=dialog]');
+    await fenetre.waitFor();
+    const choix = await fenetre.locator('[data-choix]').evaluateAll((l) => l.map((b) => `${b.dataset.choix}:${b.className}`));
+    const titre = await fenetre.locator('h2').innerText();
+    await page.keyboard.press('Escape');
+    await fenetre.waitFor({ state: 'detached' });
+    await page.locator('.onglet-doublons.actif', { hasText: 'Copies exactes' }).waitFor();
+    verifier(
+      /2 copies exactes pas encore acceptées/.test(brun.texte) && /2 copies exactes ne sont pas encore acceptées/.test(titre) && choix.join(',') === 'sans:,voir:,accepter:principal',
+      `copies restantes : « ${brun.texte} » (${brun.couleur}) ; fenêtre « ${titre} » (${choix.join(', ')}) ; Échap : l’onglet Copies`,
+    );
+    // Un groupe où l'utilisateur a écarté tous les exemplaires (testeur, tour 1) : « Accepter … » n'accepte que les
+    // autres et la fenêtre dit qu'il reste à voir ; sans aucun groupe acceptable, ni « Accepter les N propositions »
+    // (désactivé, sa raison dans son libellé) ni le choix « Accepter … » ; Ctrl+Z défait les deux X.
+    {
+      const xSurGardee = async (k) => {
+        const carte = page.locator('.carte-doublons.en-attente').nth(k);
+        const gardee = carte.locator('.tuile-doublon[aria-pressed=true]').first();
+        const id = await gardee.getAttribute('data-id');
+        await gardee.focus();
+        await page.keyboard.press('x');
+        await page.waitForFunction((id) => document.querySelector(`.tuile-doublon[data-id="${id}"]`)?.getAttribute('aria-pressed') === 'false', id);
+        return id;
+      };
+      const ouvrirFenetre = async () => {
+        await page.locator('[data-action=valider]').click();
+        await fenetre.waitFor();
+        const r = {
+          texte: (await fenetre.innerText()).replace(/\s+/g, ' '),
+          choix: (await fenetre.locator('[data-choix]').evaluateAll((l) => l.map((b) => `${b.dataset.choix}:${b.className}:${b.textContent.trim()}`))).join(','),
+        };
+        await page.keyboard.press('Escape');
+        await fenetre.waitFor({ state: 'detached' });
+        await page.locator('.onglet-doublons.actif', { hasText: 'Copies exactes' }).waitFor();
+        return r;
+      };
+      const id1 = await xSurGardee(0);
+      const ecrit1 = (await planEcrit(page, id1, (f) => f.choixDoublons?.copies === false || Object.values(f.choixDoublons ?? {}).includes(false))).ok;
+      const bouton1 = (await page.locator('[data-action=accepter-onglet]').innerText()).trim();
+      const un = await ouvrirFenetre();
+      const id2 = await xSurGardee(1);
+      const accepterOnglet = await page.locator('[data-action=accepter-onglet]').evaluate((b) => ({ texte: b.textContent.trim(), inactif: b.disabled }));
+      const deux = await ouvrirFenetre();
+      verifier(
+        ecrit1 &&
+          bouton1 === 'Accepter la proposition' &&
+          /Dans 1 groupe, vous n’avez gardé aucun exemplaire : il reste à voir\./.test(un.texte) &&
+          /^sans:[^,]*,voir:[^,]*,accepter:principal:Accepter la copie et continuer$/.test(un.choix),
+        `un groupe sans exemplaire gardé : « ${bouton1} » ; fenêtre « ${un.texte.slice(0, 160)} » (${un.choix})`,
+      );
+      verifier(
+        accepterOnglet.inactif &&
+          accepterOnglet.texte === 'Accepter : aucun exemplaire gardé dans ces groupes' &&
+          /Dans 2 groupes, vous n’avez gardé aucun exemplaire : ils restent à voir\./.test(deux.texte) &&
+          /^sans:[^,]*,voir:principal:[^,]*$/.test(deux.choix),
+        `aucun groupe acceptable : « ${accepterOnglet.texte} » désactivé ; la fenêtre sans « Accepter … » (${deux.choix})`,
+      );
+      await page.evaluate(() => document.activeElement?.blur());
+      await page.keyboard.press('Control+z');
+      await page.keyboard.press('Control+z');
+      await page.waitForFunction(() => document.querySelectorAll('.carte-doublons.en-attente .tuile-doublon[aria-pressed=true]').length >= 2);
+      const rendu1 = await planEcrit(page, id1, (f) => !f.choixDoublons || Object.keys(f.choixDoublons).length === 0);
+      const rendu2 = await planEcrit(page, id2, (f) => !f.choixDoublons || Object.keys(f.choixDoublons).length === 0);
+      verifier(rendu1.ok && rendu2.ok, 'copies : Ctrl+Z défait les deux X, plus aucun choix dans .album/plan.json');
+      // Ctrl+A sur les copies (tour 1) : pas de case « Garder plusieurs photos » ; un message dit quoi faire, rien ne change.
+      const gardeesAvant = await page.locator('.carte-doublons.en-attente .tuile-doublon[aria-pressed=true]').count();
+      await page.locator('.carte-doublons.en-attente .tuile-doublon').first().focus();
+      await page.keyboard.press('Control+a');
+      await page.getByText('Pour les copies, cliquez sur chaque exemplaire à garder.', { exact: false }).first().waitFor();
+      verifier(
+        (await page.locator('.carte-doublons.en-attente .tuile-doublon[aria-pressed=true]').count()) === gardeesAvant && (await page.locator('.carte-doublons .pastille-attente').count()) === 0,
+        'copies : Ctrl+A ne choisit rien et dit pourquoi (message court)',
+      );
+      await page.evaluate(() => document.activeElement?.blur());
+    }
+    // « Accepter les 2 copies et continuer » (testeur) : les copies sont écartées, le tri s'ouvre sans les signaler ;
+    // l'annulation est par étape : on revient à Doublons, Ctrl+Z les rend, puis « Continuer sans elles ».
+    await page.locator('[data-action=valider]').click();
+    await fenetre.locator('[data-choix=accepter]').click();
+    await page.locator('main[data-etape=tri]').waitFor();
+    await page.waitForTimeout(300);
+    const sansCopies = (await page.locator('.copies-avant-tri').count()) === 0;
+    await page.locator('.bandeau .etape', { hasText: /^.?\d+Doublons$/ }).click();
+    await page.locator('main[data-etape=doublons]').waitFor();
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.locator('.barre-validation .reste-copies').waitFor();
+    verifier(sansCopies, 'fenêtre des copies : « Accepter les 2 copies et continuer » les écarte et ouvre le tri ; à Doublons, Ctrl+Z les rend');
+    await page.locator('[data-action=valider]').click();
+    await fenetre.locator('[data-choix=sans]').click();
+  }
 
   // Étape 6 : tri automatique (D103) ; la liste « À faire » : captures d'écran, copies, maison, puis ranger.
   await page.locator('main[data-etape=tri]').waitFor();
@@ -623,7 +940,12 @@ try {
   const copies = page.locator('.copies-avant-tri');
   verifier((await copies.innerText()).includes('2 photos en double'), 'à faire : les 2 copies pas encore écartées sont signalées');
   verifier((await copies.locator('button.principal').count()) === 0, 'un seul bouton plein : la maison d’abord, les copies en contour (D107)');
-  await copies.getByRole('button', { name: 'Mettre de côté' }).click();
+  // Doublons validée avec des copies restantes : sa case de la frise en brun doux, son reste dans l'infobulle (É14 g).
+  {
+    const caseDoublons = await page.locator('.bandeau .etape').nth(4).evaluate((b) => ({ classe: b.className, titre: b.title }));
+    verifier(caseDoublons.classe.includes('copies-restantes') && /2 copies exactes à accepter/.test(caseDoublons.titre) && (await page.locator('.etape-courante .point-reste').count()) === 1, `frise : Doublons en brun doux (« ${caseDoublons.titre} »), point brun sur « Étape n sur 13 »`);
+  }
+  await copies.getByRole('button', { name: 'Écarter', exact: true }).click();
   await copies.waitFor({ state: 'detached' });
   verifier(true, 'un clic met les copies de côté avant le tri');
   verifier((await page.locator('.ligne-afaire.afaire', { hasText: 'Votre maison n’est pas encore indiquée' }).count()) === 1, 'sans domicile : la maison est à indiquer (●)');

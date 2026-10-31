@@ -18,7 +18,7 @@ import {
   type AvisFlou,
   type EtatFlou,
 } from '../src/lib/floues';
-import { repriseOrigine, reprendreOrigines } from '../src/lib/origines';
+import { origineMisDeCote, repriseOrigine, reprendreOrigines } from '../src/lib/origines';
 import { avecOrigine, deplacerFichiers, depuisJson, ecarterDoublons, garderAussi, Historique, planVide, RACINE, remettre, versJson, type FichierPlan, type Plan } from '../src/lib/plan';
 
 const photo = (id: string, extra: Partial<FichierPlan> = {}): FichierPlan => ({
@@ -399,3 +399,47 @@ describe('reprise d’un fichier .album/plan.json écrit avant les badges', () =
     expect(h.annuler(p)).toBeFalsy();
   });
 });
+
+describe('badges de « Mis de côté » (règle d’or 3)', () => {
+  const lire = (f: FichierPlan) => {
+    const o = origineMisDeCote(f);
+    return `${o.origine}:${o.decide ? 'plein' : 'bord'}`;
+  };
+  it('écartée par le réglage du flou : une proposition, en bordure, même après « Valider »', () => {
+    const p = plan(photo('floue'), photo('nette'));
+    appliquerFloues(p, nettete, 60);
+    expect(p.fichiers.get('floue')).toMatchObject({ statut: 'mis_de_cote', flou: 'auto' });
+    expect(lire(p.fichiers.get('floue')!)).toBe('application:bord');
+    expect(origineMisDeCote(p.fichiers.get('floue')!).reglage).toBe(true);
+  });
+  it('une décision est en plein : par vous, avis de l’IA suivi, doublon accepté, anciens scripts', () => {
+    const p = plan(photo('floue'));
+    deciderFlou(p, ['floue'], 'ecartee');
+    expect(lire({ ...p.fichiers.get('floue')!, statut: 'mis_de_cote', raison: 'floues' })).toBe('vous:plein');
+    expect(lire(photo('f1', { statut: 'mis_de_cote', raison: 'floues', flou: 'ecartee', origine: { flou: 'ia' } }))).toBe('ia:plein');
+    expect(lire(photo('f2', { statut: 'mis_de_cote', raison: 'doublons', origine: { doublons: 'application' } }))).toBe('application:plein');
+    expect(lire(photo('f3', { statut: 'mis_de_cote', raison: 'floues' }))).toBe('avant:plein');
+    expect(lire(photo('f4', { statut: 'mis_de_cote', raison: 'autres' }))).toBe('vous:plein');
+  });
+  it('un doublon des anciens scripts (`_doublons/`, « …_doublon.jpg ») est « Écartée avant », même après la reprise (D112 point 7)', () => {
+    const p = plan(
+      photo('Annecy/_doublons/IMG_2', { statut: 'mis_de_cote', raison: 'doublons' }),
+      photo('Lyon/IMG_3_doublon.jpg', { statut: 'mis_de_cote', raison: 'doublons' }),
+      photo('Paris/IMG_4', { statut: 'mis_de_cote', raison: 'doublons', doublon: { garde: 'Paris/IMG_5', source: 'rafale' } }),
+    );
+    expect(lire(p.fichiers.get('Annecy/_doublons/IMG_2')!)).toBe('avant:plein');
+    expect(lire(p.fichiers.get('Lyon/IMG_3_doublon.jpg')!)).toBe('avant:plein');
+    reprendreOrigines(p, {});
+    expect(p.fichiers.get('Annecy/_doublons/IMG_2')!.origine).toEqual({ doublons: 'avant' });
+    expect(p.fichiers.get('Lyon/IMG_3_doublon.jpg')!.origine).toEqual({ doublons: 'avant' });
+    expect(lire(p.fichiers.get('Lyon/IMG_3_doublon.jpg')!)).toBe('avant:plein');
+    // Un groupe accepté note toujours la photo gardée à sa place : c'est l'application.
+    expect(lire(p.fichiers.get('Paris/IMG_4')!)).toBe('application:plein');
+    // Reprise d'avant ce correctif (« application ») : toujours « avant » ; écartée de nouveau à la main : par vous.
+    expect(lire(photo('Lyon/IMG_6_doublon.jpg', { statut: 'mis_de_cote', raison: 'doublons', origine: { doublons: 'application' } }))).toBe('avant:plein');
+    garderAussi(p, ['Lyon/IMG_3_doublon.jpg']);
+    ecarterDoublons(p, [{ id: 'Lyon/IMG_3_doublon.jpg', raison: 'doublons' }]);
+    expect(lire(p.fichiers.get('Lyon/IMG_3_doublon.jpg')!)).toBe('vous:plein');
+  });
+});
+

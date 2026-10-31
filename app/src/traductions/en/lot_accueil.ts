@@ -16,8 +16,6 @@ export const TEXTES: Record<string, string> = {
   datées: 'dated',
   'vidéo datée': 'video dated',
   'vidéos datées': 'videos dated',
-  'élément mis de côté': 'item set aside',
-  'éléments mis de côté': 'items set aside',
   'Les appareils et le décalage de leur horloge sont gardés dans un dossier de configuration.': 'Devices and their clock offsets are kept in a configuration folder.',
   'Facultatif : pour enregistrer un appareil ou mesurer le décalage de son horloge (deux appareils qui n’étaient pas à la même heure), il faut un dossier de configuration.':
     'Optional: to save a device or measure its clock offset (two devices that were not set to the same time), you need a configuration folder.',

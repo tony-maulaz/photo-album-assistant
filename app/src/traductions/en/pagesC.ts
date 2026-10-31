@@ -113,7 +113,6 @@ export const TEXTES: Record<string, string> = {
   'Touche Suppr': 'Delete key',
   Remettre: 'Put back',
   'Touche Suppr : rien n’est supprimé': 'Delete key: nothing is deleted',
-  'Mettre de côté': 'Set aside',
   'Sélectionner toute la journée de la dernière photo cliquée': 'Select the whole day of the last photo clicked',
   'Toute la journée': 'Whole day',
   'Sélectionner toute l’heure de la dernière photo cliquée': 'Select the whole hour of the last photo clicked',
@@ -124,7 +123,6 @@ export const TEXTES: Record<string, string> = {
     'These files are neither photos nor videos. They will be copied to “{0}”, with their original path.',
   dossier: 'folder',
   dossiers: 'folders',
-  ' · {0} mis de côté': ' · {0} set aside',
 
   // Projet.tsx
   ' :': ':',
@@ -296,8 +294,6 @@ export const TEXTES: Record<string, string> = {
   '{0} vers « {1} ».': '{0} to “{1}”.',
   'élément déplacé': 'item moved',
   'éléments déplacés': 'items moved',
-  '{0} mis de côté (rien n’est supprimé : ils iront dans « {1} »).':
-    '{0} set aside (nothing is deleted: they will go to “{1}”).',
   '{0} remis dans leur dossier.': '{0} put back in their folder.',
   'Le dossier sera créé dans « {0} » et recevra {1}.': 'The folder will be created in “{0}” and will receive {1}.',
   'Le dossier sera créé dans « {0} ».': 'The folder will be created in “{0}”.',
@@ -308,9 +304,6 @@ export const TEXTES: Record<string, string> = {
 
   // selection.ts
   'pas dans l’album': 'not in the album',
-  'dans l’album ★': 'in the album ★',
-  'grande photo ★★': 'large photo ★★',
-  '{0} photos : {1}.': '{0} photos: {1}.',
   'à décider': 'to decide',
 
   // analyseDossier.ts

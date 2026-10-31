@@ -6,6 +6,8 @@ import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCour
 import { aTraduire, t } from '../../lib/langue';
 import { messages, page, reglages, sansSousDossiers, session, versionIA, versionPlan, versionProjet, type Page } from '../etat';
 import { minusculeInitiale, montantChf, nombre } from '../format';
+import { copiesRestantes } from '../copiesExactes';
+import { analyseEnCours } from '../analyseDossier';
 import { fermerProjet } from '../projets';
 import { Icone } from './Icones';
 import { Logo } from './Logo';
@@ -66,8 +68,15 @@ function Avancement() {
   versionProjet.value;
   versionPlan.value;
   const [ouvert, basculer, zone] = useDeroulant();
+  versionIA.value;
+  analyseEnCours.value;
   const courante = p.nom === 'etape' ? p.numero : 0;
   const etats = s.projet.etapes;
+  // Des copies exactes restent à accepter (D112, C-3.3, C-8.11) : l'étape Doublons, validée, passe en brun doux ; le
+  // tri les rangerait une seconde fois. Jamais la couleur seule : l'infobulle et le nom lu le disent, et « Étape n
+  // sur 13 » porte un point brun.
+  const iDoublons = CODES_ETAPES.indexOf('doublons');
+  const copies = etats[iDoublons] === 'validee' ? (copiesRestantes(s) ?? 0) : 0;
   const etapes = ETAPES.map((_, i) => {
     const n = i + 1;
     const nom = nomEtape(n);
@@ -80,7 +89,12 @@ function Avancement() {
     // Dans la liste déroulante, un mot ou deux : la phrase entière reste en infobulle.
     const resume = inutile ? (s.projet.mode === 'vrac' ? t`rien à décider` : t`inutile ici`) : verrouillee ? t`après l’étape ${ETAPE.lieux}` : detail;
     const symbole = inutile ? '–' : verrouillee ? '' : SYMBOLES[etat];
-    const classe = `etape ${etat}${n === courante ? ' courante' : ''}${inutile ? ' inutile' : ''}${verrouillee ? ' verrouillee' : ''}`;
+    const resteCopies = i === iDoublons && copies > 0 && !inutile;
+    const classe = `etape ${etat}${n === courante ? ' courante' : ''}${inutile ? ' inutile' : ''}${verrouillee ? ' verrouillee' : ''}${resteCopies ? ' copies-restantes' : ''}`;
+    if (resteCopies) {
+      const reste = copies === 1 ? t`1 copie exacte à accepter` : t`${nombre(copies)} copies exactes à accepter`;
+      return { n, nom, court: nomCourtEtape(n), etat, detail: `${detail}, ${reste}`, resume: reste, symbole, classe };
+    }
     return { n, nom, court: nomCourtEtape(n), etat, detail, resume, symbole, classe };
   });
   const aller = (n: number) => {
@@ -106,6 +120,7 @@ function Avancement() {
       <button type="button" class="etape-courante" aria-expanded={ouvert} aria-haspopup="menu" onClick={() => basculer()} title={t`Toutes les étapes`}>
         {courante ? (
           <>
+            {copies > 0 && <span class="point-reste" role="img" aria-label={copies === 1 ? t`1 copie exacte à accepter` : t`${nombre(copies)} copies exactes à accepter`} title={t`Doublons : copies exactes à accepter`} />}
             {t`Étape ${courante} sur ${ETAPES.length}`} · <strong>{nomCourtEtape(courante)}</strong>
             {ETAPES_EN_ESSAI.has(courante) && <PastilleEssai lue={false} />}
           </>

@@ -489,7 +489,8 @@ function bibliotheque() {
     return { hb, bas: Math.min(zr.bottom, innerHeight, document.querySelector('.barre-validation')?.getBoundingClientRect().top ?? innerHeight) };
   };
   const bandesDe = (a) => [...a.querySelectorAll('.bande-etat')].filter((b) => !b.closest('[data-action=accepter]'));
-  const gardees = (a) => bandesDe(a).filter((b) => b.matches('.choisie, .gardee'));
+  // É14 : la bande de chaque photo est son badge ; « garder » = elle reste (proposé ou décidé).
+  const gardees = (a) => bandesDe(a).filter((b) => b.dataset.sort === 'garder');
   /** La ligne d'un exemplaire : le plus grand ancêtre de la bande qui ne contient qu'elle comme bande. */
   const ligneDe = (b, a) => {
     let l = b;
@@ -499,62 +500,50 @@ function bibliotheque() {
     }
     return l;
   };
-  /** Le plein (ou le contour) « Accepter » d'un groupe dit-il ce qu'il garde ? Rend '' si oui, sinon pourquoi. */
+  /**
+   * « Accepter → » d'un groupe (É14 a) : le bouton ne dit que « Accepter » ; ce qu'il fera est écrit juste à sa gauche,
+   * en gris (« garde la 2 · écarte 1 », « garde 3 photos · écarte 9 », aux Copies « garde 1 exemplaire · écarte 2 »),
+   * la place de la photo gardée étant aussi au début de sa bande, après l'icône. Rend '' si tout est juste.
+   */
   C.libelleJuste = (a, sorte) => {
     const b = a.querySelector('[data-action=accepter]');
     if (!b) return '';
     const t = norm(b.textContent);
+    if (t !== 'Accepter') return `« ${t} » : le bouton ne dit que « Accepter → »`;
+    const gris = norm(a.querySelector(':scope > header .dit-accepter')?.textContent);
     const bandes = bandesDe(a);
     const k = gardees(a);
-    if (sorte === 'copies') {
-      if (k.length !== 1) return '';
-      const dossier = norm(ligneDe(k[0], a).querySelector('.chemin-doublon')?.textContent);
-      // Deux exemplaires dans le même dossier : le dossier ne dit pas lequel ; c'est le nom du fichier qui le dit.
-      const memes = bandesDe(a).filter((b) => norm(ligneDe(b, a).querySelector('.chemin-doublon')?.textContent) === dossier).length;
-      if (memes > 1) {
-        const nom = b.querySelector('.nom-libelle')?.getAttribute('title') ?? '';
-        return nom && /garder « /.test(t) && norm(ligneDe(k[0], a).textContent).includes(nom) ? '' : `« ${t} » ne nomme pas le fichier gardé (deux exemplaires dans « ${dossier} »)`;
-      }
-      return dossier && t.includes(`garder celle de « ${dossier} »`) ? '' : `« ${t} » ne cite pas le dossier « ${dossier} » de l’exemplaire à garder`;
-    }
     const n = bandes.length;
-    if (k.length === 1) {
-      const i = bandes.indexOf(k[0]) + 1;
-      const place = norm(k[0].textContent).match(/^(\d+)\s*·/)?.[1];
-      if (!new RegExp(`garder la ${i}\\b.*écarter ${n - 1} autres?\\b`).test(t)) return `« ${t} » ne dit pas « garder la ${i}, écarter ${n - 1} ${n - 1 > 1 ? 'autres' : 'autre'} »`;
-      if (place !== String(i)) return `la photo à garder ne porte pas sa place « ${i} · » au début de sa bande`;
-      // La vignette du plein est la photo gardée (même image).
-      const mini = b.querySelector('img');
-      const vraie = ligneDe(k[0], a).querySelector('img') ?? k[0].closest('.photo-doublon, .tuile-doublon')?.querySelector('img');
-      if (!mini) return `« ${t} » sans la vignette de la photo gardée`;
-      if (vraie && mini.getAttribute('src') !== vraie.getAttribute('src') && (mini.dataset.photo ?? '') !== (vraie.dataset.photo ?? '-')) return 'la vignette du plein n’est pas la photo « À garder »';
+    if (!gris) return 'pas de ligne grise à gauche d’« Accepter → »';
+    if (sorte === 'copies') {
+      if (k.length === 1 && !new RegExp(`^garde 1 exemplaire · écarte ${n - 1}\\b`).test(gris)) return `« ${gris} » ne dit pas « garde 1 exemplaire · écarte ${n - 1} »`;
       return '';
     }
-    if (k.length > 1 && !new RegExp(`garder ${k.length} photos, écarter ${n - k.length} autres?\\b`).test(t) && !new RegExp(`garder les ${n}\\b`).test(t))
-      return `« ${t} » ne dit pas « garder ${k.length} photos, écarter ${n - k.length} autres »`;
+    if (k.length === 1) {
+      const i = bandes.indexOf(k[0]) + 1;
+      const place = norm(k[0].querySelector('.etat-badge')?.textContent ?? k[0].textContent).match(/^(\d+)\s*·/)?.[1];
+      if (!new RegExp(`^garde la ${i} · écarte ${n - 1}\\b`).test(gris)) return `« ${gris} » ne dit pas « garde la ${i} · écarte ${n - 1} »`;
+      if (place !== String(i)) return `la photo à garder ne porte pas sa place « ${i} · » dans sa bande`;
+      return '';
+    }
+    if (k.length > 1 && !new RegExp(`^garde ${k.length} photos · écarte ${n - k.length}\\b`).test(gris) && !new RegExp(`^garde les ${n}\\b`).test(gris)) return `« ${gris} » ne dit pas « garde ${k.length} photos · écarte ${n - k.length} »`;
+    if (!k.length && !/^n’en garde aucune · écarte les \d+/.test(gris)) return `« ${gris} » ne dit pas « n’en garde aucune · écarte les ${n} »`;
     return '';
   };
-  /** Le plein nomme ce qu'il garde sans qu'on lise sa langue : la vignette de la seule photo gardée, ou son dossier. */
-  C.nommeSansLangue = (a, sorte) => {
-    const b = a.querySelector('[data-action=accepter]');
-    const k = gardees(a);
-    if (!b || k.length !== 1) return false;
-    if (sorte === 'copies') {
-      const dossier = norm(ligneDe(k[0], a).querySelector('.chemin-doublon')?.textContent);
-      const nom = b.querySelector('.nom-libelle')?.getAttribute('title') ?? '';
-      return (!!dossier && norm(b.textContent).includes(dossier)) || (!!nom && norm(ligneDe(k[0], a).textContent).includes(nom));
-    }
-    const mini = b.querySelector('img');
-    const vraie = ligneDe(k[0], a).querySelector('img') ?? k[0].closest('.photo-doublon, .tuile-doublon')?.querySelector('img');
-    return !!mini && !!vraie && (mini.getAttribute('src') === vraie.getAttribute('src') || (!!mini.dataset.photo && mini.dataset.photo === vraie.dataset.photo));
+  /** Ce que fera le plein se lit sans qu'on lise sa langue : la ligne grise d'à côté, entière à l'écran (É14 a). */
+  C.nommeSansLangue = (a) => {
+    const g = a.querySelector(':scope > header .dit-accepter');
+    return !!g && !!norm(g.textContent) && C.vu(g) && g.scrollHeight <= g.clientHeight + 2;
   };
+  /** « Accepter → » a la même largeur sur tous les groupes (É14 a, C-4.2) : les largeurs différentes, sinon rien. */
+  C.largeursAccepter = () => [...new Set([...document.querySelectorAll('article.carte-doublons > header [data-action=accepter]')].filter((x) => C.affiche(x)).map((x) => Math.round(x.getBoundingClientRect().width)))];
   /** À cet instant, ce que le plein garde se voit (bande « À garder » entière, non recouverte) ou se lit. */
   C.gardee = (sorte) => {
     const a = C.articlePlein();
     if (!a) return null;
     // Se lit : le libellé juste (en français), ou, quelle que soit la langue, la vignette de la photo gardée
     // dans le plein (une rafale) ou le nom du dossier de l'exemplaire gardé (Copies).
-    const nomme = C.libelleJuste(a, sorte) === '' || C.nommeSansLangue(a, sorte);
+    const nomme = C.libelleJuste(a, sorte) === '' || C.nommeSansLangue(a);
     const { hb, bas } = C.basColles(C.zoneDe(a));
     const bande = gardees(a).some((x) => {
       const q = x.getBoundingClientRect();
@@ -601,7 +590,7 @@ function bibliotheque() {
     const out = [];
     for (const a of C.articles()) {
       bandesDe(a).forEach((b, i) => {
-        const m = norm(b.textContent).match(/^(\d+)\s*·/);
+        const m = norm(b.querySelector('.etat-badge')?.textContent ?? b.textContent).match(/^(\d+)\s*·/);
         if (!m || m[1] !== String(i + 1)) out.push(`${a.getAttribute('aria-label')?.slice(0, 28) ?? '?'} photo ${i + 1} (« ${norm(b.textContent).slice(0, 20)} »)`);
       });
     }
@@ -850,18 +839,31 @@ try {
       if (g && !ou && h >= 440 && g.entete && !g.bande) faute(nomPage, `${ici} : à l’arrivée, la bande « À garder » du groupe du plein n’est pas entière à l’écran`);
       const colles = await page.evaluate(() => __c.colles());
       if (colles.length) faute(nomPage, `${ici}${ou} : ${colles[0]}`);
+      const larg = await page.evaluate(() => __c.largeursAccepter());
+      if (larg.length > 1) faute(nomPage, `${ici}${ou} : « Accepter → » n’a pas la même largeur sur tous les groupes (${larg.join(', ')} px)`);
     };
     if (sorte) {
       await groupes('');
       if (!anglais) {
         const lib = await page.evaluate((s) => __c.libelles(s), sorte);
-        if (lib.length) faute(nomPage, `${ici} : le plein ne nomme pas ce qu’il garde : ${lib.slice(0, 2).join(' | ')}${lib.length > 2 ? ` (+${lib.length - 2})` : ''}`);
+        if (lib.length) faute(nomPage, `${ici} : « Accepter → » et sa ligne grise ne disent pas ce qu’il fera : ${lib.slice(0, 2).join(' | ')}${lib.length > 2 ? ` (+${lib.length - 2})` : ''}`);
         if (sorte === 'rafales') {
           const nus = await page.evaluate(() => __c.nombresNus());
           if (nus.length) faute(nomPage, `${ici} : nombre nu dans « Accepter » : ${[...new Set(nus)].slice(0, 2).join(' | ')}`);
           const v = await page.evaluate(() => __c.virgules());
           if (v.length) faute(nomPage, `${ici} : ${[...new Set(v)].join(' | ')}`);
         }
+      }
+      // La tête de la table : le titre de la section et son compte ne sont jamais rognés (C-10.4) à 1280 et 1440,
+      // Aide fermée (contrôle du tour 0 de l'étape 2d : « Samedi 1 août 20… 9 … » à 1280×580).
+      if (w >= 1280) {
+        const rognes = await page.evaluate(() => {
+          if (__c.aide()?.getAttribute('aria-expanded') === 'true') return null;
+          return [...document.querySelectorAll('.tete-table :is(.titre-section, .detail-section)')]
+            .filter((x) => __c.affiche(x) && x.scrollWidth > x.clientWidth + 1)
+            .map((x) => `« ${__c.norm(x.textContent)} » (${x.clientWidth} px sur ${x.scrollWidth})`);
+        });
+        if (rognes?.length) faute(nomPage, `${ici} : la tête de la table rogne ${rognes.join(', ')}`);
       }
       if (sorte === 'rafales') {
         const pl = await page.evaluate(() => __c.placesBandes());
@@ -948,11 +950,11 @@ try {
     }
     await page.evaluate(() => __c.remonter());
     await attendre(150);
-    // Le texte le plus long dans chaque « Accepter » (rafale de 12 : « garder la 11, écarter 11 autres »).
+    // Le texte le plus long dans chaque ligne grise d'« Accepter → » (rafale de 12 : « garde la 11 · écarte 11 »).
     if (sorte === 'rafales' && thm === 'light') {
       const en = await page.evaluate(() => {
         const noeuds = [];
-        for (const b of document.querySelectorAll('[data-action=accepter]')) {
+        for (const b of document.querySelectorAll('article.carte-doublons > header .dit-accepter')) {
           const m = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
           for (let n = m.nextNode(); n; n = m.nextNode()) noeuds.push([n, n.data]);
         }
@@ -1205,6 +1207,9 @@ try {
   const valider = async (etape) => {
     await page.locator('[data-action=valider]').and(page.locator(':enabled')).waitFor({ timeout: 120_000 });
     await page.locator('[data-action=valider]').click();
+    // Doublons avec des copies exactes restantes (É14 g) : la fenêtre à trois choix ; on part sans elles.
+    const sans = page.locator('.dialogue [data-choix=sans]');
+    if (await sans.waitFor({ timeout: 1500 }).then(() => true, () => false)) await sans.click();
     await page.locator(`main[data-etape=${etape}]`).waitFor({ timeout: 120_000 });
   };
   await page.locator('main[data-etape=inventaire]').waitFor({ timeout: 120_000 });
@@ -1332,7 +1337,7 @@ try {
       }
       const lire = () =>
         page.evaluate(() => ({
-          etats: [...document.querySelectorAll('.comparateur .vignette-comparer .bande-etat')].map((x) => __c.norm(x.textContent)).join('|'),
+          etats: [...document.querySelectorAll('.comparateur .vignette-comparer .bande-etat')].map((x) => `${x.dataset.sort}:${x.dataset.origine}:${x.hasAttribute('data-decide')}`).join('|'),
           titre: __c.norm(document.querySelector('.comparateur .titre-legende')?.textContent),
         }));
       const cachee = async () =>
@@ -1468,9 +1473,9 @@ try {
       await attendre(400);
       const lib = await page.evaluate((c) => {
         const a = document.querySelector(`article.carte-doublons[data-cle="${CSS.escape(c)}"]`);
-        return { juste: __c.libelleJuste(a, 'rafales'), texte: __c.norm(a.querySelector('[data-action=accepter]')?.textContent) };
+        return { juste: __c.libelleJuste(a, 'rafales'), texte: __c.norm(a.querySelector(':scope > header .dit-accepter')?.textContent) };
       }, grand.cle);
-      const attendu = new RegExp(`garder 3 photos, écarter ${grand.n - 3} autres?\\b`);
+      const attendu = new RegExp(`^garde 3 photos · écarte ${grand.n - 3}\\b`);
       if (lib.juste || !attendu.test(lib.texte)) faute(A, `« Garder plusieurs photos » (${grand.n} photos) : ${lib.juste || `« ${lib.texte} »`}`);
       console.log(`\n[${temps()}] doublons-annuler : « Garder plusieurs photos » (${grand.n} photos) → « ${lib.texte} »`);
       await page.evaluate(() => document.activeElement?.blur());
@@ -1558,7 +1563,7 @@ try {
           const a = __c.articlePlein();
           if (!a) return null;
           const bandes = [...a.querySelectorAll('.bande-etat')].filter((b) => !b.closest('[data-action=accepter]'));
-          return { cle: a.dataset.cle, ecarter: bandes.filter((b) => !b.matches('.choisie, .gardee')).length };
+          return { cle: a.dataset.cle, ecarter: bandes.filter((b) => b.dataset.sort !== 'garder').length };
         });
         if (!avant) {
           signalements.push(`${S} ${ici} : A n° ${k} : plus de groupe à accepter dans la section`);
@@ -1615,14 +1620,14 @@ try {
           const x = [...(a?.querySelectorAll('.tuile-doublon.a_ecarter') ?? [])].find((e) => __c.vu(e)) ?? null;
           if (!x) return null;
           const q = x.getBoundingClientRect();
-          return { cle: a.dataset.cle, x: q.left + q.width / 2, y: q.top + Math.min(q.height / 2, 40), etats: [...a.querySelectorAll('.bande-etat')].map((e) => e.className).join('|') };
+          return { cle: a.dataset.cle, x: q.left + q.width / 2, y: q.top + Math.min(q.height / 2, 40), etats: [...a.querySelectorAll('.bande-etat')].map((e) => `${e.dataset.sort}:${e.dataset.origine}:${e.hasAttribute('data-decide')}`).join('|') };
         });
         if (!tuile) signalements.push(`${S} ${ici} : clic sur une photo dans les 0,5 s : aucune photo à écarter visible dans le groupe suivant`);
         else {
           await page.mouse.click(tuile.x, tuile.y);
           const t1 = await page.evaluate(() => performance.now());
           await attendre(700);
-          const etats = await page.evaluate((c) => [...(document.querySelector(`article.carte-doublons[data-cle="${CSS.escape(c)}"]`)?.querySelectorAll('.bande-etat') ?? [])].map((e) => e.className).join('|'), tuile.cle);
+          const etats = await page.evaluate((c) => [...(document.querySelector(`article.carte-doublons[data-cle="${CSS.escape(c)}"]`)?.querySelectorAll('.bande-etat') ?? [])].map((e) => `${e.dataset.sort}:${e.dataset.origine}:${e.hasAttribute('data-decide')}`).join('|'), tuile.cle);
           if (t1 - t0 >= 500) signalements.push(`${S} ${ici} : le second clic est venu ${Math.round(t1 - t0)} ms après « Accepter » (essai non concluant)`);
           else if (etats !== tuile.etats) faute(S, `${ici} : un clic sur une photo du groupe suivant ${Math.round(t1 - t0)} ms après « Accepter » a changé son choix`);
           console.log(`  ${ici} clic sur une photo ${Math.round(t1 - t0)} ms après « Accepter » : ${etats === tuile.etats ? 'rien de choisi' : 'CHOISIE'}`);
@@ -1742,27 +1747,46 @@ try {
       const reaccepte = await page.evaluate((c) => __c.estAccepte(c), c0);
       if (!reaccepte) faute(F, `${ici} : A après Ctrl+Z n’accepte pas le groupe rouvert`);
       console.log(`  ${ici} A, Ctrl+Z : plein sur ${z.cle === c0 ? 'le groupe rouvert' : 'UN AUTRE GROUPE'}, y ${z.y} (${z.attendu} attendu${z.colle ? ', en-tête collé' : ''}) ; A ${reaccepte ? 'le réaccepte' : 'NE LE RÉACCEPTE PAS'}`);
-      // 3. Double-clic sur « Tout garder » du groupe du plein : un seul groupe accepté.
+      // 3. « Tout garder » est devenu « choisir : toutes » (É14 e) : la case cochée, un double-clic sur « toutes » du
+      //    groupe du plein choisit toutes ses photos et n'accepte aucun groupe ; on décoche la case ensuite.
       await attendre(800);
-      const tg = await page.evaluate(() => {
+      const cleToutes = await page.evaluate(() => {
         const a = __c.articlePlein();
-        const b = [...(a?.querySelectorAll('footer button') ?? [])].find((x) => /^Tout garder$/.test(__c.norm(x.textContent)) && !x.disabled);
-        if (!b) return null;
-        // Sous le pli (petite fenêtre) : on l'amène au milieu de la zone, comme le ferait la molette.
-        if (!__c.vu(b)) b.scrollIntoView({ block: 'center' });
-        if (!__c.vu(b)) return null;
-        const q = b.getBoundingClientRect();
-        return { x: q.left + q.width / 2, y: q.top + q.height / 2 };
+        const c = a?.querySelector(':scope > footer .plusieurs-photos input[type=checkbox]');
+        if (!c) return null;
+        if (!c.checked) c.click();
+        return a.dataset.cle;
       });
-      if (!tg) signalements.push(`${F} ${ici} : « Tout garder » du groupe du plein pas visible, double-clic non essayé`);
+      await attendre(300);
+      const tg = cleToutes
+        ? await page.evaluate((cle) => {
+            const b = document.querySelector(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] [data-action=toutes]`);
+            if (!b) return null;
+            if (!__c.vu(b)) b.scrollIntoView({ block: 'center' });
+            if (!__c.vu(b)) return null;
+            const q = b.getBoundingClientRect();
+            return { x: q.left + q.width / 2, y: q.top + q.height / 2 };
+          }, cleToutes)
+        : null;
+      if (!tg) signalements.push(`${F} ${ici} : « toutes » du groupe du plein pas visible, double-clic non essayé`);
       else {
         const d0 = await nA();
         await page.mouse.dblclick(tg.x, tg.y);
         await attendre(900);
         const d1 = await nA();
-        if (d0 - d1 !== 1) faute(F, `${ici} : double-clic sur « Tout garder » : ${d0 - d1} groupes acceptés (1 attendu)`);
-        console.log(`  ${ici} double-clic sur « Tout garder » : ${d0 - d1} groupe(s) accepté(s)`);
+        const reste = await page.evaluate((cle) => document.querySelectorAll(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] .tuile-doublon.a_ecarter`).length, cleToutes);
+        if (d0 !== d1) faute(F, `${ici} : double-clic sur « toutes » : ${d0 - d1} groupe(s) accepté(s) (aucun attendu)`);
+        if (reste) faute(F, `${ici} : double-clic sur « toutes » : ${reste} photo(s) encore « À écarter »`);
+        console.log(`  ${ici} double-clic sur « toutes » : ${d0 - d1} groupe(s) accepté(s), ${reste} photo(s) à écarter`);
+        await page.evaluate(() => document.activeElement?.blur?.());
+        await page.keyboard.press('Control+z');
+        await attendre(300);
       }
+      if (cleToutes)
+        await page.evaluate((cle) => {
+          const c = document.querySelector(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] .plusieurs-photos input[type=checkbox]`);
+          if (c?.checked) c.click();
+        }, cleToutes);
       // Tout défaire.
       await page.evaluate(() => document.activeElement?.blur?.());
       for (let k = 0; k < 20 && (await nA()) < depart; k++) {
@@ -1947,9 +1971,7 @@ try {
       // Un champ garde son focus pendant la molette, et « a » n'y accepte rien : « Chercher » n'existe qu'en
       // groupant par dossier (tour 1 du lot 4 : l'essai ne se rabat plus sur un bouton).
       const journee = await page.evaluate(() => document.querySelector('.section-doublons.choisie')?.getAttribute('title') ?? null);
-      const regroupement = page.locator('.sections-doublons details.grouper-classer');
-      if (!(await regroupement.evaluate((d) => d.open))) await regroupement.locator('summary').click();
-      await page.locator('.outils-doublons select').first().selectOption('dossier');
+      await page.locator('.outils-doublons').getByRole('radio', { name: 'Dossier', exact: true }).click();
       await attendre(500);
       await page.evaluate(() => __c.remonter());
       await attendre(300);
@@ -1978,7 +2000,7 @@ try {
         await page.evaluate(() => document.activeElement?.blur?.());
         console.log(`  ${ici} champ « Chercher » et molette : focus ${garde ? 'gardé' : 'perdu'}, « a » tapé : ${n0 - n1} accepté(s)`);
       }
-      await page.locator('.outils-doublons select').first().selectOption('jour');
+      await page.locator('.outils-doublons').getByRole('radio', { name: 'Journée', exact: true }).click();
       await attendre(500);
       if (journee) {
         await page.evaluate((j) => [...document.querySelectorAll('.section-doublons')].find((b) => b.getAttribute('title') === j)?.click(), journee);
@@ -2063,6 +2085,139 @@ try {
     await taille(1440, 900);
   }
 
+  // ---- É14 (retours du 29.10, étape 2d) : plus de menu de portée ; la fenêtre qui chiffre ; « Accepter → » sur le
+  //      dernier groupe d'une journée ouvre la suivante ; les bandes (clic, second clic, garde, double-clic, Ctrl+Z) ;
+  //      l'infobulle du curseur au palier. Tout est défait ensuite. ----
+  pagesFaites.push('doublons-e14');
+  {
+    const E = 'doublons-e14';
+    console.log(`\n[${temps()}] ${E}`);
+    await page.locator('.outils-doublons [role=radio]').nth(2).click(); // « Tous »
+    await attendre(400);
+    // 1. Plus aucun menu de portée, ni « Autres choix », ni liste déroulante ou réglage replié dans la liste de gauche.
+    {
+      const r = await page.evaluate(() => ({
+        menus: [...document.querySelectorAll('.page-doublons [aria-haspopup=true]:not([data-action=menu-liste])')].map((x) => __c.nom(x)),
+        listes: document.querySelectorAll('.outils-doublons select, .outils-doublons details').length,
+        autres: [...document.querySelectorAll('.page-doublons button')].filter((x) => /^(Autres choix|Tout garder|Tout écarter)$/.test(__c.norm(x.textContent))).length,
+      }));
+      if (r.menus.length || r.listes || r.autres) faute(E, `menus de portée (${r.menus.join(', ') || 'aucun'}), ${r.listes} liste(s) déroulante(s), ${r.autres} « Tout garder / Tout écarter / Autres choix »`);
+    }
+    // 2. La fenêtre qui chiffre : « Accepter les N groupes » n'écarte rien avant son plein ; Échap ne fait rien.
+    {
+      const b = page.locator('[data-action=accepter-section]');
+      if (!(await b.count())) signalements.push(`${E} : pas de « Accepter les N groupes » dans la journée affichée`);
+      else {
+        const n0 = await page.evaluate(() => __c.nAccepter());
+        await b.click();
+        const f = page.locator('.dialogue[role=dialog]');
+        await f.waitFor();
+        const texte = (await f.innerText()).replace(/\s+/g, ' ').trim();
+        const n1 = await page.evaluate(() => __c.nAccepter());
+        await page.keyboard.press('Escape');
+        await f.waitFor({ state: 'detached' });
+        await attendre(300);
+        const n2 = await page.evaluate(() => __c.nAccepter());
+        if (n1 !== n0 || n2 !== n0) faute(E, `fenêtre « Accepter les N groupes » : ${n0 - n1} accepté(s) avant le plein, ${n0 - n2} après Échap (aucun attendu)`);
+        if (!/photos? (sera|seront) écartées?|Aucune photo ne sera écartée/.test(texte) || !/Ne rien faire/.test(texte)) faute(E, `fenêtre « Accepter les N groupes » : elle ne chiffre pas (« ${texte.slice(0, 120)} »)`);
+        console.log(`  fenêtre de la journée : « ${texte.slice(0, 110)}… » ; Échap : ${n0 - n2} accepté(s)`);
+      }
+    }
+    // 3. Dernier groupe à accepter d'une journée : « · puis … » dans la ligne grise, A ouvre la journée suivante, son
+    //    premier groupe sous les têtes collées ; Ctrl+Z défait l'acceptation et ramène dans la journée quittée, où le
+    //    groupe rouvert prend le plein (A le vise).
+    {
+      const journee = await page.evaluate(() => document.querySelector('.section-doublons.choisie')?.getAttribute('title') ?? null);
+      const une = await page.evaluate(() => [...document.querySelectorAll('.section-doublons')].findIndex((b) => __c.norm(b.querySelector('.reste')?.textContent) === '1'));
+      if (une < 0) signalements.push(`${E} : aucune journée avec un seul groupe à accepter`);
+      else {
+        await page.locator('.section-doublons').nth(une).click();
+        await attendre(500);
+        const avant = await page.evaluate(() => ({ titre: document.querySelector('.section-doublons.choisie')?.getAttribute('title'), cle: __c.articlePlein()?.dataset.cle, gris: __c.norm(__c.articlePlein()?.querySelector(':scope > header .dit-accepter')?.textContent) }));
+        await page.evaluate(() => document.activeElement?.blur?.());
+        await attendre(600);
+        await page.keyboard.press('a');
+        await attendre(900);
+        const apres = await page.evaluate(() => ({ titre: document.querySelector('.section-doublons.choisie')?.getAttribute('title'), g: __c.gardee('rafales') }));
+        if (!/ · puis /.test(avant.gris)) faute(E, `dernier groupe de « ${avant.titre} » : la ligne grise ne dit pas où mène « Accepter → » (« ${avant.gris} »)`);
+        if (apres.titre === avant.titre) faute(E, `A sur le dernier groupe de « ${avant.titre} » : la journée suivante ne s’ouvre pas`);
+        else if (apres.g && !apres.g.entete) faute(E, `A sur le dernier groupe de « ${avant.titre} » : le premier groupe de « ${apres.titre} » n’est pas sous les têtes collées`);
+        console.log(`  dernier groupe : « ${avant.gris} » ; A : « ${avant.titre} » → « ${apres.titre} »`);
+        await page.keyboard.press('Control+z');
+        await attendre(500);
+        const annule = await page.evaluate(() => ({ titre: document.querySelector('.section-doublons.choisie')?.getAttribute('title'), cle: __c.articlePlein()?.dataset.cle }));
+        if (apres.titre !== avant.titre && annule.titre !== avant.titre) faute(E, `Ctrl+Z après « Accepter → » : la page reste sur « ${annule.titre} », le groupe rouvert de « ${avant.titre} » ne se voit pas`);
+        else if (annule.cle !== avant.cle) faute(E, `Ctrl+Z après « Accepter → » : le plein est sur « ${annule.cle} », pas sur le groupe rouvert « ${avant.cle} »`);
+        console.log(`  Ctrl+Z : retour à « ${annule.titre} », plein sur le groupe rouvert : ${annule.cle === avant.cle ? 'oui' : 'non'}`);
+        if (journee) await page.evaluate((j) => [...document.querySelectorAll('.section-doublons')].find((b) => b.getAttribute('title') === j)?.click(), journee);
+        await attendre(500);
+      }
+    }
+    // 4. Les bandes (C-9.12) : en bordure avant « Accepter » ; un clic sur une bande « À écarter » garde la photo par
+    //    vous, en plein (la photo ne se choisit pas, pas de vue en grand) ; un second clic revient à la proposition ;
+    //    un double-clic ne fait qu'un geste ; Ctrl+Z défait. Aux 3 tailles.
+    for (const [w, h] of TAILLES.slice(0, 3)) {
+      await taille(w, h);
+      const ici = `${w}×${h}`;
+      await page.evaluate(() => __c.remonter());
+      await attendre(600);
+      const lireB = () =>
+        page.evaluate(() => {
+          const a = __c.articlePlein();
+          return a ? [...a.querySelectorAll('.photo-doublon > .badge-photo')].map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|') : null;
+        });
+      const depart = await lireB();
+      const cible = await page.evaluate(() => {
+        const a = __c.articlePlein();
+        const b = [...(a?.querySelectorAll('.photo-doublon > .badge-photo[data-sort=ecarter] .clic-badge') ?? [])].find((x) => __c.vu(x));
+        if (!b) return null;
+        const q = b.getBoundingClientRect();
+        return { x: q.left + q.width / 2, y: q.top + q.height / 2, cle: a.dataset.cle };
+      });
+      if (!depart || !cible) {
+        signalements.push(`${E} ${ici} : pas de bande « À écarter » visible dans le groupe du plein`);
+        continue;
+      }
+      if (/plein/.test(depart)) faute(E, `${ici} : avant « Accepter », une bande est en plein sans geste (${depart})`);
+      await page.mouse.click(cible.x, cible.y);
+      await attendre(300);
+      const un = await page.evaluate(() => ({ b: [...(__c.articlePlein()?.querySelectorAll('.photo-doublon > .badge-photo') ?? [])].map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|'), vue: !!document.querySelector('.comparateur, .visionneuse'), focus: !!document.activeElement?.closest('.badge-photo') }));
+      if (!un.b.split('|').some((x) => x === 'garder:vous:plein')) faute(E, `${ici} : clic sur une bande « À écarter » : pas de « Gardée par vous » en plein (${un.b})`);
+      if (un.vue || un.focus) faute(E, `${ici} : clic sur la bande : ${un.vue ? 'une vue en grand s’ouvre' : 'la bande prend le focus'}`);
+      await attendre(600);
+      await page.mouse.click(cible.x, cible.y);
+      await attendre(300);
+      const deux = await lireB();
+      if (deux !== depart) faute(E, `${ici} : second clic sur la bande : pas de retour à la proposition (${deux}, ${depart} attendu)`);
+      await attendre(600);
+      await page.mouse.dblclick(cible.x, cible.y);
+      await attendre(700);
+      const dbl = await lireB();
+      const vue = await page.evaluate(() => !!document.querySelector('.comparateur, .visionneuse'));
+      if (dbl === depart || vue) faute(E, `${ici} : double-clic sur la bande : ${vue ? 'une vue en grand s’ouvre' : 'aucun geste'} (un seul geste attendu)`);
+      await page.evaluate(() => document.activeElement?.blur?.());
+      await page.keyboard.press('Control+z');
+      await attendre(400);
+      const z = await lireB();
+      if (z !== depart) faute(E, `${ici} : Ctrl+Z après le double-clic : ${z} (${depart} attendu : un seul geste à défaire)`);
+      // Les deux gestes du début (clic, second clic) : défaits aussi.
+      for (let k = 0; k < 2; k++) {
+        await page.keyboard.press('Control+z');
+        await attendre(300);
+      }
+      console.log(`  ${ici} bandes : ${depart} → clic ${un.b} → second clic ${deux === depart ? 'proposition' : deux} → double-clic ${dbl} → Ctrl+Z ${z === depart ? 'proposition' : z}`);
+    }
+    // 5. L'infobulle du curseur au palier : la taille vraiment montrée (les trois quarts du réglage, É14 m).
+    {
+      await taille(1024, 464);
+      await attendre(400);
+      const r = await page.evaluate(() => ({ titre: document.querySelector('.ligne-etape [data-place=taille]')?.getAttribute('title') ?? '', valeur: document.querySelector('.ligne-etape .curseur-taille')?.getAttribute('aria-valuetext') ?? '', cote: Math.round(document.querySelector('.photo-doublon .cadre-tuile')?.getBoundingClientRect().height ?? 0) }));
+      if (!r.titre.includes(`${r.cote} px`) || r.valeur !== `${r.cote} px`) faute(E, `1024×464 : le curseur dit « ${r.titre} » / « ${r.valeur} », les photos font ${r.cote} px`);
+      console.log(`  curseur au palier : « ${r.titre} », « ${r.valeur} » (photos de ${r.cote} px)`);
+      await taille(1440, 900);
+    }
+  }
+
   // ---- Onglet « Mis de côté » (essai reporté du lot 3) : une bande sous chaque photo, rien sur l'image ----
   pagesFaites.push('doublons-mis-de-cote');
   {
@@ -2086,7 +2241,8 @@ try {
           });
           const pb = [];
           for (const c of cadres) {
-            const b = c.nextElementSibling;
+            // É14 : la bande suit le bouton de la photo, jamais dedans.
+            const b = c.nextElementSibling ?? c.parentElement?.nextElementSibling;
             if (!b?.matches('.bande-etat')) pb.push('photo sans bande');
             else if (Math.abs(b.getBoundingClientRect().height - 28) > 1 || b.getBoundingClientRect().top < c.getBoundingClientRect().bottom - 1 || !__c.norm(b.textContent)) pb.push(`bande « ${__c.norm(b.textContent)} » de ${Math.round(b.getBoundingClientRect().height)} px`);
           }
@@ -2107,7 +2263,7 @@ try {
   await valider('tri');
   await controlerAilleurs('tri-apercu');
   const copies = page.locator('.copies-avant-tri');
-  if (await copies.count()) await copies.getByRole('button', { name: 'Mettre de côté' }).click();
+  if (await copies.count()) await copies.getByRole('button', { name: 'Écarter', exact: true }).click();
   await page.locator('.ligne-ranger').getByRole('button', { name: 'Ranger les photos', exact: true }).click();
   await page.locator('.ligne-ranger.fait').waitFor({ timeout: 120_000 });
   await controlerAilleurs('tri-range');
@@ -2133,6 +2289,41 @@ try {
   await controlerAide('selection-aide', 1440);
   await fermerAide();
   await controlerPilote('selection', { photos: true, liste: '.panneau-dossiers' });
+  // La liste des sorties sur deux lignes (É14 l, C-7.7) : le nom en 600 sur une ligne, la période dessous, l'événement
+  // du calendrier en icône (plus de ligne à part) ; à 1280 et au palier (dans le menu de la tête de la table).
+  pagesFaites.push('selection-liste');
+  for (const [w, h] of [TAILLES[1], TAILLES[2]]) {
+    await taille(w, h);
+    await attendre(400);
+    const menu = page.locator('.page-selection [data-action=menu-liste]');
+    const ouvrir = (await menu.count()) && (await menu.isVisible());
+    if (ouvrir) {
+      await menu.click();
+      await attendre(300);
+    }
+    const r = await page.evaluate(() =>
+      [...document.querySelectorAll('.page-selection .panneau-dossiers.liste-simple .ligne-dossier:not(.speciale)')]
+        .filter((l) => __c.affiche(l))
+        .slice(0, 6)
+        .map((l) => {
+          const nom = l.querySelector('.nom-dossier');
+          const dates = l.querySelector('.dates-dossier');
+          const qn = nom.getBoundingClientRect();
+          const qd = dates?.getBoundingClientRect();
+          const coupe = nom.scrollWidth > nom.clientWidth + 1 && !l.getAttribute('title');
+          return { nom: __c.norm(nom.textContent), poids: getComputedStyle(nom).fontWeight, dessous: !!qd && qd.top >= qn.bottom - 1, uneLigne: qn.height <= 24, coupe, ligneEvenement: !!l.querySelector('.evenement-dossier') };
+        }),
+    );
+    const pb = r.filter((x) => x.poids !== '600' || !x.dessous || !x.uneLigne || x.coupe || x.ligneEvenement).map((x) => `« ${x.nom} » (${x.poids}${x.dessous ? '' : ', période pas dessous'}${x.uneLigne ? '' : ', nom sur deux lignes'}${x.coupe ? ', coupé sans infobulle' : ''}${x.ligneEvenement ? ', événement sur sa ligne' : ''})`);
+    if (!r.length) faute('selection-liste', `${w}×${h} : aucune sortie dans la liste`);
+    if (pb.length) faute('selection-liste', `${w}×${h} : ${pb.slice(0, 3).join(' ; ')}`);
+    console.log(`  selection-liste ${w}×${h} : ${r.length} sorties, ${pb.length} écart(s)`);
+    if (ouvrir) {
+      await page.keyboard.press('Escape');
+      await attendre(300);
+    }
+  }
+  await taille(1440, 900);
   // Tour 3 du lot 4 (choix 6 A, accessibilité N2) : à l'arrivée, le dernier geste est à une autre étape ; Ctrl+Z suit
   // le bouton de l'en-tête : il ne défait rien et le dit (« Rien à annuler ici… »).
   {
@@ -2534,6 +2725,46 @@ try {
     const vide = await page.evaluate(() => { const e = document.querySelector('.ligne-etape .message-entete'); return e ? !e.textContent : null; });
     if (!present) faute(M, `la zone role=status de l’en-tête${vide ? ', vide,' : ''} n’est pas dans l’arbre d’accessibilité (un message qui y arrive ne serait pas lu) ; status vus : ${vus.join(' ; ') || 'aucun'}`);
     console.log(`  ${M} : zone role=status ${vide ? 'vide' : 'NON VIDE'} ${present ? 'présente' : 'ABSENTE'} dans l’arbre d’accessibilité (status vus : ${vus.join(' ; ') || 'aucun'})`);
+  }
+  // ---- Vue « Mis de côté » (tour 0 de l'étape 2d, règle d'or 3) : la photo écartée par le réglage du flou juste
+  //      au-dessus (curseur au bout, « Valider »), sans décision, reste en bordure (« Floue », proposée : le réglage
+  //      peut la faire revenir), comme à Floues ; une décision est en plein. Vue depuis Lieux et sorties. ----
+  pagesFaites.push('lieux-mis-de-cote');
+  {
+    const L = 'lieux-mis-de-cote';
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.locator('.bandeau .etape').nth(6).click();
+    await page.locator('.panneau-dossiers').waitFor({ timeout: 60_000 });
+    // La première ligne spéciale du panneau : « Mis de côté » (la langue est l'anglais à ce point de l'essai).
+    await page.locator('.panneau-dossiers .ligne-dossier.speciale').first().click();
+    await page.locator('.tuile .badge-photo').first().waitFor({ timeout: 10_000 });
+    const auto = await page.evaluate(async () => {
+      const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+      const plan = JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text());
+      return plan.fichiers.filter((f) => f.statut === 'mis_de_cote' && f.raison === 'floues' && f.flou === 'auto' && !f.origine?.flou && !f.avant).map((f) => f.id);
+    });
+    const vus = new Map();
+    for (let k = 0; k < 60; k++) {
+      for (const [id, b] of await page.locator('.tuile[data-id]').evaluateAll((l) => l.map((t) => [t.dataset.id, t.querySelector('.badge-photo')?.hasAttribute('data-decide') ? 'plein' : 'bord'])))
+        vus.set(id, b);
+      if (auto.every((id) => vus.has(id))) break;
+      const fin = await page.evaluate(() => {
+        const d = document.scrollingElement;
+        const avant = d.scrollTop;
+        d.scrollTop += Math.round(innerHeight * 0.6);
+        return d.scrollTop === avant;
+      });
+      if (fin) break;
+      await attendre(250);
+    }
+    await page.evaluate(() => (document.scrollingElement.scrollTop = 0));
+    const autoVus = auto.filter((id) => vus.has(id));
+    const autres = [...vus].filter(([id]) => !auto.includes(id));
+    if (!auto.length) faute(L, 'aucune photo écartée par le réglage du flou dans le jeu d’essai (une attendue : rien à vérifier)');
+    else if (autoVus.length < auto.length) faute(L, `${auto.length - autoVus.length} photo(s) écartée(s) par le réglage introuvable(s) dans la vue « Mis de côté »`);
+    if (autoVus.some((id) => vus.get(id) !== 'bord')) faute(L, `une photo écartée par le réglage du flou est en plein (décidée) dans « Mis de côté » : la bordure est attendue`);
+    if (autres.some(([, b]) => b !== 'plein')) faute(L, `une photo décidée est en bordure dans « Mis de côté »`);
+    console.log(`\n[${temps()}] ${L} : ${autoVus.length} photo(s) écartée(s) par le réglage, en bordure ; ${autres.length} décidée(s), en plein`);
   }
 } catch (e) {
   fautes.push({ page: 'parcours', texte: `parcours interrompu après « ${pagesFaites.at(-1) ?? 'rien'} » : ${e.message.split('\n')[0]}` });

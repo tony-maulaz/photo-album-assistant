@@ -29,8 +29,6 @@ export const TEXTES: Record<string, string> = {
   Facultatif: 'Optional',
   'Tri dans l’ordre du temps : {0} pour {1}': 'Sorting in time order: {0} for {1}',
   '{0} dans {1} : voyez-les à droite.': '{0} in {1}: see them on the right.',
-  'copie mise': 'copy set',
-  'copies mises': 'copies set',
   conseillé: 'recommended',
   'Avec vos photos : {0} ({1} en tout).': 'With your photos: {0} ({1} in all).',
   sortie: 'outing',

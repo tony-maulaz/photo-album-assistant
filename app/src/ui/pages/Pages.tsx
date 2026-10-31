@@ -392,7 +392,7 @@ export function PageAide() {
 
       <h2>{t`Le principe`}</h2>
       <p>
-        {t`Le dossier de photos d’origine n’est jamais modifié. Toutes vos décisions (dossiers, déplacements, éléments mis de côté) sont gardées dans le projet, puis l’étape ${ETAPE.sortie} écrit le résultat dans le dossier de sortie et vérifie que chaque fichier d’origine s’y retrouve. Vous pouvez fermer l’onglet à tout moment : tout est enregistré au fur et à mesure.`}
+        {t`Le dossier de photos d’origine n’est jamais modifié. Toutes vos décisions (dossiers, déplacements, éléments écartés) sont gardées dans le projet, puis l’étape ${ETAPE.sortie} écrit le résultat dans le dossier de sortie et vérifie que chaque fichier d’origine s’y retrouve. Vous pouvez fermer l’onglet à tout moment : tout est enregistré au fur et à mesure.`}
       </p>
 
       <h2>{t`Au lancement`}</h2>
@@ -408,7 +408,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{t`Ouvrir un dossier déjà trié`}</strong>
-          {t` : ses sous-dossiers deviennent les dossiers de la sortie. Les dossiers « _a_supprimer », « _doublons » et les photos marquées « _doublon » des anciens scripts sont reconnus et mis de côté. Après l’inventaire, on passe aux doublons, puis aux lieux et sorties (le tri automatique et ses suites sont sautés).`}
+          {t` : ses sous-dossiers deviennent les dossiers de la sortie. Les dossiers « _a_supprimer », « _doublons » et les photos marquées « _doublon » des anciens scripts sont reconnus et écartés. Après l’inventaire, on passe aux doublons, puis aux lieux et sorties (le tri automatique et ses suites sont sautés).`}
         </li>
       </ul>
 
@@ -432,7 +432,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.doublons)}</strong>
-          {t` : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » écarte les autres.`}
+          {t` : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter → » écarte les autres et passe au groupe suivant (sur le dernier, à la journée ou au mois suivant). Sous chaque photo, ce qui lui arrivera (bordure : proposé, plein : décidé) ; un clic sur la bande lui donne l’autre sort. Les photos écartées se revoient dans l’onglet « Écartées ». S’il reste des copies exactes, « Valider et continuer » le dit avant de partir.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
@@ -456,7 +456,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.selection)}</strong>
-          {t` : Espace = ★ dans l’album, 2 = ★★ grande photo, X = pas pour l’album (elle reste dans l’archive), T = tri rapide, C = comparer, R = tourner.`}
+          {t` : Espace = ★ dans l’album, 2 = ★★ grande photo, X = pas pour l’album (elle reste dans l’archive), T = tri rapide, C = comparer, R = tourner. Un clic sur la bande sous la photo la met dans l’album, ou la remet à décider.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.album)}</strong>
@@ -464,7 +464,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.sortie)}</strong>
-          {t` : l’archive triée, l’album numéroté pour ifolor, ce qui est mis de côté, le rapport et le bilan.`}
+          {t` : l’archive triée, l’album numéroté pour ifolor, ce qui est écarté, le rapport et le bilan.`}
         </li>
       </ol>
 
@@ -483,7 +483,7 @@ export function PageAide() {
         </li>
         <li>{t`Réunissez deux dossiers avec « Réunir avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom, ou F2, pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.`}</li>
         <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).`}</li>
-        <li>{t`Suppr met de côté : rien n’est supprimé, les éléments vont dans « Mis de côté » ; dans « Mis de côté », Suppr les remet.`}</li>
+        <li>{t`Suppr écarte : rien n’est supprimé, les éléments vont dans « Mis de côté » ; dans « Mis de côté », Suppr les remet.`}</li>
         <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>
         <li>{t`Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.`}</li>
       </ul>

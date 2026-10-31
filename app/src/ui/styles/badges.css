@@ -104,6 +104,15 @@
   background: transparent;
 }
 
+/* Dans « Comparer en grand », la règle des boutons de la vue (fond --neutre-doux, texte --texte, style.css) couvrirait
+   aussi le plein, la bordure et la couleur de la bande : plein et bordure ne se distingueraient plus. */
+.comparateur .badge-photo .clic-badge,
+.comparateur .badge-photo .clic-badge:hover:not(:disabled) {
+  background: transparent;
+  color: inherit;
+  border-color: transparent;
+}
+
 .badge-photo[data-cliquable]:hover .etat-badge {
   display: none;
 }
@@ -405,4 +414,174 @@
   .page-floues .barre-validation .bordure-l2 {
     display: inline;
   }
+}
+
+/* ---------- Sélection (D112, question 14) : tout y est de vous, les étoiles tiennent lieu de punaise ---------- */
+
+/* À décider : rien n'est choisi ; tout y est de vous, plein ou rien, jamais de bordure (C-3.12). */
+.badge-photo[data-sort='decider'] {
+  box-shadow: none;
+  color: var(--texte-2);
+  font-weight: 500;
+}
+
+/* Dans l'album : ambre plein franc ; Grande : l'ambre de l'étoile ; Pas pour l'album : le gris plein (data-sort « ecarter »). */
+.badge-photo[data-decide][data-sort='album'] {
+  background: var(--badge-album-plein);
+  color: var(--badge-album-plein-texte);
+}
+
+.badge-photo[data-decide][data-sort='grande'] {
+  background: var(--etoile);
+  color: var(--sur-etoile);
+}
+
+/* Les trois pleins de la Sélection en 600 (C-3.12). */
+.badge-photo[data-decide]:is([data-sort='album'], [data-sort='grande']) {
+  font-weight: 600;
+}
+
+.badge-photo .etoiles {
+  flex: none;
+  color: inherit;
+}
+
+/* Les marques de la Sélection (↻ ✂ ▣) au bout de la bande, après le bouton du mot. */
+.badge-photo[data-cliquable] {
+  display: flex;
+  align-items: stretch;
+}
+
+.badge-photo[data-cliquable] > .clic-badge {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.badge-photo > .fin-bande {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  padding-right: var(--e2);
+}
+
+.badge-photo > .fin-bande:empty {
+  display: none;
+}
+
+/* ---------- Doublons (D112) : le badge à côté du bouton de la photo, jamais dedans ---------- */
+
+.photo-doublon > .badge-photo {
+  width: 100%;
+}
+
+.photo-doublon > .tuile-doublon .cadre-tuile {
+  border-radius: var(--r-photo) var(--r-photo) 0 0;
+}
+
+/* Une photo écartée (groupe accepté, onglet « Écartées ») reste pâlie (C-9.3) ; elle redevient entière au survol. */
+.photo-doublon.ecartee > .tuile-doublon:hover .cadre-tuile {
+  opacity: 1;
+}
+
+/* Copies exactes : la bande à gauche de la ligne de l'exemplaire, sans clic (toute la ligne se choisit, É4). */
+.exemplaire .badge-photo {
+  flex: 0 0 148px;
+  height: auto;
+  justify-content: flex-start;
+  padding: 0 var(--e3);
+  border-radius: var(--r-photo) 0 0 var(--r-photo);
+}
+
+/* « Accepter → » : toujours le même mot, à largeur fixe (on clique au même endroit) ; ce qu'il fera est écrit à sa
+   gauche, en gris (« garde la 2 · écarte 1 »). */
+.page-doublons [data-action='accepter'].bouton-accepter,
+.comparateur [data-action='accepter'].bouton-accepter {
+  flex: none;
+  justify-content: center;
+  gap: var(--e2);
+  width: 120px;
+  padding-inline: 0;
+}
+
+.page-doublons [data-action='accepter'].bouton-accepter > svg:first-child,
+.comparateur .cmp-bas > [data-action='accepter'].bouton-accepter > svg:first-child {
+  margin-right: 0;
+}
+
+/* La ligne grise cède la place, sur deux lignes au plus, jamais coupée (C-10.4) ; « Accepter → » ne bouge pas. */
+.dit-accepter {
+  flex: 0 1 auto;
+  min-width: 6em;
+  max-height: 40px;
+  overflow: hidden;
+  white-space: normal;
+  text-align: right;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 400;
+}
+
+/* « choisir : toutes · aucune » après la case « Garder plusieurs photos » (D112, question 3). */
+.plusieurs-photos .toutes-aucune {
+  margin-left: var(--e3);
+  color: var(--texte-2);
+  white-space: nowrap;
+}
+
+.plusieurs-photos .toutes-aucune button.lien {
+  min-height: 0;
+  padding: 0 2px;
+}
+
+/* Des copies exactes restent à accepter : la barre du bas le dit en brun (D112, question 5). */
+.reste-copies {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  color: var(--afaire);
+}
+
+.reste-copies .icone {
+  flex: none;
+}
+
+/* La légende des badges dans l'Aide : les icônes dans le texte. */
+.legende-badges-aide .icone {
+  vertical-align: -3px;
+}
+
+/* ---------- Comparer en grand : la même bande sous la photo, les boutons de choix dessous ---------- */
+
+.legende-comparer > .badge-photo,
+.legende-une > .badge-photo {
+  flex: none;
+  width: 100%;
+  border-radius: var(--r-photo);
+}
+
+.vignette-comparer .badge-photo {
+  width: 100%;
+}
+
+/* L'onglet « Écartées » : un état, pas une sorte de doublons ; un filet le sépare des trois autres (É14 f). */
+.onglets-doublons .onglet-ecartees {
+  position: relative;
+  margin-left: var(--e3);
+}
+
+.onglets-doublons .onglet-ecartees::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--e2));
+  top: var(--e2);
+  bottom: var(--e2);
+  border-left: 1px solid var(--filet-fort);
+}
+
+/* Les boutons de tout l'onglet, en clair dans la barre d'outils (É14 c). */
+.page-doublons .rangee-onglet {
+  gap: var(--e2);
+  align-items: center;
 }

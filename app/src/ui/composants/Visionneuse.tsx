@@ -100,7 +100,7 @@ export function Visionneuse({ elements, rangement = true, nettete }: { elements:
         ))}
         <span class="discret">{tailleTexte(f.taille)}</span>
         <span class="discret">{t`source : ${f.id}`}</span>
-        <span class="aide-touches">{rangement ? t`← → pour naviguer · M pour déplacer · Suppr pour mettre de côté · Échap pour fermer` : t`← → pour naviguer · Échap pour fermer`}</span>
+        <span class="aide-touches">{rangement ? t`← → pour naviguer · M pour déplacer · Suppr pour écarter · Échap pour fermer` : t`← → pour naviguer · Échap pour fermer`}</span>
       </div>
       {/* Quitter la vue : « Fermer », la croix SVG avec son mot (C-5.2, C-5.3). */}
       <button type="button" class="fermer" onClick={() => (visionneuse.value = null)} title={t`Échap`}>

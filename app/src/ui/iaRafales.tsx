@@ -1,8 +1,9 @@
 // IA16 — choisir dans les rafales avec l'IA (D102), depuis l'étape
 // « Doublons » : toutes les rafales à accepter, celles de la section affichée,
 // ou une seule depuis « Comparer en grand ». Le choix de l'IA s'applique comme
-// un clic de l'utilisateur, en une seule modification annulable, et seulement
-// sur les rafales qu'il n'a pas touchées ; la ★ du groupe (sa clé) ne change pas.
+// un clic, en une seule modification annulable, et seulement sur les rafales
+// que l'utilisateur n'a pas touchées ; il reste une proposition de l'IA (badge ✦
+// en bordure, règle d'or 3) jusqu'à « Accepter ». La ★ du groupe (sa clé) ne change pas.
 
 import { signal } from '@preact/signals';
 import { estimerDemandes, type DemandeIA, type PhotoIA } from '../lib/aidesSelection';
@@ -133,7 +134,7 @@ export async function choisirAvecIA(s: Session, cibles: GroupeDoublons[]): Promi
     }
     if (choixEnAttente(g, fichier) || !aRelire(g, fichier)) return null;
     choisies++;
-    return choisir(plan, g, a.meilleure, true);
+    return choisir(plan, g, a.meilleure, true, 'ia');
   });
   const m = avecDetail(combiner(t`Suivre l’IA pour ${pluriel(choisies, 'rafale')}`, ...modifications), t`Choix de l’IA dans ${pluriel(choisies, 'rafale')}`);
   if (m) appliquer(m);
@@ -150,7 +151,11 @@ export async function choisirAvecIA(s: Session, cibles: GroupeDoublons[]): Promi
 }
 
 /** Bouton « Choisir avec l'IA » d'une portée (l'onglet, la section, une rafale), avec son coût. */
-export function BoutonIARafales({ cibles, libelle }: { cibles: GroupeDoublons[]; libelle: string }) {
+/**
+ * `portee` (« de cette journée ») : dite par l'infobulle et le nom lu, pas écrite sur le bouton quand la tête de la
+ * table la dit déjà par son titre (la place du titre de la section, D112).
+ */
+export function BoutonIARafales({ cibles, libelle, portee }: { cibles: GroupeDoublons[]; libelle: string; portee?: string }) {
   const s = session.value!;
   versionIA.value;
   versionPlan.value;
@@ -166,7 +171,13 @@ export function BoutonIARafales({ cibles, libelle }: { cibles: GroupeDoublons[];
     );
   if (!cibles.length) return null;
   return (
-    <button type="button" class="bouton-ia" onClick={() => void choisirAvecIA(s, cibles)} title={t`L’IA choisit la meilleure photo de chaque rafale (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous acceptez.`}>
+    <button
+      type="button"
+      class="bouton-ia"
+      onClick={() => void choisirAvecIA(s, cibles)}
+      aria-label={portee ? `${libelle} ${portee} — ${texteCout(estimationIA(s, cibles))}` : undefined}
+      title={[portee ? `${libelle} ${portee}.` : '', t`L’IA choisit la meilleure photo de chaque rafale (yeux fermés, regards, flou, personne qui manque) et dit pourquoi ; vous acceptez.`].filter(Boolean).join('\n')}
+    >
       <Icone nom="etincelle" taille={16} />
       <span>
         {libelle}

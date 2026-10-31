@@ -14,6 +14,8 @@ interface Demande {
   /** Sans libellé : « Confirmer » (confirmation) ou « Valider » (saisie), traduit à l'affichage. */
   bouton?: string;
   danger?: boolean;
+  /** Plusieurs choix (« Valider » de Doublons avec des copies restantes) : le dernier est le plein ; Échap n'en choisit aucun. */
+  choix?: { cle: string; libelle: string }[];
   resoudre: (v: string | boolean | null) => void;
 }
 
@@ -28,6 +30,14 @@ export function demander(titre: string, texte: string, valeur = '', verifier?: (
   return new Promise(
     (resoudre) => (courant.value = { id: prochain++, titre, texte, saisie: { valeur, verifier }, bouton, resoudre: (v) => resoudre(typeof v === 'string' ? v : null) }),
   );
+}
+
+/**
+ * Une question à plusieurs réponses (D112 : « Valider et continuer » avec des copies exactes restantes) : la clé
+ * du choix, ou `null` (Échap, clic à côté : rien ne se passe). Le dernier choix est le plein et prend le focus.
+ */
+export function choisirParmi(titre: string, texte: string, choix: { cle: string; libelle: string }[]): Promise<string | null> {
+  return new Promise((resoudre) => (courant.value = { id: prochain++, titre, texte, choix, resoudre: (v) => resoudre(typeof v === 'string' ? v : null) }));
 }
 
 export function Dialogues() {
@@ -52,7 +62,8 @@ function Boite({ d }: { d: Demande }) {
     d.resoudre(v);
   };
   const valider = () => {
-    if (d.saisie) {
+    if (d.choix) fermer(d.choix.at(-1)!.cle);
+    else if (d.saisie) {
       if (!erreur && valeur.trim()) fermer(valeur.trim());
     } else fermer(true);
   };
@@ -60,7 +71,8 @@ function Boite({ d }: { d: Demande }) {
   return (
     <div class="voile" onMouseDown={(e) => e.target === e.currentTarget && fermer(null)}>
       <div
-        class="dialogue"
+        // Trois choix et plus : une fenêtre plus large, pour qu'ils tiennent sur une ligne (maquette, D112 question 5).
+        class={`dialogue${d.choix && d.choix.length >= 3 ? ' choix-multiples' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={d.titre}
@@ -68,7 +80,10 @@ function Boite({ d }: { d: Demande }) {
           if (e.key === 'Escape') fermer(null);
           if (e.key === 'Enter') {
             e.preventDefault();
-            valider();
+            // Plusieurs choix : Entrée prend celui qui a le focus.
+            const choix = d.choix ? (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-choix]') : null;
+            if (choix) choix.click();
+            else valider();
           }
           e.stopPropagation();
         }}
@@ -81,15 +96,28 @@ function Boite({ d }: { d: Demande }) {
             {erreur && valeur && <p class="erreur">{erreur}</p>}
           </>
         )}
-        <div class="actions droite">
-          <button type="button" onClick={() => fermer(null)}>
-            {/* Fermer la boîte sans rien changer (glossaire) ; « Annuler » ne sert qu'à défaire un geste. */}
-            {t`Ne rien faire`}
-          </button>
-          <button ref={bouton} type="button" class={d.danger ? 'danger' : 'principal'} disabled={!!d.saisie && (!!erreur || !valeur.trim())} onClick={valider}>
-            {d.bouton ?? (d.saisie ? t`Accepter` : t`Confirmer`)}
-          </button>
-        </div>
+        {d.choix ? (
+          <div class="actions droite">
+            {d.choix.map((c, i) => {
+              const dernier = i === d.choix!.length - 1;
+              return (
+                <button key={c.cle} ref={dernier ? bouton : undefined} type="button" class={dernier ? 'principal' : undefined} data-choix={c.cle} onClick={() => fermer(c.cle)}>
+                  {c.libelle}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div class="actions droite">
+            <button type="button" onClick={() => fermer(null)}>
+              {/* Fermer la boîte sans rien changer (glossaire) ; « Annuler » ne sert qu'à défaire un geste. */}
+              {t`Ne rien faire`}
+            </button>
+            <button ref={bouton} type="button" class={d.danger ? 'danger' : 'principal'} disabled={!!d.saisie && (!!erreur || !valeur.trim())} onClick={valider}>
+              {d.bouton ?? (d.saisie ? t`Accepter` : t`Confirmer`)}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

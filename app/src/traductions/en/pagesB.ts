@@ -201,8 +201,6 @@ export const TEXTES: Record<string, string> = {
   Aide: 'Help',
   'Comment utiliser l’application, étape par étape.': 'How to use the application, step by step.',
   'Le principe': 'How it works',
-  'Le dossier de photos d’origine n’est jamais modifié. Toutes vos décisions (dossiers, déplacements, éléments mis de côté) sont gardées dans le projet, puis l’étape {0} écrit le résultat dans le dossier de sortie et vérifie que chaque fichier d’origine s’y retrouve. Vous pouvez fermer l’onglet à tout moment : tout est enregistré au fur et à mesure.':
-    'The original photo folder is never changed. All your decisions (folders, moves, items set aside) are kept in the project, then step {0} writes the result to the output folder and checks that every original file is there. You can close the tab at any time: everything is saved as you go.',
   'Au lancement': 'When you start',
   'Le navigateur redemande l’accès à vos dossiers à chaque session : c’est une mesure de sécurité. L’écran « Reprendre » regroupe ces demandes ; cliquez sur « Autoriser » pour chaque dossier.':
     'The browser asks again for access to your folders at each session: it is a security measure. The “Resume” screen gathers these requests; click “Allow” for each folder.',
@@ -211,25 +209,18 @@ export const TEXTES: Record<string, string> = {
   ' (en vrac) : les treize étapes. Les photos à la racine sont rangées par lieux et par sorties ; les sous-dossiers déjà nommés gardent leur place, sauf si vous choisissez de les trier aussi (étape {0}).':
     ' (unsorted): the thirteen steps. The photos at the top level are arranged by places and outings; subfolders that already have a name keep their place, unless you choose to sort them too (step {0}).',
   'Ouvrir un dossier déjà trié': 'Open an already sorted folder',
-  ' : ses sous-dossiers deviennent les dossiers de la sortie. Les dossiers « _a_supprimer », « _doublons » et les photos marquées « _doublon » des anciens scripts sont reconnus et mis de côté. Après l’inventaire, on passe aux doublons, puis aux lieux et sorties (le tri automatique et ses suites sont sautés).':
-    ': its subfolders become the folders of the output. The “_a_supprimer” and “_doublons” folders and the photos marked “_doublon” by the old scripts are recognised and set aside. After the inventory come the duplicates, then places and outings (automatic sorting and the steps that follow it are skipped).',
   'Les étapes': 'The steps',
   ' : dossiers, préréglage, contexte (transmis à l’IA), budget IA.': ': folders, preset, context (sent to the AI), AI budget.',
   ' : chiffres, dates, appareils et décalage d’horloge ; l’analyse des photos (netteté, ressemblance, copies, rafales) se fait pendant ce temps.':
     ': figures, dates, cameras and clock offset; the photo analysis (sharpness, similarity, copies, bursts) runs meanwhile.',
   ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
-  ' : un onglet par sorte, copies exactes (même photo en plusieurs exemplaires, ou copie WhatsApp réduite), rafales repérées gratuitement, puis la même scène photographiée plusieurs fois (IA). On relit journée par journée : un clic choisit la photo à garder, « Accepter » écarte les autres.': ': one tab per kind, exact copies (the same photo several times, or a smaller WhatsApp copy), bursts found for free, then the same scene photographed several times (AI). You review day by day: a click chooses the photo to keep, “Accept” sets the others aside.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
   ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',
   ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':
     ': a meaningful name for each folder (Theme_Place_DD.MM.YY), suggested by the AI if you wish.',
   ' : fusionnez les dossiers qui couvrent la même activité.': ': merge the folders that cover the same activity.',
-  ' : Espace = ★ dans l’album, 2 = ★★ grande photo, X = pas pour l’album (elle reste dans l’archive), T = tri rapide, C = comparer, R = tourner.':
-    ': Space = ★ in the album, 2 = ★★ large photo, X = not for the album (it stays in the archive), T = quick sort, C = compare, R = rotate.',
   ' : ordre, sections, titres, légendes, couverture, aperçu des pages.': ': order, sections, titles, captions, cover, page preview.',
-  ' : l’archive triée, l’album numéroté pour ifolor, ce qui est mis de côté, le rapport et le bilan.':
-    ': the sorted archive, the album numbered for ifolor, what is set aside, the report and the summary.',
   'Les aides IA': 'The AI helpers',
   'Toutes sont facultatives. Chaque bouton affiche son coût estimé avant de partir ; au-delà du seuil (Réglages), une confirmation est demandée, et le budget du projet n’est jamais dépassé. Les réponses sont gardées : relancer ne coûte rien. La page « Fonctions IA » dit ce que chaque aide envoie.':
     'They are all optional. Each button shows its estimated cost before anything is sent; above the threshold (Settings), you are asked to confirm, and the project budget is never exceeded. Answers are kept: running again costs nothing. The “AI helpers” page says what each helper sends.',

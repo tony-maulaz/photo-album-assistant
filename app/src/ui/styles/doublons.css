@@ -415,8 +415,21 @@
   display: block;
 }
 
-.tuile-doublon.ecartee .cadre-tuile {
-  opacity: 0.4;
+/* Une photo écartée (décidée) : un peu délavée, comme à Floues, jamais une opacité (C-9.3, É14 k) ; entière au
+   survol et au focus. */
+.tuile-doublon.ecartee .cadre-tuile :is(img, canvas) {
+  filter: saturate(0.3) contrast(0.7);
+  transition: filter 120ms ease-out;
+}
+
+.tuile-doublon.ecartee:is(:hover, :focus-visible) .cadre-tuile :is(img, canvas) {
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuile-doublon.ecartee .cadre-tuile :is(img, canvas) {
+    transition: none;
+  }
 }
 
 .legende-doublon {

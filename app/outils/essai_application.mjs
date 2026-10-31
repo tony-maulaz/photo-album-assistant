@@ -209,12 +209,24 @@ try {
   await page.waitForTimeout(300);
   verifier((await nombre('Angthong_21.07.26')) === 7, 'dossier renommé');
 
-  // Mettre de côté une photo (Suppr).
+  // Écarter une photo (Suppr) : elle va dans « Mis de côté ».
   await ligne('VS_Max').click();
   await page.locator('.tuile').first().click();
   await page.keyboard.press('Delete');
   await page.waitForTimeout(300);
-  verifier((await page.locator('.ligne-dossier.speciale', { hasText: 'Mis de côté' }).locator('.nombre-dossier').innerText()) === '2', 'Suppr met de côté');
+  verifier((await page.locator('.ligne-dossier.speciale', { hasText: 'Mis de côté' }).locator('.nombre-dossier').innerText()) === '2', 'Suppr écarte : la photo va dans « Mis de côté »');
+  // Vue « Mis de côté » (É14) : chaque photo dit sous elle pourquoi et d'où vient la décision ; le badge ne se clique
+  // pas (Suppr et « Remettre » font ce geste) (testeur).
+  await page.locator('.ligne-dossier.speciale', { hasText: 'Mis de côté' }).click();
+  await page.locator('.tuile .badge-photo').first().waitFor();
+  {
+    const mots = await page.locator('.tuile .badge-photo').evaluateAll((l) => l.map((b) => `${b.dataset.origine}:${b.textContent.replace(/\s+/g, ' ').trim()}`));
+    verifier(
+      mots.length === 2 && mots.some((m) => /^vous:.*Écartée par vous/.test(m)) && (await page.locator('.tuile .badge-photo .clic-badge').count()) === 0,
+      `vue « Mis de côté » : un badge sans clic sous chaque photo (${mots.join(' ; ')})`,
+    );
+  }
+  await ligne('VS_Max').click();
 
   // Valider (dossier déjà trié : on arrive à la sélection), puis créer la sortie.
   await page.locator('[data-action=valider]').click();
@@ -362,7 +374,7 @@ try {
   const carte = page.locator('.carte-doublons').first();
   // Un clic choisit, sans rien écarter ni valider (D101) ; Ctrl+Z revient à la proposition.
   const aEcarterAvant = await carte.locator('.tuile-doublon.a_ecarter').count();
-  await carte.locator('.tuile-doublon.choisie').first().click();
+  await carte.locator('.tuile-doublon[aria-pressed=true]').first().click();
   await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.a_ecarter').length > n, aEcarterAvant);
   verifier(
     (await carte.locator('.tuile-doublon.ecartee').count()) === 0 && (await carte.locator('.pastille-attente').count()) === 1 && (await carte.locator('[data-action="accepter"]').count()) === 1,
@@ -372,12 +384,33 @@ try {
   await page.keyboard.press('Control+z');
   await page.waitForFunction((n) => document.querySelectorAll('.carte-doublons')[0].querySelectorAll('.tuile-doublon.a_ecarter').length === n, aEcarterAvant);
   const repliesAvant = await page.locator('.carte-doublons.repliee').count();
+  const sectionAvant = await page.evaluate(() => document.querySelector('.page-doublons .tete-table .titre-section, .page-doublons .tete-table .nom-menu-liste')?.textContent ?? '');
+  const derniere = (await page.locator('.carte-doublons:not(.repliee) [data-action="accepter"]').count()) === 1;
+  const suiteGrise = (await carte.locator('.dit-accepter').textContent()) ?? '';
+  const cleAcceptee = await carte.getAttribute('data-cle');
   await carte.locator('[data-action="accepter"]').click();
   await page.waitForTimeout(300);
-  // Lot 4 : le compte des photos écartées est sur l'onglet « Mis de côté » (la barre du bas dit ce qui reste).
-  verifier(/\b1\b/.test(await page.locator('.onglet-doublons', { hasText: 'Mis de côté' }).innerText()), 'un doublon écarté après relecture');
+  const sectionApres = await page.evaluate(() => document.querySelector('.page-doublons .tete-table .titre-section, .page-doublons .tete-table .nom-menu-liste')?.textContent ?? '');
+  // Le compte des photos écartées est sur l'onglet « Écartées » (É14 f ; la barre du bas dit ce qui reste).
+  verifier(/\b1\b/.test(await page.locator('.onglet-doublons', { hasText: 'Écartées' }).innerText()), 'un doublon écarté après relecture');
   // D100 levée (27.10) : le groupe accepté reste à sa place, replié en une ligne (« Revoir »).
-  verifier((await page.locator('.carte-doublons').count()) === groupes && (await page.locator('.carte-doublons.repliee').count()) === repliesAvant + 1, 'le groupe accepté reste à sa place, replié (D100 levée)');
+  // Dernier groupe à accepter de la section : « Accepter → » ouvre la suivante (É14 b), la ligne grise le disait.
+  // La ligne grise annonce la suite (« · puis … ») sur le dernier groupe : la section doit alors changer.
+  const suiteAnnoncee = derniere && / · puis /.test(suiteGrise);
+  if (suiteAnnoncee || sectionApres !== sectionAvant) {
+    verifier(suiteAnnoncee && sectionApres !== sectionAvant, `dernier groupe de « ${sectionAvant} » : « Accepter → » ouvre la section suivante (« ${sectionApres} », ligne grise « ${suiteGrise} »)`);
+    // Ctrl+Z ramène dans la section quittée, sur le groupe rouvert, qui prend le plein ; A l'accepte de nouveau.
+    const titreSection = () => page.evaluate(() => document.querySelector('.page-doublons .tete-table .titre-section, .page-doublons .tete-table .nom-menu-liste')?.textContent ?? '');
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(500);
+    const pleinRouvert = await page.locator(`.carte-doublons[data-cle="${cleAcceptee}"]:not(.repliee) [data-action="accepter"].principal`).count();
+    verifier((await titreSection()) === sectionAvant && pleinRouvert === 1, `Ctrl+Z : retour à « ${sectionAvant} », le groupe rouvert porte le plein`);
+    await page.waitForTimeout(600);
+    await page.keyboard.press('a');
+    await page.waitForTimeout(500);
+    verifier((await titreSection()) === sectionApres, `A sur le groupe rouvert : « ${sectionApres} » de nouveau`);
+  } else verifier((await page.locator('.carte-doublons').count()) === groupes && (await page.locator('.carte-doublons.repliee').count()) === repliesAvant + 1, 'le groupe accepté reste à sa place, replié (D100 levée)');
 
   // Étape 9 : sélection au clavier, tri rapide, rotation.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sélection$/ }).click();
@@ -402,6 +435,56 @@ try {
   await page.keyboard.press('r');
   await page.waitForTimeout(200);
   verifier((await page.locator('.page-selection .tuile').nth(0).locator('.etoiles').innerText()) === '★★', 'touche 2 : grande photo ★★');
+  // Badges de la Sélection (É14 i) : pleins, sans punaise ; « Pas pour l'album » sans icône et délavée ; un clic sur
+  // la bande « Grande » la remet à décider, un second la met dans l'album ; chaque geste laisse son message dans la
+  // ligne de l'étape ; Ctrl+Z défait.
+  {
+    const bande = (i) => page.locator('.page-selection .tuile').nth(i).locator('.badge-photo');
+    const lire = (i) => bande(i).evaluate((b) => ({ sort: b.dataset.sort, decide: b.hasAttribute('data-decide'), punaise: !!b.querySelector('.etat-badge svg'), mot: b.querySelector('.mot-badge')?.textContent }));
+    const pas = await lire(1);
+    const filtre = await page.locator('.page-selection .tuile').nth(1).locator('.cadre-miniature img, .cadre-miniature canvas').first().evaluate((i) => getComputedStyle(i).filter + ' ' + getComputedStyle(i).opacity).catch(() => '');
+    verifier(pas.sort === 'ecarter' && pas.decide && !pas.punaise && /saturate/.test(filtre) && !/ 0\.\d/.test(filtre), `Sélection : « ${pas.mot} » en plein gris, sans icône, photo délavée (${filtre})`);
+    await page.locator('.page-selection .tuile').nth(3).click();
+    await bande(0).locator('.clic-badge').click();
+    await page.waitForFunction(() => document.querySelector('.page-selection .tuile .badge-photo')?.dataset.sort === 'decider');
+    const message = (await page.locator('.ligne-etape .message-entete').innerText()).replace(/\s+/g, ' ');
+    const decider = await lire(0);
+    await page.waitForTimeout(600);
+    await bande(0).locator('.clic-badge').click();
+    await page.waitForFunction(() => document.querySelector('.page-selection .tuile .badge-photo')?.dataset.sort === 'album');
+    const album = await lire(0);
+    const message2 = (await page.locator('.ligne-etape .message-entete').innerText()).replace(/\s+/g, ' ');
+    // Chaque clic est écrit dans .album/plan.json (règle d'or 7) : « Dans l'album » = album 1 (testeur).
+    {
+      const id = await page.locator('.page-selection .tuile').nth(0).getAttribute('data-id');
+      let ecrit = null;
+      for (let k = 0; k < 15 && ecrit !== 1; k++) {
+        ecrit = await page.evaluate(async (id) => {
+          const d = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+          const plan = JSON.parse(await (await (await d.getFileHandle('plan.json')).getFile()).text());
+          return plan.fichiers.find((x) => x.id === id)?.album ?? null;
+        }, id);
+        if (ecrit !== 1) await page.waitForTimeout(200);
+      }
+      verifier(ecrit === 1, `Sélection : « Dans l’album » par la bande, écrit dans .album/plan.json (album = ${ecrit})`);
+    }
+    verifier(
+      decider.sort === 'decider' && !decider.decide && album.decide && /^À décider\./.test(message) && /^Dans l’album\. .*Ctrl\+Z pour l’annuler/.test(message2) && (await page.locator('.page-selection .tuile.choisie').count()) === 1,
+      `Sélection : clic sur la bande « Grande » → « ${decider.mot} » (« ${message} »), second clic → « ${album.mot} » (« ${message2} ») ; la photo choisie ne change pas`,
+    );
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => document.querySelector('.page-selection .tuile .badge-photo')?.dataset.sort === 'grande');
+    verifier(true, 'Sélection : Ctrl+Z défait les deux clics sur la bande (« Grande » de nouveau)');
+    // La liste des sorties sur deux lignes (É14 l) : le nom en 600, la période dessous.
+    const ligne = await page.locator('.page-selection .panneau-dossiers .ligne-dossier').nth(1).evaluate((l) => {
+      const nom = l.querySelector('.nom-dossier').getBoundingClientRect();
+      const dates = l.querySelector('.dates-dossier').getBoundingClientRect();
+      return { poids: getComputedStyle(l.querySelector('.nom-dossier')).fontWeight, dessous: dates.top >= nom.bottom - 1, evenementLigne: !!l.querySelector('.evenement-dossier') };
+    });
+    verifier(ligne.poids === '600' && ligne.dessous && !ligne.evenementLigne, `Sélection : liste des sorties sur deux lignes, nom en ${ligne.poids}, période dessous`);
+  }
   verifier((await page.locator('.page-selection .tuile').nth(2).locator('.badge.rotation').count()) === 1, 'touche R : photo tournée');
   // Recadrage (D62) : touche K, format carré, la miniature montre la photo recadrée.
   await page.locator('.page-selection .tuile').nth(3).click();
@@ -439,7 +522,26 @@ try {
   await page.locator('.tri-rapide img').waitFor({ timeout: 20_000 });
   await page.waitForTimeout(400);
   await capturer(page, '15_tri_rapide_ia');
+  // Le tri rapide dit le choix dans sa barre : aucun message flottant par touche (tour 0 de l'étape 2d : trois
+  // messages « Annuler » s'empilaient sur la photo). Les trois choix sont défaits ensuite.
+  const messagesAlbum = () => page.locator('.messages .message').evaluateAll((l) => l.map((m) => m.textContent ?? '').filter((x) => /album|À décider/.test(x)).length);
+  const libelleAnnuler = () => page.locator('.ligne-etape .bouton-annuler').evaluate((b) => `${b.disabled}|${b.getAttribute('title') ?? ''}|${b.getAttribute('aria-label') ?? ''}`);
+  const annulerAvantTri = await libelleAnnuler();
+  const avantTri = await messagesAlbum();
+  for (const k of [' ', '2', 'x']) {
+    await page.keyboard.press(k);
+    await page.waitForTimeout(250);
+  }
+  const apresTri = await messagesAlbum();
+  const annulerApresTri = await libelleAnnuler();
+  verifier(annulerApresTri !== annulerAvantTri && apresTri <= avantTri, `tri rapide : des choix faits, aucun message flottant après Espace, 2 et X (${apresTri - avantTri} de plus)`);
   await page.keyboard.press('Escape');
+  await page.evaluate(() => document.activeElement?.blur());
+  // Défaire les choix du tri rapide, et eux seuls.
+  for (let k = 0; k < 3 && (await libelleAnnuler()) !== annulerAvantTri; k++) {
+    await page.keyboard.press('Control+z');
+    await page.waitForTimeout(250);
+  }
   await page.locator('.page-selection .tuile').nth(0).click();
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
