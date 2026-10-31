@@ -15,7 +15,7 @@
 import type { ComponentChildren } from 'preact';
 import { useMemo, useRef, useState, type StateUpdater, type Dispatch } from 'preact/hooks';
 import type { LieuConnu } from '../../lib/config';
-import { acceptablesSansVider, accepter, aEcarter, copiesEnAttente, groupesCopies } from '../../lib/groupesDoublons';
+import { accepter, copiesEnAttente, groupesCopies } from '../../lib/groupesDoublons';
 import { rangerCaptures } from '../../lib/inventaire';
 import { t } from '../../lib/langue';
 import { gardeSaPlace, RACINE, resumes, traitementDe, type DossierPlan, type FichierPlan, type Plan } from '../../lib/plan';
@@ -23,7 +23,7 @@ import { nomsSortie } from '../../lib/sortie';
 import { compteSortes, type ResultatTri as Resultat } from '../../lib/resultatTri';
 import { appliquerTri, arborescenceComplete, decouper, elementsATrier, optionsDuProjet, pointsANommer, type DossierPropose, type OptionsTri } from '../../lib/tri';
 import { ETAPE } from '../../navigateur/projet';
-import { useCopiesExactes } from '../copiesExactes';
+import { copiesAAccepter, useCopiesExactes, type CopiesAAccepter } from '../copiesExactes';
 import { allerEtape, annuler, appliquer, changerEtape, configuration, evenements, journal, notifier, page, planifierEnregistrement, reglages, session, texteErreur, versionPlan, versionProjet } from '../etat';
 import { duree, nombre, pluriel } from '../format';
 import { nombreSansGps, SansGps } from './AidesTri';
@@ -62,8 +62,11 @@ export function fichiersARanger(plan: Plan): FichierPlan[] {
 export interface EtatTri {
   lieux: LieuConnu[];
   domicile?: LieuConnu;
-  /** Groupes de copies exactes acceptables d'un clic (D85, D101) et le nombre de copies qu'ils mettent de côté. */
-  copies: ReturnType<typeof acceptablesSansVider>;
+  /**
+   * Copies exactes encore à accepter parmi les photos que le tri range (D85), comptées comme la frise et Doublons ;
+   * `acceptables` : celles que « Les écarter ici » valide d'un clic (jamais un groupe sans exemplaire gardé, D101).
+   */
+  copies: CopiesAAccepter;
   nCopies: number;
   /** Captures d'écran proposées parmi les photos à trier, et celles déjà mises à part. */
   captures: FichierPlan[];
@@ -92,13 +95,14 @@ export function useEtatTri(): EtatTri {
   const aTrier = fichiersATrier(s.plan);
   const range = [...s.plan.dossiers.values()].some((d) => d.origine === 'tri');
   const fichier = (id: string) => s.plan.fichiers.get(id);
-  // Jamais un groupe dont aucun exemplaire n'est choisi : ce choix-là attend d'être vu à l'étape Doublons (D101).
-  const copies = exactes ? acceptablesSansVider(copiesEnAttente(groupesCopies(exactes, fichier), new Set(aTrier.map((f) => f.id)), fichier), fichier) : [];
+  // Le même compte que la frise et Doublons ; « Les écarter ici » ne valide que les groupes où un exemplaire reste
+  // gardé : un groupe où aucun ne l'est attend d'être vu à l'étape Doublons (D101).
+  const copies = copiesAAccepter(exactes ? copiesEnAttente(groupesCopies(exactes, fichier), new Set(aTrier.map((f) => f.id)), fichier) : [], fichier);
   return {
     lieux,
     domicile: lieux.find((l) => l.domicile),
     copies,
-    nCopies: copies.reduce((a, g) => a + aEcarter(g, fichier).length, 0),
+    nCopies: copies.n,
     captures: capturesProposees(s),
     capturesRangees: [...s.plan.fichiers.values()].filter((f) => f.categorie === 'photo' && f.statut === 'archive' && f.capture).length,
     aTrier,
@@ -545,9 +549,10 @@ export function TriAuto({ e, o, setO, ap, apercu, actuel }: { e: EtatTri; o: Opt
 export function BandeauCopies({ e }: { e: EtatTri }) {
   const s = session.value!;
   if (!e.nCopies) return null;
+  const vides = e.copies.groupes.length - e.copies.acceptables.length;
   const ecarter = () => {
-    const nb = e.nCopies;
-    appliquer(accepter(s.plan, e.copies));
+    const nb = e.copies.nAcceptables;
+    appliquer(accepter(s.plan, e.copies.acceptables));
     notifier(
       'ok',
       e.range
@@ -562,15 +567,19 @@ export function BandeauCopies({ e }: { e: EtatTri }) {
       <p>
         <strong>{e.nCopies === 1 ? t`Il reste 1 copie exacte à accepter à l’étape Doublons.` : t`Il reste ${nombre(e.nCopies)} copies exactes à accepter à l’étape Doublons.`}</strong>{' '}
         {e.range ? t`Le tri les a rangées une seconde fois : écartez-les, puis rangez à nouveau.` : t`Sans cela, le tri les rangerait une seconde fois.`}
+        {vides > 0 && ' '}
+        {vides === 1 ? t`Dans 1 groupe, vous n’avez gardé aucun exemplaire : il reste à voir.` : vides > 1 ? t`Dans ${nombre(vides)} groupes, vous n’avez gardé aucun exemplaire : ils restent à voir.` : null}
       </p>
       <div class="boutons-rappel">
         <button type="button" class="contour" data-action="aller-doublons" onClick={() => allerEtape('doublons')}>
           {t`Aller à Doublons`}
           <Icone nom="chevronDroite" taille={16} />
         </button>
-        <button type="button" class="contour" data-action="ecarter-copies" onClick={ecarter}>
-          {t`Les écarter ici`}
-        </button>
+        {e.copies.nAcceptables > 0 && (
+          <button type="button" class="contour" data-action="ecarter-copies" onClick={ecarter}>
+            {t`Les écarter ici`}
+          </button>
+        )}
       </div>
     </div>
   );

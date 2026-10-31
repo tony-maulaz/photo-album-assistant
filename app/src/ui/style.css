@@ -1128,6 +1128,12 @@ button.fleche-dossier:hover {
   font-weight: 600;
 }
 
+/* Sur deux lignes, les deux moitiés s'équilibrent : jamais un mot seul sur la seconde (« · 0 proposition »,
+   « gardé seul », contrôle du 31.10, m3). */
+.barre-validation .texte-l1 {
+  text-wrap: balance;
+}
+
 /* C-8.4 : ligne 2, « Rien n'est supprimé », avec le bouclier. */
 .barre-validation .l2 {
   display: flex;

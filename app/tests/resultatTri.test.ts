@@ -127,7 +127,6 @@ describe('resultatPropose (aperçu en direct, D104)', () => {
       [true, 1],
       [true, 2],
     ]);
-    expect(r.lignes[1].evenement).toBe('Ski');
     // Les photos de chaque ligne et de chaque étape, sans les vidéos, pour le bouton « N photos » (D112).
     expect([v.ids, v.etapes.map((e) => e.ids), r.lignes[1].ids]).toEqual([['a', 'b'], [['a'], ['b']], ['d']]);
   });

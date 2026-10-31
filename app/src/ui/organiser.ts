@@ -15,11 +15,13 @@ import {
   type FichierPlan,
   type Plan,
 } from '../lib/plan';
+import { petitsDuPlan } from '../lib/fragments';
+import type { DossierInfo } from '../lib/consolidation';
 import { t } from '../lib/langue';
 import { verifierNomDossier } from '../lib/noms';
 import { fichiersSousDossiers } from '../lib/rangement';
 import { demander } from './composants/Dialogues';
-import { annuler, appliquer, notifier, session, texteErreur } from './etat';
+import { annuler, appliquer, notifier, session, texteErreur, type Session } from './etat';
 import { pluriel } from './format';
 
 /** Vues spéciales du panneau, à côté des dossiers. */
@@ -188,4 +190,14 @@ export function dossierPourNouveauVide(): string {
 /** Sans accents ni majuscules, pour les recherches. */
 export function simplifier(t: string): string {
   return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+/** Dossiers exclus à la main de la consolidation (`.album/aides.json`). */
+export function exclusDe(s: Session): ReadonlySet<string> {
+  return new Set(s.aides.get<string[]>('consolidation_exclus') ?? []);
+}
+
+/** Les petits dossiers du projet (`petitsDuPlan`), avec les exclusions de la consolidation. */
+export function petitsDe(s: Session): DossierInfo[] {
+  return petitsDuPlan(s.plan, exclusDe(s));
 }

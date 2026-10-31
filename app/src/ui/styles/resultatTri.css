@@ -831,6 +831,18 @@ button.onglet-lieux.actif {
   align-content: start;
 }
 
+/* Chaque vignette a sa case de 72 px, même pendant le chargement (une bande grise de 12 px avant). */
+.vignettes-lieu > span {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+}
+
+.carte-lieu.sans-photo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .infos-lieu {
   display: flex;
   flex-direction: column;

@@ -8,6 +8,7 @@ import {
   basculerAccepte,
   choisir,
   choisirTous,
+  comptesAcceptation,
   copiesEnAttente,
   etatPhoto,
   exemplairesAEcarterDans,
@@ -455,5 +456,59 @@ describe('retours du 29.10 (D112) : toutes · aucune, G et X, retour à la propo
     h.annuler(p);
     expect(etats(p, rafale)).toEqual(['gardee', 'a_ecarter', 'a_ecarter']);
     expect([...p.fichiers.values()].some((f) => f.choixDoublons)).toBe(false);
+  });
+});
+
+describe('fenêtre qui chiffre une acceptation groupée (validation du 31.10)', () => {
+  // Une seconde rafale, dans la même journée.
+  const autre: GroupeDoublons = {
+    cle: 'rafale:d',
+    sorte: 'rafales',
+    etoile: 'd.jpg',
+    section: 'jour:2025-12-13',
+    membres: [
+      { id: 'd.jpg', garder: true },
+      { id: 'e.jpg', garder: false, raison: 'quasi identique' },
+    ],
+  };
+  const avecAutre = () => {
+    const p = plan();
+    for (const id of ['d.jpg', 'e.jpg'])
+      p.fichiers.set(id, { id, nom: id, taille: 1000, modifie: 0, categorie: 'photo', date: '2025-12-13T15:00:00', origineDate: 'exif', dossier: RACINE, statut: 'archive' });
+    return p;
+  };
+
+  it('rien choisi nulle part : « toutes dans des groupes où vous n’avez rien choisi »', () => {
+    const p = avecAutre();
+    expect(comptesAcceptation([rafale, autre], fichiers(p))).toEqual({ n: 3, sansRegard: 3 });
+  });
+
+  it('un groupe choisi par vous, l’autre non : « dont N » ne compte que l’autre', () => {
+    const p = avecAutre();
+    choisir(p, rafale, 'b.jpg', true);
+    expect(comptesAcceptation([rafale, autre], fichiers(p))).toEqual({ n: 3, sansRegard: 1 });
+  });
+
+  it('un groupe choisi par « Choisir avec l’IA » seul compte comme un groupe où vous n’avez rien choisi', () => {
+    const p = avecAutre();
+    choisir(p, rafale, 'b.jpg', true, 'ia');
+    expect(comptesAcceptation([rafale, autre], fichiers(p))).toEqual({ n: 3, sansRegard: 3 });
+    // Votre clic dans ce groupe en fait un groupe choisi par vous.
+    choisir(p, rafale, 'c.jpg', false);
+    expect(comptesAcceptation([rafale], fichiers(p))).toEqual({ n: 1, sansRegard: 0 });
+  });
+
+  it('accepter plusieurs groupes est un seul geste : Ctrl+Z les rouvre tous', () => {
+    const p = avecAutre();
+    const h = new Historique();
+    choisir(p, rafale, 'b.jpg', true);
+    const avant = JSON.stringify([...p.fichiers.values()]);
+    h.enregistrer(accepter(p, [rafale, autre]));
+    expect([aRelire(rafale, fichiers(p)), aRelire(autre, fichiers(p))]).toEqual([false, false]);
+    expect([...p.fichiers.values()].filter((f) => f.statut === 'mis_de_cote').map((f) => f.id).sort()).toEqual(['a.jpg', 'c.jpg', 'e.jpg']);
+    h.annuler(p);
+    expect([aRelire(rafale, fichiers(p)), aRelire(autre, fichiers(p))]).toEqual([true, true]);
+    expect(JSON.stringify([...p.fichiers.values()])).toBe(avant);
+    expect(h.peutAnnuler).toBe(false);
   });
 });

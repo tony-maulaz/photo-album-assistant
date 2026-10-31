@@ -298,7 +298,9 @@ function Carte({
         ))}
       </div>
       <div class="corps-carte-nommage">
-        <span class="libelle-nommage">{t`Nom actuel`}</span>
+        {/* La colonne des libellés a toujours la largeur de « Noms proposés », même sans lui : les valeurs de toutes
+            les cartes s'alignent (contrôle du 31.10, m2). */}
+        <span class="libelle-nommage" data-large={t`Noms proposés`}>{t`Nom actuel`}</span>
         <div class="nom-actuel">
           <strong class="nom-dossier-nommage">{c.nom}</strong>
           <span class="discret">
@@ -589,11 +591,10 @@ export function PageNommage() {
           repere: '.onglets-nommage',
         }}
       />
+      {/* Deux lignes au plus dans la page (contrôle du 31.10, M2) : les cartes restent visibles à 1280×580 ; les
+          onglets, les puces et l'IA sont expliqués dans « Tout le mode d'emploi ». */}
       <AideEtape cle="nommage">
-        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). « À nommer » : les dossiers qui portent encore le nom donné par le tri (lieu et date) ; « Déjà nommés » : ceux que vous avez nommés, ou venus tels quels de votre dossier d’origine. Sous « Nom actuel », les noms proposés : un clic en met un dans le champ « Nouveau nom »,`}{' '}
-        <Icone nom="calendrier" taille={16} /> {t`un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »),`} <Icone nom="lieu" taille={16} /> {t`le lieu, ou`}{' '}
-        <Icone nom="etincelle" taille={16} />{' '}
-        {t`la proposition de l’IA, « sûre » ou « à vérifier » (sa raison dans l’infobulle). L’IA regarde quelques photos, le lieu, le calendrier et le contexte du projet ; son prix s’affiche sur le bouton avant de la lancer. Vous pouvez aussi écrire votre nom : rien n’est renommé sans « Renommer » (ou Entrée dans le champ), et Ctrl+Z l’annule.`}
+        {t`Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Un clic sur un nom proposé le met dans « Nouveau nom » ; rien n’est renommé sans « Renommer », et Ctrl+Z l’annule.`}
       </AideEtape>
       <div class="outils-nommage">
         <nav class="onglets-doublons onglets-nommage" aria-label={t`Dossiers montrés`}>

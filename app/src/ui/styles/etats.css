@@ -306,6 +306,9 @@
 .cmp-ligne {
   flex: none;
   display: flex;
+  /* Quand la consigne, « Garder plusieurs photos » et l'état du groupe ne tiennent pas sur une ligne, l'état passe
+     dessous, à droite : jamais l'un sur l'autre (« choisir : toutes · aucune » sous le bouclier, contrôle du 31.10). */
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--e2) var(--e4);
   min-height: 32px;
@@ -325,8 +328,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 2px var(--e3);
-  flex: 0 1 auto;
-  min-width: 0;
+  /* La consigne se replie sur elle-même avant de pousser le reste à la ligne ; jamais plus étroite que son plus
+     large élément (le bouton de l'IA débordait sur « Garder plusieurs photos » au palier). */
+  flex: 1 1 240px;
+  min-width: min-content;
 }
 
 .cmp-ligne-texte > span {
@@ -339,12 +344,17 @@
   align-items: center;
   justify-content: flex-end;
   gap: 2px var(--e4);
-  flex: 0 1 auto;
+  /* Jamais plus étroite que son contenu (elle débordait à gauche, sur « aucune ») ; à droite, même seule sur sa ligne. */
+  flex: none;
+  max-width: 100%;
+  margin-left: auto;
 }
 
 .cmp-ligne-texte > .bouton-ia,
 .cmp-ligne-texte > .ia-rafales-en-cours {
   flex: none;
+  /* Sur une ligne : sa largeur minimale est alors sa largeur, et la consigne ne se replie jamais sous elle. */
+  white-space: nowrap;
 }
 
 .comparateur .cmp-ligne .bouton-ia {

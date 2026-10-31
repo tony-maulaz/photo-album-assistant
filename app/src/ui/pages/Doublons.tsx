@@ -19,6 +19,7 @@ import {
   choisir as choisirPhoto,
   choisirTous,
   choixEnAttente,
+  comptesAcceptation,
   fixer,
   garderTout,
   groupesCopies,
@@ -57,7 +58,7 @@ import { Miniature } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
 import { redimensionner, styleLargeurPanneau } from '../composants/PanneauDossiers';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
-import { useCopiesExactes } from '../copiesExactes';
+import { copiesAAccepter, useCopiesExactes } from '../copiesExactes';
 import { allerEtape, annulations, annuler, appliquer, changerEtape, changerReglages, journal, notifier, page, reglages, revenirDe, serviceMiniatures, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { dateHeure, nombre, nomJour, nomMois, pluriel, taille as texteTaille } from '../format';
 import { simplifier } from '../organiser';
@@ -174,16 +175,20 @@ const ContexteCadre = createContext<CadreDoublons | null>(null);
 /**
  * La tête de la table ne rogne jamais le titre de la section ni son compte (C-10.4) : quand ils ne tiennent pas avec
  * les boutons de la section, ceux-ci passent sur une deuxième ligne (`data-deux-lignes`), et sa hauteur devient
- * `--h-tete-col` de la table, sous laquelle se collent les en-têtes de groupe. Mesuré à chaque rendu (la section, les
+ * `--h-tete-col` de la table, sous laquelle se collent les en-têtes de groupe. Mesuré quand le texte de la tête change (la section, les
  * comptes) et quand la largeur change. Pas au palier (`actif` faux) : à 464 px de haut, une deuxième ligne pousserait
  * la bande du premier groupe hors de l'écran ; le compte s'y raccourcit (à trancher, journal de l'étape 2d).
  */
 function useTeteSurDeuxLignes(actif: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const largeur = useRef(0);
-  // Lu par le ResizeObserver, installé une fois : la valeur du dernier rendu.
+  // Lu par le ResizeObserver : la valeur du dernier rendu.
   const actifRef = useRef(actif);
   actifRef.current = actif;
+  // Ce qui a été mesuré au dernier rendu (le texte de la tête et `actif`) : un rendu qui n'y change rien (un clic
+  // sur une photo) ne refait pas les deux mises en page de la mesure.
+  const mesure = useRef('');
+  const observe = useRef<{ el: HTMLDivElement; ro: ResizeObserver } | null>(null);
   const mesurer = () => {
     const el = ref.current;
     const table = el?.parentElement;
@@ -196,19 +201,31 @@ function useTeteSurDeuxLignes(actif: boolean) {
     el.setAttribute('data-deux-lignes', '');
     table.style.setProperty('--h-tete-col', `${Math.ceil(el.getBoundingClientRect().height)}px`);
   };
-  useLayoutEffect(mesurer);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      const l = Math.round(e.contentRect.width);
-      if (l === largeur.current) return;
-      largeur.current = l;
-      mesurer();
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [ref.current]);
+    // La tête peut changer d'élément (onglet sans table) : l'observateur suit celle qui est affichée.
+    if (observe.current?.el !== el) {
+      observe.current?.ro.disconnect();
+      observe.current = null;
+      largeur.current = 0;
+      mesure.current = '';
+      if (el) {
+        const ro = new ResizeObserver(([e]) => {
+          const l = Math.round(e.contentRect.width);
+          if (l === largeur.current) return;
+          largeur.current = l;
+          mesurer();
+        });
+        ro.observe(el);
+        observe.current = { el, ro };
+      }
+    }
+    const cle = `${actif ? 1 : 0}\u0001${el?.textContent ?? ''}`;
+    if (cle === mesure.current) return;
+    mesure.current = cle;
+    mesurer();
+  });
+  useEffect(() => () => observe.current?.ro.disconnect(), []);
   return ref;
 }
 
@@ -515,7 +532,7 @@ function ListeSections({ liste, choisie, choisir, avancement = true, outils }: {
 function NomSection({ section, avancement = true }: { section: Section; avancement?: boolean }) {
   return (
     <>
-      {section.nom}
+      <span class="nom-section-menu">{section.nom}</span>
       {avancement && section.aRelire > 0 && <span class="reste-menu">{t`${nombre(section.aRelire)} à accepter`}</span>}
     </>
   );
@@ -524,7 +541,7 @@ function NomSection({ section, avancement = true }: { section: Section; avanceme
 /** La tête de la table : le titre de la section et son détail (au palier, le menu de la liste les remplace). */
 function TeteSection({ section, detail }: { section: Section; detail: string }) {
   const c = useContext(ContexteCadre)!;
-  if (c.palier) return <span class="discret detail-section">{detail}</span>;
+  if (c.palier) return <span class="discret detail-section" title={detail}>{detail}</span>;
   return (
     <>
       <h2 class="titre-section" title={section.titre}>
@@ -1359,9 +1376,8 @@ function ListeGroupes({ onglet, groupes, titre, avant }: { onglet: Exclude<Ongle
    */
   const accepterPlusieurs = async (acceptes: GroupeDoublons[], libelle?: string) => {
     if (!acceptes.length) return;
-    const n = acceptes.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
     // Les photos écartées dans des groupes où rien n'a été choisi : la proposition, acceptée sans avoir été regardée.
-    const sansRegard = acceptes.filter((g) => !choixEnAttente(g, fichier, true)).reduce((a, g) => a + aEcarter(g, fichier).length, 0);
+    const { n, sansRegard } = comptesAcceptation(acceptes, fichier);
     const nom = libelle ?? (acceptes.length === 1 ? t`Accepter 1 groupe` : t`Accepter les ${nombre(acceptes.length)} groupes`);
     const texte = [
       !n
@@ -2352,13 +2368,13 @@ export function PageDoublons() {
 
   // Copies exactes encore proposées à l'écart (D112, question 5) : sans « Accepter », le tri rangerait une seconde
   // fois une photo déjà gardée. Seulement elles : garder toutes les photos d'une rafale est un choix normal.
-  const copiesEnAttente = groupes.copies.filter((g) => aRelire(g, fichier) && aEcarter(g, fichier).length > 0);
-  const nCopies = copiesEnAttente.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  const restantes = copiesAAccepter(groupes.copies, fichier);
+  const nCopies = restantes.n;
   // Ce que « Accepter … et continuer » accepte vraiment : les groupes où un exemplaire reste gardé. Un groupe où vous
   // les avez tous écartés reste à voir (comme « Accepter les N propositions »), et la fenêtre le dit.
-  const copiesAcceptables = acceptablesSansVider(copiesEnAttente, fichier);
-  const nCopiesAcceptables = copiesAcceptables.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
-  const nGroupesVides = copiesEnAttente.length - copiesAcceptables.length;
+  const copiesAcceptables = restantes.acceptables;
+  const nCopiesAcceptables = restantes.nAcceptables;
+  const nGroupesVides = restantes.groupes.length - copiesAcceptables.length;
   /** « Valider et continuer » : avec des copies restantes, une fenêtre à trois choix d'abord. */
   const valider = async () => {
     if (nCopies > 0) {

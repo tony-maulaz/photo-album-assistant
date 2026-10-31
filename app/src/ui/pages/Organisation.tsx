@@ -7,7 +7,6 @@
 // Les exclusions servent aussi à l'étape « Petits dossiers » (PetitsDossiers.tsx).
 
 import { signal } from '@preact/signals';
-import { estNomDeSortie } from '../../lib/sortie';
 import { useEffect, useId, useMemo, useRef, useState } from 'preact/hooks';
 import {
   avecIA,
@@ -35,11 +34,10 @@ import {
   type Proposition,
   type ReglagesConsolidation,
 } from '../../lib/consolidation';
-import { dossiersAvecPhotos, SEUIL_PETIT_DOSSIER } from '../../lib/fragments';
+import { raisonExclusion } from '../../lib/fragments';
 import { estNomAutomatique } from '../../lib/nommage';
-import { gardeSaPlace, renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
+import { renommerDossier, type FichierPlan, type Modification, type Plan } from '../../lib/plan';
 import { defaireReunion, rangerEnVoyage, reunionEnPlace, reunirEnUn, type Reunion } from '../../lib/reunions';
-import { estDossierMois } from '../../lib/tri';
 import { cleAnalyse } from '../../navigateur/analyses';
 import { executerRequete } from '../../navigateur/executeur';
 import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
@@ -51,37 +49,8 @@ import { annuler, appliquer, configuration, contexteExecution, evenements, notif
 import { ETAPE, nomEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
 import { jourCourt, nombre, nomJour, pluriel } from '../format';
-import { visionneuse } from '../organiser';
+import { exclusDe, visionneuse } from '../organiser';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs } from './AidesIA';
-
-/** Au-delà de cette durée, un dossier n'est pas une sortie (une année, « Maison ») : pas de consolidation. */
-export const DUREE_MAX_SORTIE_JOURS = 31;
-
-/** Pourquoi un dossier n'entre pas dans la consolidation (petits dossiers et consolidation), ou `null` s'il y entre. */
-export function raisonExclusion(plan: Plan, d: DossierInfo, exclus: ReadonlySet<string>): string | null {
-  if (d.nom.startsWith('_') || estNomDeSortie('captures', d.nom)) return aTraduire('dossier technique');
-  if (gardeSaPlace(plan, d.id)) return aTraduire('dossier gardé');
-  if (exclus.has(d.id)) return aTraduire('exclu à la main');
-  if (estDossierMois(d.nom)) return aTraduire('dossier de mois');
-  if (d.du && d.au && (Date.parse(d.au.slice(0, 10)) - Date.parse(d.du.slice(0, 10))) / 86_400_000 > DUREE_MAX_SORTIE_JOURS) return aTraduire('plus d’un mois');
-  return null;
-}
-
-/** Dossiers exclus à la main de la consolidation (`.album/aides.json`). */
-export function exclusDe(s: Session): ReadonlySet<string> {
-  return new Set(s.aides.get<string[]>('consolidation_exclus') ?? []);
-}
-
-/**
- * Petits dossiers que l'étape « Petits dossiers » examine : moins de 5 photos, sans sous-dossier (un voyage de
- * deux photos n'apparaît qu'une fois, par ses étapes), ni dossier gardé, de mois, de plus d'un mois ou exclu de
- * la consolidation. Aussi l'icône « petit dossier » de Lieux et sorties (D112 point 10).
- */
-export function petitsDe(s: Session): DossierInfo[] {
-  const exclus = exclusDe(s);
-  const parents = new Set([...s.plan.dossiers.values()].map((d) => d.parent));
-  return dossiersAvecPhotos(s.plan).filter((d) => d.photos.length < SEUIL_PETIT_DOSSIER && !parents.has(d.id) && raisonExclusion(s.plan, d, exclus) === null);
-}
 
 /** Répertoires à consolider, sans les dossiers techniques, gardés tels quels, de mois, de plus d'un mois ou exclus à la main. */
 export function groupesUtiles(plan: Plan, exclus: ReadonlySet<string> = new Set()): GroupeFreres[] {

@@ -18,7 +18,7 @@ import { Visionneuse } from '../composants/Visionneuse';
 import { appliquer, reglages, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { jourCourt, nombre, periode, pluriel } from '../format';
 import { simplifier, visionneuse } from '../organiser';
-import { DUREE_MAX_SORTIE_JOURS } from './Organisation';
+import { DUREE_MAX_SORTIE_JOURS } from '../../lib/fragments';
 
 /**
  * Sous-dossiers d'un dossier, sous son nom : le nombre de photos les compte

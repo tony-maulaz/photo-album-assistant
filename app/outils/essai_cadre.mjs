@@ -1781,9 +1781,14 @@ try {
         const badgesToutes = await page.evaluate((cle) => [...document.querySelectorAll(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] .badge-photo`)].map((b) => `${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`), cleToutes);
         if (!badgesToutes.length || badgesToutes.some((b) => b !== 'vous:plein')) faute(F, `${ici} : « toutes » : chaque photo du groupe « par vous » en plein attendue (${badgesToutes.join(', ')})`);
         console.log(`  ${ici} double-clic sur « toutes » : ${d0 - d1} groupe(s) accepté(s), ${reste} photo(s) à écarter`);
+        // Un seul geste : un Ctrl+Z rend les bandes d'avant « toutes » (validation du 31.10).
+        const lireToutes = () => page.evaluate((cle) => [...document.querySelectorAll(`article.carte-doublons[data-cle="${CSS.escape(cle)}"] .badge-photo`)].map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|'), cleToutes);
         await page.evaluate(() => document.activeElement?.blur?.());
         await page.keyboard.press('Control+z');
-        await attendre(300);
+        await attendre(400);
+        const apresZ = await lireToutes();
+        if (/vous:plein/.test(apresZ) && apresZ.split('|').every((b) => b.endsWith('vous:plein'))) faute(F, `${ici} : Ctrl+Z après le double-clic sur « toutes » : le groupe reste « par vous » (${apresZ})`);
+        console.log(`  ${ici} Ctrl+Z après « toutes » : ${apresZ}`);
       }
       if (cleToutes)
         await page.evaluate((cle) => {
@@ -2109,7 +2114,7 @@ try {
     // 2. La fenêtre qui chiffre : « Accepter les N groupes » n'écarte rien avant son plein ; Échap ne fait rien.
     {
       const b = page.locator('[data-action=accepter-section]');
-      if (!(await b.count())) signalements.push(`${E} : pas de « Accepter les N groupes » dans la journée affichée`);
+      if (!(await b.count())) faute(E, `pas de « Accepter les N groupes » dans la journée affichée (jeu d’essai changé ?)`);
       else {
         const n0 = await page.evaluate(() => __c.nAccepter());
         await b.click();
@@ -2132,7 +2137,7 @@ try {
     {
       const journee = await page.evaluate(() => document.querySelector('.section-doublons.choisie')?.getAttribute('title') ?? null);
       const une = await page.evaluate(() => [...document.querySelectorAll('.section-doublons')].findIndex((b) => __c.norm(b.querySelector('.reste')?.textContent) === '1'));
-      if (une < 0) signalements.push(`${E} : aucune journée avec un seul groupe à accepter`);
+      if (une < 0) faute(E, `aucune journée avec un seul groupe à accepter (jeu d’essai changé ?)`);
       else {
         await page.locator('.section-doublons').nth(une).click();
         await attendre(500);
@@ -2178,7 +2183,7 @@ try {
         return { x: q.left + q.width / 2, y: q.top + q.height / 2, cle: a.dataset.cle };
       });
       if (!depart || !cible) {
-        signalements.push(`${E} ${ici} : pas de bande « À écarter » visible dans le groupe du plein`);
+        faute(E, `${ici} : pas de bande « À écarter » visible dans le groupe du plein (jeu d’essai changé ?)`);
         continue;
       }
       if (/plein/.test(depart)) faute(E, `${ici} : avant « Accepter », une bande est en plein sans geste (${depart})`);
@@ -2219,6 +2224,106 @@ try {
       console.log(`  curseur au palier : « ${r.titre} », « ${r.valeur} » (photos de ${r.cote} px)`);
       await taille(1440, 900);
     }
+    // 6. Validation du 31.10 : le plein de « Accepter les N groupes » accepte la journée en un geste ; Ctrl+Z la
+    //    rouvre en entier (une acceptation de plusieurs groupes est un seul geste).
+    {
+      const reste = () => page.evaluate(() => Number(__c.norm(document.querySelector('.section-doublons.choisie .reste')?.textContent) || 0));
+      const b = page.locator('[data-action=accepter-section]');
+      if (!(await b.count()) || (await b.isDisabled())) faute(E, '« Accepter les N groupes » absent ou grisé : son plein n’est pas essayé (jeu d’essai changé ?)');
+      else {
+        const n = Number((await b.innerText()).match(/(\d+) groupes?/)?.[1] ?? 0);
+        const r0 = await reste();
+        await b.click();
+        const f = page.locator('.dialogue[role=dialog]');
+        await f.waitFor();
+        await f.locator('button.principal').click();
+        await f.waitFor({ state: 'detached' });
+        await attendre(700);
+        const r1 = await reste();
+        await page.evaluate(() => document.activeElement?.blur?.());
+        await page.keyboard.press('Control+z');
+        await attendre(700);
+        const r2 = await reste();
+        if (r1 !== r0 - n) faute(E, `plein de « Accepter les ${n} groupes » : ${r0} → ${r1} à accepter (${r0 - n} attendu)`);
+        if (r2 !== r0) faute(E, `Ctrl+Z après « Accepter les ${n} groupes » : ${r2} à accepter (${r0} attendu, un seul geste)`);
+        console.log(`  plein « Accepter les ${n} groupes » : ${r0} → ${r1} à accepter ; Ctrl+Z : ${r2}`);
+      }
+    }
+    // 7. « Choisir avec l'IA » de la section : dans la tête, son prix écrit sur le bouton et dans son nom lu (règle d'or 5).
+    {
+      const r = await page.evaluate(() => {
+        const b = document.querySelector('.tete-table .bouton-ia');
+        return b ? { texte: __c.norm(b.textContent), nom: b.getAttribute('aria-label') ?? '' } : null;
+      });
+      if (!r) faute(E, '« Choisir avec l’IA » absent de la tête de la section (rafales de deux journées attendues)');
+      else if (!/CHF/.test(r.texte) || !/CHF/.test(r.nom) || !/de cette journée/.test(r.nom)) faute(E, `« Choisir avec l’IA » de la section : « ${r.texte} » / nom lu « ${r.nom} » (prix et portée attendus)`);
+      else console.log(`  IA de la section : « ${r.texte} » ; nom lu « ${r.nom} »`);
+    }
+    // 8. « Classer : Plus grands d'abord » : les groupes du plus grand au plus petit ; « Heure » remet l'ordre.
+    {
+      const tailles = () => page.evaluate(() => __c.articles().map((a) => a.querySelectorAll('.tuile-doublon').length));
+      await page.locator('.outils-doublons [role=radio]', { hasText: 'Plus grands d’abord' }).click();
+      await attendre(500);
+      const t1 = await tailles();
+      const ok = t1.length > 1 && t1.every((x, i) => i === 0 || t1[i - 1] >= x) && (await page.locator('.outils-doublons [role=radio]', { hasText: 'Plus grands d’abord' }).getAttribute('aria-checked')) === 'true';
+      if (!ok) faute(E, `« Plus grands d’abord » : groupes de ${t1.join(', ')} photos`);
+      await page.locator('.outils-doublons [role=radio]', { hasText: 'Heure' }).click();
+      await attendre(500);
+      console.log(`  Classer « Plus grands d’abord » : ${t1.join(', ')}`);
+    }
+    // 9. Comparer en grand : « choisir : toutes · aucune » ne chevauche jamais l'état du groupe (M1 du contrôle du
+    //    31.10), à 1280×580 et au palier ; un clic sur la bande d'une vignette donne l'autre sort, par vous ; Ctrl+Z.
+    for (const [w, h] of [[1280, 580], [1024, 464]]) {
+      await taille(w, h);
+      await page.evaluate(() => __c.remonter());
+      await attendre(400);
+      const a = page.locator('article.carte-doublons', { has: page.locator('[data-action=accepter]') }).first();
+      await a.locator('[data-action=comparer]').click();
+      await page.locator('.comparateur').waitFor();
+      await attendre(500);
+      const caseP = page.locator('.comparateur .plusieurs-photos input[type=checkbox]');
+      const cochee = (await caseP.count()) && (await caseP.isChecked());
+      if ((await caseP.count()) && !cochee) await caseP.check();
+      await attendre(400);
+      const r = await page.evaluate(() => {
+        const l = document.querySelector('.comparateur .cmp-ligne');
+        const els = [...(l?.querySelectorAll('.cmp-ligne-texte > *, .plusieurs-photos label, .toutes-aucune button, .rien-supprime-vue, .alerte-doublons') ?? [])].filter((e) => e.getBoundingClientRect().width > 0);
+        const rects = els.map((e) => ({ n: __c.norm(e.textContent).slice(0, 24), r: e.getBoundingClientRect() }));
+        const croisees = [];
+        for (let i = 0; i < rects.length; i++)
+          for (let j = i + 1; j < rects.length; j++) {
+            const x = rects[i].r;
+            const y = rects[j].r;
+            if (x.left < y.right - 1 && y.left < x.right - 1 && x.top < y.bottom - 1 && y.top < x.bottom - 1 && !els[i].contains(els[j]) && !els[j].contains(els[i])) croisees.push(`« ${rects[i].n} » / « ${rects[j].n} »`);
+          }
+        return { n: rects.length, croisees, dehors: rects.filter((x) => x.r.right > innerWidth + 1).map((x) => x.n) };
+      });
+      const ici = `${w}×${h}`;
+      if (!r.n) faute(E, `${ici} : Comparer sans ligne d’information`);
+      if (r.croisees.length) faute(E, `${ici} : Comparer, ligne d’information : ${r.croisees.join(' ; ')} se chevauchent`);
+      if (r.dehors.length) faute(E, `${ici} : Comparer, hors de la fenêtre : ${r.dehors.join(' ; ')}`);
+      console.log(`  ${ici} Comparer, ligne d’information : ${r.n} éléments, ${r.croisees.length} chevauchement(s)`);
+      if (!cochee && (await caseP.count())) await caseP.uncheck();
+      // La bande d'une vignette : un clic donne l'autre sort, par vous (comme sous la photo) ; Ctrl+Z, sans fermer.
+      const lireB = () => page.evaluate(() => [...document.querySelectorAll('.comparateur .badge-photo')].map((b) => `${b.dataset.sort}:${b.dataset.origine}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|'));
+      const b0 = await lireB();
+      const clic = page.locator('.comparateur .badge-photo[data-sort=ecarter] .clic-badge').first();
+      if (!(await clic.count())) faute(E, `${ici} : Comparer, aucune bande « À écarter » à cliquer`);
+      else {
+        await clic.click();
+        await attendre(400);
+        const b1 = await lireB();
+        await page.keyboard.press('Control+z');
+        await attendre(500);
+        const b2 = await lireB();
+        if (!b1.split('|').includes('garder:vous:plein')) faute(E, `${ici} : Comparer, clic sur la bande : pas de « Gardée par vous » (${b0} → ${b1})`);
+        if (b2 !== b0 || !(await page.locator('.comparateur').count())) faute(E, `${ici} : Comparer, Ctrl+Z après le clic sur la bande : ${b2} (${b0} attendu, sans fermer)`);
+        console.log(`  ${ici} Comparer, bande : ${b0} → ${b1} → Ctrl+Z ${b2 === b0 ? 'comme avant' : b2}`);
+      }
+      await page.keyboard.press('Escape');
+      await page.locator('.comparateur').waitFor({ state: 'detached' });
+    }
+    await taille(1440, 900);
   }
 
   // ---- Onglet « Mis de côté » (essai reporté du lot 3) : une bande sous chaque photo, rien sur l'image ----
@@ -2273,9 +2378,16 @@ try {
   // Le bouton « N photos » (D112 point 9) : à chaque taille, le dépliant tient dans la ligne, sur une rangée de 3 à 8
   // vignettes, sans défilement en largeur ; le bouton est à la même place sur chaque ligne.
   {
-    const bouton = page.locator('.resultat-tri .ligne-tri:not(.voyage) .bouton-photos').first();
-    if (!(await bouton.count())) faute('tri-photos', 'aucun bouton « N photos » au tri');
+    // Une ligne d'au moins 3 photos, pour que le minimum de 3 vignettes se vérifie (validation du 31.10 : la première
+    // ligne n'en avait que 2) ; sinon la première, et le minimum devient son nombre de photos.
+    const boutons = page.locator('.resultat-tri .ligne-tri:not(.voyage) .bouton-photos');
+    const nombres = await boutons.evaluateAll((l) => l.map((b) => Number((b.textContent.match(/\d+/) ?? ['0'])[0])));
+    const iBouton = Math.max(0, nombres.findIndex((n) => n >= 3));
+    const bouton = boutons.nth(iBouton);
+    const minimum = Math.min(3, nombres[iBouton] ?? 0);
+    if (!(await boutons.count())) faute('tri-photos', 'aucun bouton « N photos » au tri');
     else {
+      if (minimum < 3) signalements.push(`tri-photos : aucune ligne de 3 photos ou plus, minimum vérifié ${minimum}`);
       for (const [w, h] of TAILLES) {
         await taille(w, h);
         await bouton.scrollIntoViewIfNeeded();
@@ -2293,7 +2405,12 @@ try {
           return {
             n: imgs.length,
             dehors: imgs.filter((i) => i.right > lr.right + 0.5 || i.left < lr.left - 0.5).length,
-            rangees: new Set(imgs.map((i) => Math.round(i.top))).size,
+            // Une rangée : des vignettes qui se chevauchent en hauteur (une photo en hauteur et une en largeur, centrées,
+            // n'ont pas le même haut : compter les hauts distincts en faisait deux rangées).
+            rangees: imgs
+              .slice()
+              .sort((a, b) => a.top - b.top)
+              .reduce((r, i) => (i.top >= r.bas - 1 ? { n: r.n + 1, bas: i.bottom } : { n: r.n, bas: Math.max(r.bas, i.bottom) }), { n: 0, bas: -Infinity }).n,
             largeur: col.scrollWidth > col.clientWidth + 1 || document.documentElement.scrollWidth > innerWidth + 1,
             memeX: new Set(xBoutons).size === 1,
           };
@@ -2301,7 +2418,7 @@ try {
         const ici = `${w}×${h}`;
         if (!r) faute('tri-photos', `${ici} : pas de dépliant après le clic`);
         else {
-          if (r.n < 1 || r.n > 8 || r.dehors || r.rangees > 1) faute('tri-photos', `${ici} : ${r.n} vignette(s), ${r.dehors} hors de la ligne, ${r.rangees} rangée(s) (une rangée de 3 à 8 attendue)`);
+          if (r.n < Math.max(1, minimum) || r.n > 8 || r.dehors || r.rangees > 1) faute('tri-photos', `${ici} : ${r.n} vignette(s), ${r.dehors} hors de la ligne, ${r.rangees} rangée(s) (une rangée de ${Math.max(1, minimum)} à 8 attendue)`);
           if (r.largeur) faute('tri-photos', `${ici} : défilement en largeur avec le dépliant ouvert`);
           if (!r.memeX) faute('tri-photos', `${ici} : « N photos » n’est pas au même bord droit sur chaque ligne`);
           console.log(`  tri-photos ${ici} : ${r.n} vignette(s) sur ${r.rangees} rangée(s)`);

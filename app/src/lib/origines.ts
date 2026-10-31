@@ -5,9 +5,12 @@
 // - Floues : une photo gardée ou écartée à la main est « par vous » ; si l'IA avait donné le même avis, c'était
 //   « Suivre l'avis de l'IA » (✦) ; une photo écartée par les anciens scripts est « avant ».
 // - Doublons : une photo écartée par « Accepter » vient du groupe accepté (l'application, ✓, ou l'IA pour une même
-//   scène, ✦) ; un doublon des anciens scripts (`_doublons/`, « …_doublon.jpg ») est « avant » ; une photo gardée volontairement (`protegee`) ne l'est que par un geste de l'utilisateur (choisie
-//   avant « Accepter », « Garder aussi », « Tout garder ») : « par vous », comme l'écrit le code d'aujourd'hui ;
-//   la décision en attente d'un clic (`choixDoublons`) n'est pas encore une décision.
+//   scène, ✦) ; un doublon des anciens scripts (`_doublons/`, « …_doublon.jpg ») est « avant » ; une photo gardée
+//   volontairement (`protegee`) dans un ancien projet l'a été par un geste de l'utilisateur (choisie avant
+//   « Accepter », « Garder aussi », « Tout garder ») : « par vous ». Aujourd'hui, « Accepter » donne aussi `protegee`
+//   à une photo que « Choisir avec l'IA » a choisie, avec l'origine `ia` (`accepter`, groupesDoublons.ts) ; ces
+//   projets-là ont déjà leur origine et ne sont pas repris. La décision en attente d'un clic (`choixDoublons`)
+//   n'est pas encore une décision.
 
 import { avisValide, decisionFlou, estAvant, sortAvis } from './floues';
 import { avecOrigine, type FichierPlan, type OrigineDecision, type Plan } from './plan';

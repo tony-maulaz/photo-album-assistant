@@ -138,6 +138,26 @@ export function annulerIci() {
   else notifier('info', t`Rien à annuler.`);
 }
 
+/**
+ * L'historique vu de l'étape affichée, pour « Annuler : … » et « Rétablir » de Comparer en grand : la même règle
+ * que ↶ ↷ de la ligne de l'étape (choix 6 A) ; un geste fait à une autre étape ne s'y annule pas, la raison est
+ * écrite (`annulerAilleurs`).
+ */
+export function historiqueIci(h: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string; etapeAnnulation?: number; etapeRetablissement?: number }) {
+  const ici = etapeAffichee();
+  const ailleurs = (n: number | undefined) => ici !== undefined && n !== undefined && n !== ici;
+  const annulerAilleurs = h.peutAnnuler && ailleurs(h.etapeAnnulation);
+  const retablirAilleurs = h.peutRetablir && ailleurs(h.etapeRetablissement);
+  return {
+    peutAnnuler: h.peutAnnuler && !annulerAilleurs,
+    peutRetablir: h.peutRetablir && !retablirAilleurs,
+    ...(h.prochaineAnnulation !== undefined ? { prochaineAnnulation: h.prochaineAnnulation } : {}),
+    ...(h.detailAnnulation !== undefined ? { detailAnnulation: h.detailAnnulation } : {}),
+    ...(annulerAilleurs ? { annulerAilleurs: texteAilleurs(h.etapeAnnulation!) } : {}),
+    retablirAilleurs,
+  };
+}
+
 /** Ctrl+Y : la même règle que ↷ de la ligne de l'étape. */
 export function retablirIci() {
   const s = session.value;

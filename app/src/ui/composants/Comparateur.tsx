@@ -17,9 +17,10 @@ import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
 import { bandeVignettes, choisirPresentation, contenir, dispositionCote, MESURES, photoOuverture, placeUne, proportion, repartir, type MesuresComparer, type Presentation, type Scene } from '../../lib/presentationComparer';
 import { cleMiniature } from '../../navigateur/miniatures';
-import { annuler, retablir, serviceMiniatures, session } from '../etat';
+import { serviceMiniatures, session } from '../etat';
 import { BandeBadge, type DescriptionBadge } from './Badge';
 import { AnnulerRetablir } from './Cadre';
+import { annulerIci, historiqueIci, retablirIci } from './CadreCommun';
 import { Miniature } from './GrillePhotos';
 import { Icone, type NomIcone } from './Icones';
 
@@ -223,6 +224,14 @@ export function Comparateur({
   const zone = useRef<HTMLDivElement>(null);
   const ligneInfo = useRef<HTMLDivElement>(null);
   const racine = useRef<HTMLDivElement>(null);
+  // Les messages passagers (« Annulé : … ») se posent en haut de la scène, sur la photo, jamais sur les badges ni
+  // sur « Garder | Écarter » du bas des cartes (contrôle du 31.10, m8) : le haut de la scène est donné à la page.
+  useLayoutEffect(() => {
+    const haut = zone.current ? `${Math.round(zone.current.getBoundingClientRect().top)}px` : '';
+    const style = document.documentElement.style;
+    if (haut && style.getPropertyValue('--haut-scene-comparer') !== haut) style.setProperty('--haut-scene-comparer', haut);
+  });
+  useEffect(() => () => document.documentElement.style.removeProperty('--haut-scene-comparer'), []);
   const ratios = useProportions(photos);
   const c = Math.min(courante, n - 1);
   // Côte à côte : sur une rangée si elle tient, sinon sur deux ou trois (choisi à la main) ; jamais rien hors de la scène.
@@ -524,7 +533,7 @@ export function Comparateur({
             </button>
           </span>
         )}
-        {s && <AnnulerRetablir historique={s.historique} annuler={annuler} retablir={retablir} />}
+        {s && <AnnulerRetablir historique={historiqueIci(s.historique)} annuler={annulerIci} retablir={retablirIci} />}
       </header>
       <div class="cmp-ligne" ref={ligneInfo}>
         {ligne && <span class="cmp-ligne-texte">{typeof ligne === 'function' ? ligne(photos[c]) : ligne}</span>}

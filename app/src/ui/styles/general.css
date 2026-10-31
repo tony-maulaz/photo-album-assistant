@@ -29,6 +29,19 @@
   line-height: var(--lh-petit);
 }
 
+/* Une fenêtre ouverte (voile à z-index 80) : le message passe au-dessus, sinon son « Annuler » se voit à travers le
+   voile sans qu'on puisse le cliquer (validation du 31.10 : « Annuler » du message de « Vos lieux »). */
+body:has(.voile) .messages {
+  z-index: 90;
+}
+
+/* Comparer en grand ouvert : en haut de la scène, sur la photo ; jamais sur les badges ni sur « Garder | Écarter »
+   au bas des cartes, ni sur les boutons de la vue (contrôle du 31.10, m8). */
+body:has(.comparateur) .app .messages {
+  top: calc(var(--haut-scene-comparer, 120px) + var(--e2));
+  bottom: auto;
+}
+
 /* --- Liste des étapes (en-tête) : l'état tient sur la ligne, la phrase entière est en infobulle --- */
 
 .liste-etapes {

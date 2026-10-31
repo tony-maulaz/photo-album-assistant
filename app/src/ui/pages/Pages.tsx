@@ -436,7 +436,10 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.tri)}</strong>
-          {t` : rangez à part les captures d’écran, nommez vos lieux (et corrigez un nom dans « Nommés »), choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; « 38 photos » montre quelques photos d’un dossier, l’icône calendrier ses événements ; l’IA peut situer les photos sans GPS. Un bandeau rappelle les copies exactes restées à l’étape Doublons.`}
+          {t` : rangez à part les captures d’écran, nommez vos lieux (et corrigez un nom dans « Nommés »), choisissez comment ranger (le résultat se voit tout de suite), puis « Ranger les photos » ; « 38 photos » montre quelques photos d’un dossier, l’icône calendrier ses événements ; l’IA peut situer les photos sans GPS. Un bandeau rappelle les copies exactes restées à l’étape Doublons.`}{' '}
+          {t`« Vos lieux » : donnez un nom aux lieux qui reviennent souvent, revoyez ceux déjà nommés (onglet « Nommés ») et corrigez un nom : les dossiers de ce projet qui portent encore le nom automatique le prennent. Un nom sert à tous vos albums.`}{' '}
+          {t`Pour nommer les lieux, seule leur position est envoyée à OpenStreetMap (un service de cartes gratuit), jamais vos photos.`}{' '}
+          {t`Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ». Les noms des dossiers se choisissent à l’étape Nommage.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.lieux)}</strong>
@@ -448,7 +451,8 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.nommage)}</strong>
-          {t` : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), en deux onglets, « À nommer » et « Déjà nommés ». Chaque carte dit le nom actuel, puis les noms proposés (calendrier, lieu, IA « sûre » ou « à vérifier ») : un clic en met un dans le champ « Nouveau nom », et « Renommer » (ou Entrée) le donne. Le bouton de l’IA dit combien de dossiers il nomme et son prix avant de le lancer.`}
+          {t` : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), en deux onglets, « À nommer » et « Déjà nommés ». Chaque carte dit le nom actuel, puis les noms proposés (calendrier, lieu, IA « sûre » ou « à vérifier ») : un clic en met un dans le champ « Nouveau nom », et « Renommer » (ou Entrée) le donne. Le bouton de l’IA dit combien de dossiers il nomme et son prix avant de le lancer.`}{' '}
+          {t`L’IA regarde quelques photos, le lieu, le calendrier et le contexte du projet ; sa raison est dans l’infobulle de son nom. Rien n’est renommé sans « Renommer » (ou Entrée dans le champ), et Ctrl+Z l’annule.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.consolidation)}</strong>

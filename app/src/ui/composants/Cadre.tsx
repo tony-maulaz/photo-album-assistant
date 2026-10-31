@@ -277,13 +277,15 @@ export function TeteEtape({ numero, titre, children }: { numero?: number; titre:
  * pas sous la souris quand le geste change ; le geste avec ses noms est dans
  * l'infobulle. Sans rien à annuler, il le dit (C-4.7).
  */
-export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string }; annuler: () => void }) {
+export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnuler: boolean; prochaineAnnulation?: string; detailAnnulation?: string; annulerAilleurs?: string }; annuler: () => void }) {
   const quoi = historique.prochaineAnnulation;
+  // `annulerAilleurs` : le dernier geste est à une autre étape (choix 6 A) ; il ne s'annule pas d'ici, la raison est
+  // dans l'infobulle, comme ↶ de la ligne de l'étape.
   if (!historique.peutAnnuler)
     return (
-      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={t`Annuler (Ctrl+Z)`}>
+      <button type="button" class="bouton-annuler" disabled data-raison="libelle" title={historique.annulerAilleurs ?? t`Annuler (Ctrl+Z)`}>
         <Icone nom="annuler" taille={16} />
-        <span class="texte-annuler">{t`Rien à annuler`}</span>
+        <span class="texte-annuler">{historique.annulerAilleurs ? t`Rien à annuler ici` : t`Rien à annuler`}</span>
       </button>
     );
   const detail = historique.detailAnnulation ?? quoi;
@@ -296,11 +298,11 @@ export function BoutonAnnuler({ historique, annuler }: { historique: { peutAnnul
 }
 
 /** « Rétablir » (Ctrl+Y), à côté d'« Annuler ». */
-export function BoutonRetablir({ peutRetablir, retablir }: { peutRetablir: boolean; retablir: () => void }) {
+export function BoutonRetablir({ peutRetablir, retablir, ailleurs = false }: { peutRetablir: boolean; retablir: () => void; ailleurs?: boolean }) {
   return (
     <button type="button" class="bouton-retablir" disabled={!peutRetablir} data-raison={peutRetablir ? undefined : 'libelle'} onClick={retablir} title={t`Rétablir (Ctrl+Y)`}>
       <Icone nom="retablir" taille={16} />
-      {peutRetablir ? t`Rétablir` : t`Rien à rétablir`}
+      {peutRetablir ? t`Rétablir` : ailleurs ? t`Rien à rétablir ici` : t`Rien à rétablir`}
     </button>
   );
 }
@@ -311,14 +313,14 @@ export function AnnulerRetablir({
   annuler,
   retablir,
 }: {
-  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string };
+  historique: { peutAnnuler: boolean; peutRetablir: boolean; prochaineAnnulation?: string; detailAnnulation?: string; annulerAilleurs?: string; retablirAilleurs?: boolean };
   annuler: () => void;
   retablir: () => void;
 }) {
   return (
     <span class="annuler-retablir">
       <BoutonAnnuler historique={historique} annuler={annuler} />
-      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} />
+      <BoutonRetablir peutRetablir={historique.peutRetablir} retablir={retablir} ailleurs={!!historique.retablirAilleurs} />
     </span>
   );
 }

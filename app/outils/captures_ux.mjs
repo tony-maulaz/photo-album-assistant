@@ -744,13 +744,14 @@ try {
     await attendre(1000);
     await etat('20_etape07_lieux_visionneuse', 'Étape 7 Lieux et sorties : visionneuse (double-clic sur une photo)');
     await page.keyboard.press('Escape');
-    const ldt = page.getByRole('button', { name: 'Ligne de temps' });
+    // « Photos · Chronologie » : un choix segmenté au bout de la tête (D112 point 10, étape 4).
+    const ldt = page.getByRole('radio', { name: 'Chronologie' });
     if (await ldt.count()) {
       await ldt.click();
       await attendre(1000);
-      await etat('21_etape07_lieux_ligne_de_temps', 'Étape 7 Lieux et sorties : vue « Ligne de temps »');
-      await page.getByRole('button', { name: 'Photos', exact: true }).click();
-    }
+      await etat('21_etape07_lieux_ligne_de_temps', 'Étape 7 Lieux et sorties : vue « Chronologie »');
+      await page.getByRole('radio', { name: 'Photos', exact: true }).click();
+    } else manques.push({ nom: '21_etape07_lieux_ligne_de_temps', raison: 'pas de choix « Chronologie »' });
     await valider();
   });
 
@@ -765,15 +766,16 @@ try {
       await attendre(1500);
       await etat('23_etape08_petits_second', 'Étape 8 Petits dossiers : second petit dossier choisi dans la liste', { pleine: true });
     }
-    const evidents = page.getByRole('button', { name: /^Mettre \d+ petits? dossiers? avec leur dossier/ });
+    // « 3 petits dossiers ont un voisin évident : les voir » (étape 4 : en contour, dans la barre d'outils).
+    const evidents = page.getByRole('button', { name: /voisins? évidents?/ });
     if (await evidents.count()) {
       await evidents.first().click();
       await attendre(800);
       if (await page.locator('.dialogue.evidents').count()) {
         await etat('24_etape08_petits_evidents', 'Étape 8 Petits dossiers : dialogue « Petits dossiers au dossier évident »');
         await page.keyboard.press('Escape');
-      }
-    }
+      } else manques.push({ nom: '24_etape08_petits_evidents', raison: 'la fenêtre des voisins évidents ne s’ouvre pas' });
+    } else manques.push({ nom: '24_etape08_petits_evidents', raison: 'pas de bouton « voisin évident »' });
     await valider();
   });
 
@@ -782,22 +784,22 @@ try {
     await page.locator('main[data-etape=nommage]').first().waitFor({ timeout: 60_000 });
     await attendre(2500);
     await capturer('25_etape09_nommage', 'Étape 9 Nommage : arrivée, sans IA');
-    if (await page.locator('.tableau.nommage').count()) await etat('26_etape09_nommage_liste_zoom', 'Étape 9 Nommage : zoom sur la liste (tableau), sans IA', { element: '.tableau.nommage' });
+    // Les cartes du Nommage (étape 5 : plus de tableau) : Nom actuel, Noms proposés, Nouveau nom.
+    if (await page.locator('.cartes-nommage').count()) await etat('26_etape09_nommage_liste_zoom', 'Étape 9 Nommage : zoom sur les cartes, sans IA', { element: '.cartes-nommage' });
+    else manques.push({ nom: '26_etape09_nommage_liste_zoom', raison: 'pas de cartes du Nommage (.cartes-nommage)' });
     if (actif()) {
       mesures.nommage = await page.evaluate(() => {
-        const t = document.querySelector('.tableau.nommage');
+        const t = document.querySelector('.cartes-nommage');
         if (!t) return null;
-        const lignes = [...t.querySelectorAll('tbody tr')];
-        const gauches = (sel) => lignes.map((l) => l.querySelector(sel)).filter(Boolean).map((e) => Math.round(e.getBoundingClientRect().left));
-        const cellules = lignes.slice(0, 12).map((l) => [...l.children].map((c) => ({ x: Math.round(c.getBoundingClientRect().left), largeur: Math.round(c.getBoundingClientRect().width), colspan: c.colSpan, texte: c.innerText.replace(/\s+/g, ' ').slice(0, 50) })));
+        const cartes = [...t.querySelectorAll('.carte-nommage')];
+        const gauches = (sel) => cartes.map((l) => l.querySelector(sel)).filter(Boolean).map((e) => Math.round(e.getBoundingClientRect().left));
         return {
-          lignes: lignes.length,
-          entetes: [...t.querySelectorAll('thead th')].map((th) => ({ texte: th.innerText.trim(), x: Math.round(th.getBoundingClientRect().left), largeur: Math.round(th.getBoundingClientRect().width) })),
+          cartes: cartes.length,
+          libelles: cartes.slice(0, 1).flatMap((c) => [...c.querySelectorAll('.libelle-nommage')].map((x) => x.textContent.trim())),
           miniatures_img: t.querySelectorAll('.miniatures-nommage img').length,
           blocs_miniatures: t.querySelectorAll('.miniatures-nommage').length,
-          img_dans_tableau: t.querySelectorAll('img').length,
           gauche_champs_nom: [...new Set(gauches('input.nom-propose'))],
-          cellules_12_premieres_lignes: cellules,
+          hauteurs_12_premieres_cartes: cartes.slice(0, 12).map((c) => Math.round(c.getBoundingClientRect().height)),
         };
       });
     }
@@ -805,29 +807,31 @@ try {
     await page.evaluate((cle) => sessionStorage.setItem('album:cle_api', cle), CLE_FACTICE);
     await page.reload();
     await page.locator('main[data-etape=nommage]').first().waitFor({ timeout: 60_000 });
-    const ia = page.getByRole('button', { name: /Nommer les sorties avec l’IA/ });
+    // Le nom dit la portée (« Nommer les 14 avec l’IA », étape 5) ; le prix est sur la même ligne.
+    const ia = page.getByRole('button', { name: /^Nommer (les \d+|le dossier|ces \d+|ce dossier) avec l’IA/ }).first();
     if ((await ia.count()) && (await ia.isEnabled())) {
       await ia.click();
       await page.getByText(/noms? proposés?/).first().waitFor({ timeout: 120_000 });
       await attendre(2500);
       await capturer('27_etape09_nommage_avec_ia', 'Étape 9 Nommage : après les propositions de l’IA (API simulée)');
-      await etat('28_etape09_nommage_liste_zoom_ia', 'Étape 9 Nommage : zoom sur la liste avec propositions IA', { element: '.tableau.nommage' });
+      await etat('28_etape09_nommage_liste_zoom_ia', 'Étape 9 Nommage : zoom sur les cartes avec propositions IA', { element: '.cartes-nommage' });
       if (actif()) {
         mesures.nommage_avec_ia = await page.evaluate(() => {
-          const t = document.querySelector('.tableau.nommage');
+          const t = document.querySelector('.cartes-nommage');
           if (!t) return null;
-          const lignes = [...t.querySelectorAll('tbody tr')];
+          const cartes = [...t.querySelectorAll('.carte-nommage')];
           return {
-            lignes: lignes.length,
+            cartes: cartes.length,
+            puces: t.querySelectorAll('.noms-possibles .nom-possible').length,
             miniatures_img: t.querySelectorAll('.miniatures-nommage img').length,
-            gauche_champs_nom: [...new Set(lignes.map((l) => l.querySelector('input.nom-propose')).filter(Boolean).map((e) => Math.round(e.getBoundingClientRect().left)))],
-            cellules_8_premieres_lignes: lignes.slice(0, 8).map((l) => [...l.children].map((c) => ({ x: Math.round(c.getBoundingClientRect().left), largeur: Math.round(c.getBoundingClientRect().width), hauteur: Math.round(c.getBoundingClientRect().height), texte: c.innerText.replace(/\s+/g, ' ').slice(0, 60) }))),
+            gauche_champs_nom: [...new Set(cartes.map((l) => l.querySelector('input.nom-propose')).filter(Boolean).map((e) => Math.round(e.getBoundingClientRect().left)))],
+            hauteurs_8_premieres_cartes: cartes.slice(0, 8).map((c) => Math.round(c.getBoundingClientRect().height)),
           };
         });
       }
-    }
+    } else manques.push({ nom: '27_etape09_nommage_avec_ia', raison: 'pas de bouton « Nommer … avec l’IA » actif' });
     await page.evaluate(() => sessionStorage.removeItem('album:cle_api'));
-    const sur = page.getByRole('button', { name: /^Accepter les? (\d+ noms|nom) de confiance 8 ou plus/ });
+    const sur = page.getByRole('button', { name: /^Accepter les noms sûrs/ });
     if (await sur.count()) await sur.click();
     await attendre(800);
     await valider();

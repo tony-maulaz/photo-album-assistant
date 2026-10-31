@@ -87,6 +87,18 @@
   font-weight: 600;
 }
 
+/* Le plus long libellé, invisible et sans hauteur, sous « Nom actuel » : il fixe la largeur de la colonne. */
+.libelle-nommage[data-large] {
+  display: inline-grid;
+}
+
+.libelle-nommage[data-large]::after {
+  content: attr(data-large);
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+}
+
 .nom-actuel {
   display: flex;
   flex-wrap: wrap;

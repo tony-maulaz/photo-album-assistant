@@ -10,7 +10,7 @@
 
 import { signal } from '@preact/signals';
 import { createPortal } from 'preact/compat';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { evenementDesPhotos, evenementsUtiles, joursEvenement, type EvenementCalendrier } from '../../lib/ics';
 import { t } from '../../lib/langue';
 import type { FichierPlan } from '../../lib/plan';
@@ -19,7 +19,7 @@ import { evenements, reglages, session } from '../etat';
 import { dateHeure, nombre, nomJour, nomMois, pluriel } from '../format';
 import { visionneuse } from '../organiser';
 import { Miniature } from './GrillePhotos';
-import { BulleCalendrier, periodeCourte } from './Bulle';
+import { BulleCalendrier, jourMin, periodeCourte } from './Bulle';
 import { Icone, type NomIcone } from './Icones';
 import { Visionneuse } from './Visionneuse';
 
@@ -46,9 +46,6 @@ function dates(c: { du?: string; au?: string }): string {
 
 const ICONES: Record<SorteLigne, NomIcone> = { voyage: 'voyage', sortie: 'sortie', maison: 'maison' };
 const SORTES: Record<SorteLigne, () => string> = { voyage: () => t`Voyage`, sortie: () => t`Sortie`, maison: () => t`À la maison` };
-
-/** « sam. 9 août », en milieu de phrase. */
-const jourMin = (j: string) => nomJour(j).replace(/^./, (c) => c.toLowerCase());
 
 /**
  * Titre lisible d'une ligne (D107), le nom du dossier dans l'infobulle et
@@ -91,13 +88,9 @@ function evenementsPendant(l: LigneTri, evts: EvenementCalendrier[]): { liste: E
   return { liste: retenu ? [retenu, ...pendant.filter((e) => e !== retenu)] : pendant, ...(retenu ? { retenu } : {}) };
 }
 
-let prochaineBulle = 0;
-
-/** L'icône calendrier d'une ligne (D112 point 9, lot C) : elle remplace la phrase sur l'événement ; sa bulle (C-4.13) est commune. */
-function CalendrierLigne({ l, liste, retenu }: { l: LigneTri; liste: EvenementCalendrier[]; retenu?: EvenementCalendrier }) {
-  const enTete = l.sorte === 'voyage' ? t`Votre calendrier pendant ce voyage` : l.sorte === 'sortie' ? t`Votre calendrier pendant cette sortie` : t`Votre calendrier pendant cette période`;
-  return <BulleCalendrier liste={liste} {...(retenu ? { retenu } : {})} enTete={enTete} />;
-}
+/** L'en-tête de la bulle du calendrier d'une ligne (D112 point 9, lot C ; C-4.13). */
+const enTeteCalendrier = (l: LigneTri) =>
+  l.sorte === 'voyage' ? t`Votre calendrier pendant ce voyage` : l.sorte === 'sortie' ? t`Votre calendrier pendant cette sortie` : t`Votre calendrier pendant cette période`;
 
 /** Côté des vignettes du dépliant : le curseur « Taille » de la ligne de l'étape (72 px au réglage par défaut). */
 export const coteDepliant = (v: number) => Math.round(v * 0.45);
@@ -184,7 +177,7 @@ function Depliant({ l, id, apercu, voir }: { l: LigneTri; id: string; apercu: bo
 function Ligne({ l, evts, nouveau, apercu, ouverte, basculer, voir }: { l: LigneTri; evts: EvenementCalendrier[]; nouveau: boolean; apercu: boolean; ouverte: boolean; basculer: () => void; voir: (photos: FichierPlan[], i: number) => void }) {
   // Les événements se calculent sur les dates du dossier, avant comme après le rangement.
   const { liste, retenu } = useMemo(() => evenementsPendant(l, evts), [l, evts]);
-  const [id] = useState(() => `depliant-${prochaineBulle++}`);
+  const id = `depliant-${useId()}`;
   const nomLigne = titre(l);
   const details = [
     dates(l),
@@ -202,7 +195,7 @@ function Ligne({ l, evts, nouveau, apercu, ouverte, basculer, voir }: { l: Ligne
           <h3 title={l.chemin}>{nomLigne}</h3>
           <span class="sorte-ligne">{SORTES[l.sorte]()}</span>
           {nouveau && <span class="badge-nouveau">{t`nouveau`}</span>}
-          {liste.length > 0 && <CalendrierLigne l={l} liste={liste} {...(retenu ? { retenu } : {})} />}
+          {liste.length > 0 && <BulleCalendrier liste={liste} {...(retenu ? { retenu } : {})} enTete={enTeteCalendrier(l)} />}
         </div>
         <span class="details-ligne">{details.join(' · ')}</span>
       </div>

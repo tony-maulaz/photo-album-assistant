@@ -31,6 +31,7 @@ import {
   nouveauDossierAvec,
   ordrePanneau,
   type OrdrePanneau,
+  petitsDe,
   parentPourNouveau,
   renommage,
   selection,
@@ -39,7 +40,6 @@ import {
   VUE_AUTRES,
   VUE_MIS_DE_COTE,
 } from '../organiser';
-import { petitsDe } from '../pages/Organisation';
 import { BulleCalendrier, BulleIcone } from './Bulle';
 import { confirmer } from './Dialogues';
 import { Icone } from './Icones';

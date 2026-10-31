@@ -59,8 +59,6 @@ export const TEXTES: Record<string, string> = {
   // Nommage.tsx
   calendrier: 'calendar',
   lieu: 'place',
-  'un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »),': 'a calendar event during which the photos were taken (“18 ans de Lea”),',
-  'le lieu, ou': 'the place, or',
   // Organisation.tsx, Organiser.tsx
   'Cochez la case pour choisir la durée.': 'Tick the box to choose the length.',
   'L’IA propose de les réunir dans « {0} »': 'The AI suggests gathering them in “{0}”',

@@ -377,6 +377,17 @@ export function acceptablesSansVider(groupes: GroupeDoublons[], fichier: Fichier
   return groupes.filter((g) => photosDuGroupe(g, fichier).some((x) => aGarder(x.etat)));
 }
 
+/**
+ * Ce que chiffre la fenêtre d'une acceptation groupée (D112, règle d'or 3) : `n` photos écartées, dont `sansRegard`
+ * dans des groupes où vous n'avez rien choisi (la proposition, ou un choix de « Choisir avec l'IA » seul, acceptés
+ * sans geste de votre part).
+ */
+export function comptesAcceptation(acceptes: GroupeDoublons[], fichier: Fichiers): { n: number; sansRegard: number } {
+  const n = acceptes.reduce((a, g) => a + aEcarter(g, fichier).length, 0);
+  const sansRegard = acceptes.filter((g) => !choixEnAttente(g, fichier, true)).reduce((a, g) => a + aEcarter(g, fichier).length, 0);
+  return { n, sansRegard };
+}
+
 /** « Tout garder » : les photos écartées reviennent, celles « à écarter » sont gardées ; le groupe est validé. */
 export function garderTout(plan: Plan, groupes: GroupeDoublons[]): Modification | null {
   const fichier = (id: string) => plan.fichiers.get(id);

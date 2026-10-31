@@ -75,8 +75,12 @@ export function BulleIcone({
     const clic = (e: MouseEvent) => !racine.current?.contains(e.target as Node) && !bulle.current?.contains(e.target as Node) && setMode(null);
     const touche = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      e.stopPropagation();
       setMode(null);
+      // Échap n'est pris que si le focus est sur l'icône ou dans la bulle ; sinon la bulle se ferme et la touche
+      // va aussi à ce qui a le focus (un renommage en cours, F2, est abandonné du même Échap).
+      const dedans = racine.current?.contains(document.activeElement) || bulle.current?.contains(document.activeElement);
+      if (!dedans) return;
+      e.stopPropagation();
       if (racine.current?.contains(document.activeElement)) bouton.current?.focus();
     };
     document.addEventListener('mousedown', clic);
@@ -141,7 +145,7 @@ export function BulleIcone({
 const EVENEMENTS_MONTRES = 3;
 
 /** « sam. 9 août », en milieu de phrase. */
-const jourMin = (j: string) => nomJour(j).replace(/^./, (c) => c.toLowerCase());
+export const jourMin = (j: string) => nomJour(j).replace(/^./, (c) => c.toLowerCase());
 
 /** « 24 juillet », « 24 juillet → 7 août » ; rien sans dates. */
 export function periodeCourte(du?: string, au?: string): string {

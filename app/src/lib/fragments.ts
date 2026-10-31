@@ -10,11 +10,11 @@
 import consigneFragment from '../ia/consignes/fragments_consigne.txt?raw';
 import consigneSysteme from '../ia/consignes/fragments_systeme.txt?raw';
 import { plancheDossier, PLANCHE_05, type DossierInfo } from './consolidation';
-import { t } from './langue';
+import { aTraduire, t } from './langue';
 import { cleNom } from './noms';
 import { booleen, cleRequete, confiance, coutEstime, jetonsPlanche, normaliserNom, periodeHeures, premierObjet, texteCourt, type BlocContenu, type Estimation, type RequeteIA } from './nommage';
 import { distanceHamming } from './phash';
-import { cheminDossier, enfants, nePasToucher, RACINE, Transaction, type DossierPlan, type FichierPlan, type Modification, type Plan } from './plan';
+import { cheminDossier, enfants, gardeSaPlace, nePasToucher, RACINE, Transaction, type DossierPlan, type FichierPlan, type Modification, type Plan } from './plan';
 import { minutes } from './selection';
 import { modele as infoModele } from './tarifs';
 import { distanceM, estDossierMois, nomDossierLibre } from './tri';
@@ -404,4 +404,27 @@ export function ressortirFragment(plan: Plan, r: FragmentRattache): Modification
   for (const { id, nom } of fichiers) tx.fichier({ ...plan.fichiers.get(id)!, dossier: r.dossier.id, nom });
   for (const id of sous) tx.dossier({ ...plan.dossiers.get(id)!, parent: r.dossier.id });
   return tx.terminer(t`Ressortir 1 dossier`, t`Ressortir « ${r.dossier.nom} » de « ${r.cibleNom} »`);
+}
+
+/** Au-delà de cette durée, un dossier n'est pas une sortie (une année, « Maison ») : pas de consolidation. */
+export const DUREE_MAX_SORTIE_JOURS = 31;
+
+/** Pourquoi un dossier n'entre pas dans la consolidation (petits dossiers et consolidation), ou `null` s'il y entre. */
+export function raisonExclusion(plan: Plan, d: DossierInfo, exclus: ReadonlySet<string>): string | null {
+  if (d.nom.startsWith('_') || estNomDeSortie('captures', d.nom)) return aTraduire('dossier technique');
+  if (gardeSaPlace(plan, d.id)) return aTraduire('dossier gardé');
+  if (exclus.has(d.id)) return aTraduire('exclu à la main');
+  if (estDossierMois(d.nom)) return aTraduire('dossier de mois');
+  if (d.du && d.au && (Date.parse(d.au.slice(0, 10)) - Date.parse(d.du.slice(0, 10))) / 86_400_000 > DUREE_MAX_SORTIE_JOURS) return aTraduire('plus d’un mois');
+  return null;
+}
+
+/**
+ * Petits dossiers que l'étape « Petits dossiers » examine : moins de 5 photos, sans sous-dossier (un voyage de
+ * deux photos n'apparaît qu'une fois, par ses étapes), ni dossier gardé, de mois, de plus d'un mois ou exclu de
+ * la consolidation (`exclus`). Aussi l'icône « petit dossier » de Lieux et sorties (D112 point 10).
+ */
+export function petitsDuPlan(plan: Plan, exclus: ReadonlySet<string>): DossierInfo[] {
+  const parents = new Set([...plan.dossiers.values()].map((d) => d.parent));
+  return dossiersAvecPhotos(plan).filter((d) => d.photos.length < SEUIL_PETIT_DOSSIER && !parents.has(d.id) && raisonExclusion(plan, d, exclus) === null);
 }

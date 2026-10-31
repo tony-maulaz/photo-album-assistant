@@ -25,7 +25,7 @@
   /* Sous la ligne de l'étape, collée en haut (forme E, D112), jusqu'au-dessus de la barre du bas. */
   top: calc(var(--h-ligne-etape) + var(--e3));
   /* La même largeur et la même poignée que la liste de Lieux et sorties (C-7.7). */
-  flex: 0 0 var(--largeur-panneau);
+  flex: 0 0 var(--largeur-panneau, 240px);
   max-height: calc(var(--haut-visible) - var(--e5));
   overflow-y: auto;
   padding: 10px 0;
@@ -84,6 +84,65 @@ button.ligne-liste-petit.actif {
 
 .etat-liste-petit.fait {
   color: var(--accent-doux-texte);
+}
+
+/* La liste des propositions de la Consolidation garde son ancienne ligne (une icône d'état, la date et le nom) :
+   elle partage `.liste-petits` mais pas la ligne commune de Petits dossiers. */
+.page-consolidation .liste-petits {
+  padding: 10px;
+}
+
+.page-consolidation .ligne-liste-petit {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: var(--e2);
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--r-commande);
+  background: none;
+  color: var(--texte);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 400;
+  text-align: left;
+}
+
+.page-consolidation button.ligne-liste-petit:hover:not(:disabled) {
+  background: var(--fond);
+}
+
+.page-consolidation .ligne-liste-petit.choisie,
+.page-consolidation button.ligne-liste-petit.choisie:hover:not(:disabled) {
+  background: var(--accent-doux);
+  font-weight: 600;
+}
+
+.page-consolidation .ligne-liste-petit.fait {
+  color: var(--texte-2);
+}
+
+.page-consolidation .ligne-liste-petit .etat-petit {
+  flex: 0 0 auto;
+  color: var(--texte-2);
+}
+
+.page-consolidation .ligne-liste-petit.fait .etat-petit {
+  color: var(--accent-doux-texte);
+  font-weight: 700;
+}
+
+.page-consolidation .nom-liste-petit {
+  min-width: 0;
+  /* Coupé après un « _ » (wbr) ; au milieu d'un mot seulement s'il ne tient pas autrement. */
+  overflow-wrap: break-word;
+}
+
+/* La phrase sous « Réunir » (Consolidation). */
+.apres-choix {
+  margin: 0;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .contenu-petits {

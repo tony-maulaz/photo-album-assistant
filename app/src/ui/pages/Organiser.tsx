@@ -3,7 +3,7 @@
 // avant de créer la sortie.
 
 import { nomsSortie } from '../../lib/sortie';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { cheminDossier, contenu, resumes, RACINE, type DossierPlan, type FichierPlan } from '../../lib/plan';
 import { premierDossierAvecPhotos } from '../../lib/rangement';
 import { nomPourJournee } from '../../lib/nommage';
@@ -18,7 +18,7 @@ import { LigneDeTemps } from '../composants/LigneDeTemps';
 import { DialogueDeplacer, Visionneuse } from '../composants/Visionneuse';
 import { evenementsDesPhotos, prisePendant, type EvenementCalendrier } from '../../lib/ics';
 import { t } from '../../lib/langue';
-import { allerEtape, annuler, evenements, retablir, revenirDe, session, validerEtape, versionPlan } from '../etat';
+import { allerEtape, annuler, evenements, retablir, revenirDe, session, validerEtape, versionIA, versionPlan } from '../etat';
 import { ETAPE } from '../../navigateur/projet';
 import { jourCourt, nombre, nomJour, periode, pluriel } from '../format';
 import {
@@ -112,7 +112,7 @@ function TitreJournee({ photos, jour, dossier }: { photos: FichierPlan[]; jour: 
 
 export function PageOrganiser() {
   const s = session.value!;
-  versionPlan.value;
+  const vp = versionPlan.value;
   const [temps, setTemps] = useState(false);
   const plan = s.plan;
   // La vue courante peut avoir disparu (fusion, annulation).
@@ -175,15 +175,22 @@ export function PageOrganiser() {
   // Une journée par titre dans la grille (D94), avec les événements du calendrier ; une seule journée sans
   // événement n'en a pas besoin. Dans un dossier de plusieurs jours, chaque journée peut en sortir.
   const jours = enMisDeCote || enAutres ? [] : groupesParJour(elements);
-  const avecTitres = jours.length > 1 || (jours.length === 1 && evenementsDesPhotos(evenements.value, elements.flatMap((f) => (f.date ? [f.date] : []))).length > 0);
+  // Les événements des photos du dossier affiché et son état de petit dossier : calculés une fois par version du
+  // plan, de la vue et du calendrier, pas à chaque clic de sélection (10 000 dates à la racine ; `petitsDe` parcourt
+  // tout le plan).
+  const evtsElements = useMemo(
+    () => (enMisDeCote || enAutres ? [] : evenementsDesPhotos(evenements.value, elements.flatMap((f) => (f.date ? [f.date] : [])))),
+    [vp, v, evenements.value],
+  );
+  const petitVue = useMemo(() => (dossier && !enMisDeCote && !enAutres ? petitDossier(dossier.id) : undefined), [vp, v, s.projet.mode, versionIA.value]);
+  const avecTitres = jours.length > 1 || (jours.length === 1 && evtsElements.length > 0);
   const sortirJours = !sousDossiers && dossier?.parent != null && jours.filter((g) => g.jour).length > 1 ? dossier : undefined;
   const groupes = avecTitres
     ? jours.map((g) => ({ debut: g.debut, titre: <TitreJournee photos={elements.slice(g.debut, g.debut + g.n)} jour={g.jour} dossier={sortirJours} /> }))
     : undefined;
 
   // Événements des photos du dossier ouvert, écrits en entier dans sa tête ; petit dossier : une phrase dessous.
-  const evtsVue = dossier && !enMisDeCote && !enAutres ? evenementsDesPhotos(evenements.value, elements.flatMap((f) => (f.date ? [f.date] : []))) : [];
-  const petitVue = dossier && !enMisDeCote && !enAutres ? petitDossier(dossier.id) : undefined;
+  const evtsVue = dossier ? evtsElements : [];
 
   // L'en-tête se replie une fois l'arborescence en place : la place va au panneau et aux photos.
   const arborescencePrete = s.projet.mode !== 'vrac' || [...plan.dossiers.values()].some((d) => d.origine === 'tri');
@@ -244,7 +251,7 @@ export function PageOrganiser() {
                   )}
                   {/* L'événement du calendrier, en entier dans la tête du dossier ouvert (D112 point 10). */}
                   {evtsVue.length > 0 && (
-                    <span class="evenements-vue">
+                    <span class="evenements-vue" title={evtsVue.map((x) => x.evenement.titre).join('\n')}>
                       {' · '}
                       <Icone nom="calendrier" taille={14} />
                       {evtsVue.map((x) => x.evenement.titre).join(' · ')}

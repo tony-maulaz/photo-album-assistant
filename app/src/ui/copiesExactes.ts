@@ -7,7 +7,7 @@
 // toucher » n'est pas examiné : ses copies sont voulues (un « Best of », D85).
 
 import { groupesDoublonsExacts, type GenreEmplacement, type GroupeExact } from '../lib/doublonsExacts';
-import { aEcarter, groupesCopies } from '../lib/groupesDoublons';
+import { acceptablesSansVider, aEcarter, groupesCopies, type GroupeDoublons } from '../lib/groupesDoublons';
 import { nePasToucher, traitementDe, type FichierPlan, type Plan } from '../lib/plan';
 import { analyseAFaire, analyseEnCours } from './analyseDossier';
 import { session, versionIA, versionPlan, type Session } from './etat';
@@ -80,6 +80,28 @@ export function useCopiesExactes(): GroupeExact[] | null {
 }
 
 /**
+ * Les copies exactes encore à accepter (D112) : les groupes où un exemplaire est encore « à écarter » faute
+ * d'« Accepter », et leur nombre d'exemplaires. Un seul compte pour la frise, la barre de Doublons et le bandeau du
+ * Tri. `acceptables` : ceux qu'un « Accepter » groupé peut valider (un exemplaire au moins reste gardé) ; un groupe
+ * où vous les avez tous écartés reste à voir à Doublons (D101), mais il compte dans `n`.
+ */
+export interface CopiesAAccepter {
+  groupes: GroupeDoublons[];
+  n: number;
+  acceptables: GroupeDoublons[];
+  nAcceptables: number;
+}
+
+type Fichiers = (id: string) => FichierPlan | undefined;
+
+export function copiesAAccepter(groupes: GroupeDoublons[], fichier: Fichiers): CopiesAAccepter {
+  const enAttente = groupes.filter((g) => aEcarter(g, fichier).length > 0);
+  const acceptables = acceptablesSansVider(enAttente, fichier);
+  const somme = (l: GroupeDoublons[]) => l.reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  return { groupes: enAttente, n: somme(enAttente), acceptables, nAcceptables: somme(acceptables) };
+}
+
+/**
  * Exemplaires de copies exactes que la proposition écarterait encore, faute d'« Accepter » (D112) : sans eux, le
  * tri rangerait une seconde fois une photo déjà gardée. `null` tant que les copies ne sont pas cherchées.
  */
@@ -91,5 +113,5 @@ export function copiesRestantes(s: Session): number | null {
 /** Nombre d'exemplaires que la proposition écarterait encore (pas encore acceptée). */
 export function copiesProposees(groupes: GroupeExact[], plan: Plan): number {
   const fichier = (id: string) => plan.fichiers.get(id);
-  return groupesCopies(groupes, fichier).reduce((n, g) => n + aEcarter(g, fichier).length, 0);
+  return copiesAAccepter(groupesCopies(groupes, fichier), fichier).n;
 }

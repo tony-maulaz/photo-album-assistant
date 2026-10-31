@@ -162,6 +162,24 @@ async function gestesBadge(page) {
   await page.keyboard.press('Escape');
 }
 
+/** `.album/plan.json` lu tel quel, quand `condition` est vraie (3 s au plus) ; relu si l'écriture est en cours. */
+async function planLu(page, condition) {
+  let plan = null;
+  for (let k = 0; k < 15; k++) {
+    try {
+      plan = await page.evaluate(async () => {
+        const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+        return JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text());
+      });
+      if (condition(plan)) return { ok: true, plan };
+    } catch {
+      plan = null;
+    }
+    await page.waitForTimeout(200);
+  }
+  return { ok: false, plan };
+}
+
 /** Ce que dit la configuration choisie (`selecteur_config/config.json`), quand `condition` est vraie (3 s au plus). */
 async function configEcrite(page, condition) {
   let c;
@@ -282,6 +300,18 @@ async function essaiLieux(page) {
   const renommes = await dossiersEcrits(page, (n) => !n.some((x) => /^Plage_\d/.test(x)) && n.some((x) => /^Plage_Est_\d/.test(x)));
   verifier(renommes.ok && renommes.noms.filter((x) => x.startsWith('Plage_Est')).length === prevus, `les dossiers qui portaient le nom automatique le prennent, écrit dans .album/plan.json : ${renommes.noms.filter((x) => x.startsWith('Plage')).join(', ')}`);
   verifier((await fenetre.count()) === 1 && (await champ.inputValue()) === 'Plage Est', 'la fenêtre ne se ferme pas toute seule après un nom');
+  // Le message, fenêtre ouverte, porte « Annuler » (Cadre.tsx : seulement tant que son geste est le dernier) : il
+  // remet l'ancien nom dans la configuration et les dossiers ; on enregistre de nouveau pour la suite.
+  {
+    const lien = page.locator('.messages .message button', { hasText: 'Annuler' });
+    verifier((await lien.count()) === 1, `le message « ${(await page.locator('.messages .message').last().innerText()).replace(/\s+/g, ' ')} » porte « Annuler »`);
+    await lien.click();
+    const defait = await configEcrite(page, (c) => c.lieux_connus[0]?.nom === 'Plage');
+    const defaitPlan = await dossiersEcrits(page, (n) => n.some((x) => /^Plage_\d/.test(x)) && !n.some((x) => x.startsWith('Plage_Est')));
+    verifier(defait.ok && defaitPlan.ok, '« Annuler » du message : la configuration et les dossiers retrouvent « Plage »');
+    await carte.getByRole('button', { name: 'Enregistrer' }).click();
+    verifier((await configEcrite(page, (c) => c.lieux_connus[0]?.nom === 'Plage_Est')).ok && (await dossiersEcrits(page, (n) => n.filter((x) => /^Plage_Est_\d/.test(x)).length === prevus)).ok, 'enregistré de nouveau : « Plage_Est »');
+  }
   await page.keyboard.press('Escape');
   await fenetre.waitFor({ state: 'detached' });
   await page.keyboard.press('Control+z');
@@ -292,6 +322,115 @@ async function essaiLieux(page) {
   await page.keyboard.press('Control+z');
   const avant = await dossiersEcrits(page, (n) => !n.some((x) => x.startsWith('Plage')));
   verifier(avant.ok, 'Ctrl+Z défait le second rangement : plus aucun dossier « Plage »');
+}
+
+/**
+ * Le module `ui/etat.ts` tel que l'application l'a chargé (le serveur de développement peut l'avoir servi avec une
+ * marque de version, `?t=…`, après une mise à jour à chaud) : l'URL exacte est lue dans les ressources de la page.
+ */
+const MODULE_ETAT = `async () => {
+  const urls = performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\\/src\\/ui\\/etat\\.ts(\\?|$)/.test(n));
+  return import(urls.at(-1) ?? '/src/ui/etat.ts');
+}`;
+
+/**
+ * « Vos lieux », onglet « À nommer » (validation du 31.10 : le chemin principal de la fenêtre). Jeu d'essai posé en
+ * mémoire, dans la session de l'application (le serveur de développement sert le même module) : cinq photos de cinq
+ * jours différents mises au même endroit, fictif (45,5 / 5,5) ; tout est défait à la fin, avant que le plan ne soit
+ * réécrit, et la configuration est remise telle qu'elle était. Gestes : « Voir les 5 photos », « C'est notre
+ * maison », « Plus tard » puis « Le remontrer », nommer et « Enregistrer » (écrit dans config.json), le lien
+ * « Annuler » d'une carte de « Nommés », « Changer » de la maison (→ « Nommés »), « Configuration › ».
+ */
+async function essaiLieuxANommer(page) {
+  const deplacees = await page.evaluate(async (moduleEtat) => {
+    const { session, versionPlan } = await eval(`(${moduleEtat})`)();
+    if (!session.value) throw new Error(`session absente : ${performance.getEntriesByType('resource').map((e) => e.name).filter((n) => n.includes('etat')).join(', ')}`);
+    const s = session.value;
+    const parJour = new Map();
+    for (const f of s.plan.fichiers.values()) if (f.categorie === 'photo' && f.gps && f.date && !parJour.has(f.date.slice(0, 10))) parJour.set(f.date.slice(0, 10), f);
+    const choisies = [...parJour.values()].slice(0, 5);
+    for (const f of choisies) s.plan.fichiers.set(f.id, { ...f, gps: { ...f.gps, lat: 45.5, lon: 5.5 } });
+    versionPlan.value++;
+    return choisies.map((f) => ({ id: f.id, gps: f.gps }));
+  }, MODULE_ETAT);
+  verifier(deplacees.length === 5, `jeu d’essai : 5 photos de 5 jours au même endroit (${deplacees.length})`);
+  await page.getByRole('button', { name: 'L’indiquer…' }).click();
+  const fenetre = page.locator('.fenetre[role=dialog]');
+  await fenetre.waitFor();
+  const carte = fenetre.locator('.carte-lieu').first();
+  verifier(
+    (await fenetre.locator('[role=tab][aria-selected=true]').getAttribute('data-onglet')) === 'a_nommer' && (await fenetre.locator('.carte-lieu').count()) === 1 && (await carte.innerText()).includes('5 photos sur 5 jours'),
+    `« L’indiquer… » ouvre « À nommer » : une carte, « ${(await carte.locator('.infos-lieu > .discret').innerText()).replace(/\s+/g, ' ')} »`,
+  );
+  await carte.getByRole('button', { name: 'Voir les 5 photos' }).click();
+  verifier((await carte.locator('.bande-miniatures > span').count()) === 5, '« Voir les 5 photos » : les 5 photos sous la carte');
+  await carte.getByRole('button', { name: 'Moins de photos' }).click();
+  verifier((await carte.locator('.bande-miniatures').count()) === 0, '« Moins de photos » les replie');
+  const champ = carte.getByRole('textbox', { name: 'Nom' });
+  verifier((await champ.inputValue()) === '' && (await carte.getByRole('button', { name: 'Enregistrer' }).isDisabled()) && (await carte.innerText()).includes('attend un nom'), 'champ « Nom » vide : « Enregistrer » grisé, « attend un nom »');
+  await carte.getByLabel('C’est notre maison').check();
+  verifier((await champ.inputValue()) === 'Maison', `« C’est notre maison » : le nom proposé est écrit dans le champ (« ${await champ.inputValue()} »)`);
+  await carte.getByRole('button', { name: 'Plus tard' }).click();
+  const remis = fenetre.locator('.remis-plus-tard');
+  verifier(
+    (await fenetre.locator('.carte-lieu').count()) === 0 && (await fenetre.locator('.vide-lieux').innerText()).includes('Plus rien à nommer') && (await remis.innerText()).includes('Remis à plus tard : 1 lieu'),
+    `« Plus tard » : la carte part, « ${(await remis.innerText()).replace(/\s+/g, ' ')} »`,
+  );
+  await remis.getByRole('button', { name: 'Le remontrer' }).click();
+  verifier((await fenetre.locator('.carte-lieu').count()) === 1 && (await fenetre.locator('.remis-plus-tard').count()) === 0, '« Le remontrer » : la carte revient');
+  await champ.fill('Chez Mamie');
+  await carte.getByRole('button', { name: 'Enregistrer' }).click();
+  const ecrit = await configEcrite(page, (c) => c.lieux_connus.some((l) => l.nom === 'Chez_Mamie' && l.domicile && l.lat === 45.5 && l.lon === 5.5));
+  verifier(ecrit.ok, `« Enregistrer » : « Chez_Mamie », votre maison, écrit dans config.json (${ecrit.c.lieux_connus.map((l) => `${l.nom}${l.domicile ? ' (maison)' : ''}`).join(', ')})`);
+  await fenetre.locator('.vide-lieux').waitFor();
+  verifier((await fenetre.count()) === 1 && (await fenetre.locator('.vide-lieux').innerText()).includes('Tout est nommé'), 'la fenêtre reste ouverte ; « À nommer » : tout est nommé');
+  await fenetre.getByRole('tab', { name: /Nommés/ }).click();
+  const nommee = fenetre.locator('.carte-lieu', { has: page.locator('.badge-maison') });
+  const champNomme = nommee.getByRole('textbox', { name: 'Nom' });
+  verifier((await nommee.count()) === 1 && (await champNomme.inputValue()) === 'Chez Mamie', '« Nommés » : le lieu nommé, avec « Notre maison »');
+  await champNomme.fill('Chez Mamie Bis');
+  verifier((await nommee.getAttribute('class')).includes('modifiee') && (await nommee.getByRole('button', { name: 'Annuler' }).count()) === 1, 'nom changé : la carte se marque et propose « Annuler »');
+  await nommee.getByRole('button', { name: 'Annuler' }).click();
+  verifier((await champNomme.inputValue()) === 'Chez Mamie' && !(await nommee.getAttribute('class')).includes('modifiee'), 'le lien « Annuler » de la carte rend le nom enregistré, sans rien écrire');
+  verifier((await configEcrite(page, (c) => c.lieux_connus.some((l) => l.nom === 'Chez_Mamie'))).ok, '« Annuler » de la carte : la configuration n’a pas changé');
+  await page.keyboard.press('Escape');
+  await fenetre.waitFor({ state: 'detached' });
+  const ligneMaison = page.locator('.liste-afaire li', { hasText: 'Votre maison : Chez_Mamie' });
+  verifier((await ligneMaison.count()) === 1, 'la liste « À faire » dit la maison');
+  await ligneMaison.getByRole('button', { name: 'Changer' }).click();
+  await fenetre.waitFor();
+  verifier((await fenetre.locator('[role=tab][aria-selected=true]').getAttribute('data-onglet')) === 'nommes', '« Changer » de la maison ouvre « Vos lieux » sur « Nommés »');
+  await fenetre.locator('.pied-lieux').getByRole('button', { name: /Configuration/ }).click();
+  await page.locator('.app.page-configuration').waitFor();
+  verifier((await fenetre.count()) === 0, '« Configuration › » ferme la fenêtre et ouvre la Configuration');
+  // Tout est défait : les positions des photos, puis la configuration, relue depuis son dossier.
+  await page.evaluate(async ([avant, moduleEtat]) => {
+    const { session, versionPlan, planifierEnregistrement } = await eval(`(${moduleEtat})`)();
+    const s = session.value;
+    for (const x of avant) s.plan.fichiers.set(x.id, { ...s.plan.fichiers.get(x.id), gps: x.gps });
+    versionPlan.value++;
+    planifierEnregistrement();
+    const d = await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_config');
+    const config = JSON.parse(await (await (await d.getFileHandle('config.json')).getFile()).text());
+    config.lieux_connus = config.lieux_connus.filter((l) => l.nom !== 'Chez_Mamie');
+    const w = await (await d.getFileHandle('config.json')).createWritable();
+    await w.write(JSON.stringify(config, null, 2));
+    await w.close();
+  }, [deplacees, MODULE_ETAT]);
+  await page.getByRole('button', { name: 'Recharger', exact: true }).click();
+  await page.getByText(/Calendriers \(1\)/).waitFor();
+  let remise = [];
+  for (let k = 0; k < 25; k++) {
+    remise = await page.evaluate(async (moduleEtat) => {
+      const { configuration } = await eval(`(${moduleEtat})`)();
+      return configuration.value?.lecture?.config?.lieux_connus?.map((l) => l.nom) ?? [];
+    }, MODULE_ETAT);
+    if (remise.length === 1) break;
+    await page.waitForTimeout(200);
+  }
+  verifier(remise.length === 1 && remise[0] === 'Plage', `jeu d’essai défait : la configuration n’a plus que « Plage » (${remise.join(', ')})`);
+  await page.locator('.bandeau .etape', { hasText: /^.?\d+Tri automatique$/ }).click();
+  await page.locator('main[data-etape=tri]').waitFor();
 }
 
 const photos = readdirSync(PHOTOS).filter((f) => f.endsWith('.jpg') && !f.startsWith('Vacances'));
@@ -354,7 +493,11 @@ try {
     } else if (texte.includes('Theme_Lieu')) {
       appelsIA.nommage++;
       if (texte.includes('"monuments"')) appelsIA.monumentsDemandes++;
-      reponse = { monuments: ['Plage de Chaweng'], nom: `Sortie_Essai_${appelsIA.nommage}_18.07.26`, activite: 'visite', confiance: 9, justification: 'photos de plage' };
+      // Un seul dossier d'Annecy : une proposition peu sûre (« à vérifier »), pour « Tout accepter (N noms)… » et sa
+      // confirmation ; l'autre reste sûr (« Accepter les noms sûrs » le renomme, la sortie le vérifie).
+      const peuSur = texte.includes('Lieu détecté par GPS : Annecy') && !appelsIA.peuSurDonne;
+      if (peuSur) appelsIA.peuSurDonne = true;
+      reponse = { monuments: ['Plage de Chaweng'], nom: `Sortie_Essai_${appelsIA.nommage}_18.07.26`, activite: 'visite', confiance: peuSur ? 6 : 9, justification: peuSur ? 'peu d’indices' : 'photos de plage' };
     } else if (texte.includes('"absorber"')) {
       appelsIA.fragments++;
       reponse = { absorber: false, cible: '', nom_propose: 'Arret_Route_15.07.26', confiance: 7, raison: 'scène différente' };
@@ -598,6 +741,25 @@ try {
   verifier((await page.getByRole('radio', { name: 'Tous' }).getAttribute('aria-checked')) === 'true', 'Doublons : le filtre « Tous » est allumé par défaut (C-4.8)');
   const cartes = await page.locator('.carte-doublons').count();
   const ouvertes = await page.locator('.carte-doublons:not(.repliee)').count();
+  // « Garder tous les exemplaires » (portée de l'onglet, D112) : chaque groupe accepté sans rien écarter, écrit dans
+  // .album/plan.json ; Ctrl+Z le défait en un pas (validation du 31.10).
+  {
+    const gardes = (plan) => plan.fichiers.filter((f) => f.categorie === 'photo' && f.protegee).length;
+    const ecartes = (plan) => plan.fichiers.filter((f) => f.statut === 'mis_de_cote').length;
+    const avant = (await planLu(page, () => true)).plan;
+    await page.getByRole('button', { name: 'Garder tous les exemplaires' }).click();
+    await page.locator('.onglet-doublons.actif .compte.fini').waitFor();
+    const apres = await planLu(page, (p) => gardes(p) === gardes(avant) + 2);
+    verifier(
+      apres.ok && ecartes(apres.plan) === ecartes(avant) && (await page.locator('[data-action=accepter-onglet]').count()) === 0,
+      `« Garder tous les exemplaires » : les 2 copies gardées, rien d’écarté, écrit dans .album/plan.json (${gardes(apres.plan)} gardées volontairement)`,
+    );
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.locator('.onglet-doublons.actif', { hasText: '2 à accepter' }).waitFor();
+    const defait = await planLu(page, (p) => gardes(p) === gardes(avant));
+    verifier(defait.ok && ecartes(defait.plan) === ecartes(avant), 'Ctrl+Z défait « Garder tous les exemplaires » en un pas : 2 à accepter, plan.json comme avant');
+  }
   // Accepter tout l'onglet ouvre d'abord une fenêtre qui chiffre (É14 d), titrée du mot du bouton ; rien n'est écarté
   // avant son plein ; Échap ne fait rien.
   await page.locator('[data-action=accepter-onglet]').click();
@@ -663,6 +825,17 @@ try {
       avant.every((b) => b === 'ecarter:application:plein') && apres[0] === 'garder:vous:plein' && (await page.getByRole('button', { name: 'Garder les 2 photos' }).count()) === 1,
       `« Écartées » : bandes ${avant.join(', ')} ; un clic : ${apres[0]} ; second clic et Ctrl+Z ; « Garder les 2 photos »`,
     );
+    // « Garder les 2 photos » (ex « Tout remettre ») : les deux gardées par vous, écrit dans le plan ; Ctrl+Z en un pas.
+    const ecartees = (plan) => plan.fichiers.filter((f) => f.statut === 'mis_de_cote' && f.raison === 'doublons_exacts').length;
+    const n0 = ecartees((await planLu(page, () => true)).plan);
+    await page.getByRole('button', { name: 'Garder les 2 photos' }).click();
+    await page.waitForFunction(() => [...document.querySelectorAll('.grille-mis-de-cote .badge-photo')].every((b) => b.dataset.sort === 'garder'));
+    const gardees = await planLu(page, (p) => ecartees(p) === n0 - 2);
+    verifier(gardees.ok && (await page.getByRole('button', { name: /^Garder (la photo|les \d+ photos)$/ }).count()) === 0, `« Garder les 2 photos » : les deux gardées, écrit dans .album/plan.json (${n0} → ${ecartees(gardees.plan)} copies écartées)`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction(() => [...document.querySelectorAll('.grille-mis-de-cote .badge-photo')].every((b) => b.dataset.sort === 'ecarter'));
+    verifier((await planLu(page, (p) => ecartees(p) === n0)).ok && (await page.getByRole('button', { name: 'Garder les 2 photos' }).count()) === 1, 'Ctrl+Z défait « Garder les 2 photos » en un pas, dans le plan aussi');
   }
   // Grouper par dossier : une copie se range sous chacun des dossiers de la source où elle a un exemplaire.
   await page.locator('.onglet-doublons', { hasText: 'Copies exactes' }).click();
@@ -1190,6 +1363,7 @@ try {
   await page.locator('main[data-etape=tri]').waitFor();
   await essaiCalendrier(page);
   await essaiLieux(page);
+  await essaiLieuxANommer(page);
   await page.locator('[data-action=valider]').click();
 
   // Étape 7 : lieux et sorties.
@@ -1294,6 +1468,12 @@ try {
     const note = await page.locator('.note-petit').innerText();
     await capturer(page, 'v3e_petit_dossier');
     verifier(n >= 1 && couleur && /Petit dossier : \d photos?/.test(bulle) && bulle.includes('étape suivante') && note.includes('Petits dossiers') && note.includes('Le réunir maintenant'), `icône « petit dossier » en vrac (${n}), grise, sa bulle et la phrase dans la tête de « ${nom} »`);
+    await page.locator('.note-petit').getByRole('button', { name: 'Le réunir maintenant…' }).click();
+    const choix = page.getByRole('dialog', { name: 'Réunir avec un autre dossier' });
+    await choix.waitFor();
+    verifier((await choix.innerText()).includes(`Réunir « ${nom} » avec…`), '« Le réunir maintenant… » ouvre « Réunir … avec… » pour ce petit dossier');
+    await page.keyboard.press('Escape');
+    await choix.waitFor({ state: 'detached' });
   }
   // Le menu « … » (C-4.14) : crayon puis « … » dans la tête ; les mêmes actions au bout de la ligne, au clic droit et avec Maj+F10.
   await ligneDe('Ko_Samui').locator('.nom-dossier').click();
@@ -1339,6 +1519,34 @@ try {
     choixFusion.length > 3 && /^Mu_Ko_Ang_Thong|^Kanchanaburi/.test(choixFusion[0]) && !choixFusion.slice(0, 3).some((c) => c.startsWith(N.captures)) && (await page.locator('.dialogue.deplacer').count()) === 0,
     `réunir avec… (menu « … ») : ${choixFusion.slice(0, 3).join(' | ')}`,
   );
+  // … mené au bout (validation du 31.10) : le choix, la confirmation, la réunion écrite dans le plan, Ctrl+Z.
+  {
+    const source = (await page.locator('.ligne-dossier.actif .nom-dossier').innerText()).trim();
+    await page.locator('.tete-vue .plus-dossier').click();
+    await menu.getByRole('menuitem', { name: /Réunir avec un autre dossier/ }).click();
+    await page.locator('.dialogue.deplacer .choix-dossiers li').first().click();
+    const conf = page.getByRole('dialog', { name: /Réunir les dossiers/ }).or(page.locator('.dialogue[role=dialog]', { hasText: 'Réunir les dossiers ?' })).first();
+    await conf.waitFor();
+    const texte = (await conf.innerText()).replace(/\s+/g, ' ');
+    const cible = texte.match(/passent dans « ([^»]+) »/)?.[1] ?? '';
+    await conf.getByRole('button', { name: 'Réunir', exact: true }).click();
+    const reunis = await dossiersEcrits(page, (n) => !n.includes(source));
+    verifier(reunis.ok && cible && reunis.noms.includes(cible), `« Réunir avec un autre dossier… » : confirmation (« ${texte.slice(0, 90)}… »), « ${source} » réuni dans « ${cible} », écrit dans .album/plan.json`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    verifier((await dossiersEcrits(page, (n) => n.includes(source))).ok && (await ligneDe(source).count()) === 1, 'Ctrl+Z défait la réunion : le dossier revient, dans le plan aussi');
+  }
+  // Le « … » au bout de la ligne (souris) : le même menu.
+  {
+    const l = ligneDe('Ko_Samui');
+    await l.hover();
+    await l.locator('button.plus-dossier').click();
+    await menu.waitFor();
+    const memes = await menu.locator('[role=menuitem] .libelle-action').allInnerTexts();
+    await page.keyboard.press('Escape');
+    await menu.waitFor({ state: 'detached' });
+    verifier(memes.join(' | ') === 'Renommer | Réunir avec un autre dossier… | Mettre dans un autre dossier… | Déplacer les photos choisies… | Retirer ce dossier', `« … » au bout de la ligne : le même menu (${memes.join(' | ')})`);
+  }
   // « Mettre dans un autre dossier… » (fonction nouvelle, deplacerDossier) : au clic droit sur la ligne ; il devient
   // un sous-dossier, ses photos restent ; Ctrl+Z le remet.
   {
@@ -1359,16 +1567,72 @@ try {
     await page.keyboard.press('Control+z');
     await page.waitForFunction((s) => [...document.querySelectorAll('.ligne-dossier')].some((l) => l.querySelector('.nom-dossier')?.textContent === s && l.title.startsWith(s)), source);
     verifier(premier.startsWith(cible) && titre.startsWith(`${cible}/${source}`) && photosApres === photosAvant, `« Mettre dans un autre dossier… » (clic droit) : « ${source} » dans « ${cible} », ses ${photosAvant} photos avec lui ; Ctrl+Z le remet`);
+    // Écrit dans .album/plan.json ; puis « Photos, le dossier principal » le ramène en haut ; Ctrl+Z deux fois.
+    const parentDe = (plan, nom) => {
+      const d = plan.dossiers.find((x) => x.nom === nom);
+      return d ? (plan.dossiers.find((x) => x.id === d.parent)?.nom ?? null) : undefined;
+    };
+    const racine = (plan) => plan.dossiers.find((x) => x.parent === null)?.nom;
+    const avantPlan = (await planLu(page, () => true)).plan;
+    await ligneDe(source).locator('.nom-dossier').click({ button: 'right' });
+    await menu.getByRole('menuitem', { name: /Mettre dans un autre dossier/ }).click();
+    await page.locator('.dialogue.deplacer input').fill(cible);
+    await page.keyboard.press('Enter');
+    verifier((await planLu(page, (p) => parentDe(p, source) === cible)).ok, `« Mettre dans… » : « ${source} » sous « ${cible} » dans .album/plan.json`);
+    await ligneDe(source).locator('.nom-dossier').click({ button: 'right' });
+    await menu.getByRole('menuitem', { name: /Mettre dans un autre dossier/ }).click();
+    const principal = page.locator('.dialogue.deplacer .choix-dossiers li', { hasText: 'Photos, le dossier principal' });
+    verifier((await principal.count()) === 1, '« Mettre dans… » propose « Photos, le dossier principal »');
+    await principal.click();
+    await page.getByText(`« ${source} » est maintenant dans « Photos, le dossier principal ».`).first().waitFor();
+    verifier((await planLu(page, (p) => parentDe(p, source) === racine(p))).ok, '« Photos, le dossier principal » : le dossier revient en haut, dans le plan aussi');
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.keyboard.press('Control+z');
+    verifier((await planLu(page, (p) => parentDe(p, source) === parentDe(avantPlan, source))).ok, 'Ctrl+Z deux fois : le dossier retrouve sa place d’origine');
   }
   // « Déplacer les photos choisies… » : grisée sans photo choisie, ouvre « Déplacer » avec ; « Retirer ce dossier » reste grisée (pas vide).
   await ligneDe('Ko_Samui').locator('.nom-dossier').click();
   await page.locator('.tuile').first().click();
   await page.locator('.tete-vue .plus-dossier').click();
   await menu.getByRole('menuitem', { name: /Déplacer les photos choisies/ }).click();
-  await page.locator('[role=dialog]').first().waitFor();
-  verifier((await page.locator('[role=dialog]').count()) >= 1, 'menu « … » : « Déplacer les photos choisies… » ouvre la fenêtre de déplacement');
+  {
+    const fenetreDeplacer = page.getByRole('dialog', { name: 'Déplacer vers un dossier' });
+    await fenetreDeplacer.waitFor();
+    const idPhoto = await page.locator('.tuile.choisie, .tuile[aria-selected=true]').first().locator('img[data-photo]').getAttribute('data-photo').catch(() => null);
+    verifier((await fenetreDeplacer.innerText()).includes('Déplacer 1 élément vers'), 'menu « … » : « Déplacer les photos choisies… » ouvre « Déplacer 1 élément vers… »');
+    // Le déplacement lui-même, vers BESTOF, écrit dans le plan ; Ctrl+Z.
+    await fenetreDeplacer.locator('input').fill('BESTOF');
+    await page.keyboard.press('Enter');
+    await fenetreDeplacer.waitFor({ state: 'detached' });
+    if (idPhoto) {
+      const bestof = (await planLu(page, () => true)).plan.dossiers.find((d) => d.nom === 'BESTOF')?.id;
+      verifier((await planEcrit(page, idPhoto, (f) => f.dossier === bestof)).ok, 'la photo choisie est déplacée dans BESTOF, écrit dans .album/plan.json');
+      await page.evaluate(() => document.activeElement?.blur?.());
+      await page.keyboard.press('Control+z');
+      verifier((await planEcrit(page, idPhoto, (f) => f.dossier !== bestof)).ok, 'Ctrl+Z la remet');
+    } else verifier(false, 'photo choisie introuvable (data-photo)');
+  }
   await page.keyboard.press('Escape');
-  await page.keyboard.press('Escape');
+  // « Retirer ce dossier » sur un dossier vide (« Nouveau » du panneau), par le menu ; Ctrl+Z.
+  {
+    await page.locator('.panneau-dossiers .bouton-nouveau').click();
+    const nouveau = page.locator('.dialogue[role=dialog]', { hasText: 'Nouveau dossier' });
+    await nouveau.locator('input').fill('Vide_Essai');
+    await nouveau.getByRole('button', { name: 'Créer' }).click();
+    await ligneDe('Vide_Essai').waitFor();
+    await ligneDe('Vide_Essai').locator('.nom-dossier').click({ button: 'right' });
+    await menu.waitFor();
+    const retirer = menu.getByRole('menuitem', { name: /Retirer ce dossier/ });
+    verifier(await retirer.isEnabled(), '« Retirer ce dossier » actif sur un dossier vide');
+    await retirer.click();
+    verifier((await dossiersEcrits(page, (n) => !n.includes('Vide_Essai'))).ok && (await ligneDe('Vide_Essai').count()) === 0, '« Retirer ce dossier » : le dossier vide part, écrit dans .album/plan.json');
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    verifier((await dossiersEcrits(page, (n) => n.includes('Vide_Essai'))).ok, 'Ctrl+Z le rend');
+    await page.keyboard.press('Control+z');
+    verifier((await dossiersEcrits(page, (n) => !n.includes('Vide_Essai'))).ok, 'Ctrl+Z défait aussi sa création');
+  }
 
   // Étapes 8 à 10 (IA simulée).
   await page.locator('[data-action=valider]').click();
@@ -1489,6 +1753,8 @@ try {
     await page.locator('.tete-petit .renommage-tete').press('Escape');
     await page.locator('.tete-petit .actions-dossier .bouton-icone').first().click();
     await page.locator('.tete-petit .renommage-tete').press('Escape');
+    await page.waitForTimeout(100);
+    verifier(await page.evaluate(() => document.activeElement?.classList.contains('crayon-tete')), 'Échap dans le champ du crayon : le focus revient au crayon, pas à la page');
     verifier(
       actions[0] === 'Renommer' && actions[1] === 'Réunir avec un autre dossier…' && (await nomCourant()) === avant,
       `petits dossiers : Ctrl+Z rend le nom ; menu « … » : ${actions.join(' | ')} ; crayon et menu ouvrent la saisie, Échap y renonce`,
@@ -1509,6 +1775,64 @@ try {
     await capturer(page, 'v4c_petits_1280x580');
     await page.setViewportSize({ width: 1440, height: 900 });
     verifier(m.length >= 2 && m.every(Boolean), `à 1280×580, « Mettre avec ce dossier » et « Garder seul » se voient sans défiler (${m.join(', ')})`);
+  }
+  // Validation du 31.10 (après la mesure à 1280×580, faite sans l'IA) : F2 écrit dans le plan ; Maj+F10 ; « Réunir avec un autre dossier… » du menu mené au bout ;
+  // « Le renommer « … » » de l'IA ; « voisin évident : voir » ; chaque fois Ctrl+Z.
+  {
+    const avant = await nomCourant();
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('F2');
+    await page.locator('.tete-petit .renommage-tete').fill('Petit_plan');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tete-petit h2')?.textContent === 'Petit_plan');
+    await page.waitForTimeout(100);
+    const focusCrayon = await page.evaluate(() => document.activeElement?.classList.contains('crayon-tete') || document.activeElement?.outerHTML.slice(0, 80));
+    verifier((await dossiersEcrits(page, (n) => n.includes('Petit_plan') && !n.includes(avant))).ok, 'F2 puis Entrée : renommé dans .album/plan.json');
+    verifier(focusCrayon === true, `F2 puis Entrée : le focus revient au crayon (${focusCrayon})`);
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction((a) => document.querySelector('.tete-petit h2')?.textContent === a, avant);
+    verifier((await dossiersEcrits(page, (n) => n.includes(avant) && !n.includes('Petit_plan'))).ok, 'Ctrl+Z : le nom revient dans le plan');
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Shift+F10');
+    await page.locator('.menu-actions').waitFor();
+    verifier((await page.locator('.menu-actions [role=menuitem]').first().innerText()).includes('Renommer'), 'Maj+F10 ouvre le menu « … » du petit dossier');
+    await page.locator('.menu-actions [role=menuitem]', { hasText: 'Réunir avec un autre dossier…' }).click();
+    const choix = page.getByRole('dialog', { name: `Mettre « ${avant} » dans…` });
+    await choix.waitFor();
+    const cible = (await choix.locator('.choix-dossiers li').first().innerText()).split('\n')[0].trim();
+    await choix.locator('.choix-dossiers li').first().click();
+    await page.locator('.ligne-liste-petit.fait', { hasText: avant }).waitFor();
+    verifier((await dossiersEcrits(page, (n) => !n.includes(avant))).ok, `« Réunir avec un autre dossier… » (menu) : « ${avant} » mis avec « ${cible} », écrit dans .album/plan.json`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.locator('.ligne-liste-petit:not(.fait)', { hasText: avant }).waitFor();
+    verifier((await dossiersEcrits(page, (n) => n.includes(avant))).ok, 'Ctrl+Z : le petit dossier revient, dans le plan aussi');
+    await page.locator('.ligne-liste-petit', { hasText: avant }).click();
+    await page.waitForFunction((a) => document.querySelector('.tete-petit h2')?.textContent === a, avant);
+    // L'IA (simulée) propose un nom : il est dans le menu, « Le renommer « … » ».
+    await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
+    await page.getByRole('button', { name: /Proposer un rattachement avec l’IA/ }).click();
+    await page.waitForFunction(() => !document.querySelector('.ia-en-cours, [aria-busy=true]'), null, { timeout: 60_000 }).catch(() => {});
+    await page.locator('.tete-petit .plus-dossier').click();
+    const prendre = page.locator('.menu-actions [role=menuitem]', { hasText: /^Le renommer « / });
+    await prendre.waitFor({ timeout: 60_000 });
+    verifier(appelsIA.fragments > 0, `rattachement IA3 : ${appelsIA.fragments} petit(s) dossier(s)`);
+    const nomIA = (await prendre.locator('.libelle-action').innerText()).match(/« (.+) »/)[1];
+    await prendre.click();
+    await page.waitForFunction((n) => document.querySelector('.tete-petit h2')?.textContent === n, nomIA);
+    verifier((await dossiersEcrits(page, (n) => n.includes(nomIA) && !n.includes(avant))).ok, `menu « … » : « Le renommer « ${nomIA} » » (nom de l’IA), écrit dans .album/plan.json`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction((a) => document.querySelector('.tete-petit h2')?.textContent === a, avant);
+    // « N petits dossiers ont un voisin évident : les voir » (en contour depuis l'étape 4).
+    const evidents = page.locator('.barre-outils-petits button', { hasText: /voisins? évidents?/ });
+    if (await evidents.count()) {
+      await evidents.click();
+      await page.locator('.dialogue.evidents').waitFor();
+      verifier((await page.locator('.dialogue.evidents li').count()) > 0, '« voisin évident : voir » ouvre la liste des cas évidents');
+      await page.keyboard.press('Escape');
+      await page.locator('.dialogue.evidents').waitFor({ state: 'detached' });
+    } else console.log('  (aucun voisin évident dans ce jeu d’essai : bouton non essayé)');
   }
   await page.locator('[data-action=valider]').click();
   await page.locator('main[data-etape=nommage]').waitFor();
@@ -1544,7 +1868,8 @@ try {
     `noms tirés du calendrier (titre puis lieu) : ${champs.filter((v) => /Lea|Voyage/.test(v)).join(', ')}`,
   );
   // L'avis de l'IA sur sa puce (« · sûr »), sa raison et les monuments dans l'infobulle (plus de colonnes « Conf. » et « Justification »).
-  const puceIA = page.locator('.nom-possible[data-source=etincelle]').first();
+  const puceIA = page.locator('.nom-possible[data-source=etincelle]', { hasText: '· sûr' }).first();
+  verifier((await page.locator('.nom-possible[data-source=etincelle]', { hasText: '· à vérifier' }).count()) > 0, 'une proposition peu sûre de l’IA dit « · à vérifier »');
   const titreIA = (await puceIA.getAttribute('title')) ?? '';
   verifier(
     appelsIA.monumentsDemandes === appelsIA.nommage && titreIA.includes('Plage de Chaweng') && titreIA.includes('photos de plage') && (await puceIA.innerText()).replace(/\s+/g, ' ').trim().endsWith('· sûr'),
@@ -1619,6 +1944,23 @@ try {
     verifier((await carte2.locator('input.nom-propose').inputValue()) === prisDOffice, `Maj+Tab puis ← : le nom pris d’office revient dans le champ (« ${prisDOffice} »)`);
     await page.evaluate(() => document.activeElement?.blur?.());
   }
+  // Entrée dans « Nouveau nom » renomme comme « Renommer » ; écrit dans .album/plan.json ; Ctrl+Z (validation du 31.10).
+  {
+    const carte = page.locator('.carte-nommage').filter({ hasNot: page.locator('[data-dossier^="Ko_Samui"]') }).nth(1);
+    const avant = await carte.getAttribute('data-dossier');
+    const champ = page.locator(`.carte-nommage[data-dossier="${avant}"] input.nom-propose`);
+    await champ.fill('Essai Entree 01.01.26');
+    const effet = (await page.locator(`.carte-nommage[data-dossier="${avant}"] .effet-nom`).innerText()).trim();
+    const nouveau = effet.slice('deviendra « '.length, -2);
+    await champ.press('Enter');
+    await page.locator(`.carte-nommage[data-dossier="${nouveau}"]`).waitFor();
+    const ecrit = await dossiersEcrits(page, (n) => n.includes(nouveau) && !n.includes(avant));
+    verifier(ecrit.ok, `Entrée dans « Nouveau nom » : « ${avant} » devient « ${nouveau} », écrit dans .album/plan.json`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.locator(`.carte-nommage[data-dossier="${avant}"]`).waitFor();
+    verifier((await dossiersEcrits(page, (n) => n.includes(avant) && !n.includes(nouveau))).ok, 'Ctrl+Z : le nom d’avant revient, dans .album/plan.json aussi');
+  }
   // « Déjà nommés » : le champ est vide avec un exemple ; le dossier garde son nom tant qu'il le reste.
   await page.locator('.onglets-nommage [data-onglet=deja_nommes]').click();
   {
@@ -1630,6 +1972,19 @@ try {
     );
     verifier(/^Nommer (ces \d+|ce dossier) avec l’IA · /.test(await texteIA()), `« Déjà nommés » : le bouton IA dit sa portée (« ${await texteIA()} »)`);
     await capturer(page, 'v5d_nommage_deja_nommes');
+    // Renommer depuis « Déjà nommés » : écrit dans le plan ; Ctrl+Z.
+    const avant = await carte.getAttribute('data-dossier');
+    await champ.fill('Fete Essai 02.02.26');
+    const nouveau = (await carte.locator('.effet-nom').innerText()).trim().slice('deviendra « '.length, -2);
+    await carte.locator('[data-action=renommer]').click();
+    await page.locator(`.carte-nommage[data-dossier="${nouveau}"]`).waitFor();
+    verifier((await dossiersEcrits(page, (n) => n.includes(nouveau) && !n.includes(avant))).ok, `« Déjà nommés » : « ${avant} » renommé « ${nouveau} », écrit dans .album/plan.json`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.locator(`.carte-nommage[data-dossier="${avant}"]`).waitFor();
+    verifier((await dossiersEcrits(page, (n) => n.includes(avant) && !n.includes(nouveau))).ok, '« Déjà nommés » : Ctrl+Z rend le nom, dans le plan aussi');
+    // Un nom tapé ici et laissé dans le champ : le récapitulatif de sortie le reprend depuis l'autre onglet (D108).
+    await page.locator(`.carte-nommage[data-dossier="${avant}"] input.nom-propose`).fill('Fete Recap 03.03.26');
   }
   await page.locator('.onglets-nommage [data-onglet=a_nommer]').click();
   // Un seul événement candidat : renommé d'un coup ; Ko Samui (deux événements) attend le choix de l'utilisateur.
@@ -1641,16 +1996,46 @@ try {
     await accepter.click();
     verifier(true, 'noms sûrs de l’IA acceptés en un clic');
   }
+  // « Tout accepter (N noms)… » : aussi les noms à vérifier, après une confirmation qui les compte ; un seul Ctrl+Z.
+  {
+    const tout = page.locator('[data-action=tout-accepter]');
+    verifier((await tout.count()) === 1, `« ${(await tout.innerText().catch(() => 'Tout accepter'))} » proposé quand des noms de l’IA sont à vérifier`);
+    const nTout = Number((await tout.innerText()).match(/\((\d+) noms?\)/)[1]);
+    // Le plan écrit d'abord au repos (les noms du calendrier et de l'IA acceptés juste avant s'y écrivent encore).
+    let avantTout = [];
+    for (let k = 0; k < 10; k++) {
+      const a = (await dossiersEcrits(page, () => true)).noms;
+      await page.waitForTimeout(700);
+      avantTout = (await dossiersEcrits(page, () => true)).noms;
+      if (a.join('|') === avantTout.join('|')) break;
+    }
+    await tout.click();
+    const conf = page.locator('.dialogue[role=dialog]');
+    await conf.waitFor();
+    const texte = (await conf.innerText()).replace(/\s+/g, ' ');
+    verifier(new RegExp(`Accepter ${nTout} noms? \\?`).test(texte) && /Dont \d+ noms? de l’IA à vérifier/.test(texte), `confirmation de « Tout accepter » : « ${texte.slice(0, 140)} »`);
+    await conf.getByRole('button', { name: 'Tout accepter' }).click();
+    await page.locator('.message-entete', { hasText: /dossiers? renommés?/ }).waitFor();
+    const apresTout = await dossiersEcrits(page, (n) => n.filter((x) => !avantTout.includes(x)).length === nTout);
+    verifier(apresTout.ok, `« Tout accepter » : ${nTout} dossier(s) renommé(s), écrit dans .album/plan.json (${apresTout.noms.filter((x) => !avantTout.includes(x)).join(', ')})`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    verifier((await dossiersEcrits(page, (n) => n.length === avantTout.length && n.every((x) => avantTout.includes(x)))).ok && (await tout.count()) === 1, 'Ctrl+Z défait « Tout accepter » en un pas');
+  }
   await page.locator('[data-action=valider]').click();
   // Noms encore dans les champs (Ko Samui : deux événements) : récapitulatif à cocher avant de quitter, les peu sûrs décochés (D108).
   const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
   await recap.waitFor();
-  const cases = recap.getByRole('checkbox');
+  // Le nom tapé dans « Déjà nommés » y est, coché d'office (tapé par vous) ; les propositions peu sûres, décochées.
+  const tape = recap.locator('li', { hasText: /Fete.Recap/ });
+  verifier((await tape.count()) === 1 && (await tape.getByRole('checkbox').isChecked()) && (await tape.getByText('(à vérifier)').count()) === 0, 'récapitulatif de sortie : le nom tapé dans l’autre onglet (« Déjà nommés ») y est, coché (D108)');
+  await tape.getByRole('checkbox').uncheck();
+  const cases = recap.locator('li', { hasNotText: /Fete.Recap/ }).getByRole('checkbox');
   const cochees = await cases.evaluateAll((l) => l.filter((x) => x.checked).length);
   verifier((await cases.count()) > 0 && cochees === 0 && (await recap.getByText('(à vérifier)').count()) === (await cases.count()), `Nommage : noms proposés restants dans un récapitulatif, décochés d’office (${await cases.count()})`);
   await capturer(page, 'v5c_nommage_recapitulatif');
-  // Cocher applique le nom en quittant l'étape.
-  await cases.first().check();
+  // Cocher applique le nom en quittant l'étape (celui du calendrier de Ko Samui, vérifié dans la sortie).
+  await recap.locator('li', { hasText: '18_ans_de_Lea' }).getByRole('checkbox').check();
   await recap.getByRole('button', { name: 'Renommer et continuer' }).click();
   await page.locator('main[data-etape=consolidation]').waitFor();
   verifier((await page.getByText('1 dossier renommé.').count()) > 0, 'Nommage : le nom coché dans le récapitulatif est appliqué, avec un message');
@@ -1661,6 +2046,44 @@ try {
   await page.locator('[data-action=valider]').click();
   await page.locator('.page-selection').waitFor();
   verifier(true, 'étapes 8, 9 et 10 parcourues jusqu’à la sélection');
+  // Sélection (validation du 31.10) : l'icône calendrier de la liste des sorties ouvre sa bulle ; dans Comparer, un clic
+  // sur la bande d'une vignette agit comme sous la photo, et Ctrl+Z le défait sans fermer.
+  {
+    // Avec l'Aide en colonne, la liste des sorties est un menu dans la tête de la table (palier) : on l'ouvre.
+    const menuListe = page.locator('.page-selection [data-action=menu-liste]');
+    if (await menuListe.count()) await menuListe.click();
+    const icone = page.locator('.page-selection .panneau-dossiers .bouton-calendrier:visible').first();
+    await icone.waitFor({ timeout: 5000 }).catch(() => {});
+    verifier((await icone.count()) === 1, 'Sélection : une icône calendrier dans la liste des sorties');
+    await icone.hover();
+    const bulle = page.locator('.bulle-calendrier');
+    await bulle.waitFor();
+    const texte = (await bulle.innerText()).replace(/\s+/g, ' ');
+    await page.mouse.move(700, 5);
+    await bulle.waitFor({ state: 'detached' });
+    verifier(/Votre calendrier pendant/.test(texte) && /Voyage Thaïlande|18 ans de Lea/.test(texte), `Sélection : la bulle du calendrier au survol (« ${texte.slice(0, 90)} »)`);
+    if (await menuListe.count()) {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => document.querySelector('.page-selection [data-action=menu-liste]')?.getAttribute('aria-expanded') !== 'true', null, { timeout: 3000 }).catch(() => {});
+      if ((await menuListe.getAttribute('aria-expanded')) === 'true') await page.mouse.click(700, 500);
+    }
+    await page.locator('.page-selection .tuile').nth(0).click();
+    await page.locator('.page-selection .tuile').nth(1).click({ modifiers: ['Control'] });
+    await page.keyboard.press('c');
+    await page.locator('.comparateur').waitFor();
+    const lire = () => page.evaluate(() => [...document.querySelectorAll('.comparateur .badge-photo')].map((b) => `${b.dataset.sort}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|'));
+    await page.waitForTimeout(400);
+    const b0 = await lire();
+    await page.locator('.comparateur .badge-photo .clic-badge').first().click();
+    await page.waitForFunction((a) => [...document.querySelectorAll('.comparateur .badge-photo')].map((b) => `${b.dataset.sort}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|') !== a, b0);
+    const b1 = await lire();
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction((a) => [...document.querySelectorAll('.comparateur .badge-photo')].map((b) => `${b.dataset.sort}:${b.hasAttribute('data-decide') ? 'plein' : 'bord'}`).join('|') === a, b0);
+    verifier((await page.locator('.comparateur').count()) === 1, `Sélection, Comparer : clic sur la bande ${b0} → ${b1}, Ctrl+Z le défait sans fermer`);
+    await page.keyboard.press('Escape');
+    await page.locator('.comparateur').waitFor({ state: 'detached' });
+    await page.keyboard.press('Escape');
+  }
 
   // Sortie.
   await page.locator('.bandeau .etape', { hasText: /^.?\d+Sortie$/ }).click();

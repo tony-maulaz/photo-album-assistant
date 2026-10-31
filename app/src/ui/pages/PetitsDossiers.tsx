@@ -44,9 +44,8 @@ import { Visionneuse } from '../composants/Visionneuse';
 import { annuler, appliquer, changerReglages, contexteExecution, notifier, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
 import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { jourCourt, nombre, nomJour, pluriel } from '../format';
-import { simplifier, visionneuse } from '../organiser';
+import { petitsDe, simplifier, visionneuse } from '../organiser';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs } from './AidesIA';
-import { petitsDe } from './Organisation';
 
 const phash = (s: Session) => (f: FichierPlan) => s.analyses.get(f)?.phash;
 
@@ -435,6 +434,7 @@ export function PagePetitsDossiers() {
 
   // Renommer le petit dossier ouvert (crayon, F2, menu « … ») : la saisie se fait dans sa tête.
   const [renommer, setRenommer] = useState(false);
+  const crayon = useRef<HTMLButtonElement>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; retour: HTMLElement | null } | null>(null);
   const nomIA = (f: Fragment) => (decisions[f.dossier.id] && !decisions[f.dossier.id].absorber ? decisions[f.dossier.id].nomPropose : undefined);
   const prendreNomIA = (f: Fragment) => {
@@ -602,13 +602,17 @@ export function PagePetitsDossiers() {
                       terminer={(nom) => {
                         setRenommer(false);
                         renommerVers(courant.f!.dossier.id, nom);
+                        // Entrée ou Échap démontent le champ : le focus revient au crayon, pas à la page.
+                        setTimeout(() => {
+                          if (!document.activeElement || document.activeElement === document.body) crayon.current?.focus();
+                        }, 0);
                       }}
                     />
                   ) : (
                     <h2>{courant.f.dossier.nom}</h2>
                   )}
                   <span class="actions-dossier">
-                    <button type="button" class="bouton-icone" aria-label={t`Renommer « ${courant.f.dossier.nom} » (F2)`} title={t`Renommer (F2)`} onClick={() => setRenommer(true)}>
+                    <button type="button" ref={crayon} class="bouton-icone crayon-tete" aria-label={t`Renommer « ${courant.f.dossier.nom} » (F2)`} title={t`Renommer (F2)`} onClick={() => setRenommer(true)}>
                       <Icone nom="crayon" taille={16} />
                     </button>
                     <button

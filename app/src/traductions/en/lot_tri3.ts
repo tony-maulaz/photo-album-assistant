@@ -89,10 +89,6 @@ export const TEXTES: Record<string, string> = {
   '« {0} » enregistré.': '“{0}” saved.',
 
   // Aide, mode d'emploi et raccourcis du Tri.
-  'À droite, un dossier par ligne. « 38 photos » en montre quelques-unes sous la ligne (pour un voyage, par lieu visité) ; « Voir les 38 en grand » les ouvre en grand. L’icône':
-    'On the right, one folder per line. “38 photos” shows a few of them under the line (for a trip, by place visited); “View all 38 large” opens them large. The icon',
-  'donne les événements de votre calendrier pendant ce dossier : survolez-la, cliquez dessus ou atteignez-la avec Tab ; Échap la ferme.':
-    'gives the events of your calendar during this folder: hover over it, click it or reach it with Tab; Esc closes it.',
   'Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ». Les noms des dossiers se choisissent à l’étape Nommage.':
     'To split a folder or move photos: next step, “Places and outings”. Folder names are chosen at the Naming step.',
   '« Vos lieux » : donnez un nom aux lieux qui reviennent souvent, revoyez ceux déjà nommés (onglet « Nommés ») et corrigez un nom : les dossiers de ce projet qui portent encore le nom automatique le prennent. Un nom sert à tous vos albums.':

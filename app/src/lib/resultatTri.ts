@@ -48,8 +48,6 @@ export interface LigneTri {
   etapes: EtapeLigne[];
   /** Distance de la maison (km) : la plus lointaine étape d'un voyage. */
   km?: number;
-  /** Événement du calendrier déjà trouvé (arborescence proposée). */
-  evenement?: string;
 }
 
 export interface ResultatTri {
@@ -135,7 +133,6 @@ export function resultatPropose(dossiers: DossierPropose[], fichier: (id: string
         ...c,
         etapes: [],
         ...(d.km !== undefined ? { km: d.km } : {}),
-        ...(d.evenement ? { evenement: d.evenement } : {}),
       });
     }
   }

@@ -634,6 +634,27 @@ button.menu-liste {
   text-overflow: ellipsis;
 }
 
+/* Doublons au palier : le compte « 9 à accepter » ne se rogne jamais ; le nom de la section se raccourcit d'abord,
+   et le menu passe avant le détail de la section, qui se raccourcit le premier (le détail entier en infobulle). */
+.page-doublons .tete-table button.menu-liste {
+  flex-shrink: 0;
+}
+
+.nom-menu-liste:has(.nom-section-menu) {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.nom-section-menu {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reste-menu {
+  flex: none;
+}
+
 .page-cadre[data-palier] .colonne-liste {
   display: none;
 }

@@ -216,14 +216,17 @@ export function LieuxFrequents({ onglet: depart, fermer }: { onglet: OngletLieux
     const toutes = deplies.has(o.cle);
     const adresse = adresses[cleLieu(o.point)];
     return (
-      <li key={o.cle} class={`carte-lieu${o.modifiee ? ' modifiee' : ''}`} data-lieu={o.cle}>
-        <div class="vignettes-lieu">
-          {unParJour(o.photos, 3).map((f) => (
-            <span key={f.id} title={`${f.nom} — ${dateHeure(f.date)}`}>
-              <Miniature f={f} taille={72} />
-            </span>
-          ))}
-        </div>
+      <li key={o.cle} class={`carte-lieu${o.modifiee ? ' modifiee' : ''}${o.photos.length ? '' : ' sans-photo'}`} data-lieu={o.cle}>
+        {/* Sans photo (la maison, un lieu sans photo dans ce projet) : pas de colonne vide (contrôle du 31.10, m4). */}
+        {o.photos.length > 0 && (
+          <div class="vignettes-lieu">
+            {unParJour(o.photos, 3).map((f) => (
+              <span key={f.id} title={`${f.nom} — ${dateHeure(f.date)}`}>
+                <Miniature f={f} taille={72} />
+              </span>
+            ))}
+          </div>
+        )}
         <div class="infos-lieu">
           <div class="titre-carte-lieu">
             <strong class={`adresse-lieu${adresse ? '' : ' discret'}`} title={t`Coordonnées : ${o.point.lat.toFixed(4)}, ${o.point.lon.toFixed(4)}`}>

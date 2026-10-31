@@ -38,10 +38,6 @@ export const TEXTES: Record<string, string> = {
   sûr: 'sure',
 
   // Aide de l'étape.
-  'Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). « À nommer » : les dossiers qui portent encore le nom donné par le tri (lieu et date) ; « Déjà nommés » : ceux que vous avez nommés, ou venus tels quels de votre dossier d’origine. Sous « Nom actuel », les noms proposés : un clic en met un dans le champ « Nouveau nom »,':
-    'Give each folder a meaningful name, following the pattern “Theme_Place_DD.MM.YY” (Birthday_Lea_26.01.25). “To name”: the folders that still carry the name given by the sorting (place and date); “Already named”: those you named, or that came as they were from your original folder. Under “Current name”, the suggested names: one click puts one in the “New name” field,',
-  'la proposition de l’IA, « sûre » ou « à vérifier » (sa raison dans l’infobulle). L’IA regarde quelques photos, le lieu, le calendrier et le contexte du projet ; son prix s’affiche sur le bouton avant de la lancer. Vous pouvez aussi écrire votre nom : rien n’est renommé sans « Renommer » (ou Entrée dans le champ), et Ctrl+Z l’annule.':
-    'the AI’s suggestion, “sure” or “to check” (its reason in the tooltip). The AI looks at a few photos, the place, the calendar and the project context; its price shows on the button before you start it. You can also type your own name: nothing is renamed without “Rename” (or Enter in the field), and Ctrl+Z undoes it.',
 
   // Raccourcis et mode d'emploi.
   Tab: 'Tab',

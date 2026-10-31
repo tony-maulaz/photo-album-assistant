@@ -17,7 +17,6 @@ import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { ResultatTri } from '../composants/ResultatTri';
 import { coteDepliant } from '../composants/ResultatTri';
 import { BandeauCopies, dossiersProposes, memesReglages, restantsTri, TriAuto, useApercuTri, useEtatTri } from '../composants/TriAuto';
-import { Icone } from '../composants/Icones';
 import { allerEtape, revenirDe, session, validerEtape, versionPlan } from '../etat';
 import { pluriel } from '../format';
 
@@ -52,15 +51,10 @@ function PageTriVrac() {
   return (
     <div class="page avec-barre page-tri">
       <LigneEtape titre={t`Tri automatique`} aide={{ cle: 'tri' }} taille={coteDepliant} />
+      {/* Deux lignes au plus dans la page, ouverte à la première visite (contrôle du 31.10, M2) : le bandeau des
+          copies et la liste « À faire » restent visibles à 1280×580 ; le détail est dans « Tout le mode d'emploi ». */}
       <AideEtape cle="tri">
-        <p>{t`Rangez vos photos en dossiers : un par voyage, un par sortie, et la maison mois par mois. Vos photos d’origine ne bougent pas : l’application prépare un plan, la copie se fait à la dernière étape.`}</p>
-        <p>
-          {t`À droite, un dossier par ligne. « 38 photos » en montre quelques-unes sous la ligne (pour un voyage, par lieu visité) ; « Voir les 38 en grand » les ouvre en grand. L’icône`}{' '}
-          <Icone nom="calendrier" taille={16} /> {t`donne les événements de votre calendrier pendant ce dossier : survolez-la, cliquez dessus ou atteignez-la avec Tab ; Échap la ferme.`}
-        </p>
-        <p>{t`Pour couper un dossier ou déplacer des photos : étape suivante, « Lieux et sorties ». Les noms des dossiers se choisissent à l’étape Nommage.`}</p>
-        <p>{t`« Vos lieux » : donnez un nom aux lieux qui reviennent souvent, revoyez ceux déjà nommés (onglet « Nommés ») et corrigez un nom : les dossiers de ce projet qui portent encore le nom automatique le prennent. Un nom sert à tous vos albums.`}</p>
-        <p>{t`Pour nommer les lieux, seule leur position est envoyée à OpenStreetMap (un service de cartes gratuit), jamais vos photos.`}</p>
+        {t`Rangez vos photos en dossiers : un par voyage, un par sortie, et la maison mois par mois. Vos photos d’origine ne bougent pas : l’application prépare un plan, la copie se fait à la dernière étape.`}
       </AideEtape>
       <BandeauCopies e={e} />
       <div class="colonnes-tri">
@@ -68,7 +62,7 @@ function PageTriVrac() {
         <ResultatTri r={actuel ?? apercu} apercu={!actuel} />
       </div>
       <BarreValidation
-        resume={e.range ? `${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(proposes.length, 'dossier')}` : t`Photos pas encore rangées`}
+        resume={e.range ? t`${pluriel(photos, 'photo rangée', 'photos rangées')} dans ${pluriel(proposes.length, 'dossier')}` : t`Photos pas encore rangées`}
         alertes={restants.length ? [restants.length === 1 ? t`Encore 1 chose à faire : ${restants[0]}` : t`Encore ${restants.length} choses à faire`] : []}
         revenir={() => revenirDe('tri')}
         valider={() => validerEtape('tri')}
