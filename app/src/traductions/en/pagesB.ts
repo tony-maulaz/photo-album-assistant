@@ -216,7 +216,6 @@ export const TEXTES: Record<string, string> = {
   ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
-  ' : rattachez-les à une sortie voisine, ou gardez-les à part.': ': attach them to a neighbouring outing, or keep them separate.',
   ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':
     ': a meaningful name for each folder (Theme_Place_DD.MM.YY), suggested by the AI if you wish.',
   ' : fusionnez les dossiers qui couvrent la même activité.': ': merge the folders that cover the same activity.',
@@ -232,8 +231,6 @@ export const TEXTES: Record<string, string> = {
     'Move: drag the selection onto a folder in the panel, or press M (then type part of the name), or keys 1 to 9 (last folders used).',
   'Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.':
     'The “+” button next to the search creates a folder in the folder shown; photos dropped on it (or “New folder” in the selection bar) go into a new folder next to it.',
-  'Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).':
-    'The badges point out what deserves a look: small folder, very large, unknown place, no date, duplicate name, same outing as a neighbouring folder (photos taken one after the other, at the same place).',
   'Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.': 'Double-click or Enter: the photo shown large; ← → to go to the next one.',
   'Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.': 'Ctrl+Z undoes, Ctrl+Y (or Ctrl+Shift+Z) redoes, at every step; “?” shows all the shortcuts.',
   'Créer la sortie (étape {0})': 'Creating the output (step {0})',

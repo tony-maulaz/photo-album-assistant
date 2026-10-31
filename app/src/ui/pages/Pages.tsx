@@ -444,7 +444,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.petits)}</strong>
-          {t` : rattachez-les à une sortie voisine, ou gardez-les à part.`}
+          {t` : rattachez-les à une sortie voisine, ou gardez-les à part ; le crayon, F2 ou le menu « … » les renomment.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.nommage)}</strong>
@@ -481,8 +481,8 @@ export function PageAide() {
         <li>
           {t`Le bouton « + » à côté de la recherche crée un dossier dans le dossier affiché ; des photos déposées dessus (ou « Nouveau dossier » dans la barre de la sélection) partent dans un nouveau dossier voisin.`}
         </li>
-        <li>{t`Réunissez deux dossiers avec « Réunir avec… » à côté du titre, ou en glissant l’un sur l’autre ; double-cliquez sur un nom, ou F2, pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier ; « Nouveau dossier avec cette journée » la sort du dossier.`}</li>
-        <li>{t`Les badges signalent ce qui mérite un coup d’œil : petit dossier, très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).`}</li>
+        <li>{t`Le menu « … » d’un dossier (au bout de sa ligne, à côté de son nom en haut, au clic droit ou avec Maj+F10) le renomme, le réunit avec un autre, le met dans un autre dossier (il en devient un sous-dossier) ou le retire s’il est vide. Glisser un dossier sur un autre les réunit aussi ; double-cliquez sur un nom, ou F2, pour le renommer. Dans un dossier de plusieurs jours, chaque journée a son titre, avec les événements du calendrier (un clic choisit leurs photos) ; « Nouveau dossier avec cette journée » la sort du dossier. « Chronologie » montre les dossiers sur une ligne de temps.`}</li>
+        <li>{t`Sous le nom de chaque dossier, sa période, puis de petites icônes : le calendrier (ses événements dans une bulle) et le petit dossier (traité à l’étape suivante quand vous triez un dossier en vrac). Les badges signalent ce qui mérite un coup d’œil : très grand, lieu inconnu, sans date, nom en double, même sortie qu’un dossier voisin (photos prises à la suite, au même endroit).`}</li>
         <li>{t`Suppr écarte : rien n’est supprimé, les éléments vont dans « Mis de côté » ; dans « Mis de côté », Suppr les remet.`}</li>
         <li>{t`Double-clic ou Entrée : la photo en grand ; ← → pour passer à la suivante.`}</li>
         <li>{t`Ctrl+Z annule, Ctrl+Y (ou Ctrl+Maj+Z) rétablit, à toutes les étapes ; « ? » affiche tous les raccourcis.`}</li>

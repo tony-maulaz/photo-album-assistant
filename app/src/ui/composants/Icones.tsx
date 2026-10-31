@@ -45,6 +45,37 @@ const TRACES = {
       <path d="M12 10v4M12 17h.01" />
     </>
   ),
+  /** Un dossier : l'icône « petit dossier » de la liste des dossiers (D112 point 10). */
+  dossier: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
+  /** Mettre un dossier dans un autre (menu « … »). */
+  dossierFleche: (
+    <>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M8.5 13.5h6M12.5 11l2.5 2.5-2.5 2.5" />
+    </>
+  ),
+  /** Retirer un dossier vide (menu « … ») : rien n'est supprimé, d'où le dossier et le « − » plutôt qu'une corbeille. */
+  dossierMoins: (
+    <>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M9.5 13.5h5" />
+    </>
+  ),
+  /** Réunir deux dossiers en un (menu « … ») : deux traits qui se rejoignent. */
+  reunir: (
+    <>
+      <path d="M7 4v3a5 5 0 0 0 5 5 5 5 0 0 0 5-5V4" />
+      <path d="M12 12v8M9 17l3 3 3-3" />
+    </>
+  ),
+  /** « … » : le menu des actions d'un objet (C-4.14). */
+  points: (
+    <>
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+    </>
+  ),
   dossierPlus: (
     <>
       <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -132,6 +163,8 @@ const TRACES = {
   chevronGauche: <path d="m15 6-6 6 6 6" />,
   /** « Valider et continuer », « Suite ». */
   fleche: <path d="M5 12h14M13 6l6 6-6 6" />,
+  /** ← : le dossier d'avant, à Petits dossiers (« ← Pendant cette sortie »). */
+  flecheGauche: <path d="M19 12H5M11 6l-6 6 6 6" />,
   /** Quart de tour (↻). */
   tourner: (
     <>

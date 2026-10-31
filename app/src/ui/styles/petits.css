@@ -1,7 +1,16 @@
 /* Étape « Petits dossiers » (D90) : la liste à gauche, un petit dossier à la fois entre ses deux voisins dans le temps. */
 
-.bandeau-petits {
-  margin: var(--e3) 0 0;
+/* La barre d'outils (D112 point 10) : l'aide IA et les cas évidents sur une seule ligne, en boutons de 32 px. */
+.barre-outils-petits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+  margin-top: var(--e3);
+}
+
+.barre-outils-petits .aide-ia {
+  margin: 0;
 }
 
 .corps-petits {
@@ -15,66 +24,66 @@
   position: sticky;
   /* Sous la ligne de l'étape, collée en haut (forme E, D112), jusqu'au-dessus de la barre du bas. */
   top: calc(var(--h-ligne-etape) + var(--e3));
-  flex: 0 0 240px;
+  /* La même largeur et la même poignée que la liste de Lieux et sorties (C-7.7). */
+  flex: 0 0 var(--largeur-panneau);
   max-height: calc(var(--haut-visible) - var(--e5));
   overflow-y: auto;
-  padding: 10px;
+  padding: 10px 0;
   border: 1px solid var(--filet);
   border-radius: var(--r-objet);
   background: var(--surface);
 }
 
+.liste-petits .poignee-panneau {
+  right: 0;
+}
+
 .liste-petits h2 {
-  margin: 6px var(--e2);
-  color: var(--texte-2);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e1) var(--e2);
+  margin: 6px var(--e4);
+  color: var(--texte);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
-  font-weight: 700;
-}
-
-.ligne-liste-petit {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  gap: var(--e2);
-  padding: 7px 10px;
-  border: 0;
-  border-radius: var(--r-commande);
-  background: none;
-  color: var(--texte);
-  font-size: var(--t-corps);
-  line-height: var(--lh-corps);
-  font-weight: 400;
-  text-align: left;
-}
-
-.ligne-liste-petit:hover {
-  background: var(--fond);
-}
-
-.ligne-liste-petit.choisie {
-  background: var(--accent-doux);
   font-weight: 600;
 }
 
-.ligne-liste-petit.fait {
-  color: var(--texte-2);
+.liste-petits h2 .discret {
+  font-weight: 400;
 }
 
-.ligne-liste-petit .etat-petit {
-  flex: 0 0 auto;
-  color: var(--texte-2);
+/* Une ligne de dossier commune (C-7.7), en bouton : le nom, puis la date et l'état écrit ; le nombre de photos au bout. */
+button.ligne-liste-petit {
+  width: calc(100% - 2 * var(--e2));
+  padding: var(--e1) var(--e2) var(--e1) var(--e3);
+  border-color: transparent;
+  background: none;
+  color: var(--texte);
+  text-align: left;
 }
 
-.ligne-liste-petit.fait .etat-petit {
+button.ligne-liste-petit:hover:not(:disabled) {
+  background: var(--neutre-doux);
+}
+
+button.ligne-liste-petit.actif {
+  background: var(--accent-doux);
   color: var(--accent-doux-texte);
-  font-weight: 700;
 }
 
-.nom-liste-petit {
-  min-width: 0;
-  /* Coupé après un « _ » (wbr) ; au milieu d'un mot seulement s'il ne tient pas autrement. */
-  overflow-wrap: break-word;
+.etat-liste-petit {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  color: var(--texte-2);
+  white-space: nowrap;
+}
+
+.etat-liste-petit.fait {
+  color: var(--accent-doux-texte);
 }
 
 .contenu-petits {
@@ -85,12 +94,17 @@
 .tete-petit {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--e3);
+  align-items: center;
+  gap: var(--e1) var(--e3);
 }
 
 .tete-petit h2 {
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.tete-petit .renommage-tete {
+  width: min(420px, 100%);
 }
 
 .decide-petit {
@@ -130,23 +144,29 @@
   box-shadow: 0 0 0 2px var(--accent-doux);
 }
 
+/* Une colonne vide garde son titre en haut, comme les autres (il était centré en hauteur). */
 .cote-petit.vide {
-  justify-content: center;
+  justify-content: flex-start;
   border-style: dashed;
 }
 
-.cote-petit h3,
-.centre-petit h3 {
+/* Le rôle de chaque colonne (D112 point 10) : 16 px / 600, en couleur de texte, la flèche de son côté. */
+.cote-petit h3.role-petit,
+.centre-petit h3.role-petit {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
   margin: 0;
-  color: var(--texte-2);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  font-weight: 700;
+  color: var(--texte);
+  font-size: var(--t-corps);
+  line-height: var(--lh-corps);
+  font-weight: 600;
 }
 
 .ecart-petit {
   margin: 0;
-  font-weight: 700;
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
 }
 
 .nom-voisin {
@@ -193,12 +213,6 @@
 .cote-petit > button {
   align-self: flex-start;
   margin-top: auto;
-}
-
-.apres-choix {
-  margin: 0;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
 }
 
 .choix-centre {

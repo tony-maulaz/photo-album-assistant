@@ -1,6 +1,6 @@
 # Charte graphique : « Table lumineuse »
 
-**État : style FIGÉ (D110, 27.10.2026), avec les évolutions É1 à É10 acceptées le 28.10 (D111), É11 et É12 (forme E, D112 point 8) acceptées le 29.10, É13 (badges d'origine et Floues dans le cadre, D112 points 6 et 7, réponse 20) et É14 (Doublons et Sélection, D112 points 2, 3, 4, 6 et 10) écrites le 30.10, É15 (Tri automatique et « Vos lieux », D112 point 9) écrite le 31.10 ; dispositions PROVISOIRES.**
+**État : style FIGÉ (D110, 27.10.2026), avec les évolutions É1 à É10 acceptées le 28.10 (D111), É11 et É12 (forme E, D112 point 8) acceptées le 29.10, É13 (badges d'origine et Floues dans le cadre, D112 points 6 et 7, réponse 20) et É14 (Doublons et Sélection, D112 points 2, 3, 4, 6 et 10) écrites le 30.10, É15 (Tri automatique et « Vos lieux », D112 point 9) et É16 (Lieux et sorties, Petits dossiers, D112 point 10) écrites le 31.10 ; dispositions PROVISOIRES.**
 
 - **Figé** (l'agent `gardien-style` le fait respecter, en priorité sur les
   autres agents d'interface ; seul l'utilisateur peut le faire évoluer) :
@@ -546,6 +546,39 @@ groupe « par vous ») est écrite dans É14 e et C-9.12.
 
 État du code (31.10) : É15 appliquée (étape 3 des retours du 29.10), pas encore commitée.
 
+## Évolution É16 acceptée par l'utilisateur (2026-10-31, D112 point 10 : Lieux et sorties, Petits dossiers)
+
+Réponses de l'utilisateur du 29.10 : « 11 oui » (Lieux et sorties), « 12 oui » (Petits dossiers),
+« 18 oui » (l'icône « petit dossier » aussi en vrac, en gris discret). Spécification :
+`page/retours.html` § 11 et § 12, `lot_d/proposition.md` § 2 et § 3, maquettes `2_lieux` et
+`3_petits` (hors dépôt). Ce que l'étape 2d a déjà fait (la liste de la Sélection sur deux lignes,
+C-7.7) est repris comme ligne commune, sans être refait. É16 récrit C-7.7, ajoute C-4.14 et
+étend C-4.13 à la liste des dossiers.
+
+> **Le nom d'abord ; ce qui l'accompagne se lit à la demande.**
+
+| É16 | Règles | Évolution |
+|---|---|---|
+| a. Une ligne de dossier commune | C-7.7 (récrite) | La ligne de la Sélection devient celle de Lieux et sorties et de Petits dossiers : le nom en 14 px / 600 (pas 15 px / 500 comme dans la proposition : C-2.1 n'a pas de 15 px, et C-7.7 avait fixé 600), le nombre au bout ; dessous, la période en 14 px / 400 gris, puis les icônes à bulle. **Toujours sur deux lignes**, même quand la liste est large (la ligne unique des listes larges disparaît). « nouveau » quitte la ligne pour son infobulle. À Petits dossiers, la deuxième ligne porte la date, l'heure et l'**état écrit** (« à décider », « mis avec … » avec la coche, « gardé seul ») à la place des petits ronds ; la liste prend la même largeur et la même poignée que Lieux et sorties |
+| b. Les icônes à bulle de la liste | C-4.13 (étendue) | L'icône calendrier du Tri (14 px dans la liste, cible de 24 px qui ne grandit pas la ligne), sa bulle « Votre calendrier pendant ce dossier » ; elle remplace la 3e ligne verte (D94). L'icône **petit dossier** (le dossier au trait, 14 px), **grise, jamais brune** (rien à faire ici), même en vrac ; sa bulle « Petit dossier : 2 photos » et ce qui l'attend. Un clic sur une icône épingle sa bulle, il n'ouvre pas le dossier. Bulle et menu sont posés à la fin de la page (portail) : la liste collée ne les recouvre pas |
+| c. Le menu « … » | C-4.14 (nouvelle) | Voir C-4.14. Remplace « Renommer » et « Réunir avec… » de la tête du dossier ouvert, et « Retirer ce dossier vide » ; « Autre dossier… » de Petits dossiers y devient « Réunir avec un autre dossier… » |
+| d. La tête du dossier ouvert | C-7.7, C-4.9 | Le nom en 24 px / 700, puis le **crayon** et « … » (icônes seules de 16 px dans des cibles de 32, sans bord au repos ; nom lu « Renommer « … » (F2) », « Actions sur « … » ») ; dessous, la période, le nombre et **l'événement du calendrier en entier** (icône de 14 px). Au bout de la tête, **« Photos · Chronologie »** en choix segmenté (C-4.9 ; « Ligne de temps » devient « Chronologie », en anglais « Timeline »). Un petit dossier ouvert : une phrase sur fond `--neutre-doux`, l'icône, « **Petit dossier.** Il sera traité à l'étape suivante… » et le lien « Le réunir maintenant… » |
+| e. Les événements des journées | C-3.2 | Dans le titre d'une journée, l'événement devient un **texte gris de 14 px** avec l'icône, souligné légèrement (`--filet-fort`, plein au survol) ; le clic choisit toujours ses photos (l'infobulle le dit). Plus de pastille verte : le vert doux reste aux états |
+| f. Petits dossiers : rôles et barre d'outils | C-2.1, C-2.3 | Le rôle de chaque colonne en **16 px / 600**, couleur du texte, avec la flèche de son côté : « ← Pendant cette sortie » (ou « ← Juste avant »), « Ce petit dossier », « Juste après → » ; puis le nom du voisin, puis l'écart en gris de 14 px. Ce que fera « Mettre avec ce dossier » passe dans son infobulle. Une colonne vide garde son titre en haut. L'aide IA et « 1 petit dossier a un voisin évident : voir › » (en contour : ce n'est pas la tâche de la page) sont dans une **barre d'outils** d'une ligne, pour que « Mettre avec ce dossier » se voie sans défiler à 1280×580 (Aide repliée) |
+
+**Ce qu'É16 change ailleurs** : `docs/ux/GLOSSAIRE.md` (« Chronologie », « mettre dans »,
+« menu « … » », « petit dossier », « réunir ») ; `INVENTAIRE_FONCTIONS.md` § 12 et § 13 ;
+`SPEC_APP.md` § 5 et § 6.4, § 6.5 ; D94 levée sur deux points (l'événement sous le nom, en vert ;
+pas d'icône « petit » en vrac) ; `essai_vrac.mjs` (ligne commune, « nouveau » en infobulle,
+Chronologie, icônes et bulles, recherche par événement, menu « … » et ses actions avec Ctrl+Z,
+« Mettre dans un autre dossier », Petits dossiers : ligne, rôles, F2 et menu, 1280×580),
+`essai_charte.mjs` (page « lieux-menu », Chronologie).
+
+**Hors É16** : « Photos (racine) » devient « Photos » (§ 5 de la proposition, avec la Sélection) ;
+« Chercher » à Petits dossiers (inventaire § 19) ; la Chronologie elle-même (sa lisibilité).
+
+État du code (31.10) : É16 appliquée (étape 4 des retours du 29.10), pas encore commitée.
+
 ## Corrections à intégrer avant d'appliquer (contrôleurs du 27.10)
 
 - Le vert porte trop de sens : « ici, choisi, allumé » passe en encre
@@ -614,6 +647,7 @@ groupe « par vous ») est écrite dans É14 e et C-9.12.
 | C-4.11 | Revenir / Valider et continuer : 140 / 260 px au moins, même place partout | — |
 | C-4.12 | **La vue choisie reste toujours écrite** (É12) : onglets et filtres d'état visibles dans la barre d'outils, hors de tout menu ; quand la barre d'outils est sortie de la vue et qu'ils ne tiennent pas dans la ligne de l'étape (Doublons, Sélection, Nommage), la vue en cours tient dans la ligne, juste après le titre, en petit menu écrit à son nom (« Rafales ▾ », « Toutes ▾ », « À nommer ▾ ») : 14 px, 500, sans bord comme Menu, les mêmes choix, mots et comptes que la barre d'outils (C-10.2). Il apparaît sans faire bouger le titre, le curseur, ↶ ↷, Aide ni Menu (le message lui cède la place). Il n'y a plus de menu de portée (É14 : « Toutes les copies ▾ », « ✦ Toutes les rafales ▾ », « Cette journée ▾ » et « Autres choix ▾ » deviennent des boutons en clair) ; ce petit menu est le seul menu de vue. À Floues, les filtres tiennent dans la ligne ; au palier, où ils redescendent dans la barre d'outils, la vue en cours prend ce petit menu (« Toutes ▾ », É13) | après défilement : le nom de la vue choisie écrit dans la ligne sur Doublons, Sélection et Nommage, et sur Floues à 1024 ; changer de vue par ce menu, au clavier compris |
 | C-4.13 (É15) | **Bulle d'information** d'une icône (au Tri : l'icône calendrier d'une ligne) : s'ouvre au survol après 300 ms, au focus du clavier ; un clic ou Entrée l'épinglent ; Échap ou un clic ailleurs la ferment, le focus reste sur l'icône. En surface, rayon 10, la seule ombre de la page, 340 px au plus, fixe dans la fenêtre, jamais hors de l'écran. L'icône seule y est permise (exception à C-5.2) parce que son nom lu dit tout (« Votre calendrier : « Vacances à Annecy » ») | `essai_vrac.mjs` : survol, départ de la souris, clic épinglé, clic ailleurs, focus, Entrée, Échap ; la bulle tient dans la fenêtre |
+| C-4.14 (É16) | **Menu « … » d'un objet** : des **actions seulement, jamais un filtre ni une vue** (ceux-là restent visibles, C-4.12). Ouvert par « … » (icône seule, nom lu « Actions sur « … » »), au clic droit et avec Maj+F10 (ou la touche Menu) ; le même menu partout pour un même objet. En surface, rayon `--r-objet`, l'ombre des menus (`--ombre-flottant`), 320 px au plus, fixe dans la fenêtre, jamais hors de l'écran ; en tête, le nom de l'objet en gris. Chaque action : icône de 16 px, son mot (14 px / 500, « … » quand elle ouvre une fenêtre), ce qu'elle fait en gris dessous, sa touche au bout ; une action impossible **reste à sa place**, grisée en pointillé, sa raison écrite dessous (C-4.7) ; une action à part (retirer) après un filet. Clavier : le focus sur la première action, ↑ ↓ Origine Fin, Entrée, Échap et Tab ferment et rendent le focus à « … ». À Lieux et sorties : Renommer (F2), Réunir avec un autre dossier…, Mettre dans un autre dossier…, Déplacer les photos choisies… (M), Retirer ce dossier ; à Petits dossiers : Renommer (F2), Réunir avec un autre dossier…, le nom proposé par l'IA | `essai_vrac.mjs` : les actions, grisées avec leur raison, focus, Échap, Maj+F10, clic droit, Ctrl+Z après chaque action ; `essai_charte.mjs` : page « lieux-menu » |
 
 ## C-5 Icônes
 
@@ -645,7 +679,7 @@ groupe « par vous ») est écrite dans É14 e et C-9.12.
 | C-7.4 | Gabarit **Décisions** : « À faire ici » 440/420, numérotée. Point fait = une ligne + lien ; point en cours = titre, détail, choix, **bouton plein en dernier**, collé en bas de la colonne s'il ne tient pas ; sous 700 px de haut, les points faits se replient en « ✓ N points faits · Revoir ▾ » | Nommage et Tri à 1280 |
 | C-7.5 | Vue **Comparer** : barres 48 / 32 / scène / 56. Présentation calculée (côte à côte si chaque photo y garde ≥ la moitié de sa surface en « Une à la fois », jamais sous 220 px de haut). « Une à la fois » : photo, légende à droite (220 px), bande de vignettes (1 colonne, 2 sous 700 px de haut ; toutes visibles jusqu'à 6). Côte à côte : cartes de la largeur de la photo, au moins celle de l'état et de ses choix (240 px ; 340 à la Sélection) ; c'est la rangée qui doit tenir. Choisi à la main : 2 ou 3 rangées si une ne tient pas, désactivé sous 80 px de haut. Une paire toujours côte à côte. Sous la carte : la bande d'état (C-9.12, C-9.13 : 28 px, la même que sur la page, cliquable de même), puis les choix, puis 2 lignes au plus (remarque, heure, dossier) ; à Doublons, les choix disent le verbe (« Garder » / « Écarter »), la bande l'état (É14). Le plein de la barre du bas est « Accepter → » avec la ligne grise de la page (C-4.2) ; sur le dernier groupe d'une section, il passe au premier groupe de la suivante. Ligne d'information et titre passent à la ligne, jamais coupés. Ouverture sur la photo conseillée (IA ou la plus nette), sinon la première « À garder », sinon la 1 ; la réponse de « Choisir avec l'IA » y fait passer (choix de l'utilisateur). Le clavier entre dans la vue à l'ouverture et y reste ; ↑ ↓ le posent sur la carte, jamais sur un choix ; Entrée bascule partout sauf sur une commande (Fermer, Accepter…). ↑ ↓ photo, ← → groupe, dans la journée ou le dossier. Quitter : « Fermer » (Échap). Calcul : `app/src/lib/presentationComparer.ts` (proportions lues sur les miniatures, quart de tour compris) | mesures de `systeme.md` § 10 ; `essai_charte.mjs` à 2, 3, 4 et 6 photos (Doublons) et 3 (Sélection), à 1440, 1280 et 1024 ; ↓ puis Entrée ne change aucun état |
 | C-7.6 | Palier « texte agrandi » (moins de 1180 px de large, soit 1280 à 125 %) : frise et nom du projet masqués, barre d'outils sur 2 lignes, en-têtes qui passent à la ligne ; rien ne défile en largeur | fenêtre de 1024×464 |
-| C-7.7 (É14) | **Liste de dossiers sur deux lignes** (forme de Lieux et sorties, D112 point 10 ; d'abord à la Sélection) : ligne 1, le nom en 14 px / 600, sur une ligne (raccourci à la fin, entier en infobulle et dans le nom lu) ; ligne 2, la période en 14 px / 400 `--texte-2` (« 21.03 – 22.03.25 », un seul jour « 15.07.26 »), puis l'icône `calendrier` de 14 px si un événement du calendrier s'y rapporte (son titre en infobulle et dans le nom lu, plus de ligne à part) ; le nombre de photos à droite, en pastille, centré sur les deux lignes (C-1.3). Arborescence : le chevron et le retrait ne bougent pas le bord du texte d'un même niveau (C-6.4). Lieux et sorties et Petits dossiers la prennent à leur sous-lot, avec le menu « … » | Sélection à 1280 et 1024 : deux lignes par dossier, aucun nom coupé sans infobulle |
+| C-7.7 (É14, récrite par É16) | **Liste de dossiers sur deux lignes, commune** à Lieux et sorties, Petits dossiers et la Sélection (D112 point 10) : ligne 1, le nom en 14 px / 600, sur une ligne (raccourci à la fin, entier en infobulle et dans le nom lu), le nombre de photos au bout, en pastille, centré sur les deux lignes (C-1.3), puis, à Lieux et sorties, « … » (visible sur la ligne choisie, survolée ou dont le menu est ouvert ; sa place gardée ailleurs) ; ligne 2, la période en 14 px / 400 `--texte-2` (« 21.03 – 22.03.25 », un seul jour « 15.07.26 »), puis les icônes à bulle (C-4.13) : `calendrier` (14 px, le nombre d'événements s'il y en a plusieurs), `dossier` pour un petit dossier (gris ; pas à la Sélection), puis les alertes. Toujours deux lignes, même quand la liste est large. « nouveau » est dans l'infobulle de la ligne. Trouvé par la recherche grâce à son événement : celui-ci s'écrit sur une 3e ligne, en gris, avec l'icône. Petits dossiers : la ligne 2 dit la date, l'heure et l'état écrit. Arborescence : le chevron et le retrait ne bougent pas le bord du texte d'un même niveau (C-6.4) | Sélection à 1280 et 1024 : deux lignes par dossier, aucun nom coupé sans infobulle ; `essai_vrac.mjs` : Lieux et Petits dossiers |
 
 ### C-7 du cadre commun (lot 4, PROVISOIRE, pages passées : Sélection, Doublons, Floues (É13), et le Recadreur)
 
@@ -772,4 +806,12 @@ cadre ou non. Contrôle : `app/outils/essai_cadre.mjs`.
   « Grouper et classer » replié (C-4.12, C-7.3 bis) ; le verbe « mettre de côté »
   et l'onglet « Mis de côté » ; l'opacité des photos écartées de Doublons et de la
   Sélection ; la phrase prévue pour Doublons par C-8.5 bis.
+- **É16 (D112 point 10, écrite le 2026-10-31)** : D94 sur deux points (l'événement
+  du calendrier sous le nom du dossier, en vert ; pas de marque « petit » en vrac) ;
+  la ligne unique des listes de dossiers larges ; les boutons « Renommer », « Réunir
+  avec… » et « Retirer ce dossier vide » de la tête du dossier ouvert (dans le menu
+  « … ») ; « Autre dossier… » de Petits dossiers ; la pastille verte des événements des
+  journées ; le badge « nouveau » sur la ligne ; « Ligne de temps » ; les petits ronds
+  de la liste de Petits dossiers ; le bouton plein « N petits dossiers ont un dossier
+  évident » (en contour, dans la barre d'outils).
 

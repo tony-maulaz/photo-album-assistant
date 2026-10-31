@@ -266,34 +266,3 @@
   color: inherit;
   border-color: var(--filet-fort);
 }
-
-
-/* Liste des sorties de la Sélection (D112, question 14) : comme à « Lieux et sorties », le nom en gras sur la
-   première ligne, la période dessous, l'événement du calendrier en petite icône au bout de la période ; toujours
-   sur deux lignes, même quand le panneau est large. */
-.panneau-dossiers.liste-simple .nom-dossier {
-  font-weight: 600;
-  color: var(--texte);
-}
-
-.panneau-dossiers.liste-simple .ligne-dossier.actif .nom-dossier {
-  color: inherit;
-}
-
-@container (min-width: 430px) {
-  .panneau-dossiers.liste-simple .texte-dossier {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1px;
-  }
-}
-
-.panneau-dossiers.liste-simple .ligne-dossier {
-  min-height: 52px;
-}
-
-.icone-evenement {
-  display: inline-flex;
-  align-items: center;
-  color: var(--texte-2);
-}

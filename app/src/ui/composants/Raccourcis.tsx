@@ -113,7 +113,17 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     LT(aTraduire('1 à 9'), aTraduire('Déplacer vers un des derniers dossiers utilisés')),
     LT(aTraduire('Suppr'), aTraduire('Écarter (dans « Mis de côté » : remettre)')),
     L('F2', aTraduire('Renommer le dossier affiché')),
+    // Menu « … » (D112 point 10, C-4.14).
+    LT(aTraduire('Maj+F10 ou clic droit'), aTraduire('Menu « … » du dossier : renommer, réunir, mettre dans un autre dossier, retirer s’il est vide')),
     LT(aTraduire('Entrée'), aTraduire('Voir la photo en grand (← → : la suivante)')),
+  ],
+  // Petits dossiers (D90 ; D112 point 10 : renommer, menu « … »).
+  petits: [
+    L('← →', aTraduire('Mettre le petit dossier avec le dossier d’avant, d’après')),
+    L('G', aTraduire('Le garder seul')),
+    LT(aTraduire('J et K'), aTraduire('Petit dossier suivant, précédent')),
+    L('F2', aTraduire('Renommer le petit dossier affiché')),
+    LT(aTraduire('Maj+F10'), aTraduire('Menu « … » du petit dossier : renommer, réunir avec un autre dossier')),
   ],
   doublons: [
     LT(aTraduire('J et K (ou ↓ ↑)'), aTraduire('Groupe suivant, groupe précédent')),

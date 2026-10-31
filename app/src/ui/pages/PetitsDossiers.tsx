@@ -4,9 +4,10 @@
 // distance, et un bouton sous chacun. La liste de gauche garde chaque
 // décision (rien ne disparaît, Ctrl+Z annule) ; après un choix, on passe au
 // suivant ; les cas évidents se règlent d'un coup après vérification ; l'aide
-// IA est facultative. Rien n'est rattaché sans un clic.
+// IA est facultative. Rien n'est rattaché sans un clic. La liste prend la
+// ligne de dossier commune (C-7.7, D112 point 10) : le nom, puis la date et
+// l'état écrit ; le petit dossier ouvert se renomme (crayon, F2, menu « … »).
 
-import type { ComponentChildren } from 'preact';
 import { signal } from '@preact/signals';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { DossierInfo } from '../../lib/consolidation';
@@ -37,25 +38,17 @@ import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
 import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Miniature } from '../composants/GrillePhotos';
 import { Icone } from '../composants/Icones';
+import { MenuActions, type ActionMenu } from '../composants/MenuActions';
+import { ChampRenommer, redimensionner, renommerVers, styleLargeurPanneau } from '../composants/PanneauDossiers';
 import { Visionneuse } from '../composants/Visionneuse';
-import { annuler, appliquer, contexteExecution, notifier, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
+import { annuler, appliquer, changerReglages, contexteExecution, notifier, reglages, revenirDe, session, texteErreur, validerEtape, versionIA, versionPlan, type Session } from '../etat';
+import { REGLAGES_DEFAUT } from '../../navigateur/reglages';
 import { jourCourt, nombre, nomJour, pluriel } from '../format';
 import { simplifier, visionneuse } from '../organiser';
 import { AideIA, enregistrerAide, essai, modeleDe, texteEchecs, type BilanEchecs } from './AidesIA';
-import { exclusDe, raisonExclusion } from './Organisation';
+import { petitsDe } from './Organisation';
 
 const phash = (s: Session) => (f: FichierPlan) => s.analyses.get(f)?.phash;
-
-/**
- * Petits dossiers à examiner : moins de 5 photos, sans sous-dossier (un voyage
- * de deux photos n'apparaît qu'une fois, par ses étapes), ni dossier gardé, de
- * mois, de plus d'un mois ou exclu de la consolidation.
- */
-function petitsDe(s: Session): DossierInfo[] {
-  const exclus = exclusDe(s);
-  const parents = new Set([...s.plan.dossiers.values()].map((d) => d.parent));
-  return dossiersAvecPhotos(s.plan).filter((d) => d.photos.length < SEUIL_PETIT_DOSSIER && !parents.has(d.id) && raisonExclusion(s.plan, d, exclus) === null);
-}
 
 function tousFragments(s: Session): Fragment[] {
   return fragments(petitsDe(s), dossiersAvecPhotos(s.plan), s.plan, phash(s));
@@ -113,11 +106,6 @@ enregistrerAide({
 /** Petits dossiers rattachés depuis cette étape : affichés avec leur décision, et ressortables. */
 function rattachesDe(s: Session): Record<string, FragmentRattache> {
   return s.aides.get<Record<string, FragmentRattache>>('fragments_rattaches') ?? {};
-}
-
-/** Nom de dossier qui passe à la ligne après un « _ », jamais au milieu d'un mot ni d'une date. */
-function coupableAuxTraits(nom: string): ComponentChildren {
-  return nom.split(/(?<=_)/).flatMap((morceau, i) => (i ? [<wbr key={i} />, morceau] : [morceau]));
 }
 
 /** Rattache des petits dossiers (une seule opération, Ctrl+Z annule) et note chacun pour pouvoir le ressortir. */
@@ -320,23 +308,33 @@ function DialogueEvidents({ liste, fermer, fait }: { liste: { f: Fragment; v: Vo
 // Un petit dossier entre ses deux voisins
 // ---------------------------------------------------------------------------
 
+/**
+ * Un voisin : son rôle en titre (16 px / 600, avec la flèche de son côté : « ← Pendant cette sortie »,
+ * « Juste après → »), son nom, puis l'écart en gris ; ses photos du même moment et « Mettre avec ce dossier »,
+ * dont l'effet est dans l'infobulle.
+ */
 function Cote({ f, v, ia, mettre, plein }: { f: Fragment; v: Voisin; ia?: DecisionIA3; mettre: () => void; plein: boolean }) {
   const n = f.dossier.photos.length;
   const propose = !!ia?.absorber && ia.cible === v.dossier.id;
   const parent = v.chemin.includes('/') ? v.chemin.slice(0, v.chemin.lastIndexOf('/')) : '';
   const semblable = niveauRessemblance(v.ressemblance);
   const cote = Math.round(reglages.value.tailleMiniatures * 0.6);
+  const avant = v.cote === 'avant';
   return (
-    <section class={`cote-petit${propose ? ' propose' : ''}`} aria-label={v.cote === 'avant' ? t`Juste avant` : t`Juste après`}>
-      <h3>{v.pendant ? t`Pendant cette sortie` : v.cote === 'avant' ? t`Juste avant` : t`Juste après`}</h3>
-      <p class="ecart-petit" title={semblable ? t`Ressemblance des photos : ${semblable === 'tres' ? t`très semblables` : semblable === 'oui' ? t`semblables` : t`peu semblables`}` : undefined}>
-        {texteEcart(v)}
-        {texteDistance(v)}
-      </p>
+    <section class={`cote-petit${propose ? ' propose' : ''}`} aria-label={avant ? t`Juste avant` : t`Juste après`}>
+      <h3 class="role-petit">
+        {avant && <Icone nom="flecheGauche" taille={16} />}
+        {v.pendant ? t`Pendant cette sortie` : avant ? t`Juste avant` : t`Juste après`}
+        {!avant && <Icone nom="fleche" taille={16} />}
+      </h3>
       <p class="nom-voisin">
         <strong>{v.dossier.nom}</strong>
         {parent && <span class="discret"> · {t`dans « ${parent} »`}</span>}
         {v.petit && <span class="badge petit">{t`petit aussi`}</span>}
+      </p>
+      <p class="ecart-petit discret" title={semblable ? t`Ressemblance des photos : ${semblable === 'tres' ? t`très semblables` : semblable === 'oui' ? t`semblables` : t`peu semblables`}` : undefined}>
+        {texteEcart(v)}
+        {texteDistance(v)}
       </p>
       <div class="bande-voisin">
         {v.proches.map((p) => (
@@ -353,16 +351,20 @@ function Cote({ f, v, ia, mettre, plein }: { f: Fragment; v: Voisin; ia?: Decisi
           {ia.confiance !== null ? t` (sûre à ${ia.confiance} sur 10)` : ''} : {ia.raison}
         </p>
       )}
-      <button type="button" class={propose && plein ? 'principal' : ''} onClick={mettre} title={v.cote === 'avant' ? t`Touche ←` : t`Touche →`}>
-        {v.cote === 'avant' && <Icone nom="chevronGauche" taille={16} />}
+      <button
+        type="button"
+        class={propose && plein ? 'principal' : ''}
+        onClick={mettre}
+        title={
+          (n === 1
+            ? t`Sa photo ira dans « ${v.dossier.nom} » (${pluriel(v.dossier.photos.length + n, 'photo')} ensuite). Le petit dossier disparaît.`
+            : t`Ses ${nombre(n)} photos iront dans « ${v.dossier.nom} » (${pluriel(v.dossier.photos.length + n, 'photo')} ensuite). Le petit dossier disparaît.`) + ` (${avant ? t`Touche ←` : t`Touche →`})`
+        }
+      >
+        {avant && <Icone nom="chevronGauche" taille={16} />}
         {t`Mettre avec ce dossier`}
-        {v.cote !== 'avant' && <Icone nom="chevronDroite" taille={16} />}
+        {!avant && <Icone nom="chevronDroite" taille={16} />}
       </button>
-      <p class="discret apres-choix">
-        {n === 1
-          ? t`Sa photo ira dans « ${v.dossier.nom} » (${pluriel(v.dossier.photos.length + n, 'photo')} ensuite). Le petit dossier disparaît.`
-          : t`Ses ${nombre(n)} photos iront dans « ${v.dossier.nom} » (${pluriel(v.dossier.photos.length + n, 'photo')} ensuite). Le petit dossier disparaît.`}
-      </p>
     </section>
   );
 }
@@ -431,13 +433,39 @@ export function PagePetitsDossiers() {
     }
   };
 
-  // Clavier : ← et → mettent avec le dossier d'avant ou d'après, G garde seul, J et K passent d'un petit dossier à l'autre.
+  // Renommer le petit dossier ouvert (crayon, F2, menu « … ») : la saisie se fait dans sa tête.
+  const [renommer, setRenommer] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number; retour: HTMLElement | null } | null>(null);
+  const nomIA = (f: Fragment) => (decisions[f.dossier.id] && !decisions[f.dossier.id].absorber ? decisions[f.dossier.id].nomPropose : undefined);
+  const prendreNomIA = (f: Fragment) => {
+    const nom = nomIA(f);
+    if (!nom) return;
+    try {
+      appliquer(renommerDossier(s.plan, f.dossier.id, nom));
+      notifier('ok', t`Renommé « ${nom} ».`, { libelle: t`Annuler`, faire: annuler });
+    } catch (err) {
+      notifier('erreur', texteErreur(err));
+    }
+  };
+  /** Le menu « … » du petit dossier ouvert (C-4.14) : Renommer, Réunir avec un autre dossier, le nom proposé par l'IA. */
+  const actionsPetit = (f: Fragment): ActionMenu[] => [
+    { libelle: t`Renommer`, icone: 'crayon', touche: 'F2', faire: () => setRenommer(true) },
+    { libelle: t`Réunir avec un autre dossier…`, icone: 'reunir', detail: t`Ses photos y vont ; ce petit dossier disparaît.`, faire: () => setAutre(f) },
+    ...(nomIA(f) ? [{ libelle: t`Le renommer « ${nomIA(f)!} »`, icone: 'etincelle' as const, detail: t`Nom proposé par l’IA.`, faire: () => prendreNomIA(f) }] : []),
+  ];
+  const ouvrirMenu = (b: HTMLElement | null) => {
+    const r = b?.getBoundingClientRect();
+    setMenu({ x: r?.left ?? 320, y: (r?.bottom ?? 160) + 4, retour: b });
+  };
+
+  // Clavier : ← et → mettent avec le dossier d'avant ou d'après, G garde seul, J et K passent d'un petit dossier à
+  // l'autre, F2 le renomme, Maj+F10 ouvre son menu « … ».
   const etat = useRef({ courant, elements, mettre, garder, gardes });
   etat.current = { courant, elements, mettre, garder, gardes };
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
-      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || visionneuse.value !== null || document.querySelector('[role="dialog"]')) return;
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || visionneuse.value !== null || document.querySelector('[role="dialog"], [role="menu"]')) return;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       const { courant: c, elements: l, mettre: m, garder: g, gardes: gs } = etat.current;
       const f = c?.f && !gs.has(c.f.dossier.id) ? c.f : undefined;
@@ -448,66 +476,108 @@ export function PagePetitsDossiers() {
       else if (e.key === 'ArrowLeft' && f?.voisins.find((v) => v.cote === 'avant')) m(f, f.voisins.find((v) => v.cote === 'avant')!);
       else if (e.key === 'ArrowRight' && f?.voisins.find((v) => v.cote === 'apres')) m(f, f.voisins.find((v) => v.cote === 'apres')!);
       else if (k === 'g' && f) g(f.dossier.id, true);
+      else if (e.key === 'F2' && c?.f) setRenommer(true);
+      else if (((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') && c?.f) ouvrirMenu(document.querySelector<HTMLElement>('.tete-petit .plus-dossier'));
       else return;
       e.preventDefault();
     };
     window.addEventListener('keydown', touche);
     return () => window.removeEventListener('keydown', touche);
   }, []);
+  // Un autre petit dossier : la saisie du nom et le menu se ferment.
+  useEffect(() => {
+    setRenommer(false);
+    setMenu(null);
+  }, [courant?.cle]);
 
   const nbRattaches = rattaches.length;
   const nbGardes = liste.filter((f) => gardes.has(f.dossier.id)).length;
   const photosCentre = courant?.f?.dossier.photos ?? [];
 
+  /** L'état de chaque petit dossier, écrit (plus de petits ronds qui ressemblaient à des cases à cocher). */
+  const etatEcrit = (e: Element) =>
+    e.r ? (
+      <span class="etat-liste-petit fait">
+        <Icone nom="coche" taille={14} />
+        {t`mis avec « ${e.r.cibleNom} »`}
+      </span>
+    ) : e.f && gardes.has(e.f.dossier.id) ? (
+      <span class="etat-liste-petit fait">{t`gardé seul`}</span>
+    ) : (
+      <span class="etat-liste-petit">{t`à décider`}</span>
+    );
+
   return (
-    <div class="page large avec-barre page-petits">
+    <div class="page large avec-barre page-petits" style={styleLargeurPanneau()}>
       <LigneEtape titre={nomEtape(ETAPE.petits)} aide={{ cle: 'petits' }} taille={(v) => Math.round(v * 0.6)} />
       <AideEtape cle="petits">
         {t`Le tri a laissé quelques photos seules dans de petits dossiers (un arrêt en route, une photo sans position). Pour chacun, vous voyez les photos prises juste avant et juste après : mettez-le avec le bon dossier, ou gardez-le seul.`}
       </AideEtape>
-      <AideIA fonction="IA3" />
-      {(listeEvidents.length > 0 || surs.length > 0) && (
-        <div class="actions bandeau-petits">
-          {listeEvidents.length > 0 && (
-            <button type="button" class="principal" onClick={() => setEvidents(true)}>
-              {listeEvidents.length === 1
-                ? t`1 petit dossier a un dossier évident (à moins d’1 h et 10 km) : voir`
-                : t`${nombre(listeEvidents.length)} petits dossiers ont un dossier évident (à moins d’1 h et 10 km) : les voir`}
-            </button>
-          )}
-          {surs.length > 0 && (
-            <button
-              type="button"
-              onClick={() =>
-                rattacher(
-                  s,
-                  surs.map((e) => ({ f: e.f!, cible: decisions[e.f!.dossier.id].cible! })),
-                  t`Mettre ${pluriel(surs.length, 'petit dossier', 'petits dossiers')} avec leur dossier`,
-                  t`${pluriel(surs.length, 'petit dossier rangé', 'petits dossiers rangés')} avec leur dossier.`,
-                )
-              }
-            >
-              {surs.length === 1 ? t`Accepter la proposition sûre de l’IA (8 sur 10 ou plus)` : t`Accepter les ${nombre(surs.length)} propositions sûres de l’IA (8 sur 10 ou plus)`}
-            </button>
-          )}
-        </div>
-      )}
+      {/* La barre d'outils (D112 point 10) : l'aide IA et les cas évidents sur une ligne, pour que « Mettre avec ce
+          dossier » se voie sans défiler à 1280×580. */}
+      <div class="barre-outils-petits" role="toolbar" aria-label={t`Outils des petits dossiers`}>
+        <AideIA fonction="IA3" />
+        {listeEvidents.length > 0 && (
+          <button type="button" onClick={() => setEvidents(true)} title={t`Pris à moins d’une heure et de 10 km d’un autre dossier`}>
+            {listeEvidents.length === 1 ? t`1 petit dossier a un voisin évident : voir` : t`${nombre(listeEvidents.length)} petits dossiers ont un voisin évident : les voir`}
+            <Icone nom="chevronDroite" taille={16} />
+          </button>
+        )}
+        {surs.length > 0 && (
+          <button
+            type="button"
+            onClick={() =>
+              rattacher(
+                s,
+                surs.map((e) => ({ f: e.f!, cible: decisions[e.f!.dossier.id].cible! })),
+                t`Mettre ${pluriel(surs.length, 'petit dossier', 'petits dossiers')} avec leur dossier`,
+                t`${pluriel(surs.length, 'petit dossier rangé', 'petits dossiers rangés')} avec leur dossier.`,
+              )
+            }
+          >
+            {surs.length === 1 ? t`Accepter la proposition sûre de l’IA (8 sur 10 ou plus)` : t`Accepter les ${nombre(surs.length)} propositions sûres de l’IA (8 sur 10 ou plus)`}
+          </button>
+        )}
+      </div>
       {elements.length === 0 ? (
         <p class="encart">{t`Aucun petit dossier (moins de ${SEUIL_PETIT_DOSSIER} photos) à examiner.`}</p>
       ) : (
         <div class="corps-petits">
+          {/* La même liste et la même poignée qu'à Lieux et sorties (C-7.7) : le nom, puis la date et l'état. */}
           <nav class="liste-petits" aria-label={t`Petits dossiers`}>
-            <h2>{t`Dans l’ordre du temps`}</h2>
+            <div
+              class="poignee-panneau"
+              role="separator"
+              aria-orientation="vertical"
+              title={t`Tirer pour élargir le panneau (double-clic : largeur d’origine)`}
+              onPointerDown={redimensionner}
+              onDblClick={() => changerReglages({ ...reglages.value, largeurPanneau: REGLAGES_DEFAUT.largeurPanneau })}
+            />
+            <h2>
+              {t`Dans l’ordre du temps`}
+              <span class="discret">{t`${nombre(elements.length - restants.length)} sur ${nombre(elements.length)} décidés`}</span>
+            </h2>
             {elements.map((e) => {
               const fait = !aDecider(e);
+              const choisie = e.cle === courant?.cle;
+              const n = e.f ? e.f.dossier.photos.length : (e.r?.fichiers.length ?? 0);
               return (
-                <button key={e.cle} type="button" class={`ligne-liste-petit${e.cle === courant?.cle ? ' choisie' : ''}${fait ? ' fait' : ''}`} aria-current={e.cle === courant?.cle ? 'true' : undefined} onClick={() => (choisi.value = e.cle)}>
-                  <span class="etat-petit">
-                    <Icone nom={fait ? 'coche' : 'cercle'} taille={16} titre={fait ? t`décidé` : t`à décider`} />
+                <button
+                  key={e.cle}
+                  type="button"
+                  class={`ligne-liste-petit ligne-dossier${choisie ? ' choisie actif' : ''}${fait ? ' fait' : ''}`}
+                  aria-current={choisie ? 'true' : undefined}
+                  title={e.nom}
+                  onClick={() => (choisi.value = e.cle)}
+                >
+                  <span class="texte-dossier">
+                    <span class="nom-dossier">{e.nom}</span>
+                    <span class="infos-dossier">
+                      <span class="dates-dossier">{e.du ? `${jourCourt(e.du)}${e.du.length > 10 ? ` · ${e.du.slice(11, 16)}` : ''}` : t`sans date`}</span>
+                      {etatEcrit(e)}
+                    </span>
                   </span>
-                  <span class="nom-liste-petit">
-                    <span class="discret">{e.du ? jourCourt(e.du) : ''}</span> {coupableAuxTraits(e.nom)}
-                  </span>
+                  <span class="nombre-dossier">{nombre(n)}</span>
                 </button>
               );
             })}
@@ -525,11 +595,39 @@ export function PagePetitsDossiers() {
             ) : courant?.f ? (
               <>
                 <header class="tete-petit">
-                  <h2>{courant.f.dossier.nom}</h2>
+                  {renommer ? (
+                    <ChampRenommer
+                      nom={courant.f.dossier.nom}
+                      classe="renommage-tete"
+                      terminer={(nom) => {
+                        setRenommer(false);
+                        renommerVers(courant.f!.dossier.id, nom);
+                      }}
+                    />
+                  ) : (
+                    <h2>{courant.f.dossier.nom}</h2>
+                  )}
+                  <span class="actions-dossier">
+                    <button type="button" class="bouton-icone" aria-label={t`Renommer « ${courant.f.dossier.nom} » (F2)`} title={t`Renommer (F2)`} onClick={() => setRenommer(true)}>
+                      <Icone nom="crayon" taille={16} />
+                    </button>
+                    <button
+                      type="button"
+                      class="bouton-icone plus-dossier"
+                      aria-label={t`Actions sur « ${courant.f.dossier.nom} »`}
+                      aria-haspopup="menu"
+                      aria-expanded={!!menu}
+                      title={t`Renommer, réunir avec un autre dossier… (Maj+F10)`}
+                      onClick={(e) => (menu ? setMenu(null) : ouvrirMenu(e.currentTarget))}
+                    >
+                      <Icone nom="points" taille={16} />
+                    </button>
+                  </span>
                   <span class="discret">
                     {pluriel(courant.f.dossier.photos.length, 'photo')} · {moment(courant.f.dossier)}
                   </span>
                 </header>
+                {menu && <MenuActions titre={courant.f.dossier.nom} actions={actionsPetit(courant.f)} x={menu.x} y={menu.y} retour={menu.retour} fermer={() => setMenu(null)} />}
                 {gardes.has(courant.f.dossier.id) && (
                   <div class="encart decide-petit">
                     <p>{t`Gardé seul.`}</p>
@@ -543,12 +641,15 @@ export function PagePetitsDossiers() {
                     <Cote plein={!listeEvidents.length} f={courant.f} v={courant.f.voisins.find((v) => v.cote === 'avant')!} ia={decisions[courant.f.dossier.id]} mettre={() => mettre(courant.f!, courant.f!.voisins.find((v) => v.cote === 'avant')!)} />
                   ) : (
                     <section class="cote-petit vide">
-                      <h3>{t`Juste avant`}</h3>
+                      <h3 class="role-petit">
+                        <Icone nom="flecheGauche" taille={16} />
+                        {t`Juste avant`}
+                      </h3>
                       <p class="discret">{t`Aucun dossier avant celui-ci.`}</p>
                     </section>
                   )}
                   <section class="centre-petit" aria-label={t`Ce petit dossier`}>
-                    <h3>{t`Ce petit dossier`}</h3>
+                    <h3 class="role-petit">{t`Ce petit dossier`}</h3>
                     <div class="photos-petit">
                       {photosCentre.map((p, i) => (
                         <figure key={p.id}>
@@ -570,43 +671,34 @@ export function PagePetitsDossiers() {
                       <button type="button" onClick={() => garder(courant.f!.dossier.id, true)} disabled={gardes.has(courant.f.dossier.id)} data-raison={gardes.has(courant.f.dossier.id) ? 'libelle' : undefined} title={t`Touche G`}>
                         {gardes.has(courant.f.dossier.id) ? t`Déjà gardé seul` : t`Garder seul`}
                       </button>
-                      {decisions[courant.f.dossier.id]?.nomPropose && !decisions[courant.f.dossier.id].absorber && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            try {
-                              appliquer(renommerDossier(s.plan, courant.f!.dossier.id, decisions[courant.f!.dossier.id].nomPropose!));
-                              notifier('ok', t`Renommé « ${decisions[courant.f!.dossier.id].nomPropose!} ».`, { libelle: t`Annuler`, faire: annuler });
-                            } catch (err) {
-                              notifier('erreur', texteErreur(err));
-                            }
-                          }}
-                        >
-                          {t`Le renommer « ${decisions[courant.f.dossier.id].nomPropose!} »`}
+                      {nomIA(courant.f) && (
+                        <button type="button" onClick={() => prendreNomIA(courant.f!)}>
+                          {t`Le renommer « ${nomIA(courant.f)!} »`}
                         </button>
                       )}
-                      <button type="button" class="lien" onClick={() => setAutre(courant.f!)}>
-                        {t`Autre dossier…`}
-                      </button>
                     </p>
                   </section>
                   {courant.f.voisins.find((v) => v.cote === 'apres') ? (
                     <Cote plein={!listeEvidents.length} f={courant.f} v={courant.f.voisins.find((v) => v.cote === 'apres')!} ia={decisions[courant.f.dossier.id]} mettre={() => mettre(courant.f!, courant.f!.voisins.find((v) => v.cote === 'apres')!)} />
                   ) : (
                     <section class="cote-petit vide">
-                      <h3>{t`Juste après`}</h3>
+                      <h3 class="role-petit">
+                        {t`Juste après`}
+                        <Icone nom="fleche" taille={16} />
+                      </h3>
                       <p class="discret">{t`Aucun dossier après celui-ci.`}</p>
                     </section>
                   )}
                 </div>
-                <p class="discret aide-petits">{t`Clavier : ← avec le dossier d’avant, → avec celui d’après, G garder seul, J et K petit dossier suivant ou précédent, Ctrl+Z annuler.`}</p>
+                <p class="discret aide-petits">{t`Clavier : ← avec le dossier d’avant, → avec celui d’après, G garder seul, J et K petit dossier suivant ou précédent, F2 renommer, Ctrl+Z annuler.`}</p>
               </>
             ) : null}
             {restants.length === 0 && elements.length > 0 && <p class="encart">{t`Chaque petit dossier a sa décision : vous pouvez continuer.`}</p>}
           </section>
         </div>
       )}
-      {photosCentre.length > 0 && <Visionneuse elements={photosCentre} />}
+      {/* Seulement ouverte : montée, la visionneuse prend Échap et les flèches à toute la page (renommer, « Autre dossier »). */}
+      {photosCentre.length > 0 && visionneuse.value !== null && <Visionneuse elements={photosCentre} />}
       {autre && <ChoixRattachement f={autre} fermer={() => setAutre(null)} fait={suivant} />}
       {evidents && <DialogueEvidents liste={listeEvidents} fermer={() => setEvidents(false)} fait={suivant} />}
       <BarreValidation

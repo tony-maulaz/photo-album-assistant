@@ -457,12 +457,13 @@ button.petit {
   color: var(--accent-doux-texte);
 }
 
-/* L'icône calendrier (lot C, C-4.13) : 16 px en gris, cible de 24 px, le nombre d'événements s'il y en a plusieurs. */
-.calendrier-ligne {
+/* L'icône d'une bulle d'information (lot C, C-4.13 ; `Bulle.tsx`, commune au Tri, à Lieux et sorties et à la
+   Sélection) : 16 px en gris (14 dans une liste de dossiers), cible de 24 px, le nombre d'événements s'il y en a plusieurs. */
+.icone-bulle {
   display: inline-flex;
 }
 
-button.bouton-calendrier {
+button.bouton-bulle {
   display: inline-flex;
   gap: 2px;
   align-items: center;
@@ -473,14 +474,14 @@ button.bouton-calendrier {
   color: var(--texte-2);
 }
 
-button.bouton-calendrier:hover:not(:disabled),
-button.bouton-calendrier[aria-expanded='true'] {
+button.bouton-bulle:hover:not(:disabled),
+button.bouton-bulle[aria-expanded='true'] {
   border-color: var(--filet-fort);
   background: var(--neutre-doux);
 }
 
 /* La bulle d'information (C-4.13) : posée en surface, rayon 10, la seule ombre de la page ; fixe dans la fenêtre. */
-.bulle-calendrier {
+.bulle-info {
   position: fixed;
   z-index: 40;
   width: min(340px, calc(100vw - 32px));
@@ -494,19 +495,19 @@ button.bouton-calendrier[aria-expanded='true'] {
   line-height: var(--lh-petit);
 }
 
-.bulle-calendrier .tete-bulle {
+.bulle-info .tete-bulle {
   display: block;
   margin-bottom: var(--e2);
   font-weight: 600;
 }
 
-.bulle-calendrier ul {
+.bulle-info ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.bulle-calendrier li {
+.bulle-info li {
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   gap: var(--e1);
@@ -514,27 +515,27 @@ button.bouton-calendrier[aria-expanded='true'] {
   border-top: 1px solid var(--filet);
 }
 
-.bulle-calendrier li:first-child {
+.bulle-info li:first-child {
   border-top: 0;
 }
 
-.bulle-calendrier li > span:last-child {
+.bulle-info li > span:last-child {
   display: flex;
   flex-direction: column;
 }
 
-.bulle-calendrier li strong {
+.bulle-info li strong {
   font-size: var(--t-corps);
   line-height: var(--lh-corps);
   font-weight: 600;
 }
 
-.bulle-calendrier .marque-bulle {
+.bulle-info .marque-bulle {
   padding-top: var(--e1);
   color: var(--accent-doux-texte);
 }
 
-.bulle-calendrier p {
+.bulle-info p {
   margin: var(--e1) 0 0;
 }
 

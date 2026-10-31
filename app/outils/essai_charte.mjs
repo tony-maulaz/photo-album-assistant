@@ -821,7 +821,20 @@ try {
   await page.locator('.panneau-dossiers').waitFor({ timeout: 60_000 });
   await controler('lieux');
   await clavier('lieux', 30);
-  const ldt = page.getByRole('button', { name: 'Ligne de temps' });
+  // Le menu « … » d'un dossier (C-4.14, D112 point 10) : la charte vaut aussi pour lui (actions grisées en pointillé,
+  // leur raison écrite dessous).
+  {
+    const plus = page.locator('.tete-vue .plus-dossier');
+    if (await plus.count()) {
+      await plus.click();
+      await page.locator('.menu-actions').waitFor();
+      await controler('lieux-menu');
+      await page.keyboard.press('Escape');
+    } else fautes.push('lieux : pas de menu « … » dans la tête du dossier ouvert');
+  }
+  // « Photos · Chronologie » (D112 point 10) : l'ancien « Ligne de temps », en choix segmenté.
+  const ldt = page.getByRole('radio', { name: 'Chronologie' });
+  if (!(await ldt.count())) fautes.push('lieux : pas de choix « Chronologie »');
   if (await ldt.count()) {
     await ldt.click();
     await page.locator('.ligne-de-temps').waitFor();
@@ -831,7 +844,7 @@ try {
     await ldt.click();
     await page.locator('.ldt-barre.actif').waitFor();
     await controler('lieux-ligne-de-temps-choisie');
-    await page.getByRole('button', { name: 'Photos', exact: true }).click();
+    await page.getByRole('radio', { name: 'Photos', exact: true }).click();
   }
   await page.locator('.tuile').first().dblclick();
   await page.locator('.visionneuse img').waitFor();

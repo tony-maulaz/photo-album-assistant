@@ -48,7 +48,11 @@ même chose. **(à résoudre)** marque un double sens relevé par l'audit D108,
 | Petits dossiers | Étape 8 : rattacher les dossiers de quelques photos | Small folders | dossiers orphelins |
 | Nommage | Étape 9 : donner un nom parlant aux dossiers | Naming | renommage (c'est l'action) |
 | Consolidation **(à résoudre)** | Étape 10 : réunir les dossiers d'une même sortie ou d'un même voyage ; terme interne (M2) | Consolidation | fusion (dans l'interface : « réunir ») |
-| réunir, « Réunir avec… » | Mettre deux dossiers ou plus en un seul (Lieux : « Réunir avec… », glisser un dossier sur un autre ; Consolidation) | gather, Gather with… | fusionner, empiler, consolider |
+| réunir, « Réunir avec un autre dossier… » | Mettre deux dossiers ou plus en un seul : les photos de l'un passent dans l'autre, qui reste (Lieux et sorties et Petits dossiers : menu « … », glisser un dossier sur un autre ; Consolidation) (2026-10-31, D112 point 10) | gather, Gather with another folder… | fusionner, empiler, consolider |
+| mettre dans, « Mettre dans un autre dossier… » | Faire d'un dossier, avec ses photos, un sous-dossier d'un autre ; ses photos restent dans le sien (Lieux et sorties, menu « … », 2026-10-31, D112 point 10). À ne pas confondre avec « réunir » | put in, Put in another folder… | déplacer le dossier, ranger dans, imbriquer |
+| menu « … » | Le menu des actions d'un dossier (renommer, réunir, mettre dans, déplacer les photos choisies, retirer s'il est vide) : au bout de sa ligne, à côté de son nom en haut, au clic droit, Maj+F10. Des actions seulement, jamais un filtre ni une vue (CHARTE C-4.14, 2026-10-31) | “…” menu | Plus, Autres choix, menu contextuel (dans l'interface) |
+| petit dossier | Un dossier de moins de 5 photos ; à Lieux et sorties, une petite icône grise (dossier) avec sa bulle, même en vrac : rien à faire ici, l'étape Petits dossiers s'en occupe (2026-10-31, D112 point 10, réponse 18) | small folder | fragment, orphelin |
+| Chronologie | La vue de Lieux et sorties qui montre les dossiers sur une ligne de temps, journées en colonnes ; choix segmenté « Photos · Chronologie » (2026-10-31, D112 point 10) | Timeline | Ligne de temps (ancien nom), frise (c'est l'avancement des étapes) |
 | Sélection | Étape 11 : choisir les photos de l'album | Selection | tri (autre sens) |
 | Album | Étape 12 : la mise en page du livre photo | Album | livre, ifolor (marque) |
 | Création de la sortie **(à résoudre)** | Étape 13 : écrire le dossier de sortie et le bilan | Creating the output | export, synchronisation |

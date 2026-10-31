@@ -1972,7 +1972,7 @@ button.bouton-nouveau.cible {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 46px;
+  min-height: 52px;
   padding: var(--e1) var(--e2);
   cursor: pointer;
   border-radius: var(--r-commande);
@@ -2008,7 +2008,8 @@ button.bouton-nouveau.cible {
   flex: 0 0 20px;
 }
 
-/* Nom sur la première ligne, toute la largeur ; dates et alertes dessous. */
+/* Ligne de dossier commune (C-7.7, D112 point 10 ; Lieux et sorties, Sélection) : le nom en 14 px / 600 sur la
+   première ligne, toute la largeur ; la période, les icônes et les alertes dessous, toujours sur deux lignes. */
 .texte-dossier {
   flex: 1;
   min-width: 0;
@@ -2024,6 +2025,12 @@ button.bouton-nouveau.cible {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.ligne-dossier.actif .nom-dossier {
+  color: inherit;
 }
 
 .infos-dossier {
@@ -2043,23 +2050,6 @@ button.bouton-nouveau.cible {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Panneau large : nom, dates et alertes sur une seule ligne (plus de dossiers à l'écran). */
-@container (min-width: 430px) {
-  .ligne-dossier {
-    min-height: 38px;
-  }
-
-  .texte-dossier {
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .infos-dossier {
-    flex: 0 1 auto;
-  }
 }
 
 .dates-dossier {
@@ -2097,29 +2087,7 @@ button.bouton-nouveau.cible {
   color: var(--texte-2);
 }
 
-.actions-dossier {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.actions-dossier button {
-  min-height: var(--h-puce);
-  height: var(--h-puce);
-  padding-top: 0;
-  padding-bottom: 0;
-  white-space: nowrap;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-}
-
-.actions-dossier button.bouton-icone {
-  height: var(--h-puce);
-  min-height: var(--h-puce);
-}
-
-/* C-5.2 : ces boutons portent leur mot à côté de l'icône ; ils prennent la largeur du mot. */
-.actions-dossier button.bouton-icone,
+/* Options du panneau : ces boutons portent leur mot à côté de l'icône ; ils prennent la largeur du mot (C-5.2). */
 .options-panneau button.bouton-icone {
   width: auto;
   padding: 0 var(--e3);
@@ -2155,7 +2123,6 @@ button.bouton-nouveau.cible {
 }
 
 .tete-vue > .bascule-vue,
-.tete-vue > .actions-dossier,
 .tete-vue > .barre-outils,
 .tete-vue > button {
   flex: 0 0 auto;
@@ -2208,10 +2175,6 @@ button.bouton-nouveau.cible {
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
   color: var(--texte-2);
-}
-
-.actions-dossier button {
-  white-space: nowrap;
 }
 
 /* Le nom passe sur deux lignes plutôt que d'être coupé par « … » (C-10.4). */
@@ -3574,29 +3537,6 @@ button.bouton-ia:hover:not(:disabled) {
   margin: 0 var(--e1) 0 0;
 }
 
-/* Calendrier sous le nom d'un dossier (D94) : la même couleur que partout (pas l'orange des alertes). */
-.evenement-dossier {
-  display: flex;
-  align-items: center;
-  gap: var(--e1);
-  min-width: 0;
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  font-weight: 600;
-  color: var(--accent-doux-texte);
-}
-
-.evenement-dossier span {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.evenement-dossier .icone {
-  flex: none;
-}
-
 /* Titres de journée de l'étape « Lieux et sorties » (D94) : leurs boutons se cliquent. */
 .page-organiser .titre-groupe {
   pointer-events: auto;
@@ -3604,26 +3544,33 @@ button.bouton-ia:hover:not(:disabled) {
   padding-bottom: 0;
 }
 
+/* Événement d'une journée (D112 point 10) : un texte gris de 14 px avec l'icône, souligné légèrement ; le clic
+   choisit toujours ses photos (l'infobulle le dit). */
 .evenement-jour {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--e1);
   min-width: 0;
-  padding: 3px 10px;
+  min-height: 24px;
+  padding: 0;
   border: none;
-  border-radius: var(--r-pastille);
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
+  border-radius: 0;
+  background: none;
+  color: var(--texte-2);
   font-size: var(--t-petit);
   line-height: var(--lh-petit);
-  font-weight: 500;
+  font-weight: 400;
+  text-decoration: underline;
+  text-decoration-color: var(--filet-fort);
+  text-underline-offset: 3px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.evenement-jour:hover {
-  background: var(--accent-doux);
-  color: var(--accent-doux-texte);
+.evenement-jour:hover:not(:disabled) {
+  background: none;
+  color: var(--texte);
+  text-decoration-color: currentColor;
 }
 
 .evenement-jour .icone,
@@ -3647,37 +3594,6 @@ button.bouton-ia:hover:not(:disabled) {
 
 .adresse-lieu {
   color: var(--texte);
-}
-
-/* Bascule à deux positions (segment) : fond gris, position active en blanc. */
-.bascule-vue {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: var(--r-commande);
-  background: var(--table);
-}
-
-.bascule-vue button {
-  min-height: var(--h-puce);
-  border: 0;
-  border-radius: var(--r-commande);
-  padding: 3px var(--e3);
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  background: none;
-  color: var(--texte-2);
-}
-
-.bascule-vue button:hover:not(:disabled) {
-  border: 0;
-  color: var(--texte);
-}
-
-.bascule-vue button.actif {
-  background: var(--surface);
-  color: var(--texte);
-  font-weight: 600;
-  box-shadow: inset 0 0 0 1px var(--filet-fort);
 }
 
 .ligne-de-temps {

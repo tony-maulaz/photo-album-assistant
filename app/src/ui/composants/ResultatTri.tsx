@@ -19,6 +19,7 @@ import { evenements, reglages, session } from '../etat';
 import { dateHeure, nombre, nomJour, nomMois, pluriel } from '../format';
 import { visionneuse } from '../organiser';
 import { Miniature } from './GrillePhotos';
+import { BulleCalendrier, periodeCourte } from './Bulle';
 import { Icone, type NomIcone } from './Icones';
 import { Visionneuse } from './Visionneuse';
 
@@ -48,13 +49,6 @@ const SORTES: Record<SorteLigne, () => string> = { voyage: () => t`Voyage`, sort
 
 /** « sam. 9 août », en milieu de phrase. */
 const jourMin = (j: string) => nomJour(j).replace(/^./, (c) => c.toLowerCase());
-
-/** « 24 juillet », « 24 juillet → 7 août » ; rien sans dates. */
-function periodeCourte(du?: string, au?: string): string {
-  if (!du || !au) return '';
-  const f = (j: string) => nomJour(j).replace(/^\S+ /, '');
-  return du === au ? f(du) : `${f(du)} → ${f(au)}`;
-}
 
 /**
  * Titre lisible d'une ligne (D107), le nom du dossier dans l'infobulle et
@@ -97,118 +91,12 @@ function evenementsPendant(l: LigneTri, evts: EvenementCalendrier[]): { liste: E
   return { liste: retenu ? [retenu, ...pendant.filter((e) => e !== retenu)] : pendant, ...(retenu ? { retenu } : {}) };
 }
 
-/** Événements montrés dans la bulle ; au-delà, « et 2 autres ». */
-const EVENEMENTS_MONTRES = 3;
-
 let prochaineBulle = 0;
 
-/**
- * L'icône calendrier d'une ligne (D112 point 9, lot C) : elle remplace la phrase sur l'événement. Suivie du
- * nombre d'événements s'il y en a plusieurs. Sa bulle s'ouvre au survol (après 300 ms), au focus du clavier ;
- * un clic ou Entrée l'épinglent ; Échap ou un clic ailleurs la ferment. Fixe dans la fenêtre : la colonne qui
- * défile ne la coupe pas.
- */
+/** L'icône calendrier d'une ligne (D112 point 9, lot C) : elle remplace la phrase sur l'événement ; sa bulle (C-4.13) est commune. */
 function CalendrierLigne({ l, liste, retenu }: { l: LigneTri; liste: EvenementCalendrier[]; retenu?: EvenementCalendrier }) {
-  const [mode, setMode] = useState<'survol' | 'focus' | 'epingle' | null>(null);
-  const [place, setPlace] = useState<{ left: number; top: number } | null>(null);
-  const [id] = useState(() => `bulle-calendrier-${prochaineBulle++}`);
-  const racine = useRef<HTMLSpanElement>(null);
-  const bouton = useRef<HTMLButtonElement>(null);
-  const bulle = useRef<HTMLDivElement>(null);
-  const minuterie = useRef<number | undefined>(undefined);
-  const ouvert = mode !== null;
-  const attendre = (f: () => void, ms: number) => {
-    window.clearTimeout(minuterie.current);
-    minuterie.current = window.setTimeout(f, ms);
-  };
-  useEffect(() => () => window.clearTimeout(minuterie.current), []);
-  // Placée sous l'icône, au-dessus si elle ne tient pas dessous ; jamais hors de la fenêtre.
-  useLayoutEffect(() => {
-    if (!ouvert) return;
-    const placer = () => {
-      const r = bouton.current?.getBoundingClientRect();
-      const b = bulle.current?.getBoundingClientRect();
-      if (!r || !b) return;
-      const left = Math.max(16, Math.min(r.left, window.innerWidth - b.width - 16));
-      const dessous = r.bottom + 6;
-      setPlace({ left, top: dessous + b.height <= window.innerHeight - 8 ? dessous : Math.max(8, r.top - 6 - b.height) });
-    };
-    placer();
-    window.addEventListener('scroll', placer, true);
-    window.addEventListener('resize', placer);
-    return () => {
-      window.removeEventListener('scroll', placer, true);
-      window.removeEventListener('resize', placer);
-    };
-  }, [ouvert]);
-  useEffect(() => {
-    if (!ouvert) return;
-    const clic = (e: MouseEvent) => !racine.current?.contains(e.target as Node) && setMode(null);
-    const touche = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      setMode(null);
-      if (racine.current?.contains(document.activeElement)) bouton.current?.focus();
-    };
-    document.addEventListener('mousedown', clic);
-    window.addEventListener('keydown', touche, true);
-    return () => {
-      document.removeEventListener('mousedown', clic);
-      window.removeEventListener('keydown', touche, true);
-    };
-  }, [ouvert]);
   const enTete = l.sorte === 'voyage' ? t`Votre calendrier pendant ce voyage` : l.sorte === 'sortie' ? t`Votre calendrier pendant cette sortie` : t`Votre calendrier pendant cette période`;
-  const nom = liste.length === 1 ? t`Votre calendrier : « ${liste[0].titre} »` : t`Votre calendrier : ${nombre(liste.length)} événements pendant ce dossier`;
-  const montres = liste.slice(0, EVENEMENTS_MONTRES);
-  return (
-    <span
-      class="calendrier-ligne"
-      ref={racine}
-      onMouseEnter={() => attendre(() => setMode((m) => m ?? 'survol'), 300)}
-      onMouseLeave={() => attendre(() => setMode((m) => (m === 'survol' ? null : m)), 150)}
-    >
-      <button
-        type="button"
-        ref={bouton}
-        class="bouton-calendrier"
-        aria-label={nom}
-        aria-expanded={ouvert}
-        aria-controls={ouvert ? id : undefined}
-        onFocus={(e) => (e.currentTarget as HTMLElement).matches(':focus-visible') && setMode((m) => m ?? 'focus')}
-        onBlur={(e) => !racine.current?.contains(e.relatedTarget as Node | null) && setMode((m) => (m === 'focus' ? null : m))}
-        onClick={() => setMode((m) => (m === 'epingle' ? null : 'epingle'))}
-      >
-        <Icone nom="calendrier" taille={16} />
-        {liste.length > 1 && <span class="nombre-calendrier">{nombre(liste.length)}</span>}
-      </button>
-      {ouvert && (
-        <div ref={bulle} id={id} class="bulle-calendrier" role="group" aria-label={enTete} style={place ? { left: `${place.left}px`, top: `${place.top}px` } : { visibility: 'hidden' }}>
-          <strong class="tete-bulle">{enTete}</strong>
-          <ul>
-            {montres.map((e) => {
-              const [d1, d2] = joursEvenement(e);
-              return (
-                <li key={`${e.titre}|${e.debut}`} class={e === retenu ? 'retenu' : ''}>
-                  <span class="marque-bulle" aria-hidden="true">
-                    {e === retenu && <Icone nom="coche" taille={16} />}
-                  </span>
-                  <span>
-                    <strong>{e.titre}</strong>
-                    <span class="discret">
-                      {d1 === d2 ? jourMin(d1) : periodeCourte(d1, d2)}
-                      {e === retenu && ` · ${t`la plupart des photos`}`}
-                    </span>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          {liste.length > EVENEMENTS_MONTRES && <p class="discret">{t`et ${pluriel(liste.length - EVENEMENTS_MONTRES, 'autre', 'autres')}`}</p>}
-          {mode === 'epingle' && <p class="discret pied-bulle">{t`Échap ou un clic ailleurs pour fermer`}</p>}
-        </div>
-      )}
-    </span>
-  );
+  return <BulleCalendrier liste={liste} {...(retenu ? { retenu } : {})} enTete={enTete} />;
 }
 
 /** Côté des vignettes du dépliant : le curseur « Taille » de la ligne de l'étape (72 px au réglage par défaut). */

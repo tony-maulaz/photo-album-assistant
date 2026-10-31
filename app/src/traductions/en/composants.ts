@@ -183,8 +183,6 @@ export const TEXTES: Record<string, string> = {
   'Photos (racine)': 'Photos (top level)',
   ' (dont {0} directement)': ' (of which {0} directly)',
   Déplier: 'Show',
-  'Petit dossier : moins de {0} photos': 'Small folder: fewer than {0} photos',
-  petit: 'small',
   vide: 'empty',
   'Mis de côté': 'Set aside',
   'Ni photo ni vidéo : copiés dans « {0} » avec leur chemin d’origine':
@@ -199,7 +197,6 @@ export const TEXTES: Record<string, string> = {
   'Nouveau dossier': 'New folder',
   Renommer: 'Rename',
   // Fusionner avec… et calendrier sous le nom d'un dossier (D94).
-  'Mettre ses photos dans un autre dossier (ou glisser ce dossier sur un autre, à gauche)': 'Put its photos into another folder (or drag this folder onto another, on the left)',
   'Ses photos passent dans le dossier choisi. Les plus proches dans le temps sont en tête.': 'Its photos go into the chosen folder. The closest in time come first.',
 
   // TriRapide.tsx
@@ -291,7 +288,5 @@ export const TEXTES: Record<string, string> = {
   'Tout ranger à nouveau': 'Arrange everything again',
   'Photos pas encore rangées': 'Photos not arranged yet',
   // Étape 7 : dossiers nouveaux, ordre par taille (D89) ; le calendrier dans les lieux connus (D88).
-  'Dossier créé par le tri automatique : il n’existe pas dans votre dossier d’origine': 'Folder created by the automatic sorting: it does not exist in your original folder',
-  'Dossier créé à la main : il n’existe pas dans votre dossier d’origine': 'Folder created by hand: it does not exist in your original folder',
   'Par taille (les plus petits d’abord)': 'By size (smallest first)',
 };

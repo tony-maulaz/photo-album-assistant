@@ -25,8 +25,9 @@ import { TEXTES as lot_retours1029 } from './lot_retours1029';
 import { TEXTES as lot_badges } from './lot_badges';
 import { TEXTES as lot_doublons2d } from './lot_doublons2d';
 import { TEXTES as lot_tri3 } from './lot_tri3';
+import { TEXTES as lot_lieux4 } from './lot_lieux4';
 
 /** Les tables séparément, pour que le test repère une même phrase traduite de deux façons. */
-export const PARTIES = { commun, composants, logique, navigateur, pagesA, pagesB, pagesC, lot_sortie, lot_album, lot_selection, lot_rangement, lot_doublons, lot_accueil, lot_general, lot_tri, lot_noms, lot_consolidation, lot_charte2, lot_charte3, lot_charte4, lot_retours1029, lot_badges, lot_doublons2d, lot_tri3 };
+export const PARTIES = { commun, composants, logique, navigateur, pagesA, pagesB, pagesC, lot_sortie, lot_album, lot_selection, lot_rangement, lot_doublons, lot_accueil, lot_general, lot_tri, lot_noms, lot_consolidation, lot_charte2, lot_charte3, lot_charte4, lot_retours1029, lot_badges, lot_doublons2d, lot_tri3, lot_lieux4 };
 
 export const EN: Record<string, string> = Object.assign({}, ...Object.values(PARTIES));

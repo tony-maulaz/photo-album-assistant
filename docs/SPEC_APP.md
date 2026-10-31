@@ -193,8 +193,8 @@ Présent dans toutes les pages où l'on voit des photos (étapes 3 à 10).
   netteté, étiquettes IA), zoom, rotation.
 - **Comparateur** : 2 à 4 photos côte à côte, **zoom et déplacement
   synchronisés**.
-- **Ligne de temps** : journées en colonnes, dossiers en blocs, événements du
-  calendrier en bandeau.
+- **Chronologie** (ancien « Ligne de temps ») : journées en colonnes, dossiers
+  en blocs, événements du calendrier en bandeau.
 
 ## 6. Pages d'étape
 
@@ -415,7 +415,16 @@ prises, le jour même et à l'heure près ; un clic sélectionne ces photos). Da
 un dossier de plusieurs jours, « Nouveau dossier avec cette journée » la sort
 dans un dossier voisin, nommé d'après l'événement ou le lieu et le jour.
 
-**Vues** : arborescence, ligne de temps, filtre « seulement les alertes ».
+**Vues** : arborescence, Chronologie (choix « Photos · Chronologie » au bout
+de la tête du dossier ouvert, D112 point 10), filtre « seulement les alertes ».
+**Liste des dossiers** (D112 point 10, CHARTE C-7.7) : le nom, puis la période
+et de petites icônes à bulle (calendrier ; petit dossier, gris, même en vrac) ;
+au bout, le menu « … » (C-4.14) : Renommer (F2), Réunir avec un autre
+dossier…, Mettre dans un autre dossier… (il en devient un sous-dossier,
+annulable), Déplacer les photos choisies… (M), Retirer ce dossier s'il est
+vide ; le même menu à côté du nom du dossier ouvert, au clic droit et avec
+Maj+F10. L'événement du calendrier s'écrit en entier dans la tête du dossier
+ouvert.
 **Calendrier** : les dossiers d'un même événement ne sont plus proposés à
 réunir à cette étape (D106) : la Consolidation (§ 6.7) le fait, photos à
 l'appui, pour un même événement au même endroit.
@@ -431,22 +440,29 @@ photos prises juste avant et après ; proposition de rattachement.
 
 ### 6.5 Étape 8 — Petits dossiers (IA)
 Un petit dossier à la fois (D90), comme les Doublons : à gauche, la liste des
-petits dossiers dans l'ordre du temps, chacun avec son état (à décider, ✓) ;
+petits dossiers dans l'ordre du temps (la ligne de dossier commune, C-7.7 :
+le nom, puis la date et l'état écrit, « à décider », « mis avec … », « gardé
+seul », et le nombre de photos ; la même poignée que Lieux et sorties) ;
 au centre, ses photos en grand (curseur de taille, clic : visionneuse), entre
 le dossier **juste avant** et **juste après** lui dans le temps, photo à
 photo, quel que soit l'écart (« Pendant cette sortie » s'il a été pris
 pendant un dossier). Pour chaque voisin : l'écart (« 31 min plus tôt », « le
 lendemain »), la distance, ses photos prises au plus près avec leur heure,
 « petit aussi » s'il est petit, et sous lui « ◀ Mettre avec ce dossier »
-(« Ses 2 photos iront dans « … » (14 photos ensuite). Le petit dossier
-disparaît. »). Au centre : « Garder seul », « Autre dossier… » (les dossiers
-pris au plus près dans le temps d'abord, avec une vignette ; ni dossiers
-techniques, ni « Ne pas toucher », ni parents sans photos à eux). Après un
-choix, on passe au suivant ; rien ne disparaît de la liste, « Annuler ce
-choix » et Ctrl+Z défont. Clavier : ← et →, G, J et K. **Cas évidents** (un
-voisin à moins d'1 h et de 10 km, ni lieu connu ni dossier de mois) : un
-bandeau ouvre leur liste, « Retirer » par ligne, puis un bouton les range
-tous. **Aide IA** facultative : elle compare chaque petit dossier à ses deux
+(son infobulle : « Ses 2 photos iront dans « … » (14 photos ensuite). Le
+petit dossier disparaît. »). Le rôle de chaque colonne en titre (« ← Pendant
+cette sortie », « Ce petit dossier », « Juste après → »), puis le nom du
+voisin, puis l'écart en gris (D112 point 10). Au centre : « Garder seul ». À
+côté du nom du petit dossier, le crayon (F2) et le menu « … » : Renommer,
+Réunir avec un autre dossier… (les dossiers pris au plus près dans le temps
+d'abord, avec une vignette ; ni dossiers techniques, ni « Ne pas toucher », ni
+parents sans photos à eux ; l'ancien « Autre dossier… »), et le nom proposé
+par l'IA. Après un choix, on passe au suivant ; rien ne disparaît de la liste,
+« Annuler ce choix » et Ctrl+Z défont. Clavier : ← et →, G, J et K, F2,
+Maj+F10. **Cas évidents** (un voisin à moins d'1 h et de 10 km, ni lieu connu
+ni dossier de mois) : « 1 petit dossier a un voisin évident : voir », dans la
+barre d'outils avec l'aide IA, ouvre leur liste, « Retirer » par ligne, puis
+un bouton les range tous. **Aide IA** facultative : elle compare chaque petit dossier à ses deux
 voisins ; sa proposition s'affiche sur le voisin choisi, « Accepter les N
 propositions sûres » pour celles à 8 sur 10 ou plus. Un dossier qui a des
 sous-dossiers n'est jamais un petit dossier (ses étapes le sont).

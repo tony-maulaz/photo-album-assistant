@@ -12,7 +12,7 @@ import { BarreValidation, RaisonDesactivee } from '../composants/Cadre';
 import { AideEtape, LigneEtape } from '../composants/CadreCommun';
 import { Icone } from '../composants/Icones';
 import { GrillePhotos } from '../composants/GrillePhotos';
-import { ActionsDossier, PanneauDossiers, SEUIL_PETIT, styleLargeurPanneau, TitreVue } from '../composants/PanneauDossiers';
+import { ActionsDossier, choisirDossierPour, commencerRenommage, ouvrirMenuDossierAffiche, PanneauDossiers, petitDossier, SEUIL_PETIT, styleLargeurPanneau, TitreVue } from '../composants/PanneauDossiers';
 import { nombreSansGps } from '../composants/AidesTri';
 import { LigneDeTemps } from '../composants/LigneDeTemps';
 import { DialogueDeplacer, Visionneuse } from '../composants/Visionneuse';
@@ -33,7 +33,6 @@ import {
   parentPourNouveau,
   recentsValides,
   remettreSelection,
-  renommage,
   selection,
   sousDossiersSeulement,
   visionneuse,
@@ -56,9 +55,10 @@ function quand(e: EvenementCalendrier): string {
 
 /**
  * Titre d'une journée dans la grille (D94) : la date, le nombre de photos et
- * les événements du calendrier pendant lesquels elles ont été prises (un clic
- * sélectionne ces photos). Dans un dossier de plusieurs jours, « Nouveau
- * dossier avec cette journée » la sort, avec un nom proposé (titre de
+ * les événements du calendrier pendant lesquels elles ont été prises, en texte
+ * gris avec l'icône (D112 point 10 : plus de pastille verte) ; un clic
+ * sélectionne toujours ces photos. Dans un dossier de plusieurs jours,
+ * « Nouveau dossier avec cette journée » la sort, avec un nom proposé (titre de
  * l'événement, sinon lieu et date) : remplace « Scinder par jour ».
  */
 function TitreJournee({ photos, jour, dossier }: { photos: FichierPlan[]; jour: string; dossier?: DossierPlan }) {
@@ -149,7 +149,9 @@ export function PageOrganiser() {
       else if ((e.key === 'Delete' || e.key === 'Backspace') && ids.length) {
         if (vue.value === VUE_MIS_DE_COTE) remettreSelection();
         else mettreSelectionDeCote();
-      } else if (e.key === 'F2' && session.value!.plan.dossiers.get(vue.value)?.parent) renommage.value = vue.value;
+      } else if (e.key === 'F2' && session.value!.plan.dossiers.get(vue.value)?.parent) commencerRenommage(vue.value);
+      // Maj+F10 ou la touche Menu : le menu « … » du dossier affiché (C-4.14).
+      else if ((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') ouvrirMenuDossierAffiche();
       else if (e.key === 'Enter' && ids.length === 1) visionneuse.value = elementsVue(session.value!.plan, vue.value).findIndex((f) => f.id === ids[0]);
       else if (e.key === 'Escape') selection.value = new Set();
       else return;
@@ -178,6 +180,10 @@ export function PageOrganiser() {
   const groupes = avecTitres
     ? jours.map((g) => ({ debut: g.debut, titre: <TitreJournee photos={elements.slice(g.debut, g.debut + g.n)} jour={g.jour} dossier={sortirJours} /> }))
     : undefined;
+
+  // Événements des photos du dossier ouvert, écrits en entier dans sa tête ; petit dossier : une phrase dessous.
+  const evtsVue = dossier && !enMisDeCote && !enAutres ? evenementsDesPhotos(evenements.value, elements.flatMap((f) => (f.date ? [f.date] : []))) : [];
+  const petitVue = dossier && !enMisDeCote && !enAutres ? petitDossier(dossier.id) : undefined;
 
   // L'en-tête se replie une fois l'arborescence en place : la place va au panneau et aux photos.
   const arborescencePrete = s.projet.mode !== 'vrac' || [...plan.dossiers.values()].some((d) => d.origine === 'tri');
@@ -218,34 +224,60 @@ export function PageOrganiser() {
       <PanneauDossiers />
       <section class="contenu-organiser">
         <div class="tete-vue">
-          <div class="bascule-vue" role="tablist">
-            <button type="button" class={temps ? '' : 'actif'} onClick={() => setTemps(false)}>
-              {t`Photos`}
-            </button>
-            <button type="button" class={temps ? 'actif' : ''} onClick={() => setTemps(true)} title={t`Les dossiers sur une ligne de temps, avec le calendrier`}>
-              {t`Ligne de temps`}
-            </button>
-          </div>
           <TitreVue
             titre={titreVue}
             id={dossier && dossier.parent !== null ? dossier.id : undefined}
+            actions={!enMisDeCote && !enAutres && dossier && dossier.parent !== null ? <ActionsDossier /> : undefined}
             sousTitre={
-              resumeVue &&
-              (sousDossiers ? (
+              resumeVue && (
                 <>
-                  {periode(resumeVue.duTotal, resumeVue.auTotal)} · {pluriel(resumeVue.photosTotal, 'photo')}
-                  {resumeVue.videosTotal ? ` · ${pluriel(resumeVue.videosTotal, 'vidéo')}` : ''} {t`dans ses sous-dossiers`}
+                  {sousDossiers ? (
+                    <>
+                      {periode(resumeVue.duTotal, resumeVue.auTotal)} · {pluriel(resumeVue.photosTotal, 'photo')}
+                      {resumeVue.videosTotal ? ` · ${pluriel(resumeVue.videosTotal, 'vidéo')}` : ''} {t`dans ses sous-dossiers`}
+                    </>
+                  ) : (
+                    <>
+                      {periode(resumeVue.du, resumeVue.au)} · {pluriel(resumeVue.photos, 'photo')}
+                      {resumeVue.videos ? ` · ${pluriel(resumeVue.videos, 'vidéo')}` : ''}
+                    </>
+                  )}
+                  {/* L'événement du calendrier, en entier dans la tête du dossier ouvert (D112 point 10). */}
+                  {evtsVue.length > 0 && (
+                    <span class="evenements-vue">
+                      {' · '}
+                      <Icone nom="calendrier" taille={14} />
+                      {evtsVue.map((x) => x.evenement.titre).join(' · ')}
+                    </span>
+                  )}
                 </>
-              ) : (
-                <>
-                  {periode(resumeVue.du, resumeVue.au)} · {pluriel(resumeVue.photos, 'photo')}
-                  {resumeVue.videos ? ` · ${pluriel(resumeVue.videos, 'vidéo')}` : ''}
-                </>
-              ))
+              )
             }
           />
-          {!enMisDeCote && !enAutres && <ActionsDossier />}
+          {/* « Photos · Chronologie » au bout de la tête (D112 point 10, C-4.9) : un choix segmenté. */}
+          <div class="choix-segmente bascule-vue" role="radiogroup" aria-label={t`Vue`}>
+            <button type="button" role="radio" aria-checked={!temps} onClick={() => setTemps(false)}>
+              {t`Photos`}
+            </button>
+            <button type="button" role="radio" aria-checked={temps} onClick={() => setTemps(true)} title={t`Les dossiers sur une ligne de temps, avec le calendrier`}>
+              {t`Chronologie`}
+            </button>
+          </div>
         </div>
+        {petitVue !== undefined && !temps && (
+          <p class="note-petit">
+            <Icone nom="dossier" taille={16} />
+            <span>
+              <strong>{t`Petit dossier.`}</strong>{' '}
+              {s.projet.mode === 'vrac'
+                ? t`Il sera traité à l’étape suivante, « Petits dossiers » : rien à faire ici.`
+                : t`Moins de ${SEUIL_PETIT} photos : vous pouvez le réunir avec un autre dossier.`}
+            </span>
+            <button type="button" class="lien" onClick={() => choisirDossierPour(dossier!.id, 'reunir')}>
+              {t`Le réunir maintenant…`}
+            </button>
+          </p>
+        )}
         {choisis.size > 0 && !enAutres && !temps && (
           <div class="barre-action" role="toolbar" aria-label={t`Photos sélectionnées`}>
             <span class="compte-selection">{pluriel(choisis.size, 'sélectionnée', 'sélectionnées')}</span>

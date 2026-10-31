@@ -86,12 +86,10 @@ export const TEXTES: Record<string, string> = {
   'Aller au tri automatique': 'Go to automatic sorting',
   Photos: 'Photos',
   'Les dossiers sur une ligne de temps, avec le calendrier': 'The folders on a timeline, with the calendar',
-  'Ligne de temps': 'Timeline',
   photo: 'photo',
   photos: 'photos',
   vidéo: 'video',
   vidéos: 'videos',
-  'Calendrier : la moitié au moins des photos ont été prises pendant « {0} »': 'Calendar: at least half of the photos were taken during “{0}”',
   // Titres de journée et calendrier dans la grille (D94).
   '{0} : {1} pendant. Cliquer pour les sélectionner.': '{0}: {1} during it. Click to select them.',
   'photo prise': 'photo taken',

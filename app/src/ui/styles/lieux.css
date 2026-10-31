@@ -1,0 +1,203 @@
+/* Lieux et sorties et Petits dossiers (D112 point 10, É16) : la ligne de dossier commune (C-7.7), ses icônes à
+   bulle (C-4.13), le menu « … » (C-4.14), la tête du dossier ouvert (crayon, « … », événements, petit dossier). */
+
+/* Les icônes à bulle d'une ligne de dossier : 14 px, cible de 24 px qui ne grandit pas la deuxième ligne. */
+.ligne-dossier .icone-bulle button.bouton-bulle {
+  margin: -2px 0;
+}
+
+/* L'icône « petit dossier » : grise, jamais brune (rien à faire ici). */
+button.bouton-petit {
+  color: var(--texte-2);
+}
+
+/* Trouvé par son événement : celui-ci s'écrit sous la ligne, en gris, avec l'icône. */
+.evenement-trouve {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+  min-width: 0;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.evenement-trouve span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.evenement-trouve .icone {
+  flex: none;
+}
+
+/* « … » au bout de la ligne : visible sur la ligne choisie, survolée, ou dont le menu est ouvert ; sa place est
+   gardée sur les autres, pour que les nombres restent alignés. */
+.ligne-dossier button.plus-dossier {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-color: transparent;
+  background: none;
+  color: var(--texte-2);
+  visibility: hidden;
+}
+
+.ligne-dossier:hover button.plus-dossier,
+.ligne-dossier.actif button.plus-dossier,
+.ligne-dossier.menu-ouvert button.plus-dossier,
+.ligne-dossier button.plus-dossier:focus-visible {
+  visibility: visible;
+}
+
+.ligne-dossier button.plus-dossier:hover:not(:disabled),
+.ligne-dossier button.plus-dossier[aria-expanded='true'] {
+  border-color: var(--filet-fort);
+  background: var(--surface);
+  color: var(--texte);
+}
+
+/* Menu « … » (C-4.14) : en surface, posé sur la page, fixe dans la fenêtre ; chaque action a son icône, son mot,
+   ce qu'elle fait en gris dessous, et sa touche au bout. */
+.menu-actions {
+  position: fixed;
+  z-index: 75;
+  display: flex;
+  flex-direction: column;
+  width: min(320px, calc(100vw - 16px));
+  padding: 6px;
+  border: 1px solid var(--filet);
+  border-radius: var(--r-objet);
+  background: var(--surface);
+  box-shadow: var(--ombre-flottant);
+}
+
+.titre-menu-actions {
+  padding: var(--e1) 10px 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--texte-2);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+  font-weight: 600;
+}
+
+.menu-actions .apart {
+  margin-top: var(--e1);
+  padding-top: var(--e1);
+  border-top: 1px solid var(--filet);
+}
+
+.menu-actions button {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--h-btn);
+  padding: 6px 10px;
+  border-color: transparent;
+  background: none;
+  color: var(--texte);
+  text-align: left;
+}
+
+.menu-actions button:hover:not(:disabled),
+.menu-actions button:focus-visible {
+  background: var(--neutre-doux);
+}
+
+/* C-4.7 : grisée, bord en pointillé, sa raison écrite dessous. */
+.menu-actions button:disabled {
+  border-color: var(--filet-fort);
+  border-style: dashed;
+  background: none;
+  color: var(--texte-2);
+}
+
+.menu-actions button .icone {
+  flex: none;
+  margin-top: 2px;
+}
+
+.texte-action {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detail-action {
+  color: var(--texte-2);
+  font-weight: 400;
+}
+
+.menu-actions kbd {
+  flex: none;
+}
+
+/* Tête du dossier ouvert : le nom, puis le crayon et « … », sans bord (icônes seules, nom lu et infobulle). */
+.ligne-titre-vue {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+  min-width: 0;
+}
+
+.ligne-titre-vue h2 {
+  min-width: 0;
+}
+
+.actions-dossier {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.actions-dossier button.bouton-icone {
+  border-color: transparent;
+  background: none;
+  color: var(--texte-2);
+}
+
+.actions-dossier button.bouton-icone:hover:not(:disabled),
+.actions-dossier button.bouton-icone[aria-expanded='true'] {
+  border-color: var(--filet-fort);
+  color: var(--texte);
+}
+
+.evenements-vue .icone {
+  margin: 0 2px -2px 0;
+}
+
+/* Petit dossier ouvert : une phrase sous la tête, grise, et « Le réunir maintenant… » au bout. */
+.note-petit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0 22px var(--e2);
+  padding: var(--e2) var(--e3);
+  border-radius: var(--r-commande);
+  background: var(--neutre-doux);
+  color: var(--texte);
+  font-size: var(--t-petit);
+  line-height: var(--lh-petit);
+}
+
+.note-petit .icone {
+  flex: none;
+  color: var(--texte-2);
+}
+
+.note-petit button.lien {
+  margin-left: auto;
+}

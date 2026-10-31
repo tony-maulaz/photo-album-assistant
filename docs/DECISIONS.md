@@ -1524,6 +1524,25 @@ du tri qui portent encore leur nom automatique (le nom du lieu y est remplacé ;
 un dossier nommé d'après une commune homonyme à plus de 5 km n'est pas
 touché). La fenêtre ne se ferme plus seule (D107 levée sur ce point).
 
+Précisions du 31.10 (point 10, Lieux et sorties et Petits dossiers ; CHARTE
+É16) : la ligne de dossier commune garde le nom en 14 px / 600 de la
+Sélection (C-7.7), pas 15 px / 500 (C-2.1 n'a pas de 15 px). L'icône
+« petit dossier » marque, en vrac, les dossiers que l'étape Petits dossiers
+examinera (ni gardés, ni de mois, ni exclus), dans un dossier déjà trié ceux
+de moins de 5 photos ; pas à la Sélection (D94 levée sur ce point et sur
+l'événement écrit en vert sous le nom). Un clic sur une icône de la liste
+épingle sa bulle sans ouvrir le dossier. « Mettre dans un autre dossier… »
+se fait sans confirmation (Ctrl+Z annule), propose aussi « Photos, le dossier
+principal », jamais le dossier où il est déjà ni ses sous-dossiers.
+« Déplacer les photos choisies… » ne vaut que pour le dossier affiché (sinon
+grisé, sa raison écrite). À Lieux et sorties, la saisie du nom reste dans la
+liste (ses parents se déplient) ; à Petits dossiers, elle se fait dans la tête.
+« Autre dossier… » de Petits dossiers devient « Réunir avec un autre
+dossier… » du menu « … » ; le nom proposé par l'IA reste aussi en bouton au
+centre ; « 1 petit dossier a un voisin évident : voir › » est en contour ;
+ce que fera « Mettre avec ce dossier » passe dans son infobulle. « Photos
+(racine) » n'est pas renommé à ce sous-lot.
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

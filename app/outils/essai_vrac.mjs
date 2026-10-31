@@ -1189,48 +1189,177 @@ try {
   await capturer(page, 'v3a_lieux');
   verifier(noms.some((n) => n.startsWith('Ko_Samui')) && noms.some((n) => n.startsWith('Annecy')), `dossiers nommés d’après les lieux : ${noms.filter((n) => !['Photos (racine)', 'Mis de côté', 'Autres fichiers'].includes(n)).join(', ')}`);
   verifier(noms.includes('BESTOF') && noms.includes('janvier') && noms.includes(N.captures), 'dossiers gardés tels quels et captures conservés');
-  // Les dossiers créés par le tri portent « nouveau » ; ceux de la source, non (D89).
+  // Les dossiers créés par le tri sont « nouveaux » ; ceux de la source, non (D89). La mention passe dans l'infobulle
+  // de la ligne (D112 point 10) : plus de badge.
   const ligneDe = (nom) => page.locator('.ligne-dossier', { has: page.locator('.nom-dossier', { hasText: new RegExp(`^${nom}`) }) }).first();
-  verifier((await ligneDe('Ko_Samui').locator('.badge.cree').count()) === 1 && (await ligneDe('BESTOF').locator('.badge.cree').count()) === 0, 'étape 7 : « nouveau » sur les dossiers du tri, pas sur ceux de la source');
+  verifier(
+    (await ligneDe('Ko_Samui').getAttribute('data-nouveau')) === 'tri' &&
+      (await ligneDe('Ko_Samui').getAttribute('title')).includes('créé par le tri automatique') &&
+      (await ligneDe('BESTOF').getAttribute('data-nouveau')) === null &&
+      (await page.locator('.ligne-dossier .badge.cree').count()) === 0,
+    'étape 7 : « nouveau » dans l’infobulle des dossiers du tri, pas sur ceux de la source ; plus de badge (D112 point 10)',
+  );
+  // Ligne de dossier commune (C-7.7) : le nom en 600 sur la première ligne, la période dessous.
+  {
+    const l = await ligneDe('Ko_Samui').evaluate((x) => {
+      const nom = x.querySelector('.nom-dossier').getBoundingClientRect();
+      const dates = x.querySelector('.dates-dossier').getBoundingClientRect();
+      return { poids: getComputedStyle(x.querySelector('.nom-dossier')).fontWeight, dessous: dates.top >= nom.bottom - 1, ligneEvenement: !!x.querySelector('.evenement-dossier') };
+    });
+    verifier(l.poids === '600' && l.dessous && !l.ligneEvenement, `ligne de dossier commune : le nom en 600, la période dessous, plus de ligne verte pour l’événement (${JSON.stringify(l)})`);
+  }
   // Forme E (D112) : l'explication est l'Aide de l'étape, sous la ligne ; « Aide » reste dans la ligne de l'étape.
   verifier((await page.locator('main[data-etape=lieux] .aide-etape').count()) === 1, 'première visite : l’explication de l’étape est ouverte');
   await page.locator('.aide-etape .fermer-aide').click();
   verifier((await page.locator('.aide-etape').count()) === 0 && (await page.locator('.ligne-etape [data-place=aide][aria-expanded=false]').count()) === 1, 'repliée, l’explication laisse « Aide » dans la ligne de l’étape');
-  await page.getByRole('button', { name: 'Ligne de temps' }).click();
+  // « Photos · Chronologie » (D112 point 10) : un choix segmenté au bout de la tête, l'ancien « Ligne de temps ».
+  verifier((await page.getByRole('button', { name: 'Ligne de temps' }).count()) === 0, '« Ligne de temps » devient « Chronologie »');
+  {
+    const tete = await page.locator('.tete-vue').evaluate((t) => {
+      const s = t.querySelector('.choix-segmente').getBoundingClientRect();
+      const h = t.querySelector('h2').getBoundingClientRect();
+      return { auBout: s.left > h.right, radios: t.querySelectorAll('.choix-segmente [role=radio]').length };
+    });
+    verifier(tete.auBout && tete.radios === 2, `« Photos · Chronologie » : choix segmenté au bout de la tête (${JSON.stringify(tete)})`);
+  }
+  await page.getByRole('radio', { name: 'Chronologie' }).click();
   const barres = await page.locator('.ldt-barre').count();
   await capturer(page, 'v3b_ligne_de_temps');
-  verifier(barres >= 8, `ligne de temps : ${barres} dossiers en barres`);
+  verifier(barres >= 8 && (await page.getByRole('radio', { name: 'Chronologie' }).getAttribute('aria-checked')) === 'true', `Chronologie : ${barres} dossiers en barres, la case allumée`);
   await page.locator('.ldt-barre').first().click();
   verifier((await page.locator('.ldt-barre').count()) === 0, 'un clic sur une barre ouvre le dossier');
-  await page.getByRole('button', { name: 'Ligne de temps' }).click();
-  verifier((await page.locator('.ldt-barre.actif').count()) >= 1, 'ligne de temps : le dossier choisi est mis en évidence');
-  await page.getByRole('button', { name: 'Photos', exact: true }).click();
+  await page.getByRole('radio', { name: 'Chronologie' }).click();
+  verifier((await page.locator('.ldt-barre.actif').count()) >= 1, 'Chronologie : le dossier choisi est mis en évidence');
+  await page.getByRole('radio', { name: 'Photos', exact: true }).click();
   // Plus d'encart des regroupements du calendrier à cette étape : ils passent à la Consolidation (D106).
   await capturer(page, 'v3c_calendrier');
   verifier((await page.locator('.regroupements-calendrier').count()) === 0, 'étape 7 : plus d’encart des regroupements du calendrier (D106)');
-  // Le calendrier avec les photos (D94) : sous le nom du dossier et sur sa journée ; un clic sur l'événement de la
-  // journée sélectionne les photos prises pendant.
-  await ligneDe('Ko_Samui').click();
+  // Le calendrier avec les photos (D94 ; D112 point 10) : l'icône de la ligne (sa bulle), l'événement en entier dans
+  // la tête du dossier ouvert et sur sa journée, en texte gris ; un clic sur l'événement de la journée choisit les
+  // photos prises pendant.
+  await ligneDe('Ko_Samui').locator('.nom-dossier').click();
   const titreJour = (await page.locator('.titre-groupe').first().innerText()).replace(/\s+/g, ' ');
   await capturer(page, 'v3d_journee');
+  const iconeCal = ligneDe('Ko_Samui').locator('.bouton-calendrier');
   verifier(
-    (await ligneDe('Ko_Samui').locator('.evenement-dossier').innerText()).includes('18 ans de Lea') &&
+    (await iconeCal.getAttribute('aria-label')).startsWith('Votre calendrier') &&
+      (await page.locator('.tete-vue .sous-titre-vue').innerText()).includes('18 ans de Lea') &&
       titreJour.includes('18 ans de Lea') &&
       titreJour.includes('Voyage Thaïlande'),
-    `calendrier sous le nom du dossier et sur la journée : ${titreJour}`,
+    `calendrier : icône de la ligne, tête du dossier ouvert et journée : ${titreJour}`,
   );
+  await iconeCal.click();
+  await page.locator('.bulle-calendrier').waitFor();
+  verifier((await page.locator('.bulle-calendrier').innerText()).includes('18 ans de Lea') && (await page.locator('.tete-vue h2').innerText()).startsWith('Ko_Samui'), 'un clic sur l’icône calendrier épingle sa bulle, sans changer de dossier');
+  await page.keyboard.press('Escape');
+  await page.locator('.bulle-calendrier').waitFor({ state: 'detached' });
+  {
+    const style = await page.locator('.titre-groupe .evenement-jour').first().evaluate((b) => {
+      const c = getComputedStyle(b);
+      return { taille: c.fontSize, fond: c.backgroundColor, souligne: c.textDecorationLine };
+    });
+    verifier(style.taille === '14px' && /rgba\(0, 0, 0, 0\)|transparent/.test(style.fond) && style.souligne.includes('underline'), `événement de la journée : texte gris de 14 px, souligné, sans pastille (${JSON.stringify(style)})`);
+  }
   await page.locator('.titre-groupe .evenement-jour').first().click();
   verifier((await page.locator('.tuile.choisie').count()) === (await page.locator('.tuile').count()), 'un clic sur l’événement sélectionne ses photos');
   verifier((await page.getByRole('button', { name: 'Scinder par jour' }).count()) === 0, '« Scinder par jour » n’existe plus (D94)');
+  await page.keyboard.press('Escape');
+  // La recherche trouve un dossier par son événement : celui-ci s'écrit sous la ligne.
+  await page.locator('.recherche-dossiers input[type=search]').fill('18 ans');
+  await ligneDe('Ko_Samui').locator('.evenement-trouve').waitFor();
+  verifier((await ligneDe('Ko_Samui').locator('.evenement-trouve').innerText()).includes('18 ans de Lea'), 'recherche par événement : l’événement s’écrit sous la ligne trouvée');
+  await page.locator('.recherche-dossiers input[type=search]').fill('');
+  // L'icône « petit dossier », même en vrac (réponse 18), grise, avec sa bulle ; la phrase dans la tête du dossier ouvert.
+  {
+    const petits = page.locator('.ligne-dossier .bouton-petit');
+    const n = await petits.count();
+    const couleur = n ? await petits.first().evaluate((b) => getComputedStyle(b).color === getComputedStyle(document.querySelector('.dates-dossier')).color) : false;
+    const ligne = page.locator('.ligne-dossier:has(.bouton-petit)').first();
+    const nom = await ligne.locator('.nom-dossier').innerText();
+    await ligne.locator('.bouton-petit').hover();
+    await page.locator('.bulle-petit').waitFor();
+    const bulle = await page.locator('.bulle-petit').innerText();
+    await page.mouse.move(900, 600);
+    await ligne.locator('.nom-dossier').click();
+    await page.locator('.note-petit').waitFor();
+    const note = await page.locator('.note-petit').innerText();
+    await capturer(page, 'v3e_petit_dossier');
+    verifier(n >= 1 && couleur && /Petit dossier : \d photos?/.test(bulle) && bulle.includes('étape suivante') && note.includes('Petits dossiers') && note.includes('Le réunir maintenant'), `icône « petit dossier » en vrac (${n}), grise, sa bulle et la phrase dans la tête de « ${nom} »`);
+  }
+  // Le menu « … » (C-4.14) : crayon puis « … » dans la tête ; les mêmes actions au bout de la ligne, au clic droit et avec Maj+F10.
+  await ligneDe('Ko_Samui').locator('.nom-dossier').click();
+  await page.locator('.tete-vue .plus-dossier').click();
+  const menu = page.locator('.menu-actions');
+  await menu.waitFor();
+  const actions = await menu.locator('[role=menuitem]').evaluateAll((l) => l.map((b) => `${b.querySelector('.libelle-action').textContent}${b.disabled ? ' (grisée)' : ''}`));
+  const focusMenu = await page
+    .waitForFunction(() => document.activeElement?.getAttribute('role') === 'menuitem', null, { timeout: 2000 })
+    .then(() => 'menuitem')
+    .catch(() => page.evaluate(() => document.activeElement?.outerHTML.slice(0, 80)));
+  await capturer(page, 'v3f_menu');
+  verifier(
+    actions.join(' | ') === 'Renommer | Réunir avec un autre dossier… | Mettre dans un autre dossier… | Déplacer les photos choisies… (grisée) | Retirer ce dossier (grisée)' && focusMenu === 'menuitem',
+    `menu « … » : ${actions.join(' | ')} ; le focus dans le menu (${focusMenu})`,
+  );
+  // Grisées, leur raison est écrite dessous (C-4.7).
+  verifier(
+    (await menu.locator('[role=menuitem]:disabled').evaluateAll((l) => l.every((b) => b.getAttribute('aria-describedby') && document.getElementById(b.getAttribute('aria-describedby'))?.textContent))) === true,
+    'menu « … » : chaque action grisée dit pourquoi',
+  );
+  await page.keyboard.press('Escape');
+  await menu.waitFor({ state: 'detached' });
+  verifier((await page.evaluate(() => document.activeElement?.classList.contains('plus-dossier'))) === true, 'Échap ferme le menu, le focus revient sur « … »');
+  // Renommer depuis le menu, au clavier (Maj+F10, ↓…), puis Ctrl+Z.
+  await page.evaluate(() => document.activeElement?.blur?.());
+  await page.keyboard.press('Shift+F10');
+  await menu.waitFor();
+  await page.keyboard.press('Enter');
+  await page.locator('.ligne-dossier .renommage').fill('Essai_menu');
+  await page.keyboard.press('Enter');
+  await ligneDe('Essai_menu').waitFor();
+  await page.keyboard.press('Control+z');
+  await ligneDe('Ko_Samui').waitFor();
+  verifier((await ligneDe('Essai_menu').count()) === 0, 'Maj+F10 puis Renommer : renommé ; Ctrl+Z rend son nom');
   // Réunir avec… : les dossiers les plus proches dans le temps d'abord, les dossiers techniques en dernier.
-  await page.getByRole('button', { name: 'Réunir avec…' }).click();
+  await page.locator('.tete-vue .plus-dossier').click();
+  await menu.getByRole('menuitem', { name: /Réunir avec un autre dossier/ }).click();
   const choixFusion = await page.locator('.choix-dossiers li').allInnerTexts();
-  await capturer(page, 'v3e_fusionner');
+  await capturer(page, 'v3g_fusionner');
   await page.keyboard.press('Escape');
   verifier(
     choixFusion.length > 3 && /^Mu_Ko_Ang_Thong|^Kanchanaburi/.test(choixFusion[0]) && !choixFusion.slice(0, 3).some((c) => c.startsWith(N.captures)) && (await page.locator('.dialogue.deplacer').count()) === 0,
-    `réunir avec… : ${choixFusion.slice(0, 3).join(' | ')}`,
+    `réunir avec… (menu « … ») : ${choixFusion.slice(0, 3).join(' | ')}`,
   );
+  // « Mettre dans un autre dossier… » (fonction nouvelle, deplacerDossier) : au clic droit sur la ligne ; il devient
+  // un sous-dossier, ses photos restent ; Ctrl+Z le remet.
+  {
+    const kanchanaburi = await page.locator('.ligne-dossier .nom-dossier', { hasText: /^Kanchanaburi/ }).allInnerTexts();
+    const [cible, source] = kanchanaburi;
+    const photosAvant = await ligneDe(source).locator('.nombre-dossier').innerText();
+    await ligneDe(source).locator('.nom-dossier').click({ button: 'right' });
+    await menu.waitFor();
+    await menu.getByRole('menuitem', { name: /Mettre dans un autre dossier/ }).click();
+    await page.locator('.dialogue.deplacer input').fill(cible);
+    const premier = await page.locator('.choix-dossiers li').first().innerText();
+    await page.keyboard.press('Enter');
+    await page.getByText(`« ${source} » est maintenant dans « ${cible} ».`).first().waitFor();
+    const titre = await ligneDe(source).getAttribute('title');
+    const photosApres = await ligneDe(source).locator('.nombre-dossier').innerText();
+    await capturer(page, 'v3h_mettre_dans');
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction((s) => [...document.querySelectorAll('.ligne-dossier')].some((l) => l.querySelector('.nom-dossier')?.textContent === s && l.title.startsWith(s)), source);
+    verifier(premier.startsWith(cible) && titre.startsWith(`${cible}/${source}`) && photosApres === photosAvant, `« Mettre dans un autre dossier… » (clic droit) : « ${source} » dans « ${cible} », ses ${photosAvant} photos avec lui ; Ctrl+Z le remet`);
+  }
+  // « Déplacer les photos choisies… » : grisée sans photo choisie, ouvre « Déplacer » avec ; « Retirer ce dossier » reste grisée (pas vide).
+  await ligneDe('Ko_Samui').locator('.nom-dossier').click();
+  await page.locator('.tuile').first().click();
+  await page.locator('.tete-vue .plus-dossier').click();
+  await menu.getByRole('menuitem', { name: /Déplacer les photos choisies/ }).click();
+  await page.locator('[role=dialog]').first().waitFor();
+  verifier((await page.locator('[role=dialog]').count()) >= 1, 'menu « … » : « Déplacer les photos choisies… » ouvre la fenêtre de déplacement');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
 
   // Étapes 8 à 10 (IA simulée).
   await page.locator('[data-action=valider]').click();
@@ -1280,6 +1409,60 @@ try {
   await page.locator('.ligne-etape .bouton-annuler').click();
   await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
   verifier(/Ctrl\+Z pour l’annuler/.test(rappel), `« Garder seul » : Ctrl+Z le défait, Ctrl+Y le refait ; son message (« ${rappel} ») renvoie à ↶, qui le défait aussi`);
+  // Petits dossiers (D112 point 10) : la ligne commune (le nom, puis la date et l'état écrit, le nombre de photos),
+  // les rôles en titre de 16 px / 600 ; renommer (F2, crayon, menu « … ») ; Ctrl+Z rend le nom.
+  {
+    const l = await page.locator('.ligne-liste-petit').first().evaluate((x) => ({
+      nom: !!x.querySelector('.nom-dossier'),
+      etat: x.querySelector('.etat-liste-petit')?.textContent,
+      nombre: x.querySelector('.nombre-dossier')?.textContent,
+      ronds: !!x.querySelector('[data-icone=cercle]'),
+    }));
+    const roles = await page.locator('.trio-petit .role-petit').evaluateAll((l) => l.map((h) => `${h.textContent}:${getComputedStyle(h).fontSize}/${getComputedStyle(h).fontWeight}`));
+    verifier(
+      l.nom && !!l.etat && /^\d+$/.test(l.nombre) && !l.ronds && roles.length === 3 && roles.every((r) => r.endsWith(':16px/600')) && roles[1].startsWith('Ce petit dossier'),
+      `petits dossiers : ligne commune (${JSON.stringify(l)}) ; rôles ${roles.join(' · ')}`,
+    );
+  }
+  {
+    const avant = await nomCourant();
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('F2');
+    await page.locator('.tete-petit .renommage-tete').fill('Petit_renomme');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tete-petit h2')?.textContent === 'Petit_renomme');
+    verifier((await page.locator('.ligne-liste-petit', { hasText: 'Petit_renomme' }).count()) === 1, 'petits dossiers : F2 renomme le petit dossier ouvert, la liste suit');
+    await page.keyboard.press('Control+z');
+    await page.waitForFunction((a) => document.querySelector('.tete-petit h2')?.textContent === a, avant);
+    await page.locator('.tete-petit .plus-dossier').click();
+    await page.locator('.menu-actions').waitFor();
+    const actions = await page.locator('.menu-actions [role=menuitem] .libelle-action').allInnerTexts();
+    await capturer(page, 'v4b_petits_menu');
+    await page.locator('.menu-actions [role=menuitem]', { hasText: 'Renommer' }).click();
+    await page.locator('.tete-petit .renommage-tete').press('Escape');
+    await page.locator('.tete-petit .actions-dossier .bouton-icone').first().click();
+    await page.locator('.tete-petit .renommage-tete').press('Escape');
+    verifier(
+      actions[0] === 'Renommer' && actions[1] === 'Réunir avec un autre dossier…' && (await nomCourant()) === avant,
+      `petits dossiers : Ctrl+Z rend le nom ; menu « … » : ${actions.join(' | ')} ; crayon et menu ouvrent la saisie, Échap y renonce`,
+    );
+  }
+  // À 1280×580, « Mettre avec ce dossier » et « Garder seul » se voient sans défiler : l'aide IA et les cas évidents
+  // sont dans la barre d'outils, sur une ligne.
+  {
+    await page.setViewportSize({ width: 1280, height: 580 });
+    // L'Aide repliée, comme à la première visite à 1280 (elle ne s'ouvre d'elle-même qu'à 1440 et plus).
+    if (await page.locator('.aide-etape .fermer-aide').count()) await page.locator('.aide-etape .fermer-aide').click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
+    const m = await page.evaluate(() => {
+      const bas = document.querySelector('.barre-validation')?.getBoundingClientRect().top ?? innerHeight;
+      return [...document.querySelectorAll('.trio-petit button')].filter((b) => /Mettre avec ce dossier|Garder seul/.test(b.textContent)).map((b) => Math.round(b.getBoundingClientRect().bottom) <= bas);
+    });
+    await capturer(page, 'v4c_petits_1280x580');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    verifier(m.length >= 2 && m.every(Boolean), `à 1280×580, « Mettre avec ce dossier » et « Garder seul » se voient sans défiler (${m.join(', ')})`);
+  }
   await page.locator('[data-action=valider]').click();
   await page.locator('main[data-etape=nommage]').waitFor();
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));

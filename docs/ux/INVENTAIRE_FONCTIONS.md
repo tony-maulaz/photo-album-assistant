@@ -240,27 +240,32 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 |---|---|---|
 | Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte tant que l'arborescence n'est pas calculée), « Fermer » la replie | V |
 | Aller au tri automatique (arborescence pas calculée) | bouton dans l'explication | V |
-| Panneau : chercher (aussi par événement du calendrier) | champ | V |
+| Panneau : chercher (aussi par événement du calendrier ; trouvé par son événement, celui-ci s'écrit sous la ligne, D112 point 10) | champ | V |
 | Panneau : ordre par nom / période / taille | liste | V |
 | Panneau : seulement les dossiers avec alerte | icône ⚠ (sans libellé) | I |
 | Panneau : nouveau dossier dans le dossier affiché ; déposer des photos dessus = nouveau dossier voisin | icône + ; dépôt | I/G |
 | Panneau : seulement les nouveautés | case (après mise à jour d'inventaire) | V |
 | Panneau : déplier/replier | ▸ ▾ | I |
-| Ouvrir un dossier | clic sur la ligne | V |
-| Renommer un dossier | double-clic sur la ligne, F2, ou crayon à côté du titre (la saisie se fait **dans le panneau**, pas au titre) | G/C/I |
-| Réunir deux dossiers | glisser un dossier sur un autre (confirmation), ou « Réunir avec… » (fenêtre de choix, ↑↓ Entrée) | G/V |
-| Retirer un dossier vide | « Retirer ce dossier vide » | V |
+| Ouvrir un dossier | clic sur la ligne (le nom, puis la période et les icônes : ligne commune C-7.7, D112 point 10) | V |
+| « Nouveau » (dossier créé par le tri ou à la main) | infobulle de la ligne (plus de badge, D112 point 10) | B |
+| Événements du calendrier d'un dossier | icône calendrier après la période (le nombre s'il y en a plusieurs), bulle au survol, au clic, au focus (C-4.13) ; en entier dans la tête du dossier ouvert (remplace la ligne verte sous le nom, D94) | I/V |
+| Petit dossier (moins de 5 photos ; en vrac, ceux que l'étape suivante examinera) | icône grise (dossier) après la période, même en vrac (réponse 18), bulle « Petit dossier : 2 photos… rien à faire ici » ; dans la tête du dossier ouvert, la phrase et « Le réunir maintenant… » (remplace le badge « petit » et l'alerte de la barre du bas hors vrac) | I/V |
+| Menu « … » d'un dossier : Renommer (F2), Réunir avec un autre dossier…, Mettre dans un autre dossier…, Déplacer les photos choisies… (M), Retirer ce dossier (s'il est vide) ; une action impossible reste grisée, sa raison dessous (C-4.14, D112 point 10) | « … » au bout de la ligne choisie ou survolée, « … » à côté du nom en haut, clic droit sur la ligne, Maj+F10 (ou la touche Menu) ; ↑ ↓ Entrée Échap | I/G/C |
+| Renommer un dossier | double-clic sur la ligne, F2, crayon à côté du nom en haut, ou « Renommer » du menu « … » (la saisie se fait **dans le panneau**, ses parents se déplient) | G/C/I |
+| Réunir deux dossiers | glisser un dossier sur un autre (confirmation), ou « Réunir avec un autre dossier… » du menu « … » (fenêtre de choix, ↑↓ Entrée, puis confirmation) ; « Le réunir maintenant… » d'un petit dossier ouvert | G/V |
+| Mettre un dossier dans un autre (il en devient un sous-dossier, ses photos restent ; fonction nouvelle à cette étape, Ctrl+Z annule) | « Mettre dans un autre dossier… » du menu « … » (fenêtre de choix, « Photos, le dossier principal » compris, ↑↓ Entrée) | V |
+| Retirer un dossier vide | « Retirer ce dossier » du menu « … » (grisé s'il n'est pas vide : « Seulement s'il est vide. ») | V |
 | Déplacer des photos | glisser sur un dossier du panneau ; « Déplacer… » ou M (fenêtre avec recherche et « + Créer le dossier ») ; touches 1 à 9 ou puces « 1 » « 2 » (derniers dossiers) | G/V/C |
 | Écarter / remettre | « Écarter » (ex-« Mettre de côté », É14 f) / « Remettre », Suppr ou Retour arrière ; glisser sur « Mis de côté » ; É14 : dans la vue « Mis de côté », chaque photo dit sous elle pourquoi et d'où vient la décision (« ✕ Floue », « punaise Écartée par vous », « ✕ Écartée avant »), sans clic | V/C/G |
 | Nouveau dossier avec les photos choisies | « Nouveau dossier » (barre) | V |
 | Nouveau dossier avec une journée | bouton sur le titre de la journée (dossier de plusieurs jours) | V |
-| Sélectionner les photos d'un événement du calendrier | clic sur l'étiquette 📅 du titre de journée | V/B |
+| Sélectionner les photos d'un événement du calendrier | clic sur l'événement du titre de journée (texte gris de 14 px avec l'icône, souligné légèrement, D112 point 10 ; ex-pastille verte) | V/B |
 | Toute la journée / Toute l'heure de la dernière photo cliquée | barre | V |
 | Sélection : clic, Ctrl, Maj, rectangle, flèches (+Maj), Ctrl+A, Échap | souris/clavier | G/C |
 | Chemin du dossier : remonter à un parent | liens au-dessus du titre | V |
 | ↶ ↷ (« Annuler : *le geste* » dans l'infobulle et le nom lu) | ligne de l'étape (forme E) | I/C |
-| Taille des photos | curseur à deux photos (petite et grande) dans la ligne de l'étape (absente en ligne de temps et Autres fichiers) | I |
-| Vue Photos / Ligne de temps ; clic sur une barre = ouvrir le dossier | bascule | V |
+| Taille des photos | curseur à deux photos (petite et grande) dans la ligne de l'étape (absente en Chronologie et Autres fichiers) | I |
+| Vue Photos / Chronologie (ex-« Ligne de temps ») ; clic sur une barre = ouvrir le dossier | choix segmenté au bout de la tête du dossier ouvert (D112 point 10) | V |
 | Mis de côté, Autres fichiers | lignes spéciales du panneau | V |
 | Élargir le panneau | poignée | G/B |
 | Voir en grand | double-clic ou Entrée ; visionneuse **sans aucun bouton** (M, Suppr, ← →, Échap, molette, 0) | G/C |
@@ -271,18 +276,21 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 |---|---|---|
 | Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
 | Taille des photos (centre ×1, côtés ×0,6) | curseur à deux photos (petite et grande) dans la ligne de l'étape | I |
-| Proposer un rattachement avec l'IA (IA3) | bouton IA | V |
-| Petits dossiers à moins d'1 h et 10 km : les voir (fenêtre : Retirer / Remettre, Mettre les N avec leur dossier, Fermer) | bouton plein | V |
-| Accepter les propositions sûres de l'IA (8/10 et plus) | bouton | V |
-| Choisir un petit dossier | liste « Dans l'ordre du temps » | V |
-| Mettre avec le dossier d'avant / d'après | boutons « Mettre avec ce dossier » avec chevrons SVG, touches ← → | V/C |
+| Proposer un rattachement avec l'IA (IA3) | bouton IA, dans la barre d'outils (D112 point 10) | V |
+| Petits dossiers à moins d'1 h et 10 km : les voir (fenêtre : Retirer / Remettre, Mettre les N avec leur dossier, Fermer) | « 1 petit dossier a un voisin évident : voir › », bouton en contour dans la barre d'outils (ex-bouton plein du bandeau) | V |
+| Accepter les propositions sûres de l'IA (8/10 et plus) | bouton, barre d'outils | V |
+| Choisir un petit dossier | liste « Dans l'ordre du temps » (ligne commune C-7.7 : le nom, puis la date, l'heure et l'état écrit « à décider », « mis avec … », « gardé seul » ; le nombre de photos au bout ; « N sur M décidés » en tête ; ex-petits ronds) | V |
+| Élargir la liste | poignée, comme à Lieux et sorties (même largeur) | G/B |
+| Mettre avec le dossier d'avant / d'après | boutons « Mettre avec ce dossier » avec chevrons SVG, touches ← → ; ce qu'ils feront dans leur infobulle (ex-phrase sous le bouton) ; le rôle des colonnes en titre de 16 px / 600 (« ← Pendant cette sortie », « Ce petit dossier », « Juste après → »), puis le nom du voisin, puis l'écart en gris | V/C/B |
+| Renommer le petit dossier | crayon à côté de son nom, F2, ou « Renommer » du menu « … » (la saisie se fait dans la tête ; Entrée, Échap) (D112 point 10) | I/C |
+| Menu « … » du petit dossier : Renommer (F2), Réunir avec un autre dossier…, le nom proposé par l'IA | « … » à côté de son nom, Maj+F10 | I/C |
 | Garder seul | bouton, touche G ; message « Gardé seul. » qui finit par « ↶ ou Ctrl+Z pour l'annuler », ↶ de la ligne de l'étape, Ctrl+Z et « Annuler » de l'historique (retours du 29.10) | V/C/T |
-| Le renommer « … » (nom proposé par l'IA) | bouton | V |
-| Autre dossier… | lien → fenêtre de choix (recherche, ↑↓ Entrée, Annuler) | V |
+| Le renommer « … » (nom proposé par l'IA) | bouton au centre, et dans le menu « … » | V |
+| Autre dossier… (devenu « Réunir avec un autre dossier… ») | menu « … » → fenêtre de choix (recherche, ↑↓ Entrée, Fermer) | I |
 | Annuler ce choix (rattaché ou gardé seul) | bouton dans l'encart | V |
 | Petit dossier suivant / précédent | J / K | C |
 | Voir une photo en grand | clic sur une photo du centre (pas sur les côtés) | V/B |
-| Raccourcis dans la fenêtre « ? » | **absents** (seulement une ligne grise sous les photos) | — |
+| Raccourcis dans la fenêtre « ? » | ← →, G, J et K, F2, Maj+F10 (D112 point 10) ; et la ligne grise sous les photos | V |
 
 ## 14. Étape 9 « Nommage »
 
@@ -412,7 +420,7 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 | **Voir en grand** | Dossiers, Floues, Lieux, Petits (centre), Consolidation, captures | Sélection (le double-clic ouvre le Tri rapide), Nommage, Album, Doublons (seulement « Comparer en grand ») |
 | **Boutons dans la vue en grand** | Tri rapide (8 boutons) | Visionneuse (aucun : M, Suppr seulement au clavier) |
 | **Déplacer** | Lieux, Sélection | Tri rapide, visionneuse (clavier seulement à l'étape 7) |
-| **Taille des photos** | Dossiers, Floues, Doublons, Tri, Lieux, Petits, Consolidation, Sélection, Réglages | Nommage, Album, ligne de temps, onglet Rafales vide |
+| **Taille des photos** | Dossiers, Floues, Doublons, Tri, Lieux, Petits, Consolidation, Sélection, Réglages | Nommage, Album, Chronologie, onglet Rafales vide |
 | **Ctrl+A** | Floues, Lieux, Sélection | — (corrigé pour Floues) |
 | **Liste des raccourcis « ? »** | Floues, Lieux, Doublons, Sélection | Dossiers, Tri, Petits, Nommage, Consolidation, Album (alors que Petits et Consolidation ont des touches) |
 | **Explication repliable** | « Aide » de la ligne de l'étape, sur les 13 étapes (forme E, D112) | — (corrigé) |
