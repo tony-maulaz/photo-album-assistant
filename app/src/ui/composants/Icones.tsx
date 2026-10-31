@@ -254,11 +254,14 @@ export type NomIcone = keyof typeof TRACES;
 /** 16 dans un bouton (échelle sobre, retours du 29.10) et dans le texte, 20 sur une carte ou une ligne de liste, 14 dans une remarque (C-5.1). */
 export type TailleIcone = 14 | 16 | 20;
 
+/** La seule exception de C-5.1 : la grande photo au bout du curseur de taille, 22 px (la petite fait 16). */
+export const TAILLE_GRANDE_PHOTO = 22;
+
 /**
  * Une icône ; `titre` la nomme pour les lecteurs d'écran quand aucun mot ne
  * l'accompagne (sinon elle est cachée : le mot suffit).
  */
-export function Icone({ nom, taille = 20, titre }: { nom: NomIcone; taille?: TailleIcone; titre?: string }) {
+export function Icone({ nom, taille = 20, titre }: { nom: NomIcone; taille?: TailleIcone | typeof TAILLE_GRANDE_PHOTO; titre?: string }) {
   return (
     <svg
       width={taille}

@@ -420,6 +420,13 @@ try {
   const aideSelection = page.locator('[data-place="aide"][aria-expanded="true"]');
   if (await aideSelection.count()) await aideSelection.click();
   await page.locator('.page-selection .tuile').first().click();
+  // « Dans l'album » du panneau : un message court confirme le geste, avec le rappel de ↶ (retours du 29.10).
+  await page.locator('.panneau-choix').getByRole('button', { name: /Dans l’album/ }).first().click();
+  {
+    const message = page.locator('.ligne-etape .message-entete', { hasText: 'Dans l’album.' });
+    await message.locator('.rappel-annuler').waitFor();
+    verifier(true, `Sélection : « Dans l’album » confirmé par un message (« ${(await message.innerText()).replace(/\s+/g, ' ')} »)`);
+  }
   await page.keyboard.press('Control+a');
   await page.keyboard.press(' ');
   await page.waitForTimeout(200);

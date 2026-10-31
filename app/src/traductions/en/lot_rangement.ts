@@ -20,7 +20,6 @@ export const TEXTES: Record<string, string> = {
     '“{0}” only contains subfolders: here are their photos, with the subfolder name under each one. Click a subfolder on the left to see only its own.',
 
   // Nommage.tsx
-  'renommé, avant : {0}': 'renamed, before: {0}',
   'Entrée pour renommer': 'Press Enter to rename',
   'Des noms ne sont pas encore appliqués': 'Some names are not applied yet',
   'Cochez les noms à donner aux dossiers. Ceux marqués « à vérifier » sont des propositions peu sûres : relisez-les.':
@@ -34,12 +33,8 @@ export const TEXTES: Record<string, string> = {
   'Accepter {0} ?': 'Accept {0}?',
   nom: 'name',
   noms: 'names',
-  'Accepter le nom de confiance 8 ou plus': 'Accept the name with confidence 8 or more',
   'Dont {0} : relisez-les si possible. Ctrl+Z annule.': 'Including {0}: please review them if you can. Ctrl+Z undoes.',
-  'nom proposé avec une confiance inférieure à 8': 'name suggested with a confidence below 8',
-  'noms proposés avec une confiance inférieure à 8': 'names suggested with a confidence below 8',
   'Tout accepter': 'Accept all',
-  'Aussi les noms de confiance inférieure à 8 (une confirmation est demandée)': 'Also the names with a confidence below 8 (you will be asked to confirm)',
   'Tout accepter ({0})…': 'Accept all ({0})…',
 
   // Organisation.tsx : petits dossiers

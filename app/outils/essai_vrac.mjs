@@ -179,14 +179,23 @@ async function configEcrite(page, condition) {
 /** Noms des dossiers écrits dans `.album/plan.json`, quand `condition` est vraie (3 s au plus). */
 async function dossiersEcrits(page, condition) {
   let noms = [];
+  let erreur = null;
   for (let k = 0; k < 15; k++) {
-    noms = await page.evaluate(async () => {
-      const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
-      return JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text()).dossiers.map((d) => d.nom);
-    });
-    if (condition(noms)) return { ok: true, noms };
+    try {
+      noms = await page.evaluate(async () => {
+        const album = await (await (await navigator.storage.getDirectory()).getDirectoryHandle('selecteur_sortie')).getDirectoryHandle('.album');
+        return JSON.parse(await (await (await album.getFileHandle('plan.json')).getFile()).text()).dossiers.map((d) => d.nom);
+      });
+      erreur = null;
+    } catch (e) {
+      // `plan.json` en cours d'écriture (NotFoundError, JSON coupé) : on relit un peu plus tard, quelques fois.
+      erreur = e;
+      noms = [];
+    }
+    if (!erreur && condition(noms)) return { ok: true, noms };
     await page.waitForTimeout(200);
   }
+  if (erreur) throw erreur;
   return { ok: false, noms };
 }
 
@@ -1409,6 +1418,44 @@ try {
   await page.locator('.ligne-etape .bouton-annuler').click();
   await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
   verifier(/Ctrl\+Z pour l’annuler/.test(rappel), `« Garder seul » : Ctrl+Z le défait, Ctrl+Y le refait ; son message (« ${rappel} ») renvoie à ↶, qui le défait aussi`);
+  // Le rappel du message ne vaut que tant que son geste est le dernier : après un autre geste (renommer, qui n'a pas
+  // de message), « Gardé seul. » ne propose plus de l'annuler (↶ déferait le renommage, pas « Garder seul »).
+  {
+    await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
+    await page.getByRole('button', { name: 'Garder seul', exact: true }).click();
+    await page.locator('.ligne-liste-petit.fait', { hasText: premierPetit }).waitFor();
+    await messageGarde.locator('.rappel-annuler').waitFor();
+    // « Garder seul » passe au petit dossier suivant : on attend qu'il soit affiché (sinon F2 renommerait l'ancien).
+    await page.waitForFunction((avant) => !!document.querySelector('.tete-petit h2') && document.querySelector('.tete-petit h2').textContent !== avant, premierPetit);
+    await page.waitForTimeout(200);
+    const autre = await nomCourant();
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('F2');
+    await page.locator('.tete-petit .renommage-tete').fill('Petit_essai_rappel');
+    await page.locator('.tete-petit .renommage-tete').press('Enter');
+    await page.locator('.ligne-liste-petit', { hasText: 'Petit_essai_rappel' }).waitFor();
+    const sansRappel = (await messageGarde.count()) === 0 || (await messageGarde.locator('.rappel-annuler').count()) === 0;
+    await page.evaluate(() => document.activeElement?.blur?.());
+    await page.keyboard.press('Control+z');
+    await page.locator('.ligne-liste-petit', { hasText: autre }).waitFor();
+    await page.keyboard.press('Control+z');
+    await page.locator('.ligne-liste-petit:not(.fait)', { hasText: premierPetit }).waitFor();
+    verifier(sansRappel, '« Gardé seul. » ne propose plus de l’annuler après un autre geste (renommer) ; Ctrl+Z défait le renommage, puis « Garder seul »');
+  }
+  // Les lignes de la liste sont atteignables au clavier : Tab passe de l'une à l'autre, Entrée ouvre le petit dossier.
+  {
+    const lignes = page.locator('.liste-petits .ligne-liste-petit');
+    await lignes.nth(0).focus();
+    await page.keyboard.press('Tab');
+    const deuxieme = await lignes.nth(1).evaluate((x) => x === document.activeElement);
+    const nom2 = (await lignes.nth(1).locator('.nom-dossier').innerText()).trim();
+    await page.keyboard.press('Enter');
+    await page.waitForFunction((n) => document.querySelector('.tete-petit h2')?.textContent === n || !!document.querySelector('.contenu-petits .decide-petit'), nom2);
+    verifier(deuxieme && (await lignes.nth(1).getAttribute('aria-current')) === 'true', `liste des petits dossiers : Tab passe d’une ligne à l’autre, Entrée ouvre « ${nom2} »`);
+    await page.locator('.ligne-liste-petit', { hasText: premierPetit }).click();
+    await page.waitForFunction((n) => document.querySelector('.tete-petit h2')?.textContent === n, premierPetit);
+    await page.evaluate(() => document.activeElement?.blur?.());
+  }
   // Petits dossiers (D112 point 10) : la ligne commune (le nom, puis la date et l'état écrit, le nombre de photos),
   // les rôles en titre de 16 px / 600 ; renommer (F2, crayon, menu « … ») ; Ctrl+Z rend le nom.
   {
@@ -1466,10 +1513,28 @@ try {
   await page.locator('[data-action=valider]').click();
   await page.locator('main[data-etape=nommage]').waitFor();
   await page.evaluate(() => sessionStorage.setItem('album:cle_api', 'sk-ant-essai-factice'));
-  const boutonNommage = page.getByRole('button', { name: /Nommer les sorties avec l’IA/ });
-  verifier(/environ .* CHF/.test(await boutonNommage.innerText()), `nommage : coût estimé affiché (${await boutonNommage.innerText()})`);
+  // Nommage (D112 point 11) : deux onglets qui disent leur compte ; le bouton de l'IA dit sa portée et son prix
+  // avant d'être lancé (règle d'or 5), « chercher aussi sur internet » collé à lui change ce prix.
+  const onglets = await page.locator('.onglets-nommage .onglet-doublons').evaluateAll((l) => l.map((x) => x.textContent.replace(/\s+/g, ' ').trim()));
+  verifier(
+    onglets.length === 2 && /^À nommer \d+$/.test(onglets[0]) && /^Déjà nommés \d+$/.test(onglets[1]) && (await page.locator('.onglets-nommage [aria-current=page]').getAttribute('data-onglet')) === 'a_nommer',
+    `Nommage : deux onglets avec leur compte, ouvert sur « À nommer » (${onglets.join(' | ')})`,
+  );
+  verifier((await page.getByText('Tous les dossiers').count()) === 0 && (await page.locator('table.nommage').count()) === 0, 'Nommage : plus de case « Tous les dossiers » ni de tableau');
+  const aNommer = Number(onglets[0].match(/\d+$/)[0]);
+  const boutonNommage = page.locator('.outils-nommage button.bouton-ia');
+  const texteIA = async () => (await boutonNommage.innerText()).replace(/\s+/g, ' ').trim();
+  const avecWeb = await texteIA();
+  verifier(new RegExp(`^Nommer les ${aNommer} avec l’IA · environ [\\d,.]+ CHF$`).test(avecWeb), `Nommage : le bouton IA dit sa portée et son prix avant le lancement (« ${avecWeb} »)`);
+  const caseWeb = page.locator('.outils-nommage .aide-ia').getByLabel('chercher aussi sur internet');
+  verifier(await caseWeb.isChecked(), '« chercher aussi sur internet » collé au bouton IA, coché d’office');
+  await caseWeb.uncheck();
+  const sansWeb = await texteIA();
+  verifier(sansWeb !== avecWeb && /environ [\d,.]+ CHF$/.test(sansWeb), `sans recherche sur internet, le prix affiché change (${avecWeb.split('· ')[1]} → ${sansWeb.split('· ')[1]})`);
+  await caseWeb.check();
   await boutonNommage.click();
-  await page.getByText(/noms? proposés?/).first().waitFor({ timeout: 60_000 });
+  // Le message de fin de l'aide (« 6 noms proposés sur 6 dossiers. ») ; « Noms proposés » est aussi le libellé des cartes.
+  await page.locator('.ligne-etape .message-entete', { hasText: /proposés? sur \d+ dossiers?/ }).waitFor({ timeout: 60_000 });
   verifier(appelsIA.nommage > 0, `nommage IA4 : ${appelsIA.nommage} dossier(s)`);
   await capturer(page, 'v5_nommage');
   // Le titre d'un événement du calendrier, suivi du lieu, est proposé comme nom (D83, D88) ; le lieu et l'IA restent à un clic.
@@ -1478,18 +1543,103 @@ try {
     champs.includes('18 ans de Lea Ko Samui 18.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 15.07.26') && champs.includes('Voyage Thaïlande Kanchanaburi 16.07.26') && champs.includes('Voyage Thaïlande Mu Ko Ang Thong 21.07.26'),
     `noms tirés du calendrier (titre puis lieu) : ${champs.filter((v) => /Lea|Voyage/.test(v)).join(', ')}`,
   );
-  verifier(appelsIA.monumentsDemandes === appelsIA.nommage && (await page.locator('.monuments').first().innerText()).includes('Plage de Chaweng'), 'monuments demandés dans le même appel que le nom et affichés');
+  // L'avis de l'IA sur sa puce (« · sûr »), sa raison et les monuments dans l'infobulle (plus de colonnes « Conf. » et « Justification »).
+  const puceIA = page.locator('.nom-possible[data-source=etincelle]').first();
+  const titreIA = (await puceIA.getAttribute('title')) ?? '';
+  verifier(
+    appelsIA.monumentsDemandes === appelsIA.nommage && titreIA.includes('Plage de Chaweng') && titreIA.includes('photos de plage') && (await puceIA.innerText()).replace(/\s+/g, ' ').trim().endsWith('· sûr'),
+    `l’avis de l’IA sur sa puce (« · sûr »), sa raison et les monuments dans l’infobulle (« ${titreIA.replace(/\n/g, ' / ')} »)`,
+  );
   verifier((await page.getByRole('button', { name: /Reconnaître lieux et monuments/ }).count()) === 0, 'un seul bouton d’IA au nommage');
   await capturer(page, 'v5b_nommage_puces');
-  verifier((await page.locator('.noms-possibles .nom-possible').count()) > 0, 'nommage : les noms possibles en un clic sous chaque champ');
+  verifier((await page.locator('.noms-possibles .nom-possible').count()) > 0, 'nommage : les noms proposés en un clic');
+  // L'ordre de l'utilisateur, sur chaque carte : « Nom actuel », « Noms proposés », « Nouveau nom ».
+  const ordres = await page.locator('.carte-nommage').evaluateAll((l) => l.map((c) => [...c.querySelectorAll('.libelle-nommage')].map((x) => x.textContent.trim()).join(' > ')));
+  verifier(ordres.length > 0 && ordres.every((o) => o === 'Nom actuel > Noms proposés > Nouveau nom' || o === 'Nom actuel > Nouveau nom'), `chaque carte : Nom actuel, puis Noms proposés, puis Nouveau nom (${[...new Set(ordres)].join(' ; ')})`);
+  const ordreDOM = await page.locator('.carte-nommage').first().evaluate((c) => {
+    const y = (sel) => c.querySelector(sel).getBoundingClientRect().top;
+    return [y('.nom-actuel'), y('.noms-possibles'), y('input.nom-propose')];
+  });
+  verifier(ordreDOM[0] < ordreDOM[1] && ordreDOM[1] < ordreDOM[2], `les trois parties de haut en bas à l’écran (${ordreDOM.map(Math.round).join(' < ')})`);
+  // Une puce cliquée remplit le champ et se coche, en bordure (proposé) ; « Renommer » la rend pleine ; Ctrl+Z rend le nom.
+  {
+    const avant = await page
+      .locator('.carte-nommage', { has: page.locator('.nom-possible[data-source=etincelle]') })
+      .filter({ hasNot: page.locator('[data-dossier^="Ko_Samui"]') })
+      .filter({ has: page.locator('.nom-possible[aria-checked=false][data-source=etincelle]') })
+      .first()
+      .getAttribute('data-dossier');
+    // Des repères fixes : la carte par son nom, la puce par sa place (une fois cochée, elle ne serait plus « la première non cochée »).
+    const carte = page.locator(`.carte-nommage[data-dossier="${avant}"]`);
+    // Une puce qui change vraiment le nom (le lieu redonne souvent le nom du tri : « C'est déjà son nom »).
+    const place = await carte
+      .locator('.nom-possible')
+      .evaluateAll((l, a) => l.findIndex((x) => x.getAttribute('aria-checked') === 'false' && x.querySelector('.texte-nom').textContent.trim().replace(/\s+/g, '_') !== a), avant);
+    const autre = carte.locator('.nom-possible').nth(place);
+    const texte = (await autre.locator('.texte-nom').innerText()).trim();
+    await autre.click();
+    const valeur = await carte.locator('input.nom-propose').inputValue();
+    verifier(
+      valeur === texte && (await autre.getAttribute('aria-checked')) === 'true' && (await autre.getAttribute('data-decide')) === null && (await carte.locator('.nom-possible[aria-checked=true]').count()) === 1,
+      `une puce cliquée remplit le champ (« ${valeur} ») et se coche, encore en bordure`,
+    );
+    const effet = (await carte.locator('.effet-nom').innerText()).trim();
+    verifier(/^deviendra « .+ »$/.test(effet), `« ${effet} » à droite de « Renommer »`);
+    const nouveau = effet.slice('deviendra « '.length, -2);
+    await carte.locator('[data-action=renommer]').click();
+    const apres = page.locator(`.carte-nommage[data-dossier="${nouveau}"]`);
+    await apres.waitFor();
+    verifier(
+      (await apres.locator('.nom-renomme').innerText()).includes(`renommé par vous (avant : ${avant})`) &&
+        (await apres.locator('.nom-possible[data-decide]').count()) === 1 &&
+        (await apres.locator('input.nom-propose').inputValue()) === '' &&
+        (await page.locator('.message-entete').innerText()).includes(`Renommé « ${nouveau} »`),
+      `« Renommer » : « ${avant} » devient « ${nouveau} », la puce passe en plein, le champ se vide, un message le dit`,
+    );
+    await page.keyboard.press('Control+z');
+    await page.locator(`.carte-nommage[data-dossier="${avant}"]`).waitFor();
+    verifier((await page.locator(`.carte-nommage[data-dossier="${nouveau}"]`).count()) === 0 && (await page.locator(`.carte-nommage[data-dossier="${avant}"] .nom-possible[data-decide]`).count()) === 0, `Ctrl+Z : « ${avant} » retrouve son nom, plus de puce pleine`);
+    // Au clavier : les puces sont un seul arrêt de Tab ; → passe à la suivante et la met dans le champ.
+    const carte2 = page.locator(`.carte-nommage[data-dossier="${avant}"]`);
+    const premiere = carte2.locator('.nom-possible[tabindex="0"]');
+    const prisDOffice = await carte2.locator('input.nom-propose').inputValue();
+    verifier((await carte2.locator('.nom-possible[tabindex="0"]').count()) === 1, 'les noms proposés : un seul arrêt de Tab par carte');
+    await premiere.focus();
+    await page.keyboard.press('ArrowRight');
+    const cochee = carte2.locator('.nom-possible[aria-checked=true]');
+    verifier(
+      (await cochee.count()) === 1 && (await cochee.evaluate((x) => x === document.activeElement)) && (await carte2.locator('input.nom-propose').inputValue()) === (await cochee.locator('.texte-nom').innerText()).trim(),
+      '→ sur les noms proposés : la suivante se coche, prend le focus et remplit le champ',
+    );
+    await page.keyboard.press('Tab');
+    verifier(await carte2.locator('input.nom-propose').evaluate((x) => x === document.activeElement), 'Tab : des noms proposés au champ « Nouveau nom »');
+    // Maj+Tab revient aux noms proposés ; ← remet la puce d'avant (le nom pris d'office) dans le champ.
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('ArrowLeft');
+    verifier((await carte2.locator('input.nom-propose').inputValue()) === prisDOffice, `Maj+Tab puis ← : le nom pris d’office revient dans le champ (« ${prisDOffice} »)`);
+    await page.evaluate(() => document.activeElement?.blur?.());
+  }
+  // « Déjà nommés » : le champ est vide avec un exemple ; le dossier garde son nom tant qu'il le reste.
+  await page.locator('.onglets-nommage [data-onglet=deja_nommes]').click();
+  {
+    const carte = page.locator('.carte-nommage').first();
+    const champ = carte.locator('input.nom-propose');
+    verifier(
+      (await champ.inputValue()) === '' && /^Par exemple : /.test((await champ.getAttribute('placeholder')) ?? '') && (await carte.locator('[data-action=renommer]').isDisabled()) && (await carte.locator('.raison-desactivee').innerText()).includes('garde son nom tant que le champ est vide'),
+      `« Déjà nommés » : champ vide avec un exemple (« ${await champ.getAttribute('placeholder')} »), « Renommer » grisé avec sa raison`,
+    );
+    verifier(/^Nommer (ces \d+|ce dossier) avec l’IA · /.test(await texteIA()), `« Déjà nommés » : le bouton IA dit sa portée (« ${await texteIA()} »)`);
+    await capturer(page, 'v5d_nommage_deja_nommes');
+  }
+  await page.locator('.onglets-nommage [data-onglet=a_nommer]').click();
   // Un seul événement candidat : renommé d'un coup ; Ko Samui (deux événements) attend le choix de l'utilisateur.
-  await page.getByRole('button', { name: /^Prendre le nom du calendrier pour les \d+ dossiers/ }).click();
+  await page.getByRole('button', { name: /^Prendre le nom du calendrier \(\d+ dossiers?\)/ }).click();
   await page.getByText(/dossiers? renommés?/).first().waitFor();
-  verifier(true, 'noms du calendrier pris en un clic, seulement là où un seul événement convient');
-  const accepter = page.getByRole('button', { name: /Accepter les? (\d+ noms|nom) de confiance 8 ou plus/ });
+  verifier(true, 'noms du calendrier pris en un clic, seulement là où un seul événement convient ; le bouton dit sa portée');
+  const accepter = page.getByRole('button', { name: /^Accepter les noms sûrs de l’IA \(\d+ dossiers?\)/ });
   if (await accepter.count()) {
     await accepter.click();
-    verifier(true, 'noms de l’IA de confiance 8 ou plus acceptés en un clic');
+    verifier(true, 'noms sûrs de l’IA acceptés en un clic');
   }
   await page.locator('[data-action=valider]').click();
   // Noms encore dans les champs (Ko Samui : deux événements) : récapitulatif à cocher avant de quitter, les peu sûrs décochés (D108).

@@ -59,12 +59,8 @@ export const TEXTES: Record<string, string> = {
   // Nommage.tsx
   calendrier: 'calendar',
   lieu: 'place',
-  'Donnez à chaque dossier un nom parlant, sur le modèle « Theme_Lieu_JJ.MM.AA » (Anniversaire_Lea_26.01.25). Sous chaque nom, un clic choisit :':
-    'Give each folder a meaningful name, following the pattern “Theme_Place_DD.MM.YY” (Birthday_Lea_26.01.25). Under each name, one click picks:',
   'un événement du calendrier pendant lequel les photos ont été prises (« 18 ans de Lea »),': 'a calendar event during which the photos were taken (“18 ans de Lea”),',
   'le lieu, ou': 'the place, or',
-  'la proposition de l’IA, qui regarde quelques photos, le lieu, le calendrier et le contexte du projet. Vous pouvez aussi écrire le vôtre : vous gardez le dernier mot.':
-    'the AI’s suggestion, which looks at a few photos, the place, the calendar and the project context. You can also type your own: you have the final say.',
   // Organisation.tsx, Organiser.tsx
   'Cochez la case pour choisir la durée.': 'Tick the box to choose the length.',
   'L’IA propose de les réunir dans « {0} »': 'The AI suggests gathering them in “{0}”',
@@ -175,11 +171,8 @@ export const TEXTES: Record<string, string> = {
   '{0} : dans « Mis de côté », rien n’est supprimé.': '{0}: in “Set aside”, nothing is deleted.',
   'Analyse des photos terminée.': 'Photo analysis finished.',
   '{0}, floues, doublons… : comptés ci-dessus, ils iront dans le dossier « {1} » de la sortie.': '{0}, blurry, duplicates…: counted above, they will go into the “{1}” folder of the output.',
-  'Écrivez d’abord un nom': 'First write a name',
   'C’est déjà son nom': 'It already has this name',
   'Aucun dossier à nommer': 'No folder to name',
-  '1 dossier à nommer : il garde son nom actuel': '1 folder to name: it keeps its current name',
-  '{0} dossiers à nommer : ils gardent leur nom actuel': '{0} folders to name: they keep their current names',
   'Aucune proposition à décider': 'No suggestion to decide',
   '1 proposition à décider : ses dossiers restent séparés': '1 suggestion to decide: its folders stay separate',
   '{0} propositions à décider : leurs dossiers restent séparés': '{0} suggestions to decide: their folders stay separate',

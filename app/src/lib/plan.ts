@@ -453,6 +453,10 @@ export class Historique {
   get peutAnnuler() {
     return this.passe.length > 0;
   }
+  /** Le geste qu'« Annuler » défait : un message qui propose de l'annuler ne vaut que tant qu'il est le dernier. */
+  get dernier(): Modification | undefined {
+    return this.passe.at(-1);
+  }
   get peutRetablir() {
     return this.futur.length > 0;
   }

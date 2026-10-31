@@ -1543,6 +1543,17 @@ centre ; « 1 petit dossier a un voisin évident : voir › » est en contour ;
 ce que fera « Mettre avec ce dossier » passe dans son infobulle. « Photos
 (racine) » n'est pas renommé à ce sous-lot.
 
+Précisions du 31.10 (point 11, Nommage ; CHARTE É17) : l'ordre de l'utilisateur
+(« Nom actuel », « Noms proposés », « Nouveau nom ») remplace celui de la
+proposition. Un nom de l'IA est « sûr » à partir d'une confiance de 8 sur 10,
+« à vérifier » en dessous. Les boutons d'acceptation (calendrier, noms sûrs, tout
+accepter) ne valent que pour « À nommer » ; l'IA nomme les dossiers de l'onglet
+affiché. Après « Renommer », la carte reste dans son onglet, le champ se vide et la
+puce du nom donné passe en plein ; un message « Renommé « … ». » le dit (il n'y en
+avait pas pour un seul dossier). Un message qui propose d'annuler son geste ne le
+propose plus quand un autre geste est venu depuis (défaut relevé à Petits dossiers,
+corrigé pour toutes les pages).
+
 ## 2. Calibrations sur photos réelles
 
 | Mesure | Valeurs observées | Conséquence |

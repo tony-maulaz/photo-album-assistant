@@ -228,6 +228,10 @@ describe('charte : icônes et mots dans app/src', () => {
     const icones = readFileSync(join(UI, 'composants', 'Icones.tsx'), 'utf8');
     expect(icones).toMatch(/stroke-width=\{1\.75\}/);
     expect(icones).toMatch(/export type TailleIcone = 14 \| 16 \| 20;/);
+    // La seule exception, 22 px : la grande photo du curseur de taille, et nulle part ailleurs.
+    expect(icones).toMatch(/export const TAILLE_GRANDE_PHOTO = 22;/);
+    const ailleurs = fichiers.filter((f) => !f.endsWith('Icones.tsx') && !f.endsWith('CadreCommun.tsx') && readFileSync(f, 'utf8').includes('TAILLE_GRANDE_PHOTO'));
+    expect(ailleurs.map((f) => relative(SRC, f))).toEqual([]);
   });
 
   it('« valider » ne sert qu’à l’étape (C-10.1) : les groupes, les noms et les rangements s’acceptent', () => {

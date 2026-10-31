@@ -195,12 +195,12 @@ export function useLancerAide(id: string) {
  * changent), et relit les options de la page (cases, curseur) qui changent le
  * coût. Le coût affiché suit toujours ce qui sera envoyé (règle d'or 5).
  */
-export function AideIA({ fonction, nom, children }: { fonction: string; nom?: string; children?: ComponentChildren }) {
+export function AideIA({ fonction, nom, enLigne = false, children }: { fonction: string; nom?: string; enLigne?: boolean; children?: ComponentChildren }) {
   const a = AIDES.get(fonction);
   // Options déclarées : réestimé quand elles changent ; sinon, à chaque affichage de la page (objet neuf).
   const options = a?.options ? JSON.stringify(a.options() ?? null) : {};
   return (
-    <BoutonAideIA fonction={fonction} options={options} nom={nom}>
+    <BoutonAideIA fonction={fonction} options={options} nom={nom} enLigne={enLigne}>
       {children}
     </BoutonAideIA>
   );
@@ -208,9 +208,10 @@ export function AideIA({ fonction, nom, children }: { fonction: string; nom?: st
 
 /**
  * `nom` : le nom du bouton dans l'étape (« Demander l'avis de l'IA » à Floues, D112) ; la portée (le détail de
- * l'estimation) et le prix s'écrivent alors dessous.
+ * l'estimation) et le prix s'écrivent alors dessous. `enLigne` : le nom dit déjà la portée (« Nommer les 14 avec
+ * l'IA », D112 point 11) ; le prix suit sur la même ligne, et la page écrit elle-même sa case de recherche web.
  */
-function BoutonAideIA({ fonction, options, nom, children }: { fonction: string; options: unknown; nom?: string; children?: ComponentChildren }) {
+function BoutonAideIA({ fonction, options, nom, enLigne, children }: { fonction: string; options: unknown; nom?: string; enLigne?: boolean; children?: ComponentChildren }) {
   const s = session.value;
   const a = AIDES.get(fonction);
   const { progres, lancer, arreter } = useLancerAide(fonction);
@@ -239,7 +240,12 @@ function BoutonAideIA({ fonction, options, nom, children }: { fonction: string; 
         title={t`${t(a.description)} Envoyé : ${t(a.envoi)}.`}
       >
         <Icone nom="etincelle" taille={16} />
-        {nom ? (
+        {nom && enLigne ? (
+          <span>
+            {nom}
+            <span class="cout-aide"> · {enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : texteCout(e)}</span>
+          </span>
+        ) : nom ? (
           <span class="nom-aide-deux-lignes">
             {nom}
             <span class="cout-aide">{enCours && !progres ? t`en cours…` : e === null ? (a.siRien === undefined ? t`rien à faire` : t(a.siRien)) : e.detail ? t`sur ${e.detail} · ${texteCout(e)}` : texteCout(e)}</span>
@@ -251,7 +257,7 @@ function BoutonAideIA({ fonction, options, nom, children }: { fonction: string; 
           </span>
         )}
       </button>
-      {avecWeb(a) && <span class="discret">{t`avec recherche web`}</span>}
+      {avecWeb(a) && !enLigne && <span class="discret">{t`avec recherche web`}</span>}
       {illisibles > 0 && !progres && !enCours && (
         <span class="illisibles-aide" title={t`Réponses de l’IA impossibles à lire, ou refusées : gardées pour ne pas les payer deux fois. « Redemander » les envoie à nouveau.`}>
           <Icone nom="alerte" taille={14} />

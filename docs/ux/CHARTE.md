@@ -1,6 +1,6 @@
 # Charte graphique : « Table lumineuse »
 
-**État : style FIGÉ (D110, 27.10.2026), avec les évolutions É1 à É10 acceptées le 28.10 (D111), É11 et É12 (forme E, D112 point 8) acceptées le 29.10, É13 (badges d'origine et Floues dans le cadre, D112 points 6 et 7, réponse 20) et É14 (Doublons et Sélection, D112 points 2, 3, 4, 6 et 10) écrites le 30.10, É15 (Tri automatique et « Vos lieux », D112 point 9) et É16 (Lieux et sorties, Petits dossiers, D112 point 10) écrites le 31.10 ; dispositions PROVISOIRES.**
+**État : style FIGÉ (D110, 27.10.2026), avec les évolutions É1 à É10 acceptées le 28.10 (D111), É11 et É12 (forme E, D112 point 8) acceptées le 29.10, É13 (badges d'origine et Floues dans le cadre, D112 points 6 et 7, réponse 20) et É14 (Doublons et Sélection, D112 points 2, 3, 4, 6 et 10) écrites le 30.10, É15 (Tri automatique et « Vos lieux », D112 point 9) É16 (Lieux et sorties, Petits dossiers, D112 point 10) et É17 (Nommage, D112 point 11) écrites le 31.10 ; dispositions PROVISOIRES.**
 
 - **Figé** (l'agent `gardien-style` le fait respecter, en priorité sur les
   autres agents d'interface ; seul l'utilisateur peut le faire évoluer) :
@@ -579,6 +579,38 @@ Chronologie, icônes et bulles, recherche par événement, menu « … » et ses
 
 État du code (31.10) : É16 appliquée (étape 4 des retours du 29.10), pas encore commitée.
 
+## Évolution É17 acceptée par l'utilisateur (2026-10-31, D112 point 11 : Nommage)
+
+Réponse de l'utilisateur du 29.10 sur le Nommage, avec **son ordre**, qui remplace celui de la proposition :
+« Nom actuel », puis « Noms proposés » (en bordure), puis « Nouveau nom ». Spécification : `page/retours.html`
+§ 13, `lot_d/proposition.md` § 4, maquette `4_nommage` (hors dépôt). La validation du nom de l'IA (refus d'une
+coordonnée, `nomIAValable`) était déjà faite : gardée. É17 étend C-4.3 (28 px pour une puce de nom proposé) et
+applique C-4.12 (la vue en cours dans la ligne) au Nommage.
+
+> **Ce qui est, puis les idées, puis le résultat ; rien n'est donné sans « Renommer ».**
+
+| É17 | Règles | Évolution |
+|---|---|---|
+| a. Deux onglets | C-4.12, C-10.2 | La case « Tous les dossiers (pas seulement les noms automatiques…) » devient **deux onglets soulignés**, le compte en pastille grise : « À nommer · 14 » et « Déjà nommés · 4 » (ceux de Doublons et du Tri). Si rien n'est à nommer, la page s'ouvre sur « Déjà nommés ». Ils partent avec la page ; après défilement, « À nommer · 14 ▾ » dans la ligne de l'étape. L'onglet fixe aussi les dossiers envoyés à l'IA |
+| b. Boutons d'ensemble | C-4.1, C-4.6, C-4.7 | À droite des onglets, sur la même barre, chacun dit **sa portée** (et l'IA **son prix**) : « Accepter les noms sûrs de l'IA (3 dossiers) » (plein), « [calendrier] Prendre le nom du calendrier (12 dossiers) » (plein s'il est seul), « Tout accepter (16 noms)… », « ✦ Nommer les 14 avec l'IA · environ 0,73 CHF » (« Nommer ces 4 » dans « Déjà nommés ») ; « Recherche web » devient la case **« chercher aussi sur internet »**, collée au bouton IA (son surcoût dans l'infobulle ; « avec recherche web » ne s'écrit plus sous le bouton). Les boutons d'acceptation ne paraissent que dans « À nommer » |
+| c. Une carte par dossier | C-6.6, C-7 | Le tableau devient une **carte** (fond `--surface`, filet `--filet-fort`, rayon 16, 12 px entre deux, comme « Vos lieux ») : deux vignettes de 64 px (la première et la dernière photo ; une au palier), puis trois lignes à libellé (14 px / 600, `--texte-2`), **dans l'ordre de l'utilisateur** : « Nom actuel » (le nom en 16 px / 600, puis la période, le nombre de photos, « dans … », « votre dossier d'origine ») ; « Noms proposés » (masquée s'il n'y en a pas) ; « Nouveau nom » : le champ (420 px au plus), « Renommer », et à sa droite « deviendra « … » », ou, grisé, sa raison au même endroit (« garde son nom tant que le champ est vide », « C'est déjà son nom »). « Convention : Theme_Lieu_JJ.MM.AA » dessous si besoin. Les colonnes « Conf. » et « Justification » disparaissent ; le fond brun « à vérifier » de la ligne aussi |
+| d. Les puces | C-4.3, C-9 (grammaire), C-5.1 | Puces de **28 px** (`--h-puce-nom`), 14 px / 400, rayon 999, sur une ligne, avec une icône de 14 px (`calendrier`, `lieu`, `etincelle`). **Toujours en bordure** (fond `--surface`, bord `--contour`) : ce sont des propositions (règle d'or 3). La puce dont le texte est dans le champ est **cochée** (coche de 14 px, bord vert de 2 px), jamais pleine ; la puce du nom donné par « Renommer » passe en **plein** (`--accent-doux`, 600). L'avis de l'IA s'écrit au bout de sa puce : « · sûr » (confiance ≥ 8), « · à vérifier » (en brun `--badge-verifier-texte`) ; la confiance, l'activité, la justification et les monuments reconnus vont dans l'**infobulle**. Au clavier, **un seul arrêt de Tab** (groupe de choix) : ← → (↑ ↓, Origine, Fin) passent de l'une à l'autre et remplissent le champ ; Tab va au champ |
+| e. « Déjà nommés » | C-10.7 | Le champ est **vide**, avec un exemple pâle : « Par exemple : » et la première puce (sinon « Anniversaire de Lea 26.01.25 ») ; le dossier garde son nom tant que le champ reste vide. Dans « À nommer », le champ est prérempli par le meilleur événement du calendrier ou le nom de l'IA (D83), et la puce correspondante est cochée |
+| f. Après « Renommer » | C-8.3 bis, C-10.8 | Le message « **Renommé « … ».** ↶ ou Ctrl+Z pour l'annuler » ; la carte reste dans son onglet : « [coche] renommé par vous (avant : …) » en vert doux après le nom, la puce du nom donné en plein, le champ vidé. Ctrl+Z rend le nom, et dans « À nommer » le champ retrouve le nom pris d'office |
+
+**Ce qu'É17 change ailleurs** : `docs/ux/GLOSSAIRE.md` (« À nommer, Déjà nommés », « Nom actuel, Noms proposés,
+Nouveau nom », « sûr, à vérifier ») ; `INVENTAIRE_FONCTIONS.md` § 14 ; `SPEC_APP.md` § 4 (tableau des étapes)
+et § 6.6 ; Aide et raccourcis du Nommage ; `essai_vrac.mjs` (onglets et comptes, prix avant le lancement et prix
+sans internet, ordre des trois parties, puce cliquée qui remplit le champ et se coche, « Renommer » puis Ctrl+Z,
+puce pleine, ← → et Tab, « Déjà nommés » : champ vide avec un exemple), `essai_charte.mjs` (page
+« nommage-deja-nommes »), `essai_cadre.mjs` (« À nommer · N ▾ » après défilement, « Déjà nommés »).
+
+**Petits défauts du même sous-lot** : C-8.3, les photos du curseur de taille en **16 et 22 px** (elles faisaient
+14 et 20) ; C-8.3 bis, le rappel « ↶ ou Ctrl+Z pour l'annuler » d'un message (et son lien « Annuler » quand une
+fenêtre est ouverte) ne s'écrit plus que **tant que son geste est le dernier** de l'historique.
+
+État du code (31.10) : É17 appliquée (étape 5 des retours du 29.10), pas encore commitée.
+
 ## Corrections à intégrer avant d'appliquer (contrôleurs du 27.10)
 
 - Le vert porte trop de sens : « ici, choisi, allumé » passe en encre
@@ -636,7 +668,7 @@ Chronologie, icônes et bulles, recherche par événement, menu « … » et ses
 |---|---|---|
 | C-4.1 | **Un seul bouton plein par écran : la prochaine action utile.** « Valider et continuer » ne devient plein qu'une fois l'étape finie | 1 plein visible (contrôle automatique) |
 | C-4.2 (récrite par É14) | Un bouton qui écarte **dit quoi faire, et ce qu'il fera se lit juste à côté** : le plein d'un groupe dit « Accepter → », de largeur fixe ; à sa gauche, en gris (`--texte-2`, 14 px, 400), « garde la 2 · écarte 1 » (« garde 3 photos · écarte 9 », « garde 1 exemplaire · écarte 1 ») ; la phrase entière dans l'infobulle et le nom lu ; le même bouton et la même ligne sur la page et dans Comparer. Un bouton de portée nomme sa portée (« Accepter les 7 groupes »). Toute acceptation de plusieurs groupes passe d'abord par une fenêtre qui chiffre : « 12 photos seront écartées, dont 4 dans des groupes où vous n'avez rien choisi » | largeur d'« Accepter → » identique sur tous les groupes et dans Comparer ; aucune photo écartée avant le plein de la fenêtre |
-| C-4.3 | Hauteurs (É11) : **32** (bouton ordinaire, plein dans la page, segmenté, pastille de filtre) · **36** (« Revenir », « Valider et continuer ») · 28 (frise, bouton IA d'une ligne d'information, pastille « En essai ») ; cible ≥ 24 partout | mesure des boîtes |
+| C-4.3 | Hauteurs (É11) : **32** (bouton ordinaire, plein dans la page, segmenté, pastille de filtre) · **36** (« Revenir », « Valider et continuer ») · 28 (frise, bouton IA d'une ligne d'information, pastille « En essai », puce d'un nom proposé au Nommage, É17) ; cible ≥ 24 partout | mesure des boîtes |
 | C-4.4 | Contour : bord 1 px `--contour`, rayon 8 ; Menu sans bord ; Aide bordé de bleu (C-3.10) ; le plein, un aplat vert sans autre marque (É11) | — |
 | C-4.5 | Lien : vert foncé souligné, sans marge intérieure, ≥ 24 px de haut | — |
 | C-4.6 | Aide IA : bouton contour + ✦ + prix (« environ 0,03 CHF ») ; portée écrite. Si le prix dépend d'un réglage, il est **recalculé en direct sur le bouton** (choix de l'utilisateur, 28.10) ; « … » seulement quand le prix ne peut être estimé qu'au lancement, il est alors dans la fenêtre avant de lancer. Désactivée, l'aide dit ce qui lui manque à la place du prix (« sélectionnez 2 à 12 photos semblables », C-4.7) ; le prix revient dès qu'elle peut servir (29.10, D112) | toute commande qui dépense a ✦ et un prix (ou « … ») |
@@ -814,4 +846,9 @@ cadre ou non. Contrôle : `app/outils/essai_cadre.mjs`.
   journées ; le badge « nouveau » sur la ligne ; « Ligne de temps » ; les petits ronds
   de la liste de Petits dossiers ; le bouton plein « N petits dossiers ont un dossier
   évident » (en contour, dans la barre d'outils).
+- **É17 (D112 point 11, écrite le 2026-10-31)** : la case « Tous les dossiers » et la
+  case « Recherche web » du Nommage ; son tableau, ses colonnes « Conf. » et
+  « Justification », le fond brun d'une ligne à vérifier ; les puces de 32 px
+  pleines quand leur nom est dans le champ ; « Accepter les N noms de confiance 8 ou
+  plus » (devient « Accepter les noms sûrs de l'IA (N dossiers) »).
 

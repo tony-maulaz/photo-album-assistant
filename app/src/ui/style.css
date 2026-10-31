@@ -60,6 +60,8 @@
   --h-bas: 36px;
   --h-champ: 40px;
   --h-frise: 28px;
+  /* Puce d'un nom proposé au Nommage (É17, D112 point 11). */
+  --h-puce-nom: 28px;
   /* Hauteur de la barre du bas, remesurée par BarreValidation (messages et colonnes collées s'y règlent) ; avant la
      mesure, sa hauteur en CSS (56 px sous 1440 px de large ou 700 px de haut, `styles/cadre.css`). */
   --haut-barre-validation: var(--h-barre-bas);
@@ -3453,32 +3455,6 @@ button.bouton-ia:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: var(--e3);
-}
-
-.tableau.nommage td {
-  vertical-align: top;
-}
-
-.miniatures-nommage {
-  display: flex;
-  gap: var(--e1);
-}
-
-.nom-propose {
-  width: 100%;
-  min-width: 260px;
-}
-
-.tableau.nommage tr.a-verifier td {
-  background: var(--afaire-doux);
-}
-
-.monuments,
-.evenements {
-  font-size: var(--t-petit);
-  line-height: var(--lh-petit);
-  color: var(--texte-2);
-  margin-top: var(--e1);
 }
 
 .cadre-miniature .badge.note-ia {

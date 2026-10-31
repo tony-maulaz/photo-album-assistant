@@ -29,5 +29,4 @@ export const TEXTES: Record<string, string> = {
   'Revenir en haut de la page : frise des étapes, budget de l’IA, onglets': 'Back to the top of the page: step bar, AI budget, tabs',
   'Dossiers montrés': 'Folders shown',
   'À nommer': 'To name',
-  'Tous les dossiers': 'All folders',
 };

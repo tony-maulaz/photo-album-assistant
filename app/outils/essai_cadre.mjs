@@ -2318,6 +2318,23 @@ try {
   await controlerAilleurs('petits-dossiers');
   await valider('nommage');
   await controlerAilleurs('nommage');
+  // Nommage (D112 point 11) : les onglets partent avec la page ; la vue en cours reste écrite dans la ligne
+  // (« À nommer · N ▾ », C-4.12) quand la page défile ; l'onglet « Déjà nommés » passe les mêmes contrôles.
+  for (const [w, h] of [[1280, 580], [1024, 464]]) {
+    await taille(w, h);
+    const defile = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 40);
+    if (!defile) continue;
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await attendre(300);
+    const vue = await page.locator('.ligne-etape .bouton-vue').getAttribute('aria-label').catch(() => null);
+    if (!vue || !/^Dossiers montrés : À nommer · \d+$/.test(vue)) faute('nommage', `${w}×${h} : après défilement, la vue en cours n’est pas écrite dans la ligne (« ${vue} »)`);
+    console.log(`  nommage ${w}×${h}, après défilement : « ${vue} »`);
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
+  await taille(1440, 900);
+  await page.locator('.onglets-nommage [data-onglet=deja_nommes]').click();
+  await controlerAilleurs('nommage-deja-nommes');
+  await page.locator('.onglets-nommage [data-onglet=a_nommer]').click();
   await page.locator('[data-action=valider]').click();
   const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
   await Promise.race([recap.waitFor(), page.locator('main[data-etape=consolidation]').waitFor()]);

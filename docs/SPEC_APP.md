@@ -74,7 +74,7 @@ stable (`ETAPE.lieux`), indépendant de son numéro.
 | 6 | **Tri automatique** | Liste « À faire » (maison, captures d'écran, vos lieux), bandeau des copies restées à Doublons, rangement dans l'ordre du temps : voyages avec leurs étapes, sorties, maison par mois ; noms de lieux ; inutile pour un dossier déjà trié | Résultat en cartes, onglets par sorte (§ 6.4) | Option : lieu des photos sans GPS |
 | 7 | **Lieux et sorties** | Vérifier et corriger l'arborescence | **Arborescence prévue** éditable (§ 6.4) | — |
 | 8 | **Petits dossiers** | Rattachement des petits dossiers à une sortie voisine | Propositions à accepter ou refuser | Oui |
-| 9 | **Nommage** | Noms parlants (calendrier, recherche web, monuments reconnus) | Tableau des noms | Oui |
+| 9 | **Nommage** | Noms parlants (calendrier, recherche web, monuments reconnus) | Onglets « À nommer » et « Déjà nommés », une carte par dossier | Oui |
 | 10 | **Consolidation** | Fusion des dossiers couvrant la même activité | Groupes à fusionner | Oui, ou manuel |
 | 11 | **Sélection** | Boîte à outils de sélection (§ 6.9) | Album en préparation : jauge, équilibre, redondances | Nombreuses options |
 | 12 | **Album** | Ordre, sections, titres, légendes, couverture, contrôle | Aperçu paginé de l'album | Options |
@@ -468,15 +468,29 @@ propositions sûres » pour celles à 8 sur 10 ou plus. Un dossier qui a des
 sous-dossiers n'est jamais un petit dossier (ses étapes le sont).
 
 ### 6.6 Étape 9 — Nommage (IA)
-- Tableau : miniatures, nom actuel, **nom proposé modifiable**, confiance,
-  justification, événement du calendrier utilisé, **monuments ou lieux
-  reconnus**.
+- Deux onglets (D112 point 11) : **« À nommer · 14 »** (les dossiers au nom
+  automatique du tri) et **« Déjà nommés · 4 »** ; la page s'ouvre sur
+  « Déjà nommés » si rien n'est à nommer. Une **carte par dossier**, de haut en
+  bas : « Nom actuel : … » (période, nombre de photos), « Noms proposés : »
+  (puces), « Nouveau nom : [champ] », « Renommer » et, à sa droite,
+  « deviendra « … » ». Dans « Déjà nommés », le champ est vide, avec un
+  exemple : le dossier garde son nom tant qu'il le reste. Après
+  « Renommer », la carte reste, « renommé par vous (avant : …) », et Ctrl+Z
+  défait.
+- Boutons d'ensemble qui disent leur portée et leur prix : « Prendre le nom
+  du calendrier (12 dossiers) », « Accepter les noms sûrs de l'IA (3
+  dossiers) », « Tout accepter (N noms)… », « Nommer les 14 avec l'IA ·
+  environ 0,73 CHF », avec « chercher aussi sur internet » collé.
 - L'IA combine les photos, le GPS, le calendrier, le contexte du projet et
   une **recherche web** (événements locaux, lieux touristiques, résultats de
   course…).
-- Tri par confiance croissante ; « Accepter les noms de confiance ≥ 8 ».
-- **Choisir le nom** (D83, D88) : sous chaque dossier, les noms possibles à
-  prendre d'un clic : 📅 un par événement du calendrier (pas récurrent,
+- Tri par confiance croissante ; l'avis de l'IA s'écrit sur sa puce : « sûr »
+  (confiance ≥ 8) ou « à vérifier », sa raison (activité, justification,
+  monuments reconnus) dans l'infobulle.
+- **Choisir le nom** (D83, D88) : les noms proposés, en puces toujours en
+  bordure (des propositions) : celle du champ est cochée, celle du nom donné
+  pleine ; un seul arrêt de Tab, les flèches passent de l'une à l'autre.
+  Un clic met dans le champ : 📅 un par événement du calendrier (pas récurrent,
   21 jours au plus, couvrant au moins 80 % des photos ; titre suivi du lieu,
   `Theme_Lieu_JJ.MM.AA`, le lieu omis s'il est dans le titre ou dans le
   dossier parent), 📍 le lieu, ✨ la proposition de l'IA ; le champ reste

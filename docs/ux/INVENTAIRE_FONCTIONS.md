@@ -37,7 +37,7 @@ incohérents**.
 | Fermer menu / fenêtre | Échap, clic à côté | C/G | Cadre.tsx:15-34 |
 | Précédent du navigateur | reste dans l'application | G | navigation.ts |
 | Bandeau « le dossier à trier a changé » | « Mettre à jour l'inventaire » / « Plus tard » | V | BandeauSource.tsx |
-| Annuler depuis un message | forme E (D112) : plus de bouton dans le message ; il finit par « ↶ ou Ctrl+Z pour l'annuler » (↶ de la ligne le défait) ; un message venu d'une autre étape garde le lien « Y aller » | T | CadreCommun.tsx (`MessageLigne`), etat.ts |
+| Annuler depuis un message | forme E (D112) : plus de bouton dans le message ; il finit par « ↶ ou Ctrl+Z pour l'annuler » (↶ de la ligne le défait) ; un message venu d'une autre étape garde le lien « Y aller » ; rappel et lien seulement tant que son geste est le dernier de l'historique (2026-10-31 : sinon ils en déferaient un autre) | T | CadreCommun.tsx (`MessageLigne`), etat.ts |
 | Revenir / Valider et continuer | barre du bas, à droite, libellé variable selon la page ; lot 4 : « Valider et continuer » au même pixel sur toutes les pages (barre de 64 px à 1440×900, 56 px en dessous) | V | Cadre.tsx:244-283 |
 | **Ligne de l'étape (forme E, D112, sur les 13 étapes)** : la page entière défile, avec une seule barre de défilement ; la barre du projet (logo, nom, frise, « Étape n sur 13 ▾ », compteur IA) et la barre d'outils (onglets, filtres) partent avec elle (touche Origine pour les retrouver) ; la ligne de l'étape reste collée en haut : titre, vue en cours en petit menu écrit quand les onglets ou les filtres sont partis (« Rafales ▾ » à Doublons, « Toutes ▾ » à Sélection, « À nommer ▾ » à Nommage ; on change de vue sans remonter), message passager (deux lignes au plus, ce qui s'est passé en gras), Taille des photos (place vide gardée sur une page qui n'en a pas), ↶ ↷ en icônes seules (le geste dans l'infobulle et le nom lu, Ctrl+Z / Ctrl+Y ; « Rien à annuler ici », grisé, quand le dernier geste est à une autre étape), Aide (« à lire » tant qu'elle n'a pas été ouverte) et Menu ; ↶ au même pixel sur chaque page. La phrase de consigne de chaque étape est dans son Aide (ouverte à la première visite, puis rouverte par « Aide »). **Cadre commun (lot 4, pages passées : Sélection, Doublons)** : colonne de l'Aide (320 / 304 px) avec « Fermer » et Échap, « Tout le mode d'emploi » ; liste de gauche, panneau de droite, Aide et têtes de table collés sous la ligne de l'étape ; un clic à la souris sur une décision ou un outil de la Sélection ou du Recadreur laisse le focus où il était ; Taille des photos : une petite photo, un curseur gris de 12 crans, une grande photo (chaque photo est un bouton d'un cran ; ← → au clavier ; 100 à 600 px, le même réglage que Réglages ; piste de 96 px au palier) ; au palier (1180 px de large ou moins), la liste de gauche devient un menu dans la tête de la table (ouvert, il prend le focus ; Échap ou un clic à côté le ferment et rendent le focus à son bouton) | ligne de l'étape, barre d'outils | V/I | CadreCommun.tsx, App.tsx (`data-ligne`, `data-cadre`) |
 
@@ -279,12 +279,12 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 | Proposer un rattachement avec l'IA (IA3) | bouton IA, dans la barre d'outils (D112 point 10) | V |
 | Petits dossiers à moins d'1 h et 10 km : les voir (fenêtre : Retirer / Remettre, Mettre les N avec leur dossier, Fermer) | « 1 petit dossier a un voisin évident : voir › », bouton en contour dans la barre d'outils (ex-bouton plein du bandeau) | V |
 | Accepter les propositions sûres de l'IA (8/10 et plus) | bouton, barre d'outils | V |
-| Choisir un petit dossier | liste « Dans l'ordre du temps » (ligne commune C-7.7 : le nom, puis la date, l'heure et l'état écrit « à décider », « mis avec … », « gardé seul » ; le nombre de photos au bout ; « N sur M décidés » en tête ; ex-petits ronds) | V |
+| Choisir un petit dossier | liste « Dans l'ordre du temps » (ligne commune C-7.7 : le nom, puis la date, l'heure et l'état écrit « à décider », « mis avec … », « gardé seul » ; le nombre de photos au bout ; « N sur M décidés » en tête ; ex-petits ronds) ; au clavier, chaque ligne est un bouton : Tab, Entrée (vérifié par `essai_vrac.mjs`, 2026-10-31) | V/C |
 | Élargir la liste | poignée, comme à Lieux et sorties (même largeur) | G/B |
 | Mettre avec le dossier d'avant / d'après | boutons « Mettre avec ce dossier » avec chevrons SVG, touches ← → ; ce qu'ils feront dans leur infobulle (ex-phrase sous le bouton) ; le rôle des colonnes en titre de 16 px / 600 (« ← Pendant cette sortie », « Ce petit dossier », « Juste après → »), puis le nom du voisin, puis l'écart en gris | V/C/B |
 | Renommer le petit dossier | crayon à côté de son nom, F2, ou « Renommer » du menu « … » (la saisie se fait dans la tête ; Entrée, Échap) (D112 point 10) | I/C |
 | Menu « … » du petit dossier : Renommer (F2), Réunir avec un autre dossier…, le nom proposé par l'IA | « … » à côté de son nom, Maj+F10 | I/C |
-| Garder seul | bouton, touche G ; message « Gardé seul. » qui finit par « ↶ ou Ctrl+Z pour l'annuler », ↶ de la ligne de l'étape, Ctrl+Z et « Annuler » de l'historique (retours du 29.10) | V/C/T |
+| Garder seul | bouton, touche G ; message « Gardé seul. » qui finit par « ↶ ou Ctrl+Z pour l'annuler » tant que ce geste est le dernier, ↶ de la ligne de l'étape, Ctrl+Z et « Annuler » de l'historique (retours du 29.10) | V/C/T |
 | Le renommer « … » (nom proposé par l'IA) | bouton au centre, et dans le menu « … » | V |
 | Autre dossier… (devenu « Réunir avec un autre dossier… ») | menu « … » → fenêtre de choix (recherche, ↑↓ Entrée, Fermer) | I |
 | Annuler ce choix (rattaché ou gardé seul) | bouton dans l'encart | V |
@@ -294,22 +294,28 @@ Lot 4 (cadre commun, 29.10, provisoire jusqu'à l'essai sur de vraies photos) ; 
 
 ## 14. Étape 9 « Nommage »
 
+Refaite le 2026-10-31 (D112 point 11, CHARTE É17) : deux onglets et une carte par dossier au lieu de la case
+« Tous les dossiers » et du tableau.
+
 | Fonction | Accès | Vu |
 |---|---|---|
 | Ouvrir / fermer l'explication | « Aide » dans la ligne de l'étape (forme E, D112) : l'explication s'ouvre sous la ligne (ouverte à la 1re visite), « Fermer » la replie | V |
-| Tous les dossiers (pas seulement les noms automatiques) | case | V |
-| Recherche web (cochée par défaut, plus chère) | case | V |
-| Nommer les sorties avec l'IA (IA4), coût dans le bouton | bouton IA | V |
-| Accepter les noms de confiance 8 ou plus | bouton plein | V |
-| Prendre le nom du calendrier pour les dossiers qui en ont un | bouton | V |
-| Tout accepter (N noms)… (confirmation si confiance basse) | bouton | V |
-| Écrire un nom ; Entrée = renommer | champ | V/B |
-| Choisir un nom proposé (📅 calendrier, 📍 lieu, ✨ IA) | puces sous le champ | V |
-| Renommer un dossier | bouton « Renommer » par ligne | V |
-| Noms encore dans les champs en quittant (tapés, et proposés à « Valider ») : récapitulatif « avant → après » à cocher, peu sûrs « à vérifier » ; Rester sur la page / Renommer et continuer (ou revenir) / Continuer (ou revenir) sans renommer (D108) | fenêtre | V |
-| Voir les photos d'un dossier en grand | **absent** (miniatures 64 px non cliquables) | — |
+| Dossiers montrés : à nommer, ou déjà nommés (ex-case « Tous les dossiers ») | onglets « À nommer · 14 » et « Déjà nommés · 4 » (ouvert sur « Déjà nommés » si rien n'est à nommer) ; après défilement, « À nommer · 14 ▾ » dans la ligne de l'étape (C-4.12) | V |
+| Recherche web (cochée par défaut, plus chère) | case « chercher aussi sur internet », collée au bouton IA ; son surcoût dans l'infobulle | V |
+| Nommer avec l'IA (IA4), portée et coût dans le bouton | « Nommer les 14 avec l'IA · environ 0,73 CHF » (« Nommer ces 4 » dans « Déjà nommés ») : les dossiers de l'onglet affiché | V |
+| Accepter les noms de confiance 8 ou plus | « Accepter les noms sûrs de l'IA (3 dossiers) », bouton plein ; la règle dans l'infobulle | V/B |
+| Prendre le nom du calendrier pour les dossiers qui en ont un | « Prendre le nom du calendrier (12 dossiers) » | V |
+| Tout accepter (N noms)… (confirmation si des noms de l'IA sont à vérifier) | bouton, « À nommer » | V |
+| Écrire un nom ; Entrée = renommer | champ « Nouveau nom » ; dans « Déjà nommés », vide avec un exemple (« Par exemple : … ») | V/B |
+| Choisir un nom proposé (calendrier, lieu, IA) | puces de 28 px « Noms proposés », entre « Nom actuel » et « Nouveau nom » ; celle du champ cochée ; un seul arrêt de Tab, ← → | V/C |
+| Avis de l'IA (confiance, justification, monuments reconnus) | « · sûr » ou « · à vérifier » sur sa puce ; la confiance, l'activité, la justification et les monuments dans son infobulle (ex-colonnes « Conf. » et « Justification ») | V/B |
+| Événements du calendrier qui conviennent | une puce chacun, l'événement et sa part des photos dans l'infobulle (ex-ligne « Calendrier : … ») | V/B |
+| Renommer un dossier | « Renommer » par carte, « deviendra « … » » à sa droite (grisé : sa raison au même endroit) ; message « Renommé « … ». ↶ ou Ctrl+Z pour l'annuler » ; la carte reste, « renommé par vous (avant : …) », la puce du nom donné en plein | V/T |
+| Noms encore dans les champs en quittant (tapés, et proposés à « Valider ») : récapitulatif « avant → après » à cocher, peu sûrs « à vérifier » ; Rester sur la page / Renommer et continuer (ou revenir) / Continuer (ou revenir) sans renommer (D108) | fenêtre ; les noms tapés dans l'autre onglet comptent aussi | V |
+| Raccourcis dans la fenêtre « ? » | Tab (puces, champ, Renommer), ← → sur les noms proposés, Entrée dans « Nouveau nom » | V |
+| Voir les photos d'un dossier en grand | **absent** (deux miniatures de 64 px non cliquables) | — |
 | Taille des photos | **absente** | — |
-| Bouton Annuler | **absent** (notification ou Ctrl+Z) | — |
+| Bouton Annuler | ↶ de la ligne de l'étape, Ctrl+Z, rappel dans le message | I/C/T |
 
 ## 15. Étape 10 « Consolidation »
 

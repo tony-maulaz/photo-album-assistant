@@ -14,11 +14,11 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { cranTaille, PAS_TAILLE } from '../../lib/grille';
 import { t } from '../../lib/langue';
 import { nomCourtEtape, nomEtape, type CodeEtape } from '../../navigateur/projet';
-import { annuler, changerReglages, messages, notifier, page, reglages, retablir, session, versionPlan, versionProjet } from '../etat';
+import { annuler, changerReglages, gesteActuel, messages, notifier, page, reglages, retablir, session, versionPlan, versionProjet } from '../etat';
 import { aideOuverte, aideVue, explicationOuverte, ouvrirAide, ouvrirExplication, useExplicationVue } from '../explications';
 import { decouperMessage, minusculeInitiale } from '../format';
 import { ETAPES_EN_ESSAI, MenuPrincipal, PastilleEssai, useDeroulant } from './Cadre';
-import { Icone } from './Icones';
+import { Icone, TAILLE_GRANDE_PHOTO } from './Icones';
 
 /** Étapes passées au cadre commun (liste, table, panneau, colonne d'Aide) ; les autres gardent leur disposition. */
 export const PAGES_CADRE: ReadonlySet<CodeEtape> = new Set<CodeEtape>(['floues', 'selection', 'doublons']);
@@ -381,13 +381,18 @@ function AnnulerRetablirLigne() {
  */
 function MessageLigne() {
   const s = session.value!;
+  // Relu à chaque geste : le rappel « ↶ ou Ctrl+Z » part quand un autre geste vient après celui du message.
+  void versionPlan.value;
   const liste = messages.value;
   const m = [...liste].reverse().find((x) => x.type === 'erreur') ?? liste.at(-1);
   const h = s.historique;
   const ici = etapeAffichee();
   const n = h.etapeAnnulation;
+  // Un message qui propose d'annuler son geste : rien à proposer quand un autre geste est venu depuis (le rappel
+  // et « Y aller » déferaient ce dernier, pas le sien).
   const geste = m?.action?.faire === annuler;
-  const ailleurs = geste && h.peutAnnuler && ici !== undefined && n !== undefined && n !== ici;
+  const actuel = !!m && gesteActuel(m);
+  const ailleurs = actuel && ici !== undefined && n !== undefined && n !== ici;
   const [gras, suite] = m ? decouperMessage(m.texte) : ['', ''];
   return (
     // Toujours dans l'arbre d'accessibilité, même vide (masqué à l'écran, jamais `display: none`) : une région
@@ -401,7 +406,7 @@ function MessageLigne() {
             <strong>{ailleurs ? t`${nomCourtEtape(n!)} : ${gras}` : gras}</strong>
             {/* Après le nom de l'étape, une virgule plutôt qu'un second deux-points. */}
             {ailleurs ? suite.replace(/^[\s\u00a0\u202f]?:\s/u, ', ') : suite}
-            {geste && h.peutAnnuler && !ailleurs && (
+            {actuel && !ailleurs && (
               <span class="rappel-annuler">
                 {' '}
                 <Icone nom="annuler" taille={14} titre={t`Annuler`} /> {t`ou Ctrl+Z pour l’annuler`}
@@ -540,7 +545,7 @@ export function CurseurTaille({ vraie, id, photos = false }: { vraie?: (v: numbe
         title={i === 0 ? t`Photos plus petites : déjà la plus petite taille` : t`Photos plus petites`}
         onClick={() => changer(i - 1)}
       >
-        <Icone nom="photo" taille={14} />
+        <Icone nom="photo" taille={16} />
       </button>
       <input
         type="range"
@@ -565,7 +570,7 @@ export function CurseurTaille({ vraie, id, photos = false }: { vraie?: (v: numbe
         title={i === dernier ? t`Photos plus grandes : déjà la plus grande taille` : t`Photos plus grandes`}
         onClick={() => changer(i + 1)}
       >
-        <Icone nom="photo" taille={20} />
+        <Icone nom="photo" taille={TAILLE_GRANDE_PHOTO} />
       </button>
     </div>
   );

@@ -132,6 +132,11 @@ export interface Message {
   type: 'info' | 'ok' | 'erreur';
   texte: string;
   action?: { libelle: string; faire: () => void };
+  /**
+   * Le geste que le message propose d'annuler (`action.faire === annuler`) : le rappel « ↶ ou Ctrl+Z » et le lien
+   * « Annuler » ne s'affichent que tant qu'il est le dernier de l'historique (sinon ils déferaient un autre geste).
+   */
+  geste?: object;
 }
 
 export const messages = signal<Message[]>([]);
@@ -144,11 +149,23 @@ const messagesDeLAction = new Set<number>();
 export function notifier(type: Message['type'], texte: string, action?: Message['action']): number {
   const id = prochainMessage++;
   // Le même message deux fois de suite (ranger, puis ranger à nouveau) ne s'empile pas : le nouveau remplace l'ancien.
-  messages.value = [...messages.value.filter((m) => m.texte !== texte).slice(-2), { id, type, texte, action }];
+  const m: Message = { id, type, texte, action };
+  if (action?.faire === annuler) {
+    // Le geste est d'ordinaire appliqué juste avant le message ; s'il l'est juste après, dans la même action, il est relu.
+    m.geste = session.value?.historique.dernier;
+    queueMicrotask(() => (m.geste = session.value?.historique.dernier));
+  }
+  messages.value = [...messages.value.filter((x) => x.texte !== texte).slice(-2), m];
   messagesDeLAction.add(id);
   queueMicrotask(() => messagesDeLAction.delete(id));
   setTimeout(() => retirerMessage(id), type === 'erreur' ? 9000 : 5000);
   return id;
+}
+
+/** Le message propose-t-il encore d'annuler son geste (toujours le dernier de l'historique) ? */
+export function gesteActuel(m: Message): boolean {
+  const h = session.value?.historique;
+  return m.action?.faire === annuler && !!h?.peutAnnuler && m.geste !== undefined && m.geste === h.dernier;
 }
 
 // Changer de page périme les messages de la précédente (« vérifiez-les à l'étape suivante » restait affiché à

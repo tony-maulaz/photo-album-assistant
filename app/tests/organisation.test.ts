@@ -43,6 +43,7 @@ import {
 import {
   consigneNommageDossier,
   dossiersANommer,
+  dossiersDejaNommes,
   echantillon,
   estimationNommage,
   estNomAutomatique,
@@ -121,6 +122,8 @@ describe('nommage (étape 6, script 04)', () => {
     ]);
     expect(dossiersANommer(p, true).map((c) => c.nom)).toContain('Anniversaire_Lea_26.01.25');
     expect(dossiersANommer(p, true).map((c) => c.nom)).not.toContain('Sans_lieu');
+    // Onglet « Déjà nommés » (D112 point 11) : les autres, jamais un nom automatique ni un dossier sans photo.
+    expect(dossiersDejaNommes(p).map((c) => c.nom)).toEqual(['Anniversaire_Lea_26.01.25', 'Maison']);
   });
 
   it('noms automatiques : l’ancien format du tri toujours, JJ.MM.AA seulement s’il est encore celui du tri', () => {

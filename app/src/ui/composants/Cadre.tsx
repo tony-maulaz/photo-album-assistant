@@ -4,7 +4,7 @@ import type { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { arborescenceValidee, CODES_ETAPES, ETAPE, ETAPES, etapeInutile, nomCourtEtape, nomEtape } from '../../navigateur/projet';
 import { aTraduire, t } from '../../lib/langue';
-import { messages, page, reglages, sansSousDossiers, session, versionIA, versionPlan, versionProjet, type Page } from '../etat';
+import { annuler, gesteActuel, messages, page, reglages, sansSousDossiers, session, versionIA, versionPlan, versionProjet, type Page } from '../etat';
 import { minusculeInitiale, montantChf, nombre } from '../format';
 import { copiesRestantes } from '../copiesExactes';
 import { analyseEnCours } from '../analyseDossier';
@@ -235,6 +235,8 @@ export function Entete() {
 }
 
 export function Messages() {
+  // Relu à chaque geste : « Annuler » part quand un autre geste vient après celui du message.
+  void versionPlan.value;
   return (
     <div class="messages" aria-live="polite">
       {messages.value.map((m) => (
@@ -243,7 +245,8 @@ export function Messages() {
             <Icone nom={m.type === 'ok' ? 'coche' : m.type === 'erreur' ? 'alerte' : 'info'} taille={14} titre={m.type === 'ok' ? t`Fait` : m.type === 'erreur' ? t`Erreur` : t`Information`} />
           </span>
           <span class="texte-message">{m.texte}</span>
-          {m.action && (
+          {/* « Annuler » d'un geste : seulement tant qu'il est le dernier (sinon il en déferait un autre). */}
+          {m.action && (m.action.faire !== annuler || gesteActuel(m)) && (
             <button type="button" onClick={m.action.faire}>
               {m.action.libelle}
             </button>

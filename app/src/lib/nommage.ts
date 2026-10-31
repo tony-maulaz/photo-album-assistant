@@ -257,6 +257,14 @@ export function dossiersANommer(plan: Plan, tous = false): CibleNommage[] {
   return cibles.sort((a, b) => cheminTri(plan, a.dossier).localeCompare(cheminTri(plan, b.dossier)));
 }
 
+/**
+ * Dossiers déjà nommés (onglet « Déjà nommés » du Nommage, D112 point 11) : ceux qui ont des photos et dont le nom
+ * n'est pas automatique (choisis par l'utilisateur, ou venus tels quels du dossier d'origine), dans le même ordre.
+ */
+export function dossiersDejaNommes(plan: Plan): CibleNommage[] {
+  return dossiersANommer(plan, true).filter((c) => !estNomAutomatique(c.nom, plan.dossiers.get(c.dossier)?.tri?.nom));
+}
+
 function cheminTri(plan: Plan, id: string): string {
   const parties: string[] = [];
   for (let d = plan.dossiers.get(id); d && d.parent !== null; d = plan.dossiers.get(d.parent)) parties.unshift(d.nom);

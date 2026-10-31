@@ -855,6 +855,10 @@ try {
   await controler('petits-dossiers');
   await valider('nommage');
   await controler('nommage');
+  // Nommage (D112 point 11, É17) : l'onglet « Déjà nommés », ses champs vides avec un exemple.
+  await page.locator('.onglets-nommage [data-onglet=deja_nommes]').click();
+  await controler('nommage-deja-nommes');
+  await page.locator('.onglets-nommage [data-onglet=a_nommer]').click();
   await page.locator('[data-action=valider]').click();
   const recap = page.getByRole('dialog', { name: 'Des noms ne sont pas encore appliqués' });
   await Promise.race([recap.waitFor(), page.locator('main[data-etape=consolidation]').waitFor()]);
@@ -900,6 +904,12 @@ try {
     // fois pour revenir.
     const moins = page.locator('[data-place="taille"] [data-action="plus-petites"]');
     const plus = page.locator('[data-place="taille"] [data-action="plus-grandes"]');
+    // C-8.3, C-5.1 : la petite photo du curseur en 16 px, la grande en 22 px (la seule exception).
+    {
+      const tailles = [await moins.locator('svg').getAttribute('width'), await plus.locator('svg').getAttribute('width')];
+      if (tailles.join(',') !== '16,22') fautes.push(`curseur de taille : icônes de ${tailles.join(' et ')} px, attendu 16 et 22 (C-8.3)`);
+      console.log(`curseur de taille : icônes de ${tailles.join(' et ')} px`);
+    }
     let pas = 0;
     while (await moins.isEnabled()) {
       await moins.click();

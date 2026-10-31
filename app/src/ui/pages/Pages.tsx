@@ -448,7 +448,7 @@ export function PageAide() {
         </li>
         <li>
           <strong>{nomEtape(ETAPE.nommage)}</strong>
-          {t` : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.`}
+          {t` : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), en deux onglets, « À nommer » et « Déjà nommés ». Chaque carte dit le nom actuel, puis les noms proposés (calendrier, lieu, IA « sûre » ou « à vérifier ») : un clic en met un dans le champ « Nouveau nom », et « Renommer » (ou Entrée) le donne. Le bouton de l’IA dit combien de dossiers il nomme et son prix avant de le lancer.`}
         </li>
         <li>
           <strong>{nomEtape(ETAPE.consolidation)}</strong>

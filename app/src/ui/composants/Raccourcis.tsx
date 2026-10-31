@@ -125,6 +125,12 @@ const PAR_ETAPE: Partial<Record<CodeEtape, Ligne[]>> = {
     L('F2', aTraduire('Renommer le petit dossier affiché')),
     LT(aTraduire('Maj+F10'), aTraduire('Menu « … » du petit dossier : renommer, réunir avec un autre dossier')),
   ],
+  // Nommage (D112 point 11) : les noms proposés sont un seul arrêt de Tab, parcouru aux flèches.
+  nommage: [
+    LT(aTraduire('Tab'), aTraduire('Des noms proposés au champ « Nouveau nom », puis à « Renommer »')),
+    LT(aTraduire('← → sur les noms proposés'), aTraduire('Mettre le nom proposé suivant, précédent dans le champ')),
+    LT(aTraduire('Entrée dans « Nouveau nom »'), aTraduire('Renommer le dossier')),
+  ],
   doublons: [
     LT(aTraduire('J et K (ou ↓ ↑)'), aTraduire('Groupe suivant, groupe précédent')),
     L('← →', aTraduire('Passer d’une photo du groupe à l’autre')),

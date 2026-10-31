@@ -174,7 +174,6 @@ export const TEXTES: Record<string, string> = {
   'Propose un nom parlant (Theme_Lieu_JJ.MM.AA) pour chaque dossier, avec sa confiance et sa justification.':
     'Suggests a meaningful name (Theme_Place_DD.MM.YY) for each folder, with its confidence and reasoning.',
   '5 photos par dossier, position GPS, événements du calendrier, contexte du projet': '5 photos per folder, GPS position, calendar events, project context',
-  '{0} à nommer, avec recherche web': '{0} to name, with web search',
   '{0} à nommer': '{0} to name',
   '{0} sur {1}.{2}': '{0} for {1}.{2}',
   'nom proposé': 'name proposed',
@@ -185,25 +184,16 @@ export const TEXTES: Record<string, string> = {
   'deviendra « {0} »': 'will become “{0}”',
   'Convention : Theme_Lieu_JJ.MM.AA': 'Convention: Theme_Place_DD.MM.YY',
   'Reconnu : {0}': 'Recognised: {0}',
-  'Calendrier : {0}': 'Calendar: {0}',
   '« {0} » existe déjà à cet endroit.': '“{0}” already exists here.',
   Renommer: 'Rename',
   'dossier renommé': 'folder renamed',
   'dossiers renommés': 'folders renamed',
   '{0} ; {1} nom(s) déjà pris : {2}.': '{0}; {1} name(s) already taken: {2}.',
   Nommage: 'Naming',
-  'Tous les dossiers (pas seulement les noms automatiques comme « Ko_Samui_18.07.26 »)': 'All folders (not only automatic names such as “Ko_Samui_18.07.26”)',
   'Événements locaux, lieux touristiques, résultats de course… (environ 0,09 CHF de plus par dossier)':
     'Local events, tourist sights, race results… (about 0.09 CHF more per folder)',
-  'Recherche web': 'Web search',
-  'Accepter les {0} noms de confiance 8 ou plus': 'Accept the {0} names with confidence 8 or more',
-  'Aucun dossier au nom automatique : tout est déjà nommé. Cochez « Tous les dossiers » pour en renommer d’autres.':
-    'No folder has an automatic name: everything is already named. Tick “All folders” to rename others.',
   Dossier: 'Folder',
   'Nouveau nom': 'New name',
-  'Confiance de l’IA, de 1 à 10': 'AI confidence, from 1 to 10',
-  'Conf.': 'Conf.',
-  Justification: 'Reason',
   proposition: 'suggestion',
   propositions: 'suggestions',
 

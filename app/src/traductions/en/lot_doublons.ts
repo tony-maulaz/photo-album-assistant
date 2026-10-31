@@ -95,7 +95,6 @@ export const TEXTES: Record<string, string> = {
     '{0} (nearly identical photos taken in a row): you will choose which to keep at the “{1}” step.',
 
   // Nommage.tsx : noms tirés du calendrier (D83)
-  'D’après le calendrier': 'From the calendar',
 
   // Organiser.tsx, lib/regroupements.ts : dossiers d'un même événement du calendrier (D83)
   'Réunir {0} dans « {1} »': 'Gather {0} into “{1}”',

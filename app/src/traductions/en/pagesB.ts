@@ -216,8 +216,6 @@ export const TEXTES: Record<string, string> = {
   ' : pour chaque sous-dossier, « Trier » (ses photos rejoignent le tri), « Garder, nettoyer » (il garde sa place, ses floues et ses doublons sont proposés) ou « Ne pas toucher ».':
     ': for each subfolder, “Sort” (its photos join the sorting), “Keep, clean” (it keeps its place; its blurry photos and duplicates are proposed) or “Leave as is”.',
   ' : vérifiez et corrigez l’arborescence (ci-dessous).': ': check and correct the folder tree (see below).',
-  ' : un nom parlant par dossier (Theme_Lieu_JJ.MM.AA), proposé par l’IA si vous voulez.':
-    ': a meaningful name for each folder (Theme_Place_DD.MM.YY), suggested by the AI if you wish.',
   ' : fusionnez les dossiers qui couvrent la même activité.': ': merge the folders that cover the same activity.',
   ' : ordre, sections, titres, légendes, couverture, aperçu des pages.': ': order, sections, titles, captions, cover, page preview.',
   'Les aides IA': 'The AI helpers',
